@@ -154,6 +154,30 @@ foreach(kind IN ITEMS header import)
   set_tests_properties(simd.integer_ops.${kind} PROPERTIES LABELS "host;modules;integer;exact")
 endforeach()
 
+# Packing has an independent scalar oracle and checks truncation/lane order.
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_packing_${kind} packing.cc)
+  target_link_libraries(simd_test_packing_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_packing_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  endif()
+  add_test(NAME simd.packing.${kind} COMMAND simd_test_packing_${kind})
+  set_tests_properties(simd.packing.${kind} PROPERTIES LABELS "host;modules;integer;exact")
+endforeach()
+
+# Guard pages verify that short loads never touch the following mapping.
+if(UNIX)
+  foreach(kind IN ITEMS header import)
+    add_executable(simd_test_bounded_load_${kind} bounded_load.cc)
+    target_link_libraries(simd_test_bounded_load_${kind} PRIVATE simd::simd)
+    if(kind STREQUAL "import")
+      target_compile_definitions(simd_test_bounded_load_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+    endif()
+    add_test(NAME simd.bounded_load.${kind} COMMAND simd_test_bounded_load_${kind})
+    set_tests_properties(simd.bounded_load.${kind} PROPERTIES LABELS "host;modules;memory;exact")
+  endforeach()
+endif()
+
 # Numerical tests select their own ISA. simd::simd never imposes one on
 # unrelated consumers such as a baseline startup dispatcher.
 string(TOLOWER "${SIMD_TEST_ISA}" simd_test_profile)

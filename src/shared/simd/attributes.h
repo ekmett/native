@@ -940,6 +940,14 @@
 ///
 /// \{
 
+/** \def simd_align(x)
+    \brief Align a declaration, including a function entry, when supported. */
+#if simd_has_attribute(aligned)
+  #define simd_align(x) __attribute__((aligned(x)))
+#else
+  #define simd_align(x)
+#endif
+
 /** \def simd_assume_aligned(x)
 
       \brief Indicates a function returns a pointer with alignment at least \p x */
