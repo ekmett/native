@@ -110,8 +110,11 @@ The combined installed FTZ consumers pass four value-utility tests, two rounding
 tests and four policy-boundary tests, plus one third-static-library test per
 ISA. The latter consumers also use PCH and ThinLTO. These focused checks extend
 the earlier numerical checkpoint; they do not replace its packet results.
-That combined-package record covers Windows. The separate NEON run below
-extends core coverage without changing the scope of the downstream FTZ record.
+That combined-package record covers Windows. A separate M3 installed FTZ run
+passes thirteen focused utility, rounding and policy tests plus one transitive
+consumer, using matching dependencies with exceptions enabled, PCH and ThinLTO.
+It extends the downstream utility coverage; the earlier large math packets
+retain their own qualification scope.
 
 ## NEON utilities and rounding — source `0c4c0ae`
 
@@ -127,3 +130,6 @@ header and module consumers under all four standard rounding modes. The suite
 also includes the generic wide value utilities. This run is ordinary CPU
 execution; the earlier sanitizer and assembly results keep their own scope.
 No GPU execution or throughput measurement is implied.
+
+The `0c4c0ae` run uses granular imports. It does not qualify the subsequently
+added `import simd;` omnibus on ARM; that installed-consumer check remains separate.

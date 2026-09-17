@@ -111,5 +111,18 @@ and OS vector state. Runtime tests must not be used as feature probes.
 build tools but does not build the library or establish a Linux qualification.
 Build a local image explicitly with `docker build -t simd-build .`. CI does not
 depend on a prepublished container.
-Documentation is separate: enable `SIMD_BUILD_DOCS=ON` and build `simd_docs`
-with Doxygen 1.12 or newer.
+## API documentation
+
+Doxygen 1.18 generates the guides, individual API contracts and compiled
+examples. A documentation-only build does not require the host library:
+
+```sh
+cmake -S . -B build/docs -G Ninja -DSIMD_BUILD_HOST=OFF -DSIMD_BUILD_DOCS=ON
+cmake --build build/docs --target simd_docs
+```
+
+Open `build/docs/docs/html/index.html`. Warnings fail the build. With Python
+available, `python tests/api/audit_docs.py build/docs/docs/xml` checks indexed
+public callable documentation; it rejects missing descriptions and empty input.
+The [example project](../tests/api/README.md) compiles the snippets against an
+installed package. Generation alone does not compile examples or qualify an ISA.
