@@ -1,0 +1,56 @@
+// SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <array>
+#include <cstdint>
+#include <string_view>
+#include "simd/attributes.h"
+#if defined(_MSC_VER)
+#include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
+
+export module simd.cpuid;
+
+export namespace simd {
+  /// Raw CPUID registers. Unsupported leaves retain the instruction's behavior.
+  struct simd_nodiscard cpuid_t {
+    std::int32_t eax, ebx, ecx, edx;
+  };
+
+  /// CPUID serializes execution; query capabilities outside critical paths.
+  cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept;
+
+  enum class simd_nodiscard cpu_vendor : std::uint8_t {
+    intel = 0,
+    amd = 1,
+    unknown = 2
+  };
+
+  /// Cached vendor identification; vendor alone does not establish features.
+  extern const enum cpu_vendor cpu_vendor;
+}
+
+namespace simd {
+  cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept {
+#if defined(_MSC_VER)
+    int registers[4];
+    __cpuidex(registers, eax, ecx);
+    return {registers[0], registers[1], registers[2], registers[3]};
+#else
+    cpuid_t result;
+    __cpuid_count(eax, ecx, result.eax, result.ebx, result.ecx, result.edx);
+    return result;
+#endif
+  }
+
+  const enum cpu_vendor cpu_vendor = [] static noexcept {
+    auto result = cpuid(0, 0);
+    std::array<std::int32_t, 3> data{result.ebx, result.edx, result.ecx};
+    std::string_view vendor{reinterpret_cast<char const *>(data.data()), 12};
+    if (vendor == "GenuineIntel") return cpu_vendor::intel;
+    if (vendor == "AuthenticAMD") return cpu_vendor::amd;
+    return cpu_vendor::unknown;
+  }();
+}

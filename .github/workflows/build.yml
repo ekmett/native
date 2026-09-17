@@ -1,155 +1,76 @@
-name: CMake
+name: C++26 modules
 
 on:
   push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  docker:
-    name: Find docker image
-    runs-on: ubuntu-latest
-    outputs:
-      image: '${{ steps.hash.outputs.image }}'
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout-cone-mode: false
-          sparse-checkout: Dockerfile
-      - name: hash
-        id: hash
-        run: |
-          hash=$(sha256sum "${GITHUB_WORKSPACE}/Dockerfile" | awk '{print substr($1, 1, 12)}')
-          image="ghcr.io/${GITHUB_REPOSITORY}:${hash}-local-1001"
-          echo "docker image: $image"
-          echo "image=${image}" >> "$GITHUB_OUTPUT"
-
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-      - name: lint
-        run: make -C '${{github.workspace}}' lint
-
   build:
-    name: "Build: x64 ubuntu 24.10"
-
-    runs-on: ubuntu-latest
-    needs: docker
-    container:
-      image: '${{ needs.docker.outputs.image }}'
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-      - name: retain ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-      - name: set paths
-        id: paths
-        run: echo "gen=/__w/ein/ein/gen" >> "$GITHUB_OUTPUT"
-      - name: cache lib/cache
-        id: libcache
-        uses: actions/cache@v4
-        with:
-          path: /__w/ein/ein/lib/cache
-          key: '${{ runner.os }}-cache'
-      - name: make
-        run: make -C /__w/ein/ein || echo FAILED
-      - name: setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: false # ${{ failure() }}
-        timeout-minutes: 15
-      - name: upload binaries
-        uses: actions/upload-artifact@v4.4.3
-        with:
-          name: bin
-          path: |
-            ${{ steps.paths.outputs.gen }}/bin/
-            ${{ steps.paths.outputs.gen }}/lib/
-            ${{ steps.paths.outputs.gen }}/CMakeCache.txt
-            ${{ steps.paths.outputs.gen }}/CMakeFiles/
-            ${{ steps.paths.outputs.gen }}/**/CTestTestfile.cmake
-      - name: upload docs
-        uses: actions/upload-artifact@v4.4.3
-        with:
-          name: doc
-          path: ${{ steps.paths.outputs.gen }}/doc/html/
-      - name: upload trace
-        uses: actions/upload-artifact@v4.4.3
-        with:
-          name: ein-build-trace.json
-          path: ${{ steps.paths.outputs.gen }}/trace.json
-      - name: publish doc
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: '${{ secrets.GITHUB_TOKEN }}'  # Use single quotes here
-          publish_dir: ${{ steps.paths.outputs.gen }}/doc/html/
-      - name: test
-        working-directory: '${{ steps.paths.outputs.gen }}'
-        run: ctest -V
-
-  traditional-build-linux:
-    name: "Build: x64 ubuntu 22.04"
-    runs-on: ubuntu-latest
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux LLVM 23 / AVX2
+            runner: ubuntu-24.04
+            profile: AVX2
+            profiles: AVX2;AVX512
+          - name: macOS LLVM 23 / NEON
+            runner: macos-15
+            profile: NEON
+            profiles: NEON
     steps:
       - uses: actions/checkout@v4
+      - name: Check whitespace
+        run: git show --format= --check HEAD
       - uses: ./.github/actions/setup/ubuntu/compiler
+        if: runner.os == 'Linux'
       - uses: ./.github/actions/setup/ubuntu/build-tools
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ubuntu-latest-ccache
-      - name: cache lib/cache
-        id: libcache
-        uses: actions/cache@v4
-        with:
-          path: '${{ github.workspace }}/lib/cache'
-          key: '${{ runner.os }}-cache'
-      - name: set reusable strings
-        id: paths
-        run: echo "gen=${{ github.workspace }}/gen" >> "$GITHUB_OUTPUT"
-      - name: configure and build
-        run: make -C '${{ github.workspace }}'
-      - name: test
-        working-directory: ${{ steps.paths.outputs.gen }}
-        run: ctest -V
-      - name: setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        if: false # ${{ failure() }}
-        timeout-minutes: 10
-
-  traditional-build-macos:
-    name: "Build: x64 macos-13"
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v4
+        if: runner.os == 'Linux'
       - uses: ./.github/actions/setup/macos/compiler
+        if: runner.os == 'macOS'
       - uses: ./.github/actions/setup/macos/build-tools
-      - name: ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: macos-13-ccache
-      - name: cache lib/cache
-        id: libcache
-        uses: actions/cache@v4
-        with:
-          path: '${{ github.workspace }}/lib/cache'
-          key: '${{ runner.os }}-cache'
-      - name: set reusable strings
-        id: paths
-        run: echo "gen=${{ github.workspace }}/gen" >> "$GITHUB_OUTPUT"
-      - name: configure and build
+        if: runner.os == 'macOS'
+      - name: Configure modules
+        shell: bash
         run: |
-          make -C '${{ github.workspace }}'; status=$?
-          if [ ${status} -ne 0 ]; then
-            echo "::warning::Optional                                                                                                                                      job failed."
-            echo "optional_fail=true" >> "${GITHUB_OUTPUT}"
-            echo "optional_fail_status=${status}" >> "${GITHUB_OUTPUT}"
-            exit 0  # Ignore error here
-          fi;
-          exit ${status}
-      - name: test
-        if: ${{ failure() || steps.test.outputs.optional_fail == 'true' }}
-        working-directory: ${{ steps.paths.outputs.gen }}
-        run: ctest -V
+          extra=()
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            extra+=(-DCMAKE_LINKER_TYPE=LLD)
+          fi
+          cmake -S . -B build/core -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release \
+            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
+            -DSIMD_TEST_ISA="${{ matrix.profile }}" \
+            '-DSIMD_PROFILES=${{ matrix.profiles }}' "${extra[@]}"
+      - name: Build
+        run: cmake --build build/core --parallel 2
+      - name: Test
+        shell: bash
+        run: |
+          if [[ "${RUNNER_OS}" == Linux ]]; then
+            for feature in avx2 fma bmi2; do
+              grep -qw "${feature}" /proc/cpuinfo || {
+                echo "::error::This test profile requires ${feature} on the runner."
+                exit 1
+              }
+            done
+          fi
+          ctest --test-dir build/core --output-on-failure
+      - name: Install
+        run: cmake --install build/core --prefix build/install
+      - name: Retain configure and test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.profile }}
+          if-no-files-found: ignore
+          path: |
+            build/core/CMakeCache.txt
+            build/core/CMakeFiles/CMakeConfigureLog.yaml
+            build/core/Testing/Temporary/

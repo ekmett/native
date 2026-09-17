@@ -1,29 +1,12 @@
-name: 'install build tools'
-description: install cmake & ninja
+name: Install module build tools
+description: Install CMake and Ninja; configure checks the required versions.
 runs:
   using: composite
   steps:
-    - name: set tool path
-      run: |
-        echo "/usr/local/bin" >> $GITHUB_PATH
+    - name: Install CMake and Ninja
       shell: bash
-    - name: install cmake 3.30.5
       run: |
-        brew install cmake
-        which cmake && cmake --version
-      shell: bash
-    - name: install ninja 1.12.1
-      run: |
-        brew install ninja
-        which ninja && ninja --version
-      shell: bash
-    - name: install ccache
-      run: |
-        brew install ccache
-        which ccache && ccache --version
-      shell: bash
-    - name: install graphviz
-      run: |
-        brew install graphviz
-        which dot && dot --version
-      shell: bash
+        brew install cmake ninja
+        echo "$(brew --prefix)/bin" >> "${GITHUB_PATH}"
+        "$(brew --prefix)/bin/cmake" --version
+        "$(brew --prefix)/bin/ninja" --version

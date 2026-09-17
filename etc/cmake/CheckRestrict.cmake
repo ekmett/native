@@ -8,11 +8,11 @@ include(CheckCXXSourceCompiles)
 
 function(check_quiet_cxx_source_compiles source result_var)
   # Create a temporary file to hold the source code
-  file(WRITE "${CMAKE_BINARY_DIR}/check_quiet_compile.cpp" "${source}")
+  file(WRITE "${CMAKE_BINARY_DIR}/check_quiet_compile.cc" "${source}")
 
   # Now use try_compile with the temporary source file
   try_compile(${result_var} ${CMAKE_BINARY_DIR}
-    SOURCES "${CMAKE_BINARY_DIR}/check_quiet_compile.cpp"
+    SOURCES "${CMAKE_BINARY_DIR}/check_quiet_compile.cc"
     OUTPUT_VARIABLE QUIET_COMPILE_OUTPUT
   )
 endfunction()

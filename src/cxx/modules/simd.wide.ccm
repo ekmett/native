@@ -1,0 +1,718 @@
+module;
+#include "simd/attributes.h"
+
+#include <array>
+#include <concepts>
+#include <cmath>
+#include <cstddef>
+#include <functional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+
+export module simd.wide;
+
+export namespace simd {
+  template<class T, std::size_t N> struct wide;
+  namespace detail {
+    template<class T> struct wide_traits {
+      using element_type = T;
+      static constexpr bool value = false;
+      static constexpr std::size_t size = 0;
+    };
+    template<class T, std::size_t N> struct wide_traits<wide<T, N>> {
+      using element_type = T;
+      static constexpr bool value = true;
+      static constexpr std::size_t size = N;
+    };
+  }
+  // A fixed-size pack of values. Operations preserve the element type
+  // contracts and may use its ADL array operations for a complete batch.
+  template<class T, std::size_t N>
+  struct wide {
+    // Packed library aggregates can underalign arrays of native mask types.
+    alignas(T) std::array<T, N> registers;
+
+    constexpr wide() = default;
+    simd_inline constexpr wide(std::array<T, N> values)
+      noexcept(std::is_nothrow_move_constructible_v<std::array<T, N>>)
+      : registers(std::move(values)) {}
+    template<class... U> requires (sizeof...(U) == N && N != 0) &&
+      (std::constructible_from<T,U &&> && ...) &&
+      (N != 1 || ((!detail::wide_traits<std::remove_cvref_t<U>>::value &&
+        !std::same_as<std::remove_cvref_t<U>,std::array<T,N>>) && ...))
+    explicit(N == 1) simd_inline constexpr wide(U &&... values)
+      noexcept((std::is_nothrow_constructible_v<T,U &&> && ...))
+      : registers{T(std::forward<U>(values))...} {}
+    template<class U> requires (N != 1) && (!detail::wide_traits<std::remove_cvref_t<U>>::value) &&
+      (!std::same_as<std::remove_cvref_t<U>,std::array<T, N>>) &&
+      std::constructible_from<T,U const &> && (N == 0 || std::copy_constructible<T>)
+    explicit simd_inline constexpr wide(U const & value)
+      noexcept(std::is_nothrow_constructible_v<T,U const &> &&
+        (N == 0 || std::is_nothrow_copy_constructible_v<T>))
+      : wide(T(value), std::make_index_sequence<N>{}) {}
+
+    template<class U> requires (!std::same_as<T,U>) && std::constructible_from<T,U const &>
+    explicit(!std::is_convertible_v<U const &,T>) simd_inline constexpr wide(wide<U,N> const & source)
+      noexcept(N == 0 || std::is_nothrow_constructible_v<T,U const &>)
+      : wide(conversion_tag{}, source, std::make_index_sequence<N>{}) {}
+    template<class U> requires (!std::same_as<T,U>) && std::constructible_from<T,U &&>
+    explicit(!std::is_convertible_v<U &&,T>) simd_inline constexpr wide(wide<U,N> && source)
+      noexcept(N == 0 || std::is_nothrow_constructible_v<T,U &&>)
+      : wide(conversion_tag{}, std::move(source), std::make_index_sequence<N>{}) {}
+
+    simd_nodiscard static simd_inline constexpr wide broadcast(T const & value)
+      noexcept(N == 0 || std::is_nothrow_copy_constructible_v<T>)
+      requires (N == 0 || std::copy_constructible<T>) {
+      return wide(value, std::make_index_sequence<N>{});
+    }
+
+    template<std::size_t I> requires (I < N)
+    simd_nodiscard simd_inline constexpr T & get() & noexcept simd_lifetimebound { return registers[I]; }
+    template<std::size_t I> requires (I < N)
+    simd_nodiscard simd_inline constexpr T const & get() const & noexcept simd_lifetimebound { return registers[I]; }
+    template<std::size_t I> requires (I < N)
+    simd_nodiscard simd_inline constexpr T && get() && noexcept simd_lifetimebound { return std::move(registers[I]); }
+    template<std::size_t I> requires (I < N)
+    simd_nodiscard simd_inline constexpr T const && get() const && noexcept simd_lifetimebound { return std::move(registers[I]); }
+
+    template<class F>
+    simd_inline constexpr decltype(auto) apply(F && f) noexcept(noexcept(std::apply(std::forward<F>(f), registers))) {
+      return apply_indices(std::forward<F>(f), registers, std::make_index_sequence<N>{});
+    }
+
+    template<class F>
+    simd_inline constexpr decltype(auto) apply(F && f) const noexcept(noexcept(std::apply(std::forward<F>(f), registers))) {
+      return apply_indices(std::forward<F>(f), registers, std::make_index_sequence<N>{});
+    }
+  private:
+    struct conversion_tag {};
+    template<class W, std::size_t... I>
+    simd_inline constexpr wide(conversion_tag, W && source, std::index_sequence<I...>)
+      noexcept((std::is_nothrow_constructible_v<T,
+        decltype(std::get<I>(std::forward<W>(source).registers))> && ...))
+      : registers{T(std::get<I>(std::forward<W>(source).registers))...} {}
+    template<class U, std::size_t... I> requires std::same_as<std::remove_cvref_t<U>,T>
+    simd_inline constexpr wide(U && value, std::index_sequence<I...>)
+      noexcept(N == 0 || std::is_nothrow_copy_constructible_v<T>)
+      : registers{((void)I,static_cast<T const &>(value))...} {}
+    // Keep the callable on the force-inline path. MSVC can outline std::invoke
+    // inside std::apply even when both the caller and functor are force-inline.
+    template<class F, class A, std::size_t ... I>
+    static simd_inline constexpr decltype(auto) apply_indices(F && f, A & a, std::index_sequence<I...>) {
+      if constexpr (std::is_member_pointer_v<std::remove_reference_t<F>>)
+        return std::invoke(std::forward<F>(f), std::get<I>(a)...);
+      else
+        return std::forward<F>(f)(std::get<I>(a)...);
+    }
+
+  };
+  template<class T, class... U> requires (std::same_as<T,U> && ...)
+  wide(T,U...) -> wide<T,1 + sizeof...(U)>;
+
+  namespace detail {
+    template<class T> using wide_element_t = typename wide_traits<T>::element_type;
+    template<class A, class B> concept wide_arguments =
+      (wide_traits<A>::value || wide_traits<B>::value) &&
+      (!wide_traits<A>::value || !wide_traits<B>::value || wide_traits<A>::size == wide_traits<B>::size);
+    template<class A, class B> inline constexpr std::size_t wide_size =
+      wide_traits<A>::value ? wide_traits<A>::size : wide_traits<B>::size;
+
+    template<std::size_t I, class T>
+    simd_inline constexpr decltype(auto) wide_element(T const & value) {
+      if constexpr (wide_traits<T>::value) return value.registers[I];
+      else return (value);
+    }
+    template<class A, class B, class F, std::size_t... I>
+    simd_inline constexpr auto wide_binary(A const & a, B const & b, F f, std::index_sequence<I...>) {
+      using R = std::remove_cvref_t<decltype(f(std::declval<wide_element_t<A> const &>(),
+        std::declval<wide_element_t<B> const &>()))>;
+      return wide<R, sizeof...(I)>{{f(wide_element<I>(a), wide_element<I>(b))...}};
+    }
+    template<class T, std::size_t N, class F, std::size_t... I>
+    simd_inline constexpr auto wide_unary(wide<T, N> const & a, F f, std::index_sequence<I...>) {
+      using R = std::remove_cvref_t<decltype(f(std::declval<T const &>()))>;
+      return wide<R, N>{{f(a.registers[I])...}};
+    }
+    template<class T, std::size_t N, class B, class F, std::size_t... I>
+    simd_inline constexpr wide<T, N> & wide_mutate(wide<T, N> & a, B const & b, F f, std::index_sequence<I...>) {
+      if constexpr (wide_traits<B>::value) (f(a.registers[I], b.registers[I]), ...);
+      else if constexpr (N != 0) {
+        // A broadcast can alias a destination register. Snapshot it before
+        // publishing any lane, just as a register broadcast takes a value.
+        auto value = b;
+        (f(a.registers[I], value), ...);
+      }
+      return a;
+    }
+  }
+
+  namespace detail {
+    template<class A> simd_inline constexpr decltype(auto) wide_storage(A const & a) noexcept {
+      if constexpr (wide_traits<A>::value) return (a.registers);
+      else return (a);
+    }
+    struct wide_add {
+      template<class A,class B> simd_inline constexpr auto operator()(A const & a,B const & b) const
+          noexcept(noexcept(a + b)) -> decltype(a + b) { return a + b; }
+      template<class A,class B> simd_inline constexpr auto batch(A const & a,B const & b) const
+          noexcept(noexcept(add(a,b))) -> decltype(add(a,b)) { return add(a,b); }
+    };
+    struct wide_sub {
+      template<class A,class B> simd_inline constexpr auto operator()(A const & a,B const & b) const
+          noexcept(noexcept(a - b)) -> decltype(a - b) { return a - b; }
+      template<class A,class B> simd_inline constexpr auto batch(A const & a,B const & b) const
+          noexcept(noexcept(sub(a,b))) -> decltype(sub(a,b)) { return sub(a,b); }
+    };
+    struct wide_mul {
+      template<class A,class B> simd_inline constexpr auto operator()(A const & a,B const & b) const
+          noexcept(noexcept(a * b)) -> decltype(a * b) { return a * b; }
+      template<class A,class B> simd_inline constexpr auto batch(A const & a,B const & b) const
+          noexcept(noexcept(mul(a,b))) -> decltype(mul(a,b)) { return mul(a,b); }
+    };
+    template<class A,class B,class F> concept wide_batch = requires(A const & a,B const & b) {
+      wide{F{}.batch(wide_storage(a),wide_storage(b))};
+    };
+    template<class A,class B,class F> concept wide_batch_assignable = wide_batch<A,B,F> &&
+      requires(A & a,B const & b) { a = wide{F{}.batch(wide_storage(a),wide_storage(b))}; };
+    template<class A,class B,class F>
+    simd_inline constexpr auto wide_dispatch(A const & a,B const & b,F f)
+        noexcept([] {
+          if constexpr (wide_batch<A,B,F>)
+            return noexcept(wide{F{}.batch(wide_storage(std::declval<A const &>()),wide_storage(std::declval<B const &>()))});
+          else return false;
+        }()) {
+      if constexpr (wide_batch<A,B,F>) return wide{f.batch(wide_storage(a),wide_storage(b))};
+      else return wide_binary(a,b,f,std::make_index_sequence<wide_size<A,B>>{});
+    }
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a + b; }
+  simd_nodiscard simd_inline constexpr auto operator+(A const & a, B const & b)
+      noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_add{}))) {
+    return detail::wide_dispatch(a,b,detail::wide_add{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a - b; }
+  simd_nodiscard simd_inline constexpr auto operator-(A const & a, B const & b)
+      noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_sub{}))) {
+    return detail::wide_dispatch(a,b,detail::wide_sub{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a * b; }
+  simd_nodiscard simd_inline constexpr auto operator*(A const & a, B const & b)
+      noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_mul{}))) {
+    return detail::wide_dispatch(a,b,detail::wide_mul{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a / b; }
+  simd_nodiscard simd_inline constexpr auto operator/(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x / y) { return x / y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a % b; }
+  simd_nodiscard simd_inline constexpr auto operator%(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x % y) { return x % y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a & b; }
+  simd_nodiscard simd_inline constexpr auto operator&(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x & y) { return x & y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a | b; }
+  simd_nodiscard simd_inline constexpr auto operator|(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x | y) { return x | y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a ^ b; }
+  simd_nodiscard simd_inline constexpr auto operator^(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x ^ y) { return x ^ y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a << b; }
+  simd_nodiscard simd_inline constexpr auto operator<<(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x << y) { return x << y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >> b; }
+  simd_nodiscard simd_inline constexpr auto operator>>(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >> y) { return x >> y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a == b; }
+  simd_nodiscard simd_inline constexpr auto operator==(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x == y) { return x == y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a != b; }
+  simd_nodiscard simd_inline constexpr auto operator!=(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x != y) { return x != y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a < b; }
+  simd_nodiscard simd_inline constexpr auto operator<(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x < y) { return x < y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a > b; }
+  simd_nodiscard simd_inline constexpr auto operator>(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x > y) { return x > y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a <= b; }
+  simd_nodiscard simd_inline constexpr auto operator<=(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x <= y) { return x <= y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >= b; }
+  simd_nodiscard simd_inline constexpr auto operator>=(A const & a, B const & b) {
+    return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >= y) { return x >= y; },
+      std::make_index_sequence<detail::wide_size<A, B>>{});
+  }
+
+  template<class T, std::size_t N> requires requires(T const & a) { +a; }
+  simd_nodiscard simd_inline constexpr auto operator+(wide<T, N> const & a) {
+    return detail::wide_unary(a, [](auto const & x) -> decltype(+x) { return +x; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N> requires requires(T const & a) { -a; }
+  simd_nodiscard simd_inline constexpr auto operator-(wide<T, N> const & a) {
+    return detail::wide_unary(a, [](auto const & x) -> decltype(-x) { return -x; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N> requires requires(T const & a) { ~a; }
+  simd_nodiscard simd_inline constexpr auto operator~(wide<T, N> const & a) {
+    return detail::wide_unary(a, [](auto const & x) -> decltype(~x) { return ~x; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N> requires requires(T const & a) { !a; }
+  simd_nodiscard simd_inline constexpr auto operator!(wide<T, N> const & a) {
+    return detail::wide_unary(a, [](auto const & x) -> decltype(!x) { return !x; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add> ||
+      ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+        requires(T & a, detail::wide_element_t<B> const & b) { a += b; }))
+  simd_inline constexpr wide<T, N> & operator+=(wide<T, N> & a, B const & b)
+      noexcept([] {
+        if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add>)
+          return noexcept(std::declval<wide<T,N> &>() = detail::wide_dispatch(
+            std::declval<wide<T,N> const &>(),std::declval<B const &>(),detail::wide_add{}));
+        else return false;
+      }()) {
+    if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add>)
+      return a = detail::wide_dispatch(a,b,detail::wide_add{});
+    else return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x += y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub> ||
+      ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+        requires(T & a, detail::wide_element_t<B> const & b) { a -= b; }))
+  simd_inline constexpr wide<T, N> & operator-=(wide<T, N> & a, B const & b)
+      noexcept([] {
+        if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub>)
+          return noexcept(std::declval<wide<T,N> &>() = detail::wide_dispatch(
+            std::declval<wide<T,N> const &>(),std::declval<B const &>(),detail::wide_sub{}));
+        else return false;
+      }()) {
+    if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub>)
+      return a = detail::wide_dispatch(a,b,detail::wide_sub{});
+    else return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x -= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul> ||
+      ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+        requires(T & a, detail::wide_element_t<B> const & b) { a *= b; }))
+  simd_inline constexpr wide<T, N> & operator*=(wide<T, N> & a, B const & b)
+      noexcept([] {
+        if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul>)
+          return noexcept(std::declval<wide<T,N> &>() = detail::wide_dispatch(
+            std::declval<wide<T,N> const &>(),std::declval<B const &>(),detail::wide_mul{}));
+        else return false;
+      }()) {
+    if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul>)
+      return a = detail::wide_dispatch(a,b,detail::wide_mul{});
+    else return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x *= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a /= b; }
+  simd_inline constexpr wide<T, N> & operator/=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x /= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a %= b; }
+  simd_inline constexpr wide<T, N> & operator%=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x %= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a &= b; }
+  simd_inline constexpr wide<T, N> & operator&=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x &= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a |= b; }
+  simd_inline constexpr wide<T, N> & operator|=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x |= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a ^= b; }
+  simd_inline constexpr wide<T, N> & operator^=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x ^= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a <<= b; }
+  simd_inline constexpr wide<T, N> & operator<<=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x <<= y; }, std::make_index_sequence<N>{});
+  }
+
+  template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
+    (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
+    requires(T & a, detail::wide_element_t<B> const & b) { a >>= b; }
+  simd_inline constexpr wide<T, N> & operator>>=(wide<T, N> & a, B const & b) {
+    return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x >>= y; }, std::make_index_sequence<N>{});
+  }
+
+  namespace detail {
+    using std::abs;
+    using std::sqrt;
+    using std::fma;
+    using std::sin;
+    using std::cos;
+    using std::exp;
+    using std::expm1;
+    using std::log;
+    using std::log1p;
+    using std::tanh;
+    template<class... A> simd_inline constexpr auto adl_abs(A const &... a)
+        noexcept(noexcept(abs(a...))) -> decltype(abs(a...)) { return abs(a...); }
+    template<class... A> simd_inline constexpr auto adl_sqrt(A const &... a)
+        noexcept(noexcept(sqrt(a...))) -> decltype(sqrt(a...)) { return sqrt(a...); }
+    template<class... A> simd_inline constexpr auto adl_fma(A const &... a)
+        noexcept(noexcept(fma(a...))) -> decltype(fma(a...)) { return fma(a...); }
+    template<class... A> simd_inline constexpr auto adl_sin(A const &... a)
+        noexcept(noexcept(sin(a...))) -> decltype(sin(a...)) { return sin(a...); }
+    template<class... A> simd_inline constexpr auto adl_cos(A const &... a)
+        noexcept(noexcept(cos(a...))) -> decltype(cos(a...)) { return cos(a...); }
+    template<class... A> simd_inline constexpr auto adl_expm1(A const &... a)
+        noexcept(noexcept(expm1(a...))) -> decltype(expm1(a...)) { return expm1(a...); }
+    template<class... A> simd_inline constexpr auto adl_log(A const &... a)
+        noexcept(noexcept(log(a...))) -> decltype(log(a...)) { return log(a...); }
+    template<class... A> simd_inline constexpr auto adl_log1p(A const &... a)
+        noexcept(noexcept(log1p(a...))) -> decltype(log1p(a...)) { return log1p(a...); }
+    template<class... A> simd_inline constexpr auto adl_tanh(A const &... a)
+        noexcept(noexcept(tanh(a...))) -> decltype(tanh(a...)) { return tanh(a...); }
+    template<bool Flush,class A> requires requires(A const & a) { exp(a,std::bool_constant<Flush>{}); }
+    simd_inline constexpr auto adl_exp(A const & a) noexcept(noexcept(exp(a,std::bool_constant<Flush>{}))) -> decltype(exp(a,std::bool_constant<Flush>{})) { return exp(a,std::bool_constant<Flush>{}); }
+    template<bool Flush,class A> requires (!Flush) && (!requires(A const & a) { exp(a,std::bool_constant<Flush>{}); })
+    simd_inline constexpr auto adl_exp(A const & a) noexcept(noexcept(exp(a))) -> decltype(exp(a)) { return exp(a); }
+    template<class A> simd_inline constexpr auto adl_sincos(A const & a)
+        noexcept(noexcept(sincos(a))) -> decltype(sincos(a)) { return sincos(a); }
+    template<class M,class T> simd_inline constexpr auto adl_select(M const & m,T const & a,T const & b)
+        noexcept(noexcept(select(m,a,b))) -> decltype(select(m,a,b)) { return select(m,a,b); }
+  }
+  template<class R,std::size_t N>
+  simd_nodiscard simd_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
+    return wide<R,N>::broadcast(value);
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_abs(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> abs(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_abs(a); })
+          return noexcept(wide<R,N>{detail::adl_abs(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_abs(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_abs(input.registers); })
+      return wide<R,N>{detail::adl_abs(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_abs(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_sqrt(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> sqrt(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_sqrt(a); })
+          return noexcept(wide<R,N>{detail::adl_sqrt(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_sqrt(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_sqrt(input.registers); })
+      return wide<R,N>{detail::adl_sqrt(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_sqrt(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_sin(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> sin(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_sin(a); })
+          return noexcept(wide<R,N>{detail::adl_sin(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_sin(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_sin(input.registers); })
+      return wide<R,N>{detail::adl_sin(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_sin(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_cos(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> cos(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_cos(a); })
+          return noexcept(wide<R,N>{detail::adl_cos(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_cos(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_cos(input.registers); })
+      return wide<R,N>{detail::adl_cos(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_cos(x); }(), ...);
+      return result;
+    }
+  }
+  template<bool Flush = false,class R,std::size_t N> requires requires(R const & x) { detail::adl_exp<Flush>(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> exp(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_exp<Flush>(a); })
+          return noexcept(wide<R,N>{detail::adl_exp<Flush>(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_exp<Flush>(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_exp<Flush>(input.registers); })
+      return wide<R,N>{detail::adl_exp<Flush>(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_exp<Flush>(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_expm1(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> expm1(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_expm1(a); })
+          return noexcept(wide<R,N>{detail::adl_expm1(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_expm1(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_expm1(input.registers); })
+      return wide<R,N>{detail::adl_expm1(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_expm1(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_log(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> log(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_log(a); })
+          return noexcept(wide<R,N>{detail::adl_log(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_log(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_log(input.registers); })
+      return wide<R,N>{detail::adl_log(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_log(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_log1p(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> log1p(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_log1p(a); })
+          return noexcept(wide<R,N>{detail::adl_log1p(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_log1p(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_log1p(input.registers); })
+      return wide<R,N>{detail::adl_log1p(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_log1p(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_tanh(x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> tanh(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_tanh(a); })
+          return noexcept(wide<R,N>{detail::adl_tanh(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_tanh(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_tanh(input.registers); })
+      return wide<R,N>{detail::adl_tanh(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = detail::adl_tanh(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_fma(x,x,x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> fma(wide<R,N> const & a,wide<R,N> const & b,wide<R,N> const & c)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & x) { detail::adl_fma(x,x,x); })
+          return noexcept(wide<R,N>{detail::adl_fma(std::declval<std::array<R,N> const &>(),
+            std::declval<std::array<R,N> const &>(),std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_fma(
+            std::declval<R const &>(),std::declval<R const &>(),std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_fma(a.registers,b.registers,c.registers); })
+      return wide<R,N>{detail::adl_fma(a.registers,b.registers,c.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = a;
+      auto const & [...y] = b;
+      auto const & [...z] = c;
+      ([&] { value = detail::adl_fma(x,y,z); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_sincos(x); }
+  simd_nodiscard simd_inline constexpr auto sincos(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & x) { detail::adl_sincos(x); })
+          return noexcept(detail::adl_sincos(std::declval<std::array<R,N> const &>())) &&
+            std::is_nothrow_move_constructible_v<std::array<R,N>>;
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || (noexcept(detail::adl_sincos(std::declval<R const &>())) && noexcept(std::declval<R &>() = std::declval<decltype(detail::adl_sincos(std::declval<R const &>())) &>().first) &&
+            noexcept(std::declval<R &>() = std::declval<decltype(detail::adl_sincos(std::declval<R const &>())) &>().second)));
+      }()) {
+    if constexpr (requires { detail::adl_sincos(input.registers); }) {
+      auto [sine,cosine] = detail::adl_sincos(input.registers);
+      return std::pair{wide<R,N>{std::move(sine)},wide<R,N>{std::move(cosine)}};
+    } else {
+      wide<R,N> sine,cosine;
+      auto & [...s] = sine;
+      auto & [...c] = cosine;
+      auto const & [...x] = input;
+      ([&] { auto pair = detail::adl_sincos(x); s = pair.first; c = pair.second; }(), ...);
+      return std::pair{std::move(sine),std::move(cosine)};
+    }
+  }
+  template <class R, std::size_t N>
+  simd_nodiscard simd_inline wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
+      wide<R, N> const & a, wide<R, N> const & b)
+      noexcept([] {
+        if constexpr (N == 0)
+          return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>>;
+        else if constexpr (std::is_same_v<decltype(R{} == R{}), bool>)
+          return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+            noexcept(std::declval<R &>() = std::declval<R const &>());
+        else
+          return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+            noexcept(std::declval<R &>() = detail::adl_select(
+              std::declval<decltype(R{} == R{}) const &>(),
+              std::declval<R const &>(), std::declval<R const &>()));
+      }()) {
+    wide<R, N> result;
+    auto & [...value] = result;
+    auto const & [...mask] = masks;
+    auto const & [...x] = a;
+    auto const & [...y] = b;
+    if constexpr (std::is_same_v<decltype(R{} == R{}), bool>)
+      ([&] { value = mask ? x : y; }(), ...);
+    else
+      ([&] { value = detail::adl_select(mask, x, y); }(), ...);
+    return result;
+  }
+
+
+}
+
+export namespace std {
+  // Structured binding lookup needs the primary names visible even when the
+  // importer has not separately included <tuple>.
+  using ::std::tuple_size;
+  using ::std::tuple_element;
+  using ::std::get;
+  template<class T, size_t N>
+  struct tuple_size<simd::wide<T, N>> : integral_constant<size_t, N> {};
+  template<size_t I, class T, size_t N>
+  struct tuple_element<I, simd::wide<T, N>> : tuple_element<I, array<T, N>> {};
+}
+
+/**
+ * \file
+ * \license
+ * SPDX-FileType: SOURCE
+ * SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+ * SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+ * \endlicense
+ * \author Edward Kmett <ekmett@gmail.com>
+ * \brief Fixed packs of registers with tuple access and pointwise operators.
+ */

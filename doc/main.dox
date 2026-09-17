@@ -1,17 +1,17 @@
 /**
-\mainpage ein
+\mainpage simd
 
 
-[![Build](https://github.com/ekmett/ein/actions/workflows/cmake.yml/badge.svg)](https://github.com/ekmett/ein/actions/workflows/cmake.yml)
-[![Build Trace](https://img.shields.io/badge/perfetto-build_trace-orange.svg?logo=speedtest)](ein-build.trace)
-[![Doxygen](https://img.shields.io/badge/docs-doxygen-blue.svg)](https://ekmett.github.io/ein/)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ekmett/ein?logo=github)](https://github.com/ekmett/ein/activity)
-[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/ekmett/ein)](https://github.com/ekmett/ein/issues)
+[![Build](https://github.com/ekmett/simd/actions/workflows/build.yml/badge.svg)](https://github.com/ekmett/simd/actions/workflows/build.yml)
+[![Doxygen](https://img.shields.io/badge/docs-doxygen-blue.svg)](https://ekmett.github.io/simd/)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ekmett/simd?logo=github)](https://github.com/ekmett/simd/activity)
+[![GitHub Issues or Pull Requests](https://img.shields.io/github/issues/ekmett/simd)](https://github.com/ekmett/simd/issues)
 [![Code of Conduct: Contributor Covenant](https://img.shields.io/badge/code_of_conduct-contributor_covenant-8a2be2)](https://www.contributor-covenant.org/)
 
 \tableofcontents
 
-This is a playground for wide SIMD evaluation.
+C++26 SIMD types, architecture tags, masks and wide register-pack evaluation.
+See the module and build guides for the current public API and packaging model.
 
 - \subpage license_page
 - \subpage code_of_conduct_page
@@ -20,11 +20,7 @@ This is a playground for wide SIMD evaluation.
 - \subpage installation_page
 - \subpage notes_page
 
-\dotfile ein.dot.ein_tests "ein dependencies"
 
-\cond
-\dotfile ein.dot.ein.dependers "ein dependers"
-\endcond
 
 ## Contact Information
 

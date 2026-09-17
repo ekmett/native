@@ -1,24 +1,13 @@
-name: 'install the compiler'
-description: install clang, llvm and doxygen
+name: Install LLVM 23
+description: Select Homebrew LLVM instead of the system Apple Clang driver.
 runs:
   using: composite
   steps:
-    - name: set tool paths
-      run: |
-        echo "/usr/local/bin" >> $GITHUB_PATH
-        echo "/usr/local/opt/llvm/bin" >> $GITHUB_PATH
+    - name: Install LLVM 23 tools
       shell: bash
-    - name: install clang 19
       run: |
-        brew install llvm
-        ln -s /usr/local/opt/llvm/bin/clang++ /usr/local/opt/llvm/bin/clang++-19
-        which clang++-19 && clang++-19 --version
-      shell: bash
-    - name: install doxygen 1.12.0
-      run: |
-        wget --no-verbose https://www.doxygen.nl/files/Doxygen-1.12.0.dmg
-        hdiutil attach Doxygen-1.12.0.dmg
-        cp -R /Volumes/Doxygen/Doxygen.app /Applications/
-        sudo ln -s /Applications/Doxygen.app/Contents/Resources/doxygen /usr/local/bin/doxygen
-        which doxygen &&  doxygen --version
-      shell: bash
+        brew install llvm@23
+        llvm_prefix=$(brew --prefix llvm@23)
+        echo "${llvm_prefix}/bin" >> "${GITHUB_PATH}"
+        "${llvm_prefix}/bin/clang++" --version
+        "${llvm_prefix}/bin/clang-scan-deps" --version

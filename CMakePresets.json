@@ -1,38 +1,63 @@
 {
-  "version": 3,
+  "version": 6,
   "cmakeMinimumRequired": {
-    "major": 3,
-    "minor": 30,
-    "patch": 5
+    "major": 4,
+    "minor": 4,
+    "patch": 0
   },
   "configurePresets": [
     {
-      "name": "native",
-      "description": "Build with -march=native, for local use, NOT FOR DISTRIBUTION",
+      "name": "clang-release",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/gen",
+      "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "clang++-19",
-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "${sourceDir}/bin/ccache.sh",
-        "CMAKE_EXPORT_COMPILE_COMMANDS": "1",
-        "CMAKE_UNITY_BUILD": "1",
-        "CMAKE_UNITY_BUILD_BATCH_SIZE": "7",
-        "CMAKE_COLOR_DIAGNOSTICS": "ON"
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_BUILD_TYPE": "Release",
+        "SIMD_BUILD_TESTS": true,
+        "SIMD_ENABLE_PCH": true
+      }
+    },
+    {
+      "name": "clang-cl-release",
+      "inherits": "clang-release",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      }
+    },
+    {
+      "name": "headers",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "SIMD_BUILD_HOST": false,
+        "SIMD_BUILD_TESTS": false
       }
     }
   ],
   "buildPresets": [
     {
-      "name": "native",
-      "configurePreset": "native",
-      "jobs": 16
+      "name": "clang-release",
+      "configurePreset": "clang-release"
+    },
+    {
+      "name": "clang-cl-release",
+      "configurePreset": "clang-cl-release"
     }
   ],
   "testPresets": [
     {
-      "name": "native",
-      "configurePreset": "native"
+      "name": "clang-release",
+      "configurePreset": "clang-release",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "clang-cl-release",
+      "configurePreset": "clang-cl-release",
+      "output": {
+        "outputOnFailure": true
+      }
     }
   ]
 }

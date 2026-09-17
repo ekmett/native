@@ -1,0 +1,690 @@
+// SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+/// \brief Scalar half storage, numeric limits and legacy scalar predicates.
+module;
+#include <bit>
+#include <cmath>
+#include <compare>
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <type_traits>
+#include <utility>
+#include "simd/attributes.h"
+#include "simd/simd/common.h"
+
+export module simd.numerics;
+export import simd.types;
+
+export namespace simd {
+
+/// \brief Two-byte fp16 storage with environment-independent binary32 RNE conversion.
+struct fp16 {
+private:
+  // Round binary32 to binary16, ties to even, independently of the FP controls.
+  // Raw native-half projections below remain representation copies.
+  static constexpr uint16_t encode(float value) noexcept {
+    auto word = std::bit_cast<uint32_t>(value);
+    auto sign = (word >> 16) & 0x8000u;
+    auto a = word & 0x7fffffffu;
+    if (a >= 0x7f800000u)
+      return uint16_t(sign | 0x7c00u | (a == 0x7f800000u ? 0u : 0x200u | ((a >> 13) & 0x3ffu)));
+    if (a >= 0x47800000u) return uint16_t(sign | 0x7c00u);
+    if (a >= 0x38800000u)
+      return uint16_t(sign | (((a + 0xfffu + ((a >> 13) & 1u)) >> 13) - 0x1c000u));
+    if (a < 0x33000000u) return uint16_t(sign);
+    auto shift = 126u - (a >> 23);
+    auto significand = (a & 0x7fffffu) | 0x800000u;
+    auto result = significand >> shift;
+    auto remainder = significand & ((1u << shift) - 1u);
+    auto half = 1u << (shift - 1u);
+    result += remainder > half || (remainder == half && (result & 1u));
+    return uint16_t(sign | result);
+  }
+  static constexpr float decode(uint16_t word) noexcept {
+    auto sign = uint32_t(word & 0x8000u) << 16;
+    auto exponent = (word >> 10) & 31u;
+    auto fraction = uint32_t(word & 0x3ffu);
+    uint32_t result;
+    if (exponent == 0) {
+      if (fraction == 0) return std::bit_cast<float>(sign);
+      auto shift = unsigned(std::countl_zero(fraction)) - 21u;
+      result = ((113u - shift) << 23) | (((fraction << shift) & 0x3ffu) << 13);
+    } else if (exponent == 31) {
+      result = 0x7f800000u | (fraction << 13) | (fraction ? 0x400000u : 0u);
+    } else result = ((exponent + 112u) << 23) | (fraction << 13);
+    return std::bit_cast<float>(sign | result);
+  }
+public:
+  using underlying_type = _Float16;
+
+  _Float16 content;
+
+  simd_inline simd_artificial
+  constexpr fp16() noexcept = default;
+
+  simd_inline simd_artificial
+  constexpr fp16(simd_noescape fp16 const &) noexcept = default;
+
+  simd_inline simd_artificial
+  constexpr fp16(simd_noescape fp16 &&) noexcept = default;
+
+  simd_inline simd_artificial
+  constexpr fp16(float value) noexcept : content(std::bit_cast<_Float16>(encode(value))) {}
+
+  simd_inline simd_artificial
+  constexpr fp16(_Float16 content) noexcept : content(content) {}
+
+  simd_nodiscard simd_inline simd_artificial
+  constexpr operator float (this fp16 self) noexcept { return decode(self.to_bits()); }
+
+  simd_nodiscard simd_inline simd_artificial
+  constexpr operator _Float16 (this fp16 self) noexcept { return self.content; }
+
+  simd_reinitializes simd_inline simd_artificial
+  constexpr fp16 & operator = (simd_noescape fp16 const &) noexcept
+  simd_lifetimebound = default;
+
+  simd_reinitializes simd_inline simd_artificial
+  constexpr fp16 & operator = (simd_noescape fp16 &&) noexcept
+  simd_lifetimebound = default;
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator == (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) == static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator != (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) != static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr std::partial_ordering operator <=> (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) <=> static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator < (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) < static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator <= (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) <= static_cast<float>(y);
+  }
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator > (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) > static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator >= (fp16 x, fp16 y) noexcept {
+    return static_cast<float>(x) >= static_cast<float>(y);
+  }
+
+  simd_inline simd_artificial
+  friend constexpr void swap(
+    simd_noescape fp16 & x,
+    simd_noescape fp16 & y
+  ) noexcept {
+    using std::swap;
+    swap(x.content,y.content);
+  }
+
+  simd_inline simd_artificial simd_const
+  static constexpr fp16 from_bits(uint16_t data) noexcept {
+    return std::bit_cast<fp16>(data);
+  }
+
+  simd_nodiscard simd_inline simd_const
+  constexpr uint16_t to_bits(this fp16 self) noexcept {
+    return std::bit_cast<uint16_t>(self.content);
+  }
+
+};
+
+simd_nodiscard simd_inline simd_artificial simd_const
+constexpr fp16 operator""_fp16(long double v) noexcept {
+  return fp16(static_cast<float>(v));
+}
+
+} // namespace simd
+
+export namespace std {
+  using ::std::numeric_limits;
+  simd_nodiscard simd_artificial simd_inline simd_const
+  constexpr bool isnan(simd::fp16 x) noexcept {
+    // Sign doesn't matter, frac not zero (infinity)
+    return (x.to_bits() & 0x7FFF) > 0x7c00;
+  }
+
+  template <>
+  class numeric_limits<simd::fp16> {
+  public:
+    static constexpr bool is_specialized = true;
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 min() noexcept {
+      return simd::fp16::from_bits(0x0400);
+    }
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 max() noexcept {
+      return simd::fp16::from_bits(0x7BFF);
+    }
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 lowest() noexcept {
+      return simd::fp16::from_bits(0xFBFF);
+    }
+    static constexpr int digits = 11;
+    static constexpr int digits10 = 3;
+    static constexpr int max_digits10 = 5;
+    static constexpr bool is_signed = true;
+    static constexpr bool is_integer = false;
+    static constexpr bool is_exact = false;
+    static constexpr int radix = 2;
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 epsilon() noexcept {
+      return simd::fp16::from_bits(0x1400);
+    }
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 round_error() noexcept {
+      return simd::fp16::from_bits(0x3800);
+    }
+    static constexpr int min_exponent = -13;
+    static constexpr int min_exponent10 = -4;
+    static constexpr int max_exponent = 16;
+    static constexpr int max_exponent10 = 4;
+    static constexpr bool has_infinity = true;
+    static constexpr bool has_quiet_NaN = true;
+    static constexpr bool has_signaling_NaN = true;
+    [[deprecated("std::float_denorm_style is deprecated since C++23")]]
+    static constexpr float_denorm_style has_denorm = denorm_present;
+    [[deprecated("numeric_limits::has_denorm_loss is deprecated since C++23")]]
+    static constexpr bool has_denorm_loss = false;
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 infinity() noexcept {
+      return simd::fp16::from_bits(0x7C00);
+    }
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 quiet_NaN() noexcept {
+      return simd::fp16::from_bits(0x7FFF);
+    }
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 signaling_NaN() noexcept {
+      return simd::fp16::from_bits(0x7DFF);
+    }
+    simd_inline simd_artificial simd_const
+    static constexpr simd::fp16 denorm_min() noexcept {
+      return simd::fp16::from_bits(1);
+    }
+    static constexpr bool is_iec559 = false;
+    static constexpr bool is_bounded = true;
+    static constexpr bool is_modulo = false;
+    static constexpr bool traps = false;
+    static constexpr bool tinyness_before = false;
+    static constexpr float_round_style round_style = round_to_nearest;
+  };
+
+
+
+} // namespace std
+
+
+export namespace simd {
+
+/// \brief Two-byte bf16 storage with environment-independent binary32 RNE conversion.
+struct bf16 {
+private:
+  // Conversion is integer RNE, including subnormals, under every FP environment.
+  static constexpr uint16_t encode(float value) noexcept {
+    auto word = std::bit_cast<uint32_t>(value);
+    if ((word & 0x7fffffffu) > 0x7f800000u)
+      return uint16_t((word >> 16) | 0x40u);
+    return uint16_t((word + 0x7fffu + ((word >> 16) & 1u)) >> 16);
+  }
+  static constexpr float decode(uint16_t word) noexcept {
+    auto result = uint32_t(word) << 16;
+    if ((word & 0x7fffu) > 0x7f80u) result |= 0x400000u;
+    return std::bit_cast<float>(result);
+  }
+public:
+  using underlying_type = __bf16;
+
+  __bf16 content;
+
+  simd_inline simd_artificial constexpr
+  bf16() noexcept = default;
+
+  simd_inline simd_artificial constexpr
+  bf16(float f) noexcept : content(std::bit_cast<__bf16>(encode(f))) {}
+
+  simd_inline simd_artificial constexpr
+  bf16(__bf16 f) noexcept : content(f) {}
+
+  simd_inline simd_artificial constexpr
+  bf16(simd_noescape bf16 const &) noexcept = default;
+
+  simd_inline simd_artificial constexpr
+  bf16(simd_noescape bf16 &&) noexcept = default;
+
+  simd_nodiscard simd_inline simd_artificial simd_const constexpr
+  operator __bf16 (this bf16 self) noexcept { return self.content; }
+
+  simd_nodiscard simd_inline simd_artificial simd_const constexpr
+  operator float (this bf16 self) noexcept { return decode(self.to_bits()); }
+
+  simd_reinitializes simd_inline simd_artificial constexpr
+  bf16 & operator = (simd_noescape bf16 const &) noexcept
+  simd_lifetimebound = default;
+
+  simd_reinitializes simd_inline simd_artificial constexpr
+  bf16 & operator = (simd_noescape bf16 &&) noexcept
+  simd_lifetimebound = default;
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator == (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) == static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr std::partial_ordering operator <=> (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) <=> static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator != (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) != static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator < (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) < static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator > (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) > static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator <= (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) <= static_cast<float>(y);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  friend constexpr bool operator >= (bf16 x, bf16 y) noexcept {
+    return static_cast<float>(x) >= static_cast<float>(y);
+  }
+
+  simd_inline simd_artificial
+  friend constexpr void swap(
+    simd_noescape bf16 & x,
+    simd_noescape bf16 & y
+  ) noexcept {
+    using std::swap;
+    swap(x.content,y.content);
+  }
+
+  simd_nodiscard simd_inline simd_artificial simd_const
+  static constexpr bf16 from_bits(uint16_t data) noexcept {
+    return std::bit_cast<bf16>(data);
+  }
+
+  simd_nodiscard simd_inline simd_const
+  constexpr uint16_t to_bits(this bf16 self) noexcept {
+    return std::bit_cast<uint16_t>(self.content);
+  }
+};
+
+simd_nodiscard simd_inline simd_artificial
+constexpr bf16 operator""_bf16(long double v) noexcept {
+  return bf16(static_cast<float>(v));
+}
+
+simd_nodiscard simd_inline simd_artificial simd_const
+constexpr bf16 fast_to_bf16(float f) noexcept {
+  if consteval {
+    return f;
+  } else {
+    return std::bit_cast<bf16>(static_cast<uint16_t>(std::bit_cast<uint32_t>(f)>>16));
+  }
+}
+
+simd_nodiscard simd_inline simd_artificial simd_const
+constexpr bf16 fast_to_bf16(bf16 f) noexcept {
+  return f;
+}
+
+} // namespace simd
+
+export namespace std {
+  using ::std::numeric_limits;
+  simd_nodiscard simd_artificial simd_inline simd_const
+  constexpr bool isnan(simd::bf16 x) noexcept {
+    // Exponent maxed out and fraction non-zero indicates NaN
+    return (x.to_bits() & 0x7FFF) > 0x7F80;
+  }
+
+  template <> class numeric_limits<simd::bf16> {
+  public:
+    static constexpr bool is_specialized = true;
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 min() noexcept {
+      return simd::bf16::from_bits(0x0080);
+    }
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 max() noexcept {
+      return simd::bf16::from_bits(0x7F7F);
+    }
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 lowest() noexcept {
+      return simd::bf16::from_bits(0xFF7F);
+    }
+    static constexpr int digits = 8;
+    static constexpr int digits10 = 2;
+    static constexpr int max_digits10 = 4;
+    static constexpr bool is_signed = true;
+    static constexpr bool is_integer = false;
+    static constexpr bool is_exact = false;
+    static constexpr int radix = 2;
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 epsilon() noexcept {
+      return simd::bf16::from_bits(0x3C00);
+    }
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 round_error() noexcept {
+      return simd::bf16::from_bits(0x3F00);
+    }
+    static constexpr int min_exponent = -125;
+    static constexpr int min_exponent10 = -37;
+    static constexpr int max_exponent = 128;
+    static constexpr int max_exponent10 = 38;
+    static constexpr bool has_infinity = true;
+    static constexpr bool has_quiet_NaN = true;
+    static constexpr bool has_signaling_NaN = true;
+    [[deprecated("std::float_denorm_style is deprecated since C++23")]]
+    static constexpr float_denorm_style has_denorm = denorm_present;
+    [[deprecated("numeric_limits::has_denorm_loss is deprecated since C++23")]]
+    static constexpr bool has_denorm_loss = false;
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 infinity() noexcept {
+      return simd::bf16::from_bits(0x7F80);
+    }
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 quiet_NaN() noexcept {
+      return simd::bf16::from_bits(0x7FC0);
+    }
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 signaling_NaN() noexcept {
+      return simd::bf16::from_bits(0x7F81);
+    }
+    simd_nodiscard simd_inline simd_artificial simd_const
+    static constexpr simd::bf16 denorm_min() noexcept {
+      return simd::bf16::from_bits(1);
+    }
+    static constexpr bool is_iec559 = false;
+    static constexpr bool is_bounded = true;
+    static constexpr bool is_modulo = false;
+    static constexpr bool traps = false;
+    static constexpr bool tinyness_before = false;
+    static constexpr float_round_style round_style = round_to_nearest;
+  };
+
+
+
+} // namespace std
+
+
+namespace simd { using std::isnan; }
+
+export namespace simd {
+  using ::simd::imm_t;
+  using ::simd::imm;
+/// \defgroup numerics Numerics
+/// \{
+
+/// \brief \p N is one of the \p candidates
+template <auto N, auto ... candidates>
+concept one_of = ((N==candidates) || ... || false);
+
+/// \brief \p N is not one of the \p candidates
+template <auto N, auto ... candidates>
+concept not_one_of = (!one_of<N,candidates...>);
+
+/// \cond
+template <std::size_t N> struct integer_traits {};
+template <> struct integer_traits<8>  { using signed_t = int8_t;  using unsigned_t = uint8_t; };
+template <> struct integer_traits<16> { using signed_t = int16_t; using unsigned_t = uint16_t; };
+template <> struct integer_traits<32> { using signed_t = int32_t; using unsigned_t = uint32_t; };
+template <> struct integer_traits<64> { using signed_t = int64_t; using unsigned_t = uint64_t; };
+/// \endcond
+
+/// returns a signed integer type of the same size as \p T suitable for `std::bitcast`
+/// \hideinitializer \hideinlinesource
+template <typename T>
+requires one_of<sizeof(T),1,2,4,8>
+using int_t = typename integer_traits<sizeof(T)*8>::signed_t;
+
+/// returns an unsigned integer type of the same size as \p T suitable for `std::bitcast`
+/// \hideinitializer \hideinlinesource
+template <typename T>
+requires one_of<sizeof(T),1,2,4,8>
+using uint_t = typename integer_traits<sizeof(T)*8>::unsigned_t;
+
+// The shared immediate tag is defined by simd/common.h.
+
+/** \brief Return true if either argument is NaN.
+
+    \details
+
+      This corresponds to checking if the two arguments are "unordered" with
+      respect to the IEEE floating point comparison predicates */
+template <typename T>
+simd_nodiscard simd_inline
+constexpr bool cmp_unord(T a, T b) noexcept(noexcept(isnan(a) || isnan(b))) {
+  return isnan(a) || isnan(b);
+}
+
+/// \cond precompile
+
+
+/// \endcond
+
+/** \brief Return true if neither argument is NaN.
+
+    \details
+
+      This corresponds to checking if the two arguments are "ordered" with
+      respect to the IEEE floating point comparison predicates */
+template <typename T>
+simd_nodiscard simd_inline
+constexpr bool cmp_ord(T a, T b) noexcept(noexcept(!isnan(a) && !isnan(b))) {
+  return !isnan(a) && !isnan(b);
+}
+
+/// \cond precompile
+
+
+/// \endcond
+
+/// \hideinlinesource
+/// \brief Legacy scalar exponent scaling; retains its existing constexpr/runtime behavior.
+template <one_of_t<float, double> T>
+simd_nodiscard simd_inline simd_pure
+constexpr T scalef(T x, T y) noexcept {
+  if consteval {
+    // Constexpr path using bit manipulation
+
+    using uint_type = uint_t<T>; //  std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>;
+    constexpr int exponent_bias = std::is_same_v<T, float> ? 127 : 1023;
+    constexpr uint_type exponent_mask = std::is_same_v<T, float> ? uint_type(0x7F800000) : uint_type(0x7FF0000000000000ull);
+    constexpr uint_type mantissa_mask = std::is_same_v<T, float> ? uint_type(0x007FFFFF) : uint_type(0x000FFFFFFFFFFFFFull);
+
+    if (x == 0.0 || isnan(x) || std::isinf(x))
+      return x; // Handle special cases
+
+    // Get the raw bits of the floating-point number
+    uint_type x_bits = std::bit_cast<uint_type>(x);
+
+    // Extract exponent and mantissa
+    int exponent = static_cast<int>(((x_bits & exponent_mask) >> (std::is_same_v<T, float> ? 23 : 52)) - exponent_bias);
+    uint_type mantissa = x_bits & mantissa_mask;
+
+    // Normalize the mantissa (implicit leading 1 for normalized numbers)
+    if (exponent != -exponent_bias)
+      mantissa |= std::is_same_v<T, float> ? (1u << 23) : (1ull << 52); // Set implicit leading bit
+
+    // Scale the exponent by adding y
+    exponent += static_cast<int>(y);
+
+    // Check for overflow and underflow
+    if (exponent > std::numeric_limits<T>::max_exponent)
+      return std::numeric_limits<T>::infinity();
+
+    if (exponent < std::numeric_limits<T>::min_exponent)
+      return static_cast<T>(0.0); // Underflow to zero
+
+    // Rebuild the floating-point number from the new exponent and mantissa
+    x_bits =
+      (x_bits & (std::is_same_v<T, float> ? 0x80000000u : 0x8000000000000000ull)) | // Preserve the sign bit
+      (static_cast<uint_type>(exponent + exponent_bias) << (std::is_same_v<T, float> ? 23 : 52)) | // Apply new exponent
+      (mantissa & mantissa_mask); // Mask mantissa bits
+
+    return std::bit_cast<T>(x_bits);
+  } else {
+    // Runtime path using fast standard library call
+    return std::scalbn(x, static_cast<int>(y));
+  }
+}
+
+/// \hideinlinesource
+enum class simd_nodiscard CMPINT : std::size_t {
+  EQ    = 0x0uz ///< `==`
+, LT    = 0x1uz ///< `<`
+, LE    = 0x2uz ///< `<=`
+, FALSE = 0x3uz ///< always `false`
+, NE    = 0x4uz ///< `!=`
+, NLT   = 0x5uz ///< `>=`
+, NLE   = 0x6uz ///< `>`
+, TRUE  = 0x7uz ///< always `true`
+};
+
+template <CMPINT imm8, typename T>
+requires (one_of_t<T, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t> && (std::size_t(imm8) < 8uz))
+simd_nodiscard simd_inline simd_const
+constexpr bool cmpint(T a, T b) noexcept {
+  using enum CMPINT;
+  if      constexpr (imm8 == TRUE)  return -1;
+  else if constexpr (imm8 == FALSE) return 0;
+  else if constexpr (imm8 == LT)    return a < b;
+  else if constexpr (imm8 == NLT)   return a >= b;
+  else if constexpr (imm8 == LE)    return a <= b;
+  else if constexpr (imm8 == NLE)   return a > b;
+  else if constexpr (imm8 == EQ)    return a == b;
+  else if constexpr (imm8 == NE)    return a != b;
+  else static_assert(false);
+}
+
+/// AVX512 added many more floating point comparison types. Do we have them?
+/// \hideinitializer
+inline constexpr std::size_t max_fp_comparison_predicate = [] {
+#ifdef __AVX512F__
+  return 32uz;
+#else
+  return 8uz;
+#endif
+}();
+
+/// \hideinlinesource
+enum class simd_nodiscard CMP : std::size_t {
+  EQ_OQ     = 0x00uz  ///< Equal (ordered, nonsignaling)
+, LT_OS     = 0x01uz  ///< Less-than (ordered, signaling)
+, LE_OS     = 0x02uz  ///< Less-than-or-equal (ordered, signaling)
+, UNORD_Q   = 0x03uz  ///< Unordered (nonsignaling)
+, NEQ_UQ    = 0x04uz  ///< Not-equal (unordered, nonsignaling)
+, NLT_US    = 0x05uz  ///< Not-less-than (unordered, signaling)
+, NLE_US    = 0x06uz  ///< Not-less-than-or-equal (unordered, signaling)
+, ORD_Q     = 0x07uz  ///< Ordered (nonsignaling)
+, EQ_UQ     = 0x08uz  ///< Equal (unordered, nonsignaling) (AVX-512)
+, NGE_US    = 0x09uz  ///< Not-greater-than-or-equal (unordered, signaling) (AVX-512)
+, NGT_US    = 0x0Auz  ///< Not-greater-than (unordered, signaling) (AVX-512)
+, FALSE_OQ  = 0x0Buz  ///< False (ordered, nonsignaling) (AVX-512)
+, NEQ_OQ    = 0x0Cuz  ///< Not-equal (ordered, nonsignaling) (AVX-512)
+, GE_OS     = 0x0Duz  ///< Greater-than-or-equal (ordered, signaling) (AVX-512)
+, GT_OS     = 0x0Euz  ///< Greater-than (ordered, signaling) (AVX-512)
+, TRUE_UQ   = 0x0Fuz  ///< True (unordered, nonsignaling) (AVX-512)
+, EQ_OS     = 0x10uz  ///< Equal (ordered, signaling) (AVX-512)
+, LT_OQ     = 0x11uz  ///< Less-than (ordered, nonsignaling) (AVX-512)
+, LE_OQ     = 0x12uz  ///< Less-than-or-equal (ordered, nonsignaling) (AVX-512)
+, UNORD_S   = 0x13uz  ///< Unordered (signaling) (AVX-512)
+, NEQ_US    = 0x14uz  ///< Not-equal (unordered, signaling) (AVX-512)
+, NLT_UQ    = 0x15uz  ///< Not-less-than (unordered, nonsignaling) (AVX-512)
+, NLE_UQ    = 0x16uz  ///< Not-less-than-or-equal (unordered, nonsignaling) (AVX-512)
+, ORD_S     = 0x17uz  ///< Ordered (signaling) (AVX-512)
+, EQ_US     = 0x18uz  ///< Equal (unordered, signaling) (AVX-512)
+, NGE_UQ    = 0x19uz  ///< Not-greater-than-or-equal (unordered, nonsignaling) (AVX-512)
+, NGT_UQ    = 0x1Auz  ///< Not-greater-than (unordered, nonsignaling) (AVX-512)
+, FALSE_OS  = 0x1Buz  ///< False (ordered, signaling) (AVX-512)
+, NEQ_OS    = 0x1Cuz  ///< Not-equal (ordered, signaling) (AVX-512)
+, GE_OQ     = 0x1Duz  ///< Greater-than-or-equal (ordered, nonsignaling) (AVX-512)
+, GT_OQ     = 0x1Euz  ///< Greater-than (ordered, nonsignaling) (AVX-512)
+, TRUE_US   = 0x1Fuz  ///< True (unordered, signaling) (AVX-512)
+};
+
+/// perform an avx512 style floating point comparison for scalar values.
+template <CMP imm8, typename T>
+requires (one_of_t<T, float, double> && (std::size_t(imm8) < 32uz))
+simd_nodiscard simd_inline simd_pure
+constexpr bool cmp(T a, T b) noexcept {
+  using enum CMP;
+  if      constexpr (imm8 == EQ_OQ)    return cmp_ord(a, b) && (a == b);
+  else if constexpr (imm8 == LT_OS)    return cmp_ord(a, b) && (a < b);
+  else if constexpr (imm8 == LE_OS)    return cmp_ord(a, b) && (a <= b);
+  else if constexpr (imm8 == UNORD_Q)  return cmp_unord(a, b);
+  else if constexpr (imm8 == NEQ_UQ)   return cmp_unord(a, b) || (a != b);
+  else if constexpr (imm8 == NLT_US)   return cmp_unord(a, b) || !(a < b);
+  else if constexpr (imm8 == NLE_US)   return cmp_unord(a, b) || !(a <= b);
+  else if constexpr (imm8 == ORD_Q)    return cmp_ord(a, b);
+  else if constexpr (imm8 == EQ_UQ)    return cmp_unord(a, b) || (a == b);
+  else if constexpr (imm8 == NGE_US)   return cmp_unord(a, b) || !(a >= b);
+  else if constexpr (imm8 == NGT_US)   return cmp_unord(a, b) || !(a > b);
+  else if constexpr (imm8 == FALSE_OQ) return 0;
+  else if constexpr (imm8 == NEQ_OQ)   return cmp_ord(a, b) && (a != b);
+  else if constexpr (imm8 == GE_OS)    return cmp_ord(a, b) && (a >= b);
+  else if constexpr (imm8 == GT_OS)    return cmp_ord(a, b) && (a > b);
+  else if constexpr (imm8 == TRUE_UQ)  return -1;
+  else if constexpr (imm8 == EQ_OS)    return cmp_ord(a, b) && (a == b);
+  else if constexpr (imm8 == LT_OQ)    return cmp_ord(a, b) && (a < b);
+  else if constexpr (imm8 == LE_OQ)    return cmp_ord(a, b) && (a <= b);
+  else if constexpr (imm8 == UNORD_S)  return cmp_unord(a, b);
+  else if constexpr (imm8 == NEQ_US)   return cmp_unord(a, b) || (a != b);
+  else if constexpr (imm8 == NLT_UQ)   return cmp_unord(a, b) || !(a < b);
+  else if constexpr (imm8 == NLE_UQ)   return cmp_unord(a, b) || !(a <= b);
+  else if constexpr (imm8 == ORD_S)    return cmp_ord(a, b);
+  else if constexpr (imm8 == EQ_US)    return cmp_unord(a, b) || (a == b);
+  else if constexpr (imm8 == NGE_UQ)   return cmp_unord(a, b) || !(a >= b);
+  else if constexpr (imm8 == NGT_UQ)   return cmp_unord(a, b) || !(a > b);
+  else if constexpr (imm8 == FALSE_OS) return 0;
+  else if constexpr (imm8 == NEQ_OS)   return cmp_ord(a, b) && (a != b);
+  else if constexpr (imm8 == GE_OQ)    return cmp_ord(a, b) && (a >= b);
+  else if constexpr (imm8 == GT_OQ)    return cmp_ord(a, b) && (a > b);
+  else if constexpr (imm8 == TRUE_US)  return -1;
+  else static_assert(false);
+}
+
+
+
+
+/// \}
+}
+
+
+namespace simd {
+  template bool cmp_unord(float, float) noexcept;
+  template bool cmp_unord(double, double) noexcept;
+  template bool cmp_ord(float, float) noexcept;
+  template bool cmp_ord(double, double) noexcept;
+  template float scalef(float, float) noexcept;
+  template double scalef(double, double) noexcept;
+}

@@ -13,7 +13,9 @@
 
 
 
-  This is mostly a set of disconnected ramblings.
+  These are historical design notes from the original implementation.
+  Compiler versions, file names and build commands below describe that period.
+  See the current build guide and docs/modules.md for the supported C++26 setup.
 
 
 

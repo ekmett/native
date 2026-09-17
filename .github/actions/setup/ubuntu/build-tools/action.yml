@@ -1,32 +1,15 @@
-name: 'install build tools'
-description: install cmake & ninja
+name: Install module build tools
+description: Install CMake 4.4 and Ninja in an isolated Python environment.
 runs:
   using: composite
   steps:
-    - name: set tool path
+    - name: Install CMake and Ninja
+      shell: bash
       run: |
-        echo "/opt/cmake/bin" >> $GITHUB_PATH
-        echo "/usr/local/bin" >> $GITHUB_PATH
-        mkdir -p lib/install
-      shell: bash
-    - name: install dot
-      run: sudo apt install graphviz
-      shell: bash
-    - name: install cmake 3.30.5
-      run: |
-        cd lib/install
-        [ -f cmake-3.30.5-linux-x86_64.sh ] || wget https://github.com/Kitware/CMake/releases/download/v3.30.5/cmake-3.30.5-linux-x86_64.sh
-        sudo mkdir /opt/cmake
-        sudo sh cmake-3.30.5-linux-x86_64.sh --skip-license --prefix=/opt/cmake
-        sudo ln -sf /opt/cmake/bin/cmake /usr/local/bin/cmake
-        which cmake && cmake --version
-      shell: bash
-    - name: install ninja 1.12.1
-      run: |
-        cd lib/install
-        [ -f ninja-linux.zip ] || wget https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
-        sudo apt-get install -y unzip
-        sudo unzip ninja-linux.zip -d /usr/local/bin/
-        sudo chmod +x /usr/local/bin/ninja
-        which ninja && ninja --version
-      shell: bash
+        sudo apt-get update
+        sudo apt-get install -y python3-venv
+        python3 -m venv "${RUNNER_TEMP}/simd-build-tools"
+        "${RUNNER_TEMP}/simd-build-tools/bin/python" -m pip install 'cmake>=4.4,<4.5' 'ninja>=1.12'
+        echo "${RUNNER_TEMP}/simd-build-tools/bin" >> "${GITHUB_PATH}"
+        "${RUNNER_TEMP}/simd-build-tools/bin/cmake" --version
+        "${RUNNER_TEMP}/simd-build-tools/bin/ninja" --version

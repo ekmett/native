@@ -1,116 +1,24 @@
 /**
-
 \page installation_page Installation
 
 \internal
 \license
 SPDX-FileType: Source
 SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
-    SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-    \endlicense
-    \endinternal
+SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+\endlicense
+\endinternal
 
-    \tableofcontents
+Use LLVM 23 with its matching clang-scan-deps, CMake 4.4 or newer, and Ninja
+1.12 or newer. The CMake configure step checks C++26 structured-binding packs
+and Clang properties with explicit object parameters; a version number alone
+is not a compatibility guarantee. Windows uses clang-cl and a configured MSVC
+SDK environment. On macOS use LLVM Clang rather than the system Apple Clang.
 
-    You'll need a fairly bleeding edge compiler and build system for this.
+The maintained configure, build, test and installed-package commands are in
+<a href="building.md">Building and consuming simd</a>. CMake owns the build;
+GNUmakefile is an optional wrapper around the current presets.
 
-    \section install_ninja Ninja 1.12.1
-
-    You'll want to upgrade <a href="https://ninja-build.org/">Ninja</a> to a version that supports scanning for C++ modules.
-
-ubuntu:
-\code{.bash}
-wget https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
-sudo apt-get install -y unzip
-sudo unzip ninja-linux.zip -d /usr/local/bin/
-sudo chmod +x /usr/local/bin/ninja
-\endcode
-
-macOS:
-\code{.bash}
-brew install ninja
-\endcode
-
-\section install_clang Clang++-19
-
-Next you'll need a version of <a href="https://clang.llvm.org/">Clang++</a> (and clang-tools) that supports c++23 pretty well. Currently I use `clang++-19`.
-
-`clang-tools-19` is required because we need `clang-scan-deps-19` to be installed for C++ modules support out of `CMake`.
-
-ubuntu:
-\code{.bash}
-wget https://apt.llvm.org/llvm.sh
-chmod +x llvm.sh
-sudo ./llvm.sh 19
-sudo apt install clang-19 clang-tools-19 clangd-19 lldb-19 lld-19
-\endcode
-
-macOS:
-\code{.bash}
-brew install llvm@19
-export PATH="/usr/local/opt/llvm@19/bin:$PATH"
-ln -s /usr/local/opt/llvm@19/bin/clang++ /usr/local/opt/llvm@19/bin/clang++-19
-\endcode
-
-\section install_doxygen Doxygen 1.12.0
-
-Documentation requires <a href="https://www.doxygen.nl/">Doxygen</a> 1.12.0 or later.
-
-ubuntu:
-\code{.bash}
-sudo apt-get uninstall doxygen
-wget https://www.doxygen.nl/files/doxygen-1.12.0.linux.bin.tar.gz
-tar xvfpz doxygen-1.12.0.linux.bin.tar.gz
-cd doxygen-1.12.0/
-sudo make install
-doxygen --version
-\endcode
-
-macOS:
-\code{.bash}
-wget --no-verbose https://www.doxygen.nl/files/Doxygen-1.12.0.dmg
-hdiutil attach Doxygen-1.12.0.dmg
-sudo ln -s /Applications/Doxygen.app/Contents/Resources/doxygen /usr/local/bin/doxygen
-\endcode
-
-\section install_cmake CMake 3.30.5
-
-We need a fairly modern <a href="https://cmake.org/">CMake</a> in order to get C++ modules support.
-
-ubuntu:
-\code{.bash}
-sudo apt-get remove cmake
-wget https://cmake.org/files/v3.30/cmake-3.30.5-linux-x86_64.sh -O cmake-3.30.5.sh
-chmod +x cmake-3.30.5.sh
-sudo ./cmake-3.30.5.sh --prefix=/usr/local --exclude-subdir
-cmake --version # you may need to restart your shell
-\endcode
-
-macOS:
-\code{.bash}
-brew install cmake
-\endcode
-
-\section install_ccache CCache
-
-<a href="https://ccache.dev/">CCache</a> makes development a lot faster and is use by the default `CMakePreset.json` preset.
-Not strictly necessary, but it is an easy win.
-
-ubuntu:
-\code{.bash}
-sudo apt-get install -y ccache
-\endcode
-
-macOS:
-\code{.bash}
-brew install ccache
-\endcode
-
-<div class="section_buttons">
-<table class="markdownTable">
-<tr class="markdownTableHead"><th class="markdownTableHeadLeft">Previous</th><th class="markdownTableHeadRight">Next</th></tr>
-<tr class="markdownTableRowOdd"><td class="markdownTableBodyLeft">\ref license_page</td><td class="markdownTableBodyRight">\ref notes_page</td></tr>
-</table>
-</div>
-
+Documentation is optional: enable SIMD_BUILD_DOCS and build simd_docs with
+Doxygen 1.12 or newer. Neither Doxygen nor Graphviz is required for the library.
 */

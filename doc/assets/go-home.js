@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const homeLink = document.createElement("a");
       homeLink.href = "index.html";
       homeLink.className = "el";
-      homeLink.textContent = "ein";
+      homeLink.textContent = "simd";
       newLi.appendChild(homeLink);
       ul.insertBefore(newLi, ul.firstChild);
     }

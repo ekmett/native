@@ -1,0 +1,153 @@
+# SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+
+set(SIMD_RAW_SCALEB_FTZ_PROFILE "before-rounding" CACHE STRING
+  "Previously captured native raw scaling tininess: before-rounding or after-rounding")
+set_property(CACHE SIMD_RAW_SCALEB_FTZ_PROFILE PROPERTY STRINGS before-rounding after-rounding)
+if(NOT SIMD_RAW_SCALEB_FTZ_PROFILE MATCHES "^(before-rounding|after-rounding)$")
+  message(FATAL_ERROR "Select a captured raw scaling FTZ profile")
+endif()
+
+foreach(suite IN ITEMS integer mask bit_bridge scaleb wide_exp)
+  add_executable(simd_test_${suite} ${suite}.cc)
+  target_link_libraries(simd_test_${suite} PRIVATE simd::simd)
+  target_include_directories(simd_test_${suite} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(simd_test_${suite} PRIVATE /W4 /WX /wd4127 /wd4702 /bigobj)
+    # Guarded/instrumented wide register fixtures can require a large frame.
+    target_link_options(simd_test_${suite} PRIVATE /STACK:16777216)
+  else()
+    target_compile_options(simd_test_${suite} PRIVATE -Wall -Wextra -Werror)
+    if(WIN32)
+      target_link_options(simd_test_${suite} PRIVATE -Xlinker /STACK:16777216)
+    endif()
+  endif()
+endforeach()
+
+foreach(mode IN ITEMS gradual flush)
+  add_test(NAME simd.scaleb.${mode}
+    COMMAND simd_test_scaleb ${mode} ${SIMD_RAW_SCALEB_FTZ_PROFILE})
+endforeach()
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
+  foreach(mode IN ITEMS daz ftz)
+    add_test(NAME simd.scaleb.${mode}
+      COMMAND simd_test_scaleb ${mode} ${SIMD_RAW_SCALEB_FTZ_PROFILE})
+  endforeach()
+endif()
+foreach(suite IN ITEMS integer mask bit_bridge wide_exp)
+  add_test(NAME simd.${suite} COMMAND simd_test_${suite})
+endforeach()
+get_property(regression_tests DIRECTORY PROPERTY TESTS)
+set_tests_properties(${regression_tests} PROPERTIES TIMEOUT 180 LABELS "host;math;exact")
+
+# The same public consumer compiles once from headers and once from imports.
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_${kind} module_contract.cc)
+  target_link_libraries(simd_test_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  else()
+    target_compile_definitions(simd_test_${kind} PRIVATE SIMD_TEST_IMPORT=0)
+  endif()
+  add_test(NAME simd.consumer.${kind}
+    COMMAND simd_test_${kind} "${CMAKE_CURRENT_BINARY_DIR}/${kind}.bin")
+  set_tests_properties(simd.consumer.${kind} PROPERTIES
+    FIXTURES_SETUP simd_${kind}_capture LABELS "host;math;modules;exact" TIMEOUT 180)
+endforeach()
+add_test(NAME simd.consumer.exact
+  COMMAND "${CMAKE_COMMAND}" -E compare_files
+    "${CMAKE_CURRENT_BINARY_DIR}/header.bin" "${CMAKE_CURRENT_BINARY_DIR}/import.bin")
+set_tests_properties(simd.consumer.exact PROPERTIES
+  FIXTURES_REQUIRED "simd_header_capture;simd_import_capture" LABELS "host;math;modules;exact")
+
+add_executable(simd_test_numerics_import numerics_contract.cc)
+add_executable(simd_test_numerics_api numerics_api.cc)
+foreach(kind IN ITEMS import api)
+  target_link_libraries(simd_test_numerics_${kind} PRIVATE simd::simd)
+  add_test(NAME simd.numerics.${kind} COMMAND simd_test_numerics_${kind})
+  set_tests_properties(simd.numerics.${kind} PROPERTIES LABELS "host;numerics;modules")
+endforeach()
+
+# User conversions retain their own exception specifications, in both interfaces.
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_noexcept_${kind} noexcept_simd.cc)
+  target_link_libraries(simd_test_noexcept_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_noexcept_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  else()
+    target_compile_definitions(simd_test_noexcept_${kind} PRIVATE SIMD_TEST_IMPORT=0)
+  endif()
+  add_test(NAME simd.noexcept.${kind} COMMAND simd_test_noexcept_${kind})
+  set_tests_properties(simd.noexcept.${kind} PROPERTIES LABELS "host;modules;exceptions")
+endforeach()
+
+foreach(suite IN ITEMS noexcept_wait)
+  if(suite STREQUAL "noexcept_wait" AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
+    continue()
+  endif()
+  add_executable(simd_test_${suite} ${suite}.cc)
+  target_link_libraries(simd_test_${suite} PRIVATE simd::simd simd::common)
+  set_target_properties(simd_test_${suite} PROPERTIES CXX_SCAN_FOR_MODULES ON)
+  add_test(NAME simd.${suite} COMMAND simd_test_${suite})
+  set_tests_properties(simd.${suite} PROPERTIES LABELS "host;exceptions")
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_${suite})
+  endif()
+endforeach()
+
+if(COMMAND simd_link_clang_cl_asan)
+  foreach(suite IN ITEMS integer mask bit_bridge scaleb wide_exp header import numerics_api numerics_import noexcept_header noexcept_import)
+    simd_link_clang_cl_asan(simd_test_${suite})
+  endforeach()
+endif()
+
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_noexcept_wide_${kind} noexcept_wide.cc)
+  target_link_libraries(simd_test_noexcept_wide_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_noexcept_wide_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  endif()
+  add_test(NAME simd.noexcept_wide.${kind} COMMAND simd_test_noexcept_wide_${kind})
+  set_tests_properties(simd.noexcept_wide.${kind} PROPERTIES LABELS "host;modules;exceptions")
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_noexcept_wide_${kind})
+  endif()
+endforeach()
+
+# Short vectors keep physical native storage separate from logical lane bounds.
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_swizzle_${kind} swizzle.cc)
+  target_link_libraries(simd_test_swizzle_${kind} PRIVATE simd::simd)
+  target_include_directories(simd_test_swizzle_${kind} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_swizzle_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  endif()
+  add_test(NAME simd.swizzle.${kind} COMMAND simd_test_swizzle_${kind})
+  set_tests_properties(simd.swizzle.${kind} PROPERTIES LABELS "host;modules;swizzles;memory;exact" TIMEOUT 180)
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_swizzle_${kind})
+  endif()
+endforeach()
+
+# Public bitwise flushing also supports logical two- and three-lane vectors.
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_short_flush_${kind} short_flush.cc)
+  target_link_libraries(simd_test_short_flush_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_short_flush_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  endif()
+  add_test(NAME simd.short_flush.${kind} COMMAND simd_test_short_flush_${kind})
+  set_tests_properties(simd.short_flush.${kind} PROPERTIES LABELS "host;modules;math;exact")
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_short_flush_${kind})
+  endif()
+endforeach()
+
+# Numerical tests select their own ISA. simd::simd never imposes one on
+# unrelated consumers such as a baseline startup dispatcher.
+string(TOLOWER "${SIMD_TEST_ISA}" simd_test_profile)
+get_property(simd_regression_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+foreach(target IN LISTS simd_regression_targets)
+  simd_target_profile(${target} "${SIMD_TEST_ISA}")
+  target_link_libraries(${target} PRIVATE simd::common simd::${simd_test_profile})
+endforeach()

@@ -2,264 +2,99 @@
 # SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
-cmake_minimum_required(VERSION 3.30.5 FATAL_ERROR)
-cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
+cmake_minimum_required(VERSION 4.4)
+project(simd VERSION 0.0.1 LANGUAGES NONE)
 
-
-project(ein VERSION 0.0.1 LANGUAGES CXX)
-set(PROJECT_BRIEF "一呼百應, \\\"one call, a hundred responses\\\"")
-
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-
-set(FETCHCONTENT_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib/cache")
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-SET(SPDLOG_BUILD_PIC ON CACHE BOOL "Force PIC for SPDLOG")
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-set(CMAKE_POSITION_INDEPENDENT_)
-set(FETCHCONTENT_QUIET ON)  # Suppresses FetchContent output
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_COLOR_DIAGNOSTICS ON)
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake")
-
-include(CheckRestrict)
-include(FetchContentCached)
-include(CheckIPOSupported)
-include(CheckPIESupported)
-
-# pie
-# ====================================================================
-
-check_pie_supported(OUTPUT_VARIABLE pie_supported LANGUAGES CXX)
-if (pie_supported)
-  # message(STATUS "PIE is supported: ${pie_supported}")
+option(SIMD_BUILD_HOST "Build the C++26 SIMD/module library" ON)
+option(SIMD_BUILD_TESTS "Build focused new-core tests" ${PROJECT_IS_TOP_LEVEL})
+option(SIMD_BUILD_DOCS "Build API documentation (requires Doxygen)" OFF)
+option(SIMD_ENABLE_PCH "Precompile common host headers" OFF)
+option(SIMD_ENABLE_EXCEPTIONS "Enable C++ exceptions in the new core and its consumers" OFF)
+option(SIMD_ENABLE_IPO "Enable supported host interprocedural optimization" OFF)
+option(SIMD_ENABLE_ASAN "Instrument host targets with AddressSanitizer" OFF)
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  set(simd_default_isa NEON)
 else()
-  # message(WARNING "PIE is not supported: ${pie_supported}")
+  set(simd_default_isa AVX2)
 endif()
-
-# lto
-# ====================================================================
-
-check_ipo_supported(RESULT lto_supported OUTPUT lto_check_output)
-if (lto_supported)
-  set(ENV{LLVM_PARALLEL_LINK_JOBS} 32)
-  set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+set(SIMD_TEST_ISA "${simd_default_isa}" CACHE STRING "ISA used by the native regression tests")
+set_property(CACHE SIMD_TEST_ISA PROPERTY STRINGS AVX2 AVX512 NEON)
+if(simd_default_isa STREQUAL "NEON")
+  set(simd_default_profiles "NEON")
 else()
-  message(WARNING "IPO/LTO is not supported: ${lto_check_output}")
+  set(simd_default_profiles "AVX2;AVX512")
 endif()
-
-# tweak ccache settings
-# ====================================================================
-
-set(CMAKE_CXX_COMPILER_LAUNCHER "${CMAKE_CURRENT_SOURCE_DIR}/bin/ccache.sh")
-set(ENV{CCACHE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/.ccache")
-
-# options
-# ====================================================================
-
-option(ENABLE_TESTS "Enable tests" ON)
-option(PRECOMPILE_HEADERS "Use precompiled headers" OFF)
-option(BUILD_NATIVE "Build for current host only" ON)
-option(USE_GOLD_LINKER "link with gold" ON)
-option(ASAN "address sanitization" OFF)
-option(TSAN "thread sanitization" OFF)
-option(MSAN "memory sanitization" OFF)
-option(UBSAN "undefined behavior sanitization" OFF)
-option(AVX512 "Enable AVX512" ON)
-SET(SPDLOG_BUILD_PIC ON CACHE BOOL "Force PIC for SPDLOG")
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/lib)
-
-set(CXX_Clang "$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>")
-set(CXX_Gcc "$<COMPILE_LANG_AND_ID:CXX,GNU>")
-set(CXX_GccOrClang "$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang,GNU>")
-set(Link_Clang "$<LINK_LANG_AND_ID:CXX,AppleClang,Clang>")
-set(Link_Gcc "$<COMPILE_LANG_AND_ID:CXX,GNU>")
-set(Link_GccOrClang "$<LINK_LANG_AND_ID:CXX,AppleClang,Clang,GNU>")
-
-# add lots of debug info to Debug builds
-set(CMAKE_CXX_FLAGS_DEBUG_INIT "-O0 -g3 -ggdb3 -gcolumn-info -gembed-source")
-
-include(CheckCXXCompilerFlag)
-
-find_program(GOLD_LINKER ld.gold)
-check_cxx_compiler_flag("-fuse-ld=gold" HAS_GOLD_FLAG)
-
-set(AGGRESSIVE_LINKER_FLAGS
-  "$<IF:$<AND:$<BOOL:${GOLD_LINKER}>,$<BOOL:${USE_GOLD_LINKER}>,$<BOOL:${HAS_GOLD_FLAG}>>,-fuse-ld=gold;-Wl\,--icf=all>;-Wl,--gc-sections;-Wl,--as-needed;-Wl,--relax;-Wl,--sort-common;-Wl,--hash-style=gnu;-Wl,-O2" # ;-Wl,--strip-debug
-)
-
-function(enable_aggressive_linking TARGET)
-  target_link_options(${TARGET} PRIVATE ${AGGRESSIVE_LINKER_FLAGS})
-endfunction()
-
-# Use the restrict keyword check
-message(STATUS "Detected restrict: ${RESTRICT_KEYWORD}")
-
-if (BUILD_NATIVE)
-  # Check for AVX512 support without relying on external tools like lscpu.
-  set(_avx512_flags "-mavx512f -mavx512dq -mavx512bw -mavx512vl -mavx512vbmi2")
-  try_compile(
-    AVX512_SUPPORTED
-    "${CMAKE_BINARY_DIR}/cmake/avx512_check"
-    SOURCE_FROM_CONTENT main.cpp
-    "#include <immintrin.h>
-    int main() {
-      __m512i x = _mm512_set1_epi32(1);
-      (void)x;
-      return 0;
-    }"
-    CMAKE_FLAGS "-DCMAKE_CXX_STANDARD=23" "-DCMAKE_CXX_FLAGS=${_avx512_flags}"
-  )
-  if (NOT AVX512_SUPPORTED)
-    set(AVX512 OFF)
-    message(NOTICE "Disabling AVX512: compiler/target doesn't support required flags")
+set(SIMD_PROFILES "${simd_default_profiles}" CACHE STRING "Named module profiles included in the archive")
+list(REMOVE_DUPLICATES SIMD_PROFILES)
+foreach(profile IN LISTS SIMD_PROFILES)
+  if(NOT profile MATCHES "^(AVX2|AVX512|NEON)$")
+    message(FATAL_ERROR "SIMD_PROFILES entries must be AVX2, AVX512, or NEON.")
   endif()
+endforeach()
+if(SIMD_BUILD_HOST)
+  enable_language(CXX)
+else()
+  # GNUInstallDirs cannot infer an architecture in this language-free package.
+  set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "Library installation directory")
+endif()
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+# Macro definitions and module implementation inputs are ordinary headers.
+# Downstream libraries can consume them without enabling the host module build.
+add_library(simd_headers INTERFACE)
+add_library(simd::headers ALIAS simd_headers)
+set_target_properties(simd_headers PROPERTIES EXPORT_NAME headers)
+# Named swizzle properties use Clang's Microsoft property extension. Carry this
+# requirement with the headers as well as modules, including relocated consumers.
+target_compile_options(simd_headers INTERFACE
+  "$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<NOT:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>>>:-fms-extensions>")
+file(GLOB_RECURSE SIMD_SHARED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/simd/*.h")
+file(GLOB_RECURSE SIMD_CXX_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/cxx/simd/*.h")
+target_sources(simd_headers INTERFACE
+  FILE_SET shared_headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/shared" FILES ${SIMD_SHARED_HEADERS}
+  FILE_SET cxx_headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/cxx" FILES ${SIMD_CXX_HEADERS})
+target_include_directories(simd_headers INTERFACE
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cxx>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/shared>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cxx>")
+install(TARGETS simd_headers EXPORT simdHeaderTargets
+  FILE_SET shared_headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/shared"
+  FILE_SET cxx_headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/cxx")
+install(EXPORT simdHeaderTargets NAMESPACE simd:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
+export(EXPORT simdHeaderTargets NAMESPACE simd:: FILE "${CMAKE_CURRENT_BINARY_DIR}/simdHeaderTargets.cmake")
+
+if(SIMD_BUILD_HOST)
+  include(etc/cmake/Compiler.cmake)
+  if(SIMD_BUILD_TESTS)
+    enable_testing()
+  endif()
+  add_subdirectory(src)
+endif()
+if(SIMD_BUILD_DOCS)
+  add_subdirectory(doc)
+endif()
+if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/core_regression/CMakeLists.txt")
+    add_subdirectory(tests/core_regression)
+  else()
+    message(FATAL_ERROR "SIMD_BUILD_TESTS requires the new tests/core_regression source checkpoint.")
+  endif()
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/isa_profiles/CMakeLists.txt")
+    add_subdirectory(tests/isa_profiles)
+  endif()
+  add_subdirectory(tests/static_string)
+  add_subdirectory(tests/apple_headers)
 endif()
 
-# sanitizers
-# ====================================================================
-
-if(ASAN)
-  add_compile_options("$<${CXX_GccOrClang}:-fsanitize=address>")
-  add_link_options("$<${Link_GccOrClang}:-fsanitize=address>")
-endif(ASAN)
-
-if(TSAN)
-  add_compile_options("$<${CXX_GccOrClang}:-fsanitize=thread>")
-  add_link_options("$<${Link_GccOrClang}:-fsanitize=thread>")
-endif(TSAN)
-
-if(MSAN)
-  add_compile_options("$<${CXX_GccOrClang}:-fsanitize=memory>")
-  add_link_options("$<${Link_GccOrClang}:-fsanitize=memory>")
-endif(MSAN)
-
-if(UBSAN)
-  add_compile_options("$<${CXX_GccOrClang}:-fsanitize=undefined>")
-  add_link_options("$<${Link_GccOrClang}:-fsanitize=undefined>")
-endif(UBSAN)
-
-# macros
-# ====================================================================
-
-# exclude targets from the 'all' target, so they have to be explicitly called for
-macro(exclude)
-  foreach(name IN LISTS ARGN)
-    set_target_properties(${name} PROPERTIES EXCLUDE_FROM_ALL TRUE)
-  endforeach()
-endmacro()
-
-# use interprocedural optimization (-flto)
-macro(lto)
-  foreach(name IN LISTS ARGN)
-    set_target_properties(${name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION ${lto_supported})
-    if (lto_supported)
-      target_compile_options(${name} PRIVATE $<${CXX_Clang}:-flto=thin>)
-      target_link_options(${name} PRIVATE $<${Link_Clang}:-flto=thin>)
-    endif()
-  endforeach()
-endmacro()
-
-# slight output size optimization
-#macro(gc_sections)
-#  foreach(name IN LISTS ARGN)
-#    target_link_options(${name} PRIVATE $<${Link_GccOrClang}:-Wl,--gc-sections>)
-#  endforeach()
-#endmacro()
-
-# third-party
-# ====================================================================
-
-set(THREADS_PREFER_PTHREAD_FLAG ON)
-find_package(Threads)
-find_package(Doxygen)
-
-find_library(COMPILER_RT_BUILTINS
-  NAMES clang_rt.builtins-x86_64
-        clang_rt.osx
-  PATHS /usr/lib/llvm-19/lib/clang/19/lib/linux
-        /usr/local/opt/llvm@19/lib/clang/19/lib/darwin
-  NO_DEFAULT_PATH
-)
-
-if(NOT COMPILER_RT_BUILTINS)
-  message(FATAL_ERROR "clang_rt library not found")
-endif()
-
-add_library(compiler_rt_builtins INTERFACE)
-target_link_libraries(compiler_rt_builtins INTERFACE ${COMPILER_RT_BUILTINS})
-
-fetchcontentcached(
-  NAME spdlog
-  GIT_REPOSITORY https://github.com/gabime/spdlog.git
-  GIT_TAG        v1.13.0
-  GIT_SHALLOW TRUE
-  GIT_PROGRESS TRUE
-)
-
-# silence a third-party warning on clang++-18+
-target_compile_options(spdlog PRIVATE
-  $<$<AND:$<CXX_COMPILER_ID:Clang>,$<VERSION_GREATER_EQUAL:$<CXX_COMPILER_VERSION>,18>>:-Wno-unused-but-set-variable>
-)
-
-# compile options
-# ====================================================================
-
-# Overwrite the options we set for sentencepiece with our own.  Rationales:
-# - -Wno-deprecated-declarations because it triggers on std::get_temporary_buffer<size_t>
-#   inside glibc's implementation of std::stable_sort, which we invoke from llama.hpp.
-set_directory_properties(
-  PROPERTIES COMPILE_OPTIONS
-  "$<${CXX_GccOrClang}:-Wno-deprecated-declarations>")
-
-# Better debugging information
-# Valgrind only starts understanding DWARF 5 as of version 3.20, but we're
-# on version 3.18
-add_compile_options("$<${CXX_GccOrClang}:-gdwarf-4;-fno-omit-frame-pointer>")
-add_link_options("$<${Link_GccOrClang}:-gdwarf-4;-fno-omit-frame-pointer>")
-
-# To allow gc'ing unused sections of code.
-# This will matter more as we move things out of headers
-# and into proper .cpp files for compile speed.
-add_compile_options("$<${CXX_GccOrClang}:-ffunction-sections;-fdata-sections>")
-
-# useful warnings
-add_compile_options(
-  "$<${CXX_GccOrClang}:-Wall;-Wpedantic;-Wextra;-Wno-shadow>"
-  "$<${CXX_Gcc}:-Wstrict-overflow>")
-
-# experimental attributes
-add_compile_options(
-  "$<${CXX_GccOrClang}:-Wconsumed>"
-  "$<${CXX_GccOrClang}:--start-no-unused-arguments;--rtlib=compiler-rt;--end-no-unused-arguments>")
-  # "$<${CXX_GccOrClang}:-Wthread-safety>"
-add_link_options("$<${Link_Clang}:--rtlib=compiler-rt>")
-
-include(CheckRestrict)
-
-# config.hpp
-# ====================================================================
-
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/etc/config.hpp.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/include/ein/config.hpp"
-)
-
-# source
-# ====================================================================
-
-if(ENABLE_TESTS)
-  include(CTest)
-  enable_testing()
-endif()
-
-
-add_subdirectory(src)
-add_subdirectory(doc)
+configure_file(etc/cmake/simdProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/simdProfile.cmake" COPYONLY)
+configure_package_config_file(etc/cmake/simdConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/simdConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
+write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/simdConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/simdProfile.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/simdConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/simdConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")

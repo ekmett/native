@@ -1,5 +1,5 @@
 # Directory where the .git directory is expected to be located
-EXPECTED_GIT_DIR := ein
+EXPECTED_GIT_DIR := simd
 
 # Shell command to find the nearest containing folder with a .git directory, using EXPECTED_GIT_DIR
 # as a backstop

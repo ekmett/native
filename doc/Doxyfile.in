@@ -5,7 +5,7 @@
 PROJECT_NAME   = @PROJECT_NAME@
 PROJECT_NUMBER = @PROJECT_VERSION@
 PROJECT_BRIEF  = @PROJECT_BRIEF@
-PROJECT_LOGO   = @CMAKE_CURRENT_SOURCE_DIR@/assets/images/ein-logo.png
+PROJECT_LOGO   = @CMAKE_CURRENT_SOURCE_DIR@/assets/images/simd-logo.png
 PROJECT_ICON   = @CMAKE_CURRENT_SOURCE_DIR@/assets/icons/favicon.ico
 IMAGE_PATH     = @CMAKE_CURRENT_SOURCE_DIR@/assets
 DOTFILE_DIRS   = @CMAKE_CURRENT_BINARY_DIR@/patched-dotfiles
@@ -23,12 +23,12 @@ INPUT += @CMAKE_CURRENT_SOURCE_DIR@
 HTML_INDEX_NUM_ENTRIES = 40
 
 
-EXTENSION_MAPPING = cppm=C++
-FILE_PATTERNS = *.h *.hpp *.c *.cpp *.cppm *.dox *.md *.x=cpp
+EXTENSION_MAPPING = ccm=C++
+FILE_PATTERNS = *.h *.cc *.ccm *.c *.hlsl *.dox *.md *.x=cpp
 FILTER_PATTERNS  = *.md=@CMAKE_CURRENT_SOURCE_DIR@/../bin/gfm_preprocessor.sh
-FILTER_PATTERNS += *.cppm=@CMAKE_CURRENT_SOURCE_DIR@/../bin/elifdef.sh
-FILTER_PATTERNS += *.cpp=@CMAKE_CURRENT_SOURCE_DIR@/../bin/elifdef.sh
-FILTER_PATTERNS += *.hpp=@CMAKE_CURRENT_SOURCE_DIR@/../bin/elifdef.sh
+FILTER_PATTERNS += *.ccm=@CMAKE_CURRENT_SOURCE_DIR@/../bin/elifdef.sh
+FILTER_PATTERNS += *.cc=@CMAKE_CURRENT_SOURCE_DIR@/../bin/elifdef.sh
+FILTER_PATTERNS += *.h=@CMAKE_CURRENT_SOURCE_DIR@/../bin/elifdef.sh
 STRIP_FROM_PATH = @CMAKE_CURRENT_BINARY_DIR@/ @CMAKE_CURRENT_SOURCE_DIR@/
 OUTPUT_DIRECTORY = @CMAKE_CURRENT_BINARY_DIR@
 FULL_PATH_NAMES = NO
@@ -37,18 +37,18 @@ PREDEFINED = DOXYGEN=1
 PREDEFINED += __cpp_modules=201907L
 PREDEFINED += __AVX512F__=1
 PREDEFINED += __AVX2__=1
-PREDEFINED += ein_artificial="/** \qualifier \"[[artificial]]\" */"
-PREDEFINED += ein_inline="/** \qualifier \"[[always_inline]]\" */"
-PREDEFINED += ein_nodiscard="/** \qualifier \"[[nodiscard]]\" */"
-PREDEFINED += ein_pure="/** \qualifier \"[[pure]]\" */"
-PREDEFINED += ein_const="/** \qualifier \"[[const]]\" */"
-PREDEFINED += ein_hidden="/** \qualifier \"[[hidden]]\" */"
-PREDEFINED += ein_noescape="/** \qualifier \"[[noescape]]\" */"
-PREDEFINED += ein_lifetimebound="/** \qualifier \"[[lifetimebound]]\" */"
-PREDEFINED += ein_message(x)=
-PREDEFINED += ein_restrict=restrict
-PREDEFINED += ein_nonnull(x)="/** \qualifier \"[[nonnull(x)]]\" */"
-PREDEFINED += ein_null_terminated_string_arg(x)=
+PREDEFINED += simd_artificial="/** \qualifier \"[[artificial]]\" */"
+PREDEFINED += simd_inline="/** \qualifier \"[[always_inline]]\" */"
+PREDEFINED += simd_nodiscard="/** \qualifier \"[[nodiscard]]\" */"
+PREDEFINED += simd_pure="/** \qualifier \"[[pure]]\" */"
+PREDEFINED += simd_const="/** \qualifier \"[[const]]\" */"
+PREDEFINED += simd_hidden="/** \qualifier \"[[hidden]]\" */"
+PREDEFINED += simd_noescape="/** \qualifier \"[[noescape]]\" */"
+PREDEFINED += simd_lifetimebound="/** \qualifier \"[[lifetimebound]]\" */"
+PREDEFINED += simd_message(x)=
+PREDEFINED += simd_restrict=restrict
+PREDEFINED += simd_nonnull(x)="/** \qualifier \"[[nonnull(x)]]\" */"
+PREDEFINED += simd_null_terminated_string_arg(x)=
 
 QUIET = YES
 RECURSIVE = YES
@@ -96,7 +96,7 @@ HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen
 HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen-awesome-interactive-toc.js
 HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen-awesome-tabs.js
 
-HTML_EXTRA_FILES      += @CMAKE_CURRENT_SOURCE_DIR@/assets/images/ein-logo.png
+HTML_EXTRA_FILES      += @CMAKE_CURRENT_SOURCE_DIR@/assets/images/simd-logo.png
 
 # favicon support
 HTML_EXTRA_FILES      += @CMAKE_CURRENT_SOURCE_DIR@/assets/icons/favicon.ico

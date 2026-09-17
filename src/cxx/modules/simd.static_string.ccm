@@ -1,0 +1,418 @@
+module;
+#include <simd/attributes.h>
+#include <concepts>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <ostream>
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+
+/** \file
+
+      \license
+        SPDX-FileType: Source
+        SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+        SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+      \endlicense */
+
+export module simd.static_string;
+
+export namespace simd {
+
+namespace detail {
+  template<class T>
+  concept static_character = std::same_as<T, char> || std::same_as<T, wchar_t> ||
+    std::same_as<T, char8_t> || std::same_as<T, char16_t> || std::same_as<T, char32_t>;
+
+  template<class CharT, std::size_t N>
+  struct static_string_literal {
+    using char_type = CharT;
+    static constexpr std::size_t size = N;
+    CharT value[N];
+    consteval static_string_literal(CharT const (&text)[N]) noexcept {
+      for (std::size_t i = 0; i != N; ++i) value[i] = text[i];
+    }
+  };
+}
+
+
+template <typename T, T...xs>
+struct reify {
+  static constexpr const T value[sizeof...(xs)+1] = {xs..., T() };
+};
+
+// forward declaration
+class static_c_string;
+
+/// statically known interned strings
+/// these have O(1) comparison for equality
+///
+/// \invariant all such strings point to the start of the static member inside
+///            operator""_ss for some string and their \p len is unmodified.
+///            this ensures that they have O(1) comparison, because reference
+///            and pointer equality coincide.
+
+template <
+  typename CharT,
+  typename Traits = std::char_traits<CharT>
+>
+class basic_static_string {
+  std::basic_string_view<CharT,Traits> view{reify<CharT>::value, 0};
+
+public:
+  // Compatibility escape hatch: value must designate complete, null-terminated
+  // interned storage, as produced by _ss. Arbitrary views do not satisfy the
+  // pointer-equality/hash contract and can outlive their underlying storage.
+  simd_inline constexpr
+  basic_static_string(std::basic_string_view<CharT,Traits> value) noexcept
+  : view(value) {}
+
+  friend class static_c_string;
+  using traits_type = Traits;
+  using value_type = CharT;
+  using pointer = CharT *;
+  using const_pointer = CharT const *;
+  using reference = CharT &;
+  using const_reference = CharT const &;
+  using const_iterator = CharT const *;
+  using iterator = const_iterator;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using reverse_iterator = const_reverse_iterator;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+
+  /// \name constructors
+  /// \{
+
+  template <CharT...xs>
+  consteval explicit basic_static_string(std::integer_sequence<CharT,xs...>) noexcept
+  : view(reify<CharT,xs...>::value,sizeof...(xs)) {}
+
+  simd_inline constexpr
+  basic_static_string() noexcept = default;
+
+  simd_inline constexpr
+  basic_static_string(basic_static_string const &) noexcept = default;
+
+  simd_inline constexpr
+  basic_static_string(basic_static_string &&) noexcept = default;
+
+  /// \}
+  /// \name assignments
+  /// \{
+
+  simd_reinitializes simd_inline constexpr
+  basic_static_string & operator = (basic_static_string const & that) noexcept = default;
+
+  simd_reinitializes simd_inline constexpr
+  basic_static_string & operator = (basic_static_string && that) noexcept = default;
+
+
+  /// \}
+  /// \name conversions
+  /// \{
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  operator CharT const * () const noexcept {
+    return view.data(); // an extra invariant that its null terminated is maintained
+  }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  operator std::basic_string_view<CharT,Traits>() const noexcept {
+    return view;
+  }
+
+  simd_nodiscard simd_inline constexpr
+  operator std::basic_string<CharT,Traits>() const {
+    return std::basic_string<CharT,Traits>(view);
+  }
+
+  /// \}
+  /// \name element access
+  /// \{
+
+  /// access the specified character
+  simd_nodiscard simd_inline simd_pure constexpr
+  CharT const & operator [](size_type i) const noexcept { return view[i]; }
+
+  /// access the specified character with bounds checking
+  simd_nodiscard simd_inline constexpr
+  CharT const & at(size_type i) const { return view.at(i); }
+
+  /// Returns the first character. Requires !empty().
+  simd_nodiscard simd_inline simd_pure constexpr
+  const_reference front() const noexcept { return view.front(); }
+
+  /// \pre !empty()
+  simd_nodiscard simd_inline simd_pure constexpr
+  const_reference back() const noexcept { return view.back(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  const_pointer data() const noexcept { return view.data(); }
+
+  /// \}
+  /// \name capacity
+  /// \{
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  size_type size() const noexcept { return view.size(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  size_type length() const noexcept { return view.length(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  size_type max_size() const noexcept { return view.max_size(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  bool empty() const noexcept { return view.empty(); }
+
+  simd_nodiscard simd_inline simd_pure
+  explicit constexpr operator bool () const noexcept { return !view.empty(); }
+
+  /// \}
+  /// \name comparisons
+  /// \{
+  /// \pre `Traits::eq` is assumed reflexive even if overloaded
+  simd_nodiscard simd_inline simd_artificial friend constexpr
+  bool operator == (basic_static_string self, basic_static_string that) noexcept {
+    if constexpr (std::is_same_v<Traits,std::char_traits<CharT>> && detail::static_character<CharT>) {
+      return self.view.data() == that.view.data();
+    } else {
+      return (self.view.data() == that.view.data()) || (self.view == that.view); // fallback required
+    }
+  }
+
+  /// \pre `Traits::eq` is assumed reflexive
+  simd_nodiscard simd_inline simd_artificial friend constexpr
+  bool operator != (basic_static_string self, basic_static_string that) noexcept {
+    if constexpr (std::is_same_v<Traits,std::char_traits<CharT>> && detail::static_character<CharT>) {
+      return self.view.data() != that.view.data();
+    } else {
+      return (self.view.data() != that.view.data()) && (self.view != that.view);
+    }
+  }
+
+  /// \}
+  /// input/output
+  /// \{
+
+  /// \throws std::ios_base:failure if an exception is thrown during output.
+  friend constexpr
+  std::basic_ostream<CharT, Traits> & operator<<(std::basic_ostream<CharT, Traits>& os, basic_static_string<CharT, Traits> v) {
+    return os << v.view;
+  }
+
+
+  /// \}
+  /// \name iterators
+  /// \{
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  auto begin() const noexcept { return view.data(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto end() const noexcept { return view.data() + view.size(); }
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  auto cbegin() const noexcept { return begin(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto cend() const noexcept { return end(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto rbegin() const noexcept { return const_reverse_iterator(end()); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto rend() const noexcept { return const_reverse_iterator(begin()); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto crbegin() const noexcept { return rbegin(); }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto crend() const noexcept { return rend(); }
+
+  /// \}
+
+  simd_inline constexpr friend
+  void swap(basic_static_string & x, basic_static_string & y) noexcept {
+    using std::swap;
+    swap(x.view,y.view);
+  }
+
+  static constexpr size_type npos = std::basic_string_view<CharT,Traits>::npos;
+};
+
+/// \cond
+template <typename CharT, CharT...xs>
+basic_static_string(std::integer_sequence<CharT,xs...>) -> basic_static_string<CharT,std::char_traits<CharT>>;
+/// \endcond
+
+using static_string = basic_static_string<char>;
+using static_wstring = basic_static_string<wchar_t>;
+using static_u8string = basic_static_string<char8_t>;
+using static_u16string = basic_static_string<char16_t>;
+using static_u32string = basic_static_string<char32_t>;
+
+class static_c_string {
+  char const * p = reify<char>::value;
+public:
+
+  using traits_type = std::char_traits<char>;
+  using value_type = char;
+  using pointer = char *;
+  using const_pointer = char const *;
+  using reference = char &;
+  using const_reference = char const &;
+  using const_iterator = char const *;
+  using iterator = const_iterator;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using reverse_iterator = const_reverse_iterator;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+
+  /// \name constructors
+  /// \{
+
+  simd_inline constexpr
+  static_c_string() noexcept = default;
+
+  simd_inline constexpr
+  static_c_string(static_c_string const &) noexcept = default;
+
+  simd_inline constexpr
+  static_c_string(static_c_string &&) noexcept = default;
+
+  simd_inline constexpr
+  // Requires a complete interned C string: no embedded NUL before x.size().
+  // As before, violating this precondition makes the conversion back shorter.
+  static_c_string(static_string x) noexcept : p(x.data()) {}
+
+  /// \}
+  /// \name assignment
+  /// \{
+
+  simd_reinitializes simd_inline constexpr
+  static_c_string & operator = (static_c_string const &) noexcept = default;
+
+  simd_reinitializes simd_inline constexpr
+  static_c_string & operator = (static_c_string &&) noexcept = default;
+
+  /// \}
+  /// \name conversion
+  /// \{
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  operator const char * () const noexcept { return p; }
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  operator static_string () const noexcept { return static_string(std::string_view(p)); }
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  const char * data() const noexcept { return p; }
+
+  /// \}
+  /// \name comparison
+  /// \{
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr friend
+  bool operator == (static_c_string x, static_c_string y) noexcept { return x.p == y.p; }
+
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr friend
+  bool operator != (static_c_string x, static_c_string y) noexcept { return x.p != y.p; }
+
+  /// \}
+  /// \name iterators
+  /// \{
+
+  /// O(1)
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  auto begin() const noexcept { return p; }
+
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto end() const noexcept { return p + std::char_traits<char>::length(p); }
+
+  /// O(1)
+  simd_nodiscard simd_inline simd_pure simd_artificial constexpr
+  auto cbegin() const noexcept { return p; }
+
+  /// O(n)
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto cend() const noexcept { return p + std::char_traits<char>::length(p); }
+
+  /// O(n)
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto rbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
+
+  /// O(1)
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto rend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
+
+  /// O(n)
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto crbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
+
+  /// O(1)
+  simd_nodiscard simd_inline simd_pure constexpr
+  auto crend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
+
+  /// \}
+
+  simd_inline friend
+  void swap(static_c_string & x, static_c_string & y) noexcept {
+    using std::swap;
+    swap(x.p,y.p);
+  }
+};
+
+// Structural string-literal NTTPs are standard C++; no GNU pack extension.
+template <detail::static_string_literal Text>
+consteval auto operator""_ss() noexcept {
+  using CharT = typename decltype(Text)::char_type;
+  return []<std::size_t... I>(std::index_sequence<I...>) {
+    return basic_static_string<CharT>(std::integer_sequence<CharT, Text.value[I]...>{});
+  }(std::make_index_sequence<Text.size - 1>{});
+}
+
+template <detail::static_string_literal Text>
+  requires std::same_as<typename decltype(Text)::char_type, char>
+consteval static_c_string operator""_scs() noexcept {
+  return static_c_string(operator""_ss<Text>());
+}
+
+} // namespace simd
+
+export namespace std {
+  using ::std::hash;
+  template <typename CharT, typename Traits>
+  struct hash<::simd::basic_static_string<CharT,Traits>> {
+    size_t operator()(::simd::basic_static_string<CharT,Traits> const & s) const noexcept {
+      return reinterpret_cast<size_t>(s.data());
+    }
+  };
+  template <>
+  struct hash<::simd::static_c_string> {
+    size_t operator()(::simd::static_c_string s) const noexcept {
+      return reinterpret_cast<size_t>(s.data());
+    }
+  };
+  namespace ranges {
+
+    /// \cond external specializations
+    template< class CharT, class Traits >
+    inline constexpr bool enable_borrowed_range<::simd::basic_static_string<CharT, Traits>> = true;
+
+    template< class CharT, class Traits >
+    inline constexpr bool enable_view<::simd::basic_static_string<CharT, Traits>> = true;
+
+    template <>
+    inline constexpr bool enable_borrowed_range<::simd::static_c_string> = true;
+
+    template <>
+    inline constexpr bool enable_view<::simd::static_c_string> = true;
+    /// \endcond
+  }
+}  // namespace std

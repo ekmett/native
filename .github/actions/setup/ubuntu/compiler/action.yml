@@ -1,36 +1,14 @@
-name: 'install the compiler'
-description: install clang, llvm and doxygen
+name: Install LLVM 23
+description: Install the compiler, dependency scanner and linker from apt.llvm.org.
 runs:
   using: composite
   steps:
-    - name: set tool path # for doxygen
-      run: |
-        echo "/usr/local/bin" >> $GITHUB_PATH
-        mkdir -p lib/install
+    - name: Install LLVM 23 tools
       shell: bash
-    - name: install clang 19
       run: |
-        cd lib/install
-        [ -f llvm.sh ] || wget --no-verbose https://apt.llvm.org/llvm.sh
-        chmod +x llvm.sh
-        sudo ./llvm.sh 19
-        sudo apt-get install -y clang-tools-19 lld-19
-        which clang++-19 && clang++-19 --version
-      shell: bash
-    - name: update alternatives
-      run: |
-        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-19 200
-        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-19 200
-        sudo update-alternatives --install /usr/bin/ld ld /usr/bin/ld.lld-19 200
-        sudo update-alternatives --install /usr/bin/clang-scan-deps clang-scan-deps /usr/bin/clang-scan-deps-19 200
-      shell: bash
-    - name: install doxygen 1.12.0
-      run: |
-        cd lib/install
-        sudo apt-get remove --purge -y doxygen
-        [ -f doygen-1.12.0.linux.bin.tar.gz ] || wget --no-verbose https://www.doxygen.nl/files/doxygen-1.12.0.linux.bin.tar.gz
-        tar xfpz doxygen-1.12.0.linux.bin.tar.gz
-        cd doxygen-1.12.0/
-        sudo make install
-        doxygen --version
-      shell: bash
+        curl --fail --location https://apt.llvm.org/llvm.sh --output "${RUNNER_TEMP}/llvm.sh"
+        sudo bash "${RUNNER_TEMP}/llvm.sh" 23
+        sudo apt-get install -y clang-tools-23 lld-23
+        echo /usr/lib/llvm-23/bin >> "${GITHUB_PATH}"
+        /usr/lib/llvm-23/bin/clang++ --version
+        /usr/lib/llvm-23/bin/clang-scan-deps --version
