@@ -164,3 +164,10 @@ export namespace simd {
     using ::simd::tanh;
   }
 }
+
+export namespace simd {
+  using ::simd::deposit_bits;
+#if SIMD_HAS_AVX2 || SIMD_HAS_ARM_NEON
+  using ::simd::narrow_concat;
+#endif
+}
