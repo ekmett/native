@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <simd/attributes.h>
 #include "../core_regression/support/fp_environment.h"
 #if SIMD_ROUNDING_HEADER
 #define SIMD_PROFILE SIMD_ROUNDING_PROFILE
@@ -114,7 +115,7 @@ static_assert(!has_rounding<simd::wide<int,2>>);
 // ABI attribution. The emitted leaves must contain rounding instructions, not
 // calls to a scalar lane loop. The scalar profile remains baseline-compatible.
 #define ROUND_LEAF(name, op, lanes) \
-extern "C" __declspec(noinline) void name(float * output,float const * input) { \
+extern "C" simd_noinline void name(float * output,float const * input) { \
   simd::store_simd(output,simd::op(simd::load_simd<V<lanes>>(input))); \
 }
 ROUND_LEAF(round_floor_1,floor,1)

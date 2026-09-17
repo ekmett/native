@@ -31,7 +31,9 @@ cmake --build build/rounding --parallel 2
 ctest --test-dir build/rounding --output-on-failure
 ```
 
-Select `NEON` on ARM64. Native test executables require their selected ISA;
+The default follows `SIMD_TEST_ISA`, or AVX2/NEON for a standalone x86/ARM64
+consumer. Archiving additional profiles does not enable their runtime tests.
+Native test executables require their explicitly selected ISA;
 CPU/OS admission is the runner's responsibility. The regular top-level test
 build also registers these checks. For the focused exception test, configure
 `tests/wide_module` with `SIMD_WIDE_EXCEPTIONS=ON` and run `wide_rounding`.
