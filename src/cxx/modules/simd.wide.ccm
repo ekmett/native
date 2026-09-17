@@ -357,28 +357,28 @@ export namespace simd {
 
   template<class T, std::size_t N> requires requires(T const & a) { +a; }
   /// \ingroup wide_values
-  /// Apply `+` to corresponding elements; a non-pack argument is broadcast.
+  /// Apply unary `+` to each element, retaining its result type.
   simd_nodiscard simd_inline constexpr auto operator+(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(+x) { return +x; }, std::make_index_sequence<N>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { -a; }
   /// \ingroup wide_values
-  /// Apply `-` to corresponding elements; a non-pack argument is broadcast.
+  /// Apply unary `-` to each element, retaining its result type.
   simd_nodiscard simd_inline constexpr auto operator-(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(-x) { return -x; }, std::make_index_sequence<N>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { ~a; }
   /// \ingroup wide_values
-  /// Apply `~` to corresponding elements; a non-pack argument is broadcast.
+  /// Apply unary `~` to each element, retaining its result type.
   simd_nodiscard simd_inline constexpr auto operator~(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(~x) { return ~x; }, std::make_index_sequence<N>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { !a; }
   /// \ingroup wide_values
-  /// Apply `!` to corresponding elements; a non-pack argument is broadcast.
+  /// Apply unary `!` to each element, retaining its result type.
   simd_nodiscard simd_inline constexpr auto operator!(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(!x) { return !x; }, std::make_index_sequence<N>{});
   }

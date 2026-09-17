@@ -266,7 +266,7 @@ namespace simd {
   /// \ingroup vector_memory
   /// Load all `V::lanes` elements using the element's memory customization.
   /// \pre `p` addresses that many readable elements and meets alignment `A`.
-  /// \throws Any exception from the selected `V::load_memory<A>` operation.
+  /// Exceptions propagate from the selected `V::load_memory<A>` operation.
   template <class V, class U, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires requires(U const * p) { V::template load_memory<A>(p); }
   simd_nodiscard simd_inline V load_simd(U const * p, simd_memory<A,Access> = {})
