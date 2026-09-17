@@ -84,3 +84,28 @@ and separate sin/cos through arrays and wide packs. Its four common-width
 output packets contain 2,688,588 words and are byte-identical on AVX2, AVX-512
 and M3 NEON. This is evidence for those recorded graphs and inputs, not a
 universal floating-point or arbitrary libm guarantee.
+
+## Value utilities, directed rounding and combined packages
+
+The subsequent Windows checkpoint passes 35 core tests and one relocated
+installed consumer with exceptions enabled, PCH and ThinLTO. Both x86 module
+producers are built. Separate installed consumers also exercise AVX2 and
+AVX-512 against matching SIMD and FTZ packages.
+
+Generic `wide` classification (`isfinite`, `isinf`, `isnan`, `signbit`) preserves
+the element operation's actual bool or mask result type. Homogeneous `copysign`
+preserves value types. Empty packs, throwing ADL operations and result
+construction are covered by the mapper's exception tests. Raw `floor`, `ceil`
+and `trunc` cover scalar, short and full vectors, arrays and wide values; an
+integer-word oracle checks signed zeros, infinities and integer boundaries
+under all four standard rounding modes. These operations select their own
+rounding direction. Ordinary x86 native-leaf assembly uses the fixed rounding
+instructions without function calls.
+
+The combined installed FTZ consumers pass four value-utility tests, two rounding
+tests and four policy-boundary tests, plus one third-static-library test per
+ISA. The latter consumers also use PCH and ThinLTO. These focused checks extend
+the earlier numerical checkpoint; they do not replace its packet results.
+No new NEON execution of the value utilities or directed rounding is recorded
+at this checkpoint. The earlier M3 results remain scoped to the implementations
+and inputs described above.
