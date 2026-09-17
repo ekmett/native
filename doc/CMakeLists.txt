@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 find_package(Doxygen 1.18 REQUIRED)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(DOXYGEN_GENERATE_HTML YES)
 set(DOXYGEN_GENERATE_LATEX NO)
 set(DOXYGEN_GENERATE_XML YES)
@@ -64,6 +65,9 @@ set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${docs_markdown_root}/README.md")
 set(DOXYGEN_STRIP_FROM_PATH "${docs_markdown_root}" "${PROJECT_SOURCE_DIR}")
 set(DOXYGEN_HAVE_DOT NO)
 set(DOXYGEN_GENERATE_TREEVIEW YES)
+# Static menus avoid Doxygen 1.18 links to absent short-list/tilde sections.
+# API pages, alphabetical indices and the navigation tree remain available.
+set(DOXYGEN_HTML_DYNAMIC_MENUS NO)
 set(DOXYGEN_HTML_COLORSTYLE AUTO_LIGHT)
 set(DOXYGEN_OBFUSCATE_EMAILS NO)
 set(DOXYGEN_SOURCE_BROWSER YES)
@@ -83,3 +87,9 @@ doxygen_add_docs(simd_docs
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
   COMMENT "Build simd API documentation and examples")
+
+# Module summaries need aliases for Doxygen 1.18 crawler/navigation destinations.
+add_custom_command(TARGET simd_docs POST_BUILD
+  COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/fix_module_anchors.py"
+    "${PROJECT_BINARY_DIR}/docs/html"
+  VERBATIM)
