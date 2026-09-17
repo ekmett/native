@@ -20,7 +20,11 @@ the consumer sources. No production header is borrowed from the source checkout.
 
 Run through the host resource gate. The dispatcher admits CPU/OS capabilities
 before checking raw FMA outputs, wide exp and cross-translation-unit static
-strings. Unsupported hosts skip with status 77. This is a package smoke test,
+strings. The mixed-profile runtime requires both AVX2 and AVX-512; unsupported hosts
+skip with status 77. The dispatcher uses the platform CPUID/XGETBV spellings on
+Windows and Linux while retaining baseline compiler flags. Linux AVX2 execution
+is covered separately by the root tests and the AVX2-only
+[omnibus consumer](../omnibus/README.md). This is a package smoke test,
 not exhaustive accuracy, codegen or performance qualification.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->

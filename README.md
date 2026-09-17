@@ -110,6 +110,8 @@ memory, swizzles, wide values and the common utilities. [Build details](doc/buil
 cover profiles, installation and PCH/LTO.
 The [source guide](src/README.md) explains definition ownership, and
 [validation](docs/validation.md) records tested configurations and their limits.
+Linux x86-64 installed-package checks use LLVM 23.1.1 with libc++ 23; AVX2
+execution and AVX-512 compile coverage are recorded separately.
 
 ## License and contact
 

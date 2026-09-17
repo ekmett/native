@@ -134,7 +134,7 @@ No GPU execution or throughput measurement is implied.
 The `0c4c0ae` run uses granular imports. The later omnibus has its own
 installed-consumer qualification below.
 
-## NEON omnibus — source `53d9a44`
+## NEON omnibus â€” source `53d9a44`
 
 On the same Apple M3 and toolchain, source
 `53d9a44910b7f3e504e72e94ed7d01fe655764ad` passes 30 core tests,
@@ -151,3 +151,34 @@ This qualifies the configured NEON-only omnibus on ARM. It adds no GPU,
 sanitizer, throughput or mixed-architecture omnibus claim. The retained receipt
 archive has SHA-256
 `c7b4b20aaacc597fc86f166af41a09c275331963c5b0f1a3941706cde653448d`.
+
+## Linux x86-64 packages
+
+The Linux check uses Ubuntu 22.04, glibc 2.35 and an Intel Core i9-12900K with
+LLVM 23.1.1, its bundled libc++ 23, CMake 4.4.3 and Ninja 1.12.1. Exceptions,
+producer PCH and ThinLTO are enabled. Both AVX2 and AVX-512 module providers
+compile; this CPU admits AVX2 only.
+
+| Source and configuration | Result |
+| --- | --- |
+| `36db84d`, root suite, AVX2 runtime fixtures and both x86 providers | 34 tests passed; the separate AVX-512 execution test was excluded |
+| Exact `4255f00`, relocated combined-profile package | Two archive-only/baseline consumer tests passed; both native omnibus kernels compiled without execution |
+| Exact `4255f00`, relocated AVX2-only package | All three omnibus consumer tests passed, including native AVX2 execution |
+| `36db84d` mixed-profile installed consumer | Compiled; the AVX-512-required execution test returned the expected skip status 77 |
+| FTZ `3e2da97`, using the exact combined SIMD package | 23 AVX2 host tests and one relocated third-library consumer passed |
+
+The root-suite correction changes tests only. The original in-tree
+static-string fixture selected an AVX-512-flavored common BMI for its baseline
+translation units. It now takes module metadata from `simd::common` and links
+the archive file through an explicit build dependency. Public package metadata
+and arithmetic sources are unchanged. The portable mixed-profile dispatcher
+also passes its focused clang-cl Windows check against the existing installed
+package; the CPU and OS admission conditions are unchanged.
+
+All three relocated prefixes retain identical installed-file hashes. Their old
+locations are absent, and the installed consumers use no production include or
+module source from the source checkout. Source hashes match after execution.
+The compatibility alias in this FTZ build selects manual policy; its dual-policy
+tests also execute `m32` under gradual/flush controls and admitted `h32` under
+flush controls. These are CPU/module checks, without Linux AVX-512 execution,
+GPU execution, sanitizer or performance claims.
