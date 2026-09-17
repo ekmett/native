@@ -5,7 +5,7 @@
 PROJECT_NAME   = @PROJECT_NAME@
 PROJECT_NUMBER = @PROJECT_VERSION@
 PROJECT_BRIEF  = @PROJECT_BRIEF@
-PROJECT_LOGO   = @CMAKE_CURRENT_SOURCE_DIR@/assets/images/simd-logo.png
+PROJECT_LOGO   =
 PROJECT_ICON   = @CMAKE_CURRENT_SOURCE_DIR@/assets/icons/favicon.ico
 IMAGE_PATH     = @CMAKE_CURRENT_SOURCE_DIR@/assets
 DOTFILE_DIRS   = @CMAKE_CURRENT_BINARY_DIR@/patched-dotfiles
@@ -95,8 +95,6 @@ HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen
 HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen-awesome-paragraph-link.js
 HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen-awesome-interactive-toc.js
 HTML_EXTRA_FILES      += @FETCHCONTENT_BASE_DIR@/doxygen-awesome-css-src/doxygen-awesome-tabs.js
-
-HTML_EXTRA_FILES      += @CMAKE_CURRENT_SOURCE_DIR@/assets/images/simd-logo.png
 
 # favicon support
 HTML_EXTRA_FILES      += @CMAKE_CURRENT_SOURCE_DIR@/assets/icons/favicon.ico
