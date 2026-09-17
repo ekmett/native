@@ -151,3 +151,9 @@ foreach(target IN LISTS simd_regression_targets)
   simd_target_profile(${target} "${SIMD_TEST_ISA}")
   target_link_libraries(${target} PRIVATE simd::common simd::${simd_test_profile})
 endforeach()
+
+# Generic ADL array dispatch belongs to the ordinary regression suite too.
+add_executable(simd_test_wide_batch ../wide_module/batch.cc)
+target_link_libraries(simd_test_wide_batch PRIVATE simd::simd)
+add_test(NAME simd.wide.batch COMMAND simd_test_wide_batch)
+set_tests_properties(simd.wide.batch PROPERTIES LABELS "host;math;modules")
