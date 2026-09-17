@@ -3056,5 +3056,77 @@ namespace SIMD_BACKEND_NAMESPACE::native {
 
 #include "simd/simd/short.h"
 
+namespace simd {
+  namespace detail::SIMD_BACKEND {
+    enum class rounding_direction { down, up, zero };
+
+    template<rounding_direction Direction,std::size_t N>
+    simd_inline vec<float,N,SIMD_ARCH> round_integral(vec<float,N,SIMD_ARCH> x) noexcept {
+      using V = vec<float,N,SIMD_ARCH>;
+      if constexpr (N == 2 || N == 3) {
+        return V::from_storage(round_integral<Direction>(x.to_storage()));
+      } else {
+#if SIMD_HAS_AVX2
+        constexpr int mode = (Direction == rounding_direction::down ? _MM_FROUND_TO_NEG_INF :
+          Direction == rounding_direction::up ? _MM_FROUND_TO_POS_INF : _MM_FROUND_TO_ZERO) | _MM_FROUND_NO_EXC;
+        if constexpr (N == 1)
+          return V::from_native(_mm_cvtss_f32(_mm_round_ss(_mm_setzero_ps(),_mm_set_ss(x.to_native()),mode)));
+        else if constexpr (N == 4) return V::from_native(_mm_round_ps(x.to_native(),mode));
+        else if constexpr (N == 8) return V::from_native(_mm256_round_ps(x.to_native(),mode));
+#if SIMD_HAS_AVX512F
+        else if constexpr (N == 16) return V::from_native(_mm512_roundscale_ps(x.to_native(),mode));
+#endif
+#elif SIMD_HAS_ARM_NEON
+        if constexpr (N == 1) {
+          auto a = vdup_n_f32(x.to_native());
+          if constexpr (Direction == rounding_direction::down) return V::from_native(vget_lane_f32(vrndm_f32(a),0));
+          else if constexpr (Direction == rounding_direction::up) return V::from_native(vget_lane_f32(vrndp_f32(a),0));
+          else return V::from_native(vget_lane_f32(vrnd_f32(a),0));
+        } else {
+          if constexpr (Direction == rounding_direction::down) return V::from_native(vrndmq_f32(x.to_native()));
+          else if constexpr (Direction == rounding_direction::up) return V::from_native(vrndpq_f32(x.to_native()));
+          else return V::from_native(vrndq_f32(x.to_native()));
+        }
+#else
+        if constexpr (Direction == rounding_direction::down) return V::from_native(std::floor(x.to_native()));
+        else if constexpr (Direction == rounding_direction::up) return V::from_native(std::ceil(x.to_native()));
+        else return V::from_native(std::trunc(x.to_native()));
+#endif
+      }
+    }
+  }
+
+  // Directions are encoded in the instruction, never taken from the ambient
+  // rounding mode. As for other raw arithmetic, DAZ/FZ input handling follows
+  // the configured floating-point environment.
+  template<std::size_t N> requires requires { typename vec<float,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline vec<float,N,SIMD_ARCH> floor(vec<float,N,SIMD_ARCH> x) noexcept {
+    return detail::SIMD_BACKEND::round_integral<detail::SIMD_BACKEND::rounding_direction::down>(x);
+  }
+  template<std::size_t N,std::size_t M> requires requires { typename vec<float,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline std::array<vec<float,N,SIMD_ARCH>,M> floor(std::array<vec<float,N,SIMD_ARCH>,M> const & input) noexcept {
+    auto const & [...x] = input;
+    return {{floor(x)...}};
+  }
+  template<std::size_t N> requires requires { typename vec<float,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline vec<float,N,SIMD_ARCH> ceil(vec<float,N,SIMD_ARCH> x) noexcept {
+    return detail::SIMD_BACKEND::round_integral<detail::SIMD_BACKEND::rounding_direction::up>(x);
+  }
+  template<std::size_t N,std::size_t M> requires requires { typename vec<float,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline std::array<vec<float,N,SIMD_ARCH>,M> ceil(std::array<vec<float,N,SIMD_ARCH>,M> const & input) noexcept {
+    auto const & [...x] = input;
+    return {{ceil(x)...}};
+  }
+  template<std::size_t N> requires requires { typename vec<float,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline vec<float,N,SIMD_ARCH> trunc(vec<float,N,SIMD_ARCH> x) noexcept {
+    return detail::SIMD_BACKEND::round_integral<detail::SIMD_BACKEND::rounding_direction::zero>(x);
+  }
+  template<std::size_t N,std::size_t M> requires requires { typename vec<float,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline std::array<vec<float,N,SIMD_ARCH>,M> trunc(std::array<vec<float,N,SIMD_ARCH>,M> const & input) noexcept {
+    auto const & [...x] = input;
+    return {{trunc(x)...}};
+  }
+}
+
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0

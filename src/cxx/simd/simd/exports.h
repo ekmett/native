@@ -101,6 +101,9 @@ export namespace simd {
   using ::simd::broadcast;
   using ::simd::abs;
   using ::simd::sqrt;
+  using ::simd::floor;
+  using ::simd::ceil;
+  using ::simd::trunc;
 }
 
 export namespace simd {
@@ -123,6 +126,9 @@ export namespace simd {
     using ::simd::sin;
     using ::simd::sincos;
     using ::simd::sqrt;
+    using ::simd::floor;
+    using ::simd::ceil;
+    using ::simd::trunc;
     using ::simd::tanh;
   }
 }

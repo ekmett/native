@@ -86,6 +86,7 @@ if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
   endif()
   add_subdirectory(tests/static_string)
   add_subdirectory(tests/apple_headers)
+  add_subdirectory(tests/rounding)
 endif()
 
 configure_file(etc/cmake/simdProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/simdProfile.cmake" COPYONLY)

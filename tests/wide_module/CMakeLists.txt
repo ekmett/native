@@ -39,3 +39,7 @@ add_test(NAME wide_batch COMMAND wide_batch)
 add_executable(wide_value value.cc value_no_headers.cc)
 target_link_libraries(wide_value PRIVATE wide_module)
 add_test(NAME wide_value COMMAND wide_value)
+
+add_executable(wide_rounding ../rounding/adl.cc)
+target_link_libraries(wide_rounding PRIVATE wide_module)
+add_test(NAME wide_rounding COMMAND wide_rounding)

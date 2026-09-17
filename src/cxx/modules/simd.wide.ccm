@@ -474,6 +474,27 @@ export namespace simd {
     template<class T> requires std::is_arithmetic_v<T>
     simd_inline constexpr auto copysign(T const & x,T const & y)
         noexcept(noexcept(std::copysign(x,y))) -> decltype(std::copysign(x,y)) { return std::copysign(x,y); }
+    template<class T> requires std::is_floating_point_v<T>
+    simd_inline constexpr auto floor(T const & x)
+        noexcept(noexcept(std::floor(x))) -> decltype(std::floor(x)) { return std::floor(x); }
+    struct wide_floor {
+      template<class T> simd_inline constexpr auto operator()(T const & x) const
+          noexcept(noexcept(floor(x))) -> decltype(floor(x)) { return floor(x); }
+    };
+    template<class T> requires std::is_floating_point_v<T>
+    simd_inline constexpr auto ceil(T const & x)
+        noexcept(noexcept(std::ceil(x))) -> decltype(std::ceil(x)) { return std::ceil(x); }
+    struct wide_ceil {
+      template<class T> simd_inline constexpr auto operator()(T const & x) const
+          noexcept(noexcept(ceil(x))) -> decltype(ceil(x)) { return ceil(x); }
+    };
+    template<class T> requires std::is_floating_point_v<T>
+    simd_inline constexpr auto trunc(T const & x)
+        noexcept(noexcept(std::trunc(x))) -> decltype(std::trunc(x)) { return std::trunc(x); }
+    struct wide_trunc {
+      template<class T> simd_inline constexpr auto operator()(T const & x) const
+          noexcept(noexcept(trunc(x))) -> decltype(trunc(x)) { return trunc(x); }
+    };
     struct wide_isfinite {
       template<class... T> simd_inline constexpr auto operator()(T const &... x) const
           noexcept(noexcept(isfinite(x...))) -> decltype(isfinite(x...)) { return isfinite(x...); }
@@ -550,6 +571,24 @@ export namespace simd {
   simd_nodiscard simd_inline constexpr wide<T,N> copysign(wide<T,N> const & a,wide<T,N> const & b)
       noexcept(noexcept(detail::wide_map<detail::wide_copysign>(a,b))) {
     return detail::wide_map<detail::wide_copysign>(a,b);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_floor,T> &&
+    std::same_as<detail::wide_result<detail::wide_floor,T>,T>
+  simd_nodiscard simd_inline constexpr wide<T,N> floor(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_floor>(input))) {
+    return detail::wide_map<detail::wide_floor>(input);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_ceil,T> &&
+    std::same_as<detail::wide_result<detail::wide_ceil,T>,T>
+  simd_nodiscard simd_inline constexpr wide<T,N> ceil(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_ceil>(input))) {
+    return detail::wide_map<detail::wide_ceil>(input);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_trunc,T> &&
+    std::same_as<detail::wide_result<detail::wide_trunc,T>,T>
+  simd_nodiscard simd_inline constexpr wide<T,N> trunc(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_trunc>(input))) {
+    return detail::wide_map<detail::wide_trunc>(input);
   }
   template<class R,std::size_t N>
   simd_nodiscard simd_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
