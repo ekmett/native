@@ -68,3 +68,19 @@ an admitted CPU. Enable `SIMD_ENABLE_ASAN` for sanitizer builds; use a separate
 build directory with IPO disabled when inspecting sanitizer behavior. The
 bounded M3 runner is `tests/neon/run.py`; the caller supplies any host resource
 gate and toolchain paths.
+
+## Binary wide math followup
+
+Generic `wide` now forwards `atan2(y,x)` to an element library's array overload
+when available, otherwise to its element operation. Empty packs, ADL batch
+selection and exception specifications are part of the maintained tests.
+The Windows suite passes 29 tests with exceptions enabled plus the relocated
+consumer; M3 passes 24 tests plus the relocated consumer. The raw numerical
+captures above are unchanged. These checks used the same Clang 23.1.1 and
+CMake 4.4.3 toolchains as the original checkpoint.
+
+The downstream FTZ library additionally passed native log/log1p, tanh and atan2
+and separate sin/cos through arrays and wide packs. Its four common-width
+output packets contain 2,688,588 words and are byte-identical on AVX2, AVX-512
+and M3 NEON. This is evidence for those recorded graphs and inputs, not a
+universal floating-point or arbitrary libm guarantee.
