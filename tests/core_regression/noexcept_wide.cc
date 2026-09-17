@@ -63,6 +63,10 @@ namespace {
       observe<Failure == failure::operation>(&events::operations);
       return value(a.data);
     }
+    friend value atan2(value const & y, value const & x) noexcept(Failure != failure::operation) {
+      observe<Failure == failure::operation>(&events::operations);
+      return value(y.data - x.data);
+    }
     friend value fma(value const & a, value const & b, value const & c)
         noexcept(Failure != failure::operation) {
       observe<Failure == failure::operation>(&events::operations);
@@ -91,6 +95,8 @@ namespace {
         (BoolMask || Failure != failure::operation)));
     static_assert(noexcept(simd::abs(std::declval<W const &>())) == ordinary);
     static_assert(noexcept(simd::sqrt(std::declval<W const &>())) == ordinary);
+    static_assert(noexcept(simd::atan2(std::declval<W const &>(),
+      std::declval<W const &>())) == ordinary);
     static_assert(noexcept(simd::fma(std::declval<W const &>(),
       std::declval<W const &>(),std::declval<W const &>())) == ordinary);
     static_assert(noexcept(simd::select(std::declval<M const &>(),
@@ -139,6 +145,7 @@ namespace {
       side_effects([&] { (void)simd::abs(a); },2,2,2);
       side_effects([&] { (void)simd::sqrt(a); },2,2,2);
       side_effects([&] { (void)simd::fma(a,b,c); },2,2,2);
+      side_effects([&] { (void)simd::atan2(a,b); },2,2,2);
       side_effects([&] { (void)simd::select(masks,a,b); },BoolMask ? 0 : 2,2,2);
     }
     if constexpr (BoolMask && Failure == failure::operation)
@@ -149,6 +156,7 @@ namespace {
       catches([&] { (void)simd::abs(a); });
       catches([&] { (void)simd::sqrt(a); });
       catches([&] { (void)simd::fma(a,b,c); });
+      catches([&] { (void)simd::atan2(a,b); });
       if constexpr (!(BoolMask && Failure == failure::operation))
         catches([&] { (void)simd::select(masks,a,b); });
     }

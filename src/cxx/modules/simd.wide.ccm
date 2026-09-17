@@ -427,6 +427,7 @@ export namespace simd {
     using std::log;
     using std::log1p;
     using std::tanh;
+    using std::atan2;
     template<class... A> simd_inline constexpr auto adl_abs(A const &... a)
         noexcept(noexcept(abs(a...))) -> decltype(abs(a...)) { return abs(a...); }
     template<class... A> simd_inline constexpr auto adl_sqrt(A const &... a)
@@ -443,6 +444,8 @@ export namespace simd {
         noexcept(noexcept(log(a...))) -> decltype(log(a...)) { return log(a...); }
     template<class... A> simd_inline constexpr auto adl_log1p(A const &... a)
         noexcept(noexcept(log1p(a...))) -> decltype(log1p(a...)) { return log1p(a...); }
+    template<class... A> simd_inline constexpr auto adl_atan2(A const &... a)
+        noexcept(noexcept(atan2(a...))) -> decltype(atan2(a...)) { return atan2(a...); }
     template<class... A> simd_inline constexpr auto adl_tanh(A const &... a)
         noexcept(noexcept(tanh(a...))) -> decltype(tanh(a...)) { return tanh(a...); }
     template<bool Flush,class A> requires requires(A const & a) { exp(a,std::bool_constant<Flush>{}); }
@@ -617,6 +620,27 @@ export namespace simd {
       auto & [...value] = result;
       auto const & [...x] = input;
       ([&] { value = detail::adl_tanh(x); }(), ...);
+      return result;
+    }
+  }
+  template<class R,std::size_t N> requires requires(R const & x) { detail::adl_atan2(x,x); }
+  simd_nodiscard simd_inline constexpr wide<R,N> atan2(wide<R,N> const & y,wide<R,N> const & x)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { detail::adl_atan2(a,a); })
+          return noexcept(wide<R,N>{detail::adl_atan2(std::declval<std::array<R,N> const &>(),
+            std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = detail::adl_atan2(
+            std::declval<R const &>(),std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { detail::adl_atan2(y.registers,x.registers); })
+      return wide<R,N>{detail::adl_atan2(y.registers,x.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...a] = y;
+      auto const & [...b] = x;
+      ([&] { value = detail::adl_atan2(a,b); }(), ...);
       return result;
     }
   }

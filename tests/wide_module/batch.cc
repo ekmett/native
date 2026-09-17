@@ -14,6 +14,7 @@ namespace sample {
   value operator-(value a,value b) noexcept { ++element_calls; return {a.n-b.n}; }
   value operator*(value a,value b) noexcept { ++element_calls; return {a.n*b.n}; }
   value fma(value a,value b,value c) noexcept { ++element_calls; return {a.n*b.n+c.n}; }
+  value atan2(value y,value x) noexcept { ++element_calls; return {y.n-x.n}; }
   value exp(value a) noexcept { ++element_calls; return a; }
   std::pair<value,value> sincos(value a) noexcept { ++element_calls; return {a,a}; }
   template<std::size_t N> auto add(std::array<value,N> const & a,std::array<value,N> const & b) noexcept {
@@ -36,6 +37,11 @@ namespace sample {
     ++batch_calls;
     auto const & [...x] = a; auto const & [...y] = b; auto const & [...z] = c;
     return std::array<value,N>{value{x.n*y.n+z.n}...};
+  }
+  template<std::size_t N> auto atan2(std::array<value,N> const & y,std::array<value,N> const & x) noexcept {
+    ++batch_calls;
+    auto const & [...a] = y; auto const & [...b] = x;
+    return std::array<value,N>{value{a.n-b.n}...};
   }
   template<std::size_t N> auto exp(std::array<value,N> const & a) noexcept { ++batch_calls; return a; }
   template<std::size_t N> auto sincos(std::array<value,N> const & a) noexcept {
@@ -74,15 +80,16 @@ template<std::size_t N> bool check() {
   auto product = a*b;
   auto fused = simd::fma(a,b,a);
   auto exponential = simd::exp(a);
+  auto angle = simd::atan2(a,b);
   auto [s,c] = simd::sincos(a);
   a += b; a -= b; a *= b;
   sample::noncopy increment(4);
   a += increment;
-  if (sample::batch_calls != 10 || sample::element_calls != 0) return false;
+  if (sample::batch_calls != 11 || sample::element_calls != 0) return false;
   for (std::size_t i=0; i<N; ++i)
     if (sum.registers[i].n!=5 || difference.registers[i].n!=1 || product.registers[i].n!=6 ||
         fused.registers[i].n!=8 || exponential.registers[i].n!=2 || s.registers[i].n!=2 ||
-        c.registers[i].n!=2 || a.registers[i].n!=10) return false;
+        c.registers[i].n!=2 || a.registers[i].n!=10 || angle.registers[i].n!=-1) return false;
   return true;
 }
 int main() { return check<0>() && check<1>() && check<3>() && check<12>() ? 0 : 1; }
