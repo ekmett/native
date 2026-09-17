@@ -1,8 +1,8 @@
 # Building and consuming simd
 
 Use Clang 23, CMake 4.4 and Ninja. On Windows use `clang-cl` with a configured
-MSVC SDK environment; on ARM use a Clang installation with the required C++26
-pack support. The configure check tests the language feature itself.
+MSVC SDK environment; on macOS select an LLVM toolchain explicitly instead of
+the system compiler. Configuration compiles the required language features.
 
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
@@ -31,21 +31,31 @@ cmake_minimum_required(VERSION 4.4)
 project(example LANGUAGES CXX)
 find_package(simd CONFIG REQUIRED COMPONENTS simd)
 add_executable(example example.cc)
-target_link_libraries(example PRIVATE simd::simd simd::common simd::avx2)
-simd_target_profile(example AVX2)
+target_link_libraries(example PRIVATE simd::simd)
+simd_target_profile(example AVX512)  # default x86 package
 ```
 
 ```cpp
-import simd.avx2;
+import simd;
 using V = simd::vec<float, 8, simd::avx2>;
 using M = V::mask;
 ```
 
-`simd::simd` supplies compiled objects. `simd::common` and the selected profile
-supply module metadata; CMake rebuilds compatible BMIs from installed source.
-No precompiled PCM is a portable package interface. A baseline dispatcher links
+`simd::simd` supplies compiled objects and the omnibus module metadata.
+`simd::common` and individual profile targets remain available for granular
+imports. CMake rebuilds compatible BMIs from installed source.
+Installed PCMs would bind the package to one compiler configuration, so the
+package distributes module source instead. A baseline dispatcher links
 the archive and common modules without ISA compile flags, then invokes separately
 compiled native entries after CPUID/OS vector-state checks.
+
+For the default x86 package, the omnibus imports both native profiles, so its
+consumer explicitly selects `AVX512`. An AVX2-only omnibus requires a package
+built with `-DSIMD_PROFILES=AVX2`; its consumer selects `AVX2`. AArch64 packages
+default to `NEON`, and their consumers select `NEON`. A combined x86 package also
+supports a narrower translation unit using `import simd.avx2;` with the AVX2
+provider and flags. See [the omnibus guide](../docs/omnibus.md) for the observed
+CMake 4.4.3 dependency-BMI restriction and installed-consumer checks.
 
 ## Headers and downstream libraries
 
@@ -79,19 +89,17 @@ for intrinsic linkage and transitive BMI details.
 ## Toolchain recipes and CI
 
 Keep `clang++` and `clang-scan-deps` from the same LLVM 23 installation on
-`PATH`. [LLVM's Ubuntu packages](https://apt.llvm.org/) provide the versioned
-compiler and `clang-tools-23`; [Homebrew LLVM](https://formulae.brew.sh/formula/llvm)
-provides `llvm@23` on macOS. Use `brew --prefix llvm@23` instead of assuming an
-Intel or Apple Silicon installation path. The
-[CMake Python distributions](https://pypi.org/project/cmake/) provide CMake 4.4
-in an isolated virtual environment when the system package is older.
+`PATH`. Select `CMAKE_CXX_COMPILER` explicitly when several Clang installations
+are available. Keep the compiler resource directory, standard-library headers
+and linker consistent with that installation. `CMAKE_PREFIX_PATH` points to
+installed library packages, not to a producer's build directory.
 
 The CI workflow configures Ninja directly, builds with PCH and IPO, runs CTest,
 and checks installation. It selects AVX2 tests on the Linux x86 runner and NEON
 on the macOS ARM runner; the x86 archive also builds the AVX-512 module. The
 baseline profile tests check CPU and OS support before entering AVX-512 code.
-Build or test failures fail the job. These recipes describe the intended CI
-configuration; a changed toolchain still needs its own successful run.
+The workflow is a reproducible build recipe; platform execution claims are
+listed separately in [validation](../docs/validation.md).
 
 `make`, `make test` and `make install` wrap the `clang-release` preset. Override
 `PRESET=clang-cl-release` when using clang-cl, or pass explicit configure options
@@ -101,8 +109,7 @@ and OS vector state. Runtime tests must not be used as feature probes.
 
 `Dockerfile` is an optional Ubuntu 24.04 / LLVM 23 build environment. It installs
 build tools but does not build the library or establish a Linux qualification.
-Build a local image explicitly with `docker build -t simd-build .`; the old
-automatic registry-upload and `act` helper scripts are retired. CI does not
+Build a local image explicitly with `docker build -t simd-build .`. CI does not
 depend on a prepublished container.
 Documentation is separate: enable `SIMD_BUILD_DOCS=ON` and build `simd_docs`
 with Doxygen 1.12 or newer.

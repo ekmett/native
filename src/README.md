@@ -1,7 +1,8 @@
-# Source layout
+# Definition ownership
 
-C++ consumers import named modules. Headers under `cxx/simd` are implementation
-inputs for rebuilding consumer BMIs. Register and intrinsic definitions live in
+C++ consumers import `simd` or individual named modules. The omnibus is generated
+from the package's configured profiles and contains only re-exports. Headers
+under `cxx/simd` are implementation inputs for rebuilding consumer BMIs. Register and intrinsic definitions live in
 the global module fragment. Array math kernels use `std::array<V,N>` and C++26
 structured-binding packs; they do not depend on `wide`.
 
@@ -13,7 +14,7 @@ structured-binding packs; they do not depend on `wide`.
 | `shared/simd/attributes.h` | Named compiler attributes, usable by downstream libraries |
 
 The implementation umbrella is named `vec.h` so it does not shadow Apple's
-SDK `<simd/simd.h>`; no compatibility header uses that reserved spelling.
+SDK `<simd/simd.h>`; the SDK keeps ownership of that include path.
 
 The generic container, operators, forwarding and tuple protocol belong to
 `simd.wide`. ADL selects an element's array kernel without a dependency on SIMD.
@@ -32,10 +33,10 @@ to the separate downstream `ftz` package. They are not part of `simd.lib`.
 A consumer needing attribute macros includes `<simd/attributes.h>` and links
 the header-only CMake target `simd::headers`; modules cannot export macros.
 
-Active source uses `.h` for textual inputs, `.cc` for ordinary translation
-units, and `.ccm` for module interfaces. Archived originals retain their names.
-The unused original SIMD implementation and profiler remain under `legacy/ein`,
-outside the build and installation. Use `std::forward_like`; the polyfill is gone.
+Source files use `.h` for textual inputs, `.cc` for ordinary translation units,
+and `.ccm` for module interfaces. `legacy/ein` retains the original SIMD and
+profiler sources under their original names, outside the build and installation.
+New implementation code uses the standard library, including `std::forward_like`.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

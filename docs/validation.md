@@ -1,5 +1,9 @@
 # Validation
 
+The tests cover value semantics, memory boundaries, module identity and installed
+package consumption. Counts below belong to the configurations stated beside
+them; sanitizer, assembly and downstream results retain their separate scope.
+
 The short-vector and named-swizzle checkpoint was exercised on Windows x86-64
 and an Apple M3 with upstream Clang 23.1.1, CMake 4.4.3 and Ninja. These are CPU
 and compiler checks; they do not establish GPU behavior or throughput.
@@ -69,9 +73,9 @@ build directory with IPO disabled when inspecting sanitizer behavior. The
 bounded M3 runner is `tests/neon/run.py`; the caller supplies any host resource
 gate and toolchain paths.
 
-## Binary wide math followup
+## Binary wide math
 
-Generic `wide` now forwards `atan2(y,x)` to an element library's array overload
+Generic `wide` forwards `atan2(y,x)` to an element library's array overload
 when available, otherwise to its element operation. Empty packs, ADL batch
 selection and exception specifications are part of the maintained tests.
 The Windows suite passes 29 tests with exceptions enabled plus the relocated
@@ -87,8 +91,8 @@ universal floating-point or arbitrary libm guarantee.
 
 ## Value utilities, directed rounding and combined packages
 
-The subsequent Windows checkpoint passes 35 core tests and one relocated
-installed consumer with exceptions enabled, PCH and ThinLTO. Both x86 module
+The recorded Windows value-utility and rounding configuration passes 35 core
+tests and one relocated installed consumer with exceptions enabled, PCH and ThinLTO. Both x86 module
 producers are built. Separate installed consumers also exercise AVX2 and
 AVX-512 against matching SIMD and FTZ packages.
 
@@ -106,6 +110,20 @@ The combined installed FTZ consumers pass four value-utility tests, two rounding
 tests and four policy-boundary tests, plus one third-static-library test per
 ISA. The latter consumers also use PCH and ThinLTO. These focused checks extend
 the earlier numerical checkpoint; they do not replace its packet results.
-No new NEON execution of the value utilities or directed rounding is recorded
-at this checkpoint. The earlier M3 results remain scoped to the implementations
-and inputs described above.
+That combined-package record covers Windows. The separate NEON run below
+extends core coverage without changing the scope of the downstream FTZ record.
+
+## NEON utilities and rounding — source `0c4c0ae`
+
+On Apple M3, source `0c4c0ae769cb45978c758a4a7eeb3d02fc06e54c` passes
+30 core tests and one relocated installed-package consumer with exceptions
+enabled, PCH and ThinLTO, using Clang 23.1.1 and CMake 4.4.3. Source hashes match
+before and after the run. The architecture capture remains
+`92e940676561d462135e70a6acd50eaba0b879b5663fe7dfc5b8dc11878181a0`
+in both producer and relocated consumer.
+
+The scalar and NEON directed-rounding fixtures perform 4,312,608 checks across
+header and module consumers under all four standard rounding modes. The suite
+also includes the generic wide value utilities. This run is ordinary CPU
+execution; the earlier sanitizer and assembly results keep their own scope.
+No GPU execution or throughput measurement is implied.

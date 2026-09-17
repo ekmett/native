@@ -1,6 +1,11 @@
-# Modules, native templates and application dispatch
+# Types, modules and application dispatch
 
-One primary class template describes element, lane count and architecture:
+`import simd;` exposes common utilities and the package's configured native
+profiles. Granular imports such as `simd.avx2` retain the same type identities
+and let a translation unit use a narrower profile. The
+[omnibus guide](omnibus.md) describes the explicit compilation requirements.
+
+The type records the choices that affect storage and code generation:
 
 ```cpp
 simd::vec<float, 4, simd::avx2>
@@ -16,12 +21,19 @@ pack of `M` registers.
 
 ## Identity and generic algorithms
 
-`simd::vec<T,N,Arch>` is the actual primary class template, not a type-selection
-alias. Architecture tags are ordinary types. Vectors with different architecture
-arguments remain distinct even when their register widths match. The module name
+`simd::vec<T,N,Arch>` is a class template with ordinary types as architecture
+tags. Vectors with different architecture arguments remain distinct even when their register widths match. The module name
 controls visibility; the template arguments control overload resolution and ABI.
 Importing an AVX2 module into an AVX-512 translation unit does not upgrade its
 vectors or mask representation.
+
+There is no default architecture. Class template argument deduction takes an
+explicit tag, followed by lane values or an array:
+
+```cpp
+auto lanes = simd::vec(simd::avx2{}, 1.f, 2.f, 3.f, 4.f);
+// vec<float,4,avx2>; copying lanes deduces the same type.
+```
 
 Generic algorithms take the architecture as a type parameter:
 
@@ -71,14 +83,9 @@ mutable lvalue and distinct destination indices. `position.xxy` is readable;
 assigning to it is ill-formed. Accessing nonexistent input lanes is ill-formed
 as well. Architecture and element type are retained in vector results.
 
-Properties invoke accessors; they add no proxy objects or pointers to a vector.
-An empty accessor base shares their declarations; `simd_empty_bases` preserves
-the native layout when the Microsoft ABI combines multiple empty bases.
-The implementation shares an index-pack helper and generates the property names
-from Cartesian products of component labels. Constructors still initialize only
-the native backing value, preserving constexpr lane construction and `{}` value
-initialization. Ordinary default initialization without braces remains
-uninitialized, as with the other native vectors.
+Properties invoke accessors and preserve the register layout. Lane construction
+supports constant evaluation, and `{}` value-initializes the backing register.
+Ordinary default initialization without braces leaves it uninitialized.
 
 A copied swizzle is a value, not a view. Address-taking, mutable-reference binding
 and assignments through a temporary swizzle such as `position.xyz.x = 5.f` are
@@ -115,16 +122,19 @@ auto aligned = simd::load_simd<V>(p,simd::simd_memory<32>{});
 simd::store_simd(q,x);
 ```
 
-Alignment policies are caller promises. Partial helpers handle tails explicitly.
-The existing streaming policy is an ordinary-access fallback; naming a policy
-does not claim a non-temporal instruction that the implementation does not emit.
+Alignment policies are caller promises. Use `load_simd_partial<V>(p,count,fill)`
+and `store_simd_partial(p,value,count)` for tails. Only the requested logical
+lanes are accessed; the load supplies `fill` for the rest. The streaming policy
+currently uses ordinary accesses, so it carries no non-temporal-store guarantee.
 
 ## Definition placement
 
-Standard and intrinsic headers belong above `export module`, in the global
-module fragment. Native templates and their intrinsic wrappers are defined there
-and exported through using-declarations. This keeps private intrinsic symbols
-from becoming missing linkage dependencies in downstream archives.
+The profile interfaces include standard headers and native intrinsic wrappers
+in their global module fragments, before `export module`. The native templates
+keep that linkage and are exposed through explicit exports. This arrangement
+keeps intrinsic definitions available when downstream consumers instantiate them.
+It is an implementation boundary, not a requirement to put every template above
+the module declaration.
 
 Each profile fixes `SIMD_PROFILE` in its producer configuration. The implementation
 derives its architecture tag and private helper namespace from that value. A consumer with additional compiler features must not
@@ -151,7 +161,7 @@ AVX requirements. These utilities have no duplicate implementation-header API.
 Existing raw float/integer/mask specializations remain direct implementations.
 
 An extension must define the arithmetic semantics of its custom element.
-The downstream FTZ library is the first real consumer: it owns normalization,
+The downstream FTZ library uses this boundary: it owns normalization,
 reproducible math and environment admission, while using this library's raw
 registers, masks and arrays. The dependency goes from FTZ to SIMD only.
 All ISA modules can use the common scalar type without importing each other.
@@ -198,18 +208,18 @@ compiler/STL, exception mode and preprocessing state. An application's PCH is
 built separately; it can include standard headers and the attribute header.
 
 A downstream library needs both the native archive and the correct module
-provider metadata. Numerical addon modules should own their public CXX_MODULES
-file set directly on their archive target: hiding it behind an additional
-imported interface provider lost transitive module discovery in our CMake 4.4
-consumer test.
+provider metadata. A numerical addon places its public `CXX_MODULES` file set directly on its archive target. An additional
+imported interface layer can prevent CMake 4.4 from discovering transitive module
+providers; the installed third-library fixtures cover this boundary.
 
-The consumer also needs one consistent effective BMI chain. A direct baseline
-producer BMI combined with a differently configured synthetic dependency BMI
-triggered Clang 23 imported-STL crashes in the FTZ checks. Rebuilding the addon
-and its dependency BMIs together through installed module metadata passed the
-same fixtures with PCH and ThinLTO retained. This is a tested packaging constraint,
-not a reason to relax numerical checks or silently disable the build options.
+Build each consumer against one consistent dependency-BMI configuration. Mixing
+a baseline producer BMI with another synthesized copy of the same dependency
+under different ISA settings has triggered Clang 23 imported-STL crashes.
+Rebuild the addon and its dependencies together from installed metadata. The
+installed-package tests exercise that arrangement with PCH and ThinLTO enabled.
 
-The standalone miniature fixtures under tests demonstrate compiler mechanisms;
-they are not evidence for every production numerical operation. Production
-regressions and relocated installed-package consumers establish their own scope.
+Compiler-mechanism fixtures, numerical regressions and relocated package tests
+answer different questions. Their recorded scope is described in
+[validation](validation.md). Raw approximate math retains each function's stated
+domain and operation graph; wrapping it in `wide` does not strengthen its accuracy
+or floating-point-environment contract.
