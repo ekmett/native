@@ -2470,6 +2470,71 @@ namespace simd {
     simd_nodiscard simd_inline static simd_pure vec load_partial(T const *p, std::size_t n,
                                                                   T fill = T(0)) noexcept {
       assert(n <= lanes);
+      if (n == lanes) return load(p);
+      if (!n) return vec(fill);
+      // Native 32/64-bit lane tails must not touch masked-off addresses. This
+      // also accepts byte-unaligned sources; scalar tail loads use memcpy.
+#if SIMD_HAS_AVX512F && SIMD_HAS_AVX512DQ
+      if constexpr (sizeof(T) == 4 || sizeof(T) == 8) {
+        auto active = std::uint64_t((std::uint64_t(1) << n) - 1);
+        if constexpr (sizeof(T) * N == 64) {
+          if constexpr (sizeof(T) == 4)
+            return from_native(_mm512_mask_loadu_epi32(vec(fill).value, __mmask16(active), p));
+          else return from_native(_mm512_mask_loadu_epi64(vec(fill).value, __mmask8(active), p));
+        }
+#if SIMD_HAS_AVX512VL
+        else if constexpr (sizeof(T) * N == 32) {
+          if constexpr (sizeof(T) == 4)
+            return from_native(_mm256_mask_loadu_epi32(vec(fill).value, __mmask8(active), p));
+          else return from_native(_mm256_mask_loadu_epi64(vec(fill).value, __mmask8(active), p));
+        } else {
+          if constexpr (sizeof(T) == 4)
+            return from_native(_mm_mask_loadu_epi32(vec(fill).value, __mmask8(active), p));
+          else return from_native(_mm_mask_loadu_epi64(vec(fill).value, __mmask8(active), p));
+        }
+#endif
+      }
+#endif
+#if SIMD_HAS_AVX2
+      if constexpr ((sizeof(T) == 4 || sizeof(T) == 8) && !mask_type::compact && sizeof(T) * N <= 32) {
+        native_type active, loaded;
+        if constexpr (sizeof(T) * N == 32) {
+          if constexpr (sizeof(T) == 4) {
+            active = _mm256_cmpgt_epi32(_mm256_set1_epi32(int(n)), _mm256_setr_epi32(0,1,2,3,4,5,6,7));
+            loaded = _mm256_maskload_epi32(reinterpret_cast<int const *>(p), active);
+          } else {
+            active = _mm256_cmpgt_epi64(_mm256_set1_epi64x(static_cast<long long>(n)), _mm256_setr_epi64x(0,1,2,3));
+            loaded = _mm256_maskload_epi64(reinterpret_cast<long long const *>(p), active);
+          }
+        } else if constexpr (sizeof(T) * N == 16) {
+          if constexpr (sizeof(T) == 4) {
+            active = _mm_cmpgt_epi32(_mm_set1_epi32(int(n)), _mm_setr_epi32(0,1,2,3));
+            loaded = _mm_maskload_epi32(reinterpret_cast<int const *>(p), active);
+          } else {
+            active = _mm_cmpgt_epi64(_mm_set1_epi64x(static_cast<long long>(n)), _mm_set_epi64x(1,0));
+            loaded = _mm_maskload_epi64(reinterpret_cast<long long const *>(p), active);
+          }
+        }
+        return from_native(SIMD_BACKEND_NAMESPACE::integer_bit_select(active, loaded, vec(fill).value));
+      }
+#endif
+#if SIMD_HAS_ARM_NEON
+      if constexpr (sizeof(T) == 4) {
+        auto result = vreinterpretq_u32_u8(vec(fill).value);
+        std::uint32_t word;
+        auto bytes = reinterpret_cast<unsigned char const *>(p);
+        switch (n) {
+          case 3: std::memcpy(&word, bytes + 8, 4); result = vsetq_lane_u32(word, result, 2); [[fallthrough]];
+          case 2: std::memcpy(&word, bytes + 4, 4); result = vsetq_lane_u32(word, result, 1); [[fallthrough]];
+          case 1: std::memcpy(&word, bytes, 4); result = vsetq_lane_u32(word, result, 0);
+        }
+        return from_native(vreinterpretq_u8_u32(result));
+      } else if constexpr (sizeof(T) == 8) {
+        std::uint64_t word;
+        std::memcpy(&word, p, 8);
+        return from_native(vreinterpretq_u8_u64(vsetq_lane_u64(word, vreinterpretq_u64_u8(vec(fill).value), 0)));
+      }
+#endif
       std::array<T, lanes> data;
       data.fill(fill);
       if (n)
