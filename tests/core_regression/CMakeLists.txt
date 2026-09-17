@@ -143,6 +143,17 @@ foreach(kind IN ITEMS header import)
   endif()
 endforeach()
 
+# Exercise register-only integer operations from textual and module APIs.
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_integer_ops_${kind} integer_ops.cc)
+  target_link_libraries(simd_test_integer_ops_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_integer_ops_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  endif()
+  add_test(NAME simd.integer_ops.${kind} COMMAND simd_test_integer_ops_${kind})
+  set_tests_properties(simd.integer_ops.${kind} PROPERTIES LABELS "host;modules;integer;exact")
+endforeach()
+
 # Numerical tests select their own ISA. simd::simd never imposes one on
 # unrelated consumers such as a baseline startup dispatcher.
 string(TOLOWER "${SIMD_TEST_ISA}" simd_test_profile)
