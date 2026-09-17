@@ -48,15 +48,41 @@ block()
     message(FATAL_ERROR "simd requires Clang named properties and explicit object parameters (-fms-extensions).")
   endif()
 endblock()
-if(NOT SIMD_TEST_ISA MATCHES "^(AVX2|AVX512|NEON)$")
-  message(FATAL_ERROR "SIMD_TEST_ISA must be AVX2, AVX512, or NEON.")
-endif()
-if(SIMD_TEST_ISA STREQUAL "NEON")
-  if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-    message(FATAL_ERROR "SIMD_TEST_ISA=NEON requires an arm64 target toolchain.")
+# Native half syntax and by-value ABI support are independent target features.
+# Probe representation transport only; float conversion uses our integer graph.
+block()
+  set(CMAKE_CXX_STANDARD 26)
+  set(CMAKE_CXX_STANDARD_REQUIRED ON)
+  set(CMAKE_CXX_EXTENSIONS OFF)
+  set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+  foreach(format IN ITEMS FP16 BF16)
+    if(format STREQUAL "FP16")
+      set(native_type _Float16)
+    else()
+      set(native_type __bf16)
+    endif()
+    check_cxx_source_compiles("
+      using native_type = ${native_type};
+      static_assert(sizeof(native_type) == sizeof(unsigned short));
+      static_assert(sizeof(native_type) == 2);
+      native_type transport(native_type value) {
+        auto bits = __builtin_bit_cast(unsigned short, value);
+        return __builtin_bit_cast(native_type, bits);
+      }
+    " SIMD_HAS_NATIVE_${format})
+  endforeach()
+endblock()
+if(SIMD_BUILD_TESTS)
+  if(NOT SIMD_TEST_ISA MATCHES "^(AVX2|AVX512|NEON)$")
+    message(FATAL_ERROR "SIMD_TEST_ISA must be AVX2, AVX512, or NEON.")
   endif()
-elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
-  message(FATAL_ERROR "SIMD_TEST_ISA=${SIMD_TEST_ISA} requires an x86-64 target toolchain.")
+  if(SIMD_TEST_ISA STREQUAL "NEON")
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+      message(FATAL_ERROR "SIMD_TEST_ISA=NEON requires an arm64 target toolchain.")
+    endif()
+  elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+    message(FATAL_ERROR "SIMD_TEST_ISA=${SIMD_TEST_ISA} requires an x86-64 target toolchain.")
+  endif()
 endif()
 if(SIMD_BUILD_HOST AND NOT CMAKE_GENERATOR MATCHES "^Ninja")
   message(FATAL_ERROR "The qualified simd module build requires Ninja or Ninja Multi-Config.")

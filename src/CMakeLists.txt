@@ -15,6 +15,11 @@ function(simd_module_target target export_name)
 endfunction()
 
 simd_module_target(simd_common common)
+# CMake exports these producer definitions for installed BMI regeneration.
+# Header-only packages do not configure or depend on native-half capabilities.
+target_compile_definitions(simd_common PRIVATE
+  SIMD_HAS_NATIVE_FP16=$<BOOL:${SIMD_HAS_NATIVE_FP16}>
+  SIMD_HAS_NATIVE_BF16=$<BOOL:${SIMD_HAS_NATIVE_BF16}>)
 target_sources(simd_common PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cxx/modules"
   FILES cxx/modules/simd.scalar.ccm cxx/modules/simd.wide.ccm cxx/modules/simd.static_string.ccm

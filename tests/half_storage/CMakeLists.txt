@@ -1,0 +1,26 @@
+# SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+cmake_minimum_required(VERSION 4.4)
+project(simd_half_storage_consumer LANGUAGES CXX)
+find_package(simd CONFIG REQUIRED COMPONENTS simd)
+option(HALF_STORAGE_PCH "Precompile consumer standard headers" ON)
+option(HALF_STORAGE_IPO "Enable consumer IPO" OFF)
+add_executable(half_storage half_storage.cc omnibus.cc)
+target_link_libraries(half_storage PRIVATE simd::simd simd::common)
+# The omnibus includes all configured native profiles, even for scalar use.
+foreach(profile AVX512 AVX2 NEON)
+  string(TOLOWER "${profile}" lower)
+  if(TARGET simd::${lower})
+    simd_target_profile(half_storage ${profile})
+    break()
+  endif()
+endforeach()
+set_target_properties(half_storage PROPERTIES CXX_SCAN_FOR_MODULES ON CXX_EXTENSIONS OFF
+  INTERPROCEDURAL_OPTIMIZATION ${HALF_STORAGE_IPO})
+if(HALF_STORAGE_PCH)
+  target_precompile_headers(half_storage PRIVATE <bit> <concepts> <cstdint> <limits> <type_traits>)
+endif()
+enable_testing()
+add_test(NAME half.storage COMMAND half_storage)
+set_tests_properties(half.storage PROPERTIES TIMEOUT 180 LABELS "host;modules;half;exact")
+

@@ -23,6 +23,7 @@ set(DOXYGEN_EXPAND_ONLY_PREDEF YES)
 # Doxygen misparses conditional explicit constructors; keep their actual
 # contracts in the comments while rendering the ordinary constructor signature.
 set(DOXYGEN_PREDEFINED
+  "SIMD_HAS_NATIVE_FP16=1" "SIMD_HAS_NATIVE_BF16=1"
   "explicit(...):=explicit" "__cplusplus=202600L" "SIMD_PROFILE=512" "SIMD_BACKEND:=avx512_backend" "SIMD_ARCH:=::simd::avx512"
   "SIMD_BACKEND_NAMESPACE:=simd::detail::avx512_backend"
   "SIMD_HAS_AVX2:=1" "SIMD_HAS_AVX512F:=1" "SIMD_HAS_AVX512DQ:=1"

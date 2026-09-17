@@ -14,6 +14,10 @@ module;
 #include "simd/attributes.h"
 #include "simd/simd/common.h"
 
+#if !defined(SIMD_HAS_NATIVE_FP16) || !defined(SIMD_HAS_NATIVE_BF16)
+#error Configure native half capabilities before compiling simd.numerics.
+#endif
+
 export module simd.numerics;
 export import simd.types;
 
@@ -22,7 +26,8 @@ export namespace simd {
 /// \ingroup numerics
 /// Two-byte binary16 storage with environment-independent binary32 ties-to-even conversion.
 /// Conversion from float handles subnormals and overflow explicitly. Native-half
-/// import and bit factories preserve representation; they do not perform rounding.
+/// interoperability is available only where the target supports that type.
+/// Native import and bit factories preserve representation without rounding.
 /// This is a storage/conversion type, not an FTZ arithmetic policy.
 /// \snippet api.cc common_utilities
 struct fp16 {
@@ -62,9 +67,15 @@ private:
     return std::bit_cast<float>(sign | result);
   }
 public:
+  /// Native half storage when supported by the target; otherwise sixteen raw bits.
+#if SIMD_HAS_NATIVE_FP16
   using underlying_type = _Float16;
+#else
+  using underlying_type = uint16_t;
+#endif
 
-  _Float16 content;
+  /// Target-dependent storage. Use to_bits()/from_bits() for portable representation access.
+  underlying_type content;
 
   /// Default-initialize storage without setting its bits; value-initialization zeroes it.
   simd_inline simd_artificial
@@ -80,19 +91,23 @@ public:
 
   /// Round a binary32 value to this format, ties to even.
   simd_inline simd_artificial
-  constexpr fp16(float value) noexcept : content(std::bit_cast<_Float16>(encode(value))) {}
+  constexpr fp16(float value) noexcept : content(std::bit_cast<underlying_type>(encode(value))) {}
 
+#if SIMD_HAS_NATIVE_FP16
   /// Copy native storage without a numerical conversion.
   simd_inline simd_artificial
   constexpr fp16(_Float16 content) noexcept : content(content) {}
+#endif
 
   /// Decode to binary32; finite values are exact and signaling NaNs are quieted.
   simd_nodiscard simd_inline simd_artificial
   constexpr operator float (this fp16 self) noexcept { return decode(self.to_bits()); }
 
+#if SIMD_HAS_NATIVE_FP16
   /// Return native storage without rounding or normalizing NaN payloads.
   simd_nodiscard simd_inline simd_artificial
   constexpr operator _Float16 (this fp16 self) noexcept { return self.content; }
+#endif
 
   /// Copy the native representation, replacing all previous bits.
   simd_reinitializes simd_inline simd_artificial
@@ -274,7 +289,8 @@ export namespace simd {
 
 /// \ingroup numerics
 /// Two-byte bfloat16 storage with environment-independent binary32 ties-to-even conversion.
-/// Native-bfloat and bit factories preserve representation. No arithmetic or FTZ
+/// Native-bfloat interoperability is available only where the target supports it.
+/// Native import and bit factories preserve representation. No arithmetic or FTZ
 /// policy is attached to the storage type.
 struct bf16 {
 private:
@@ -291,9 +307,15 @@ private:
     return std::bit_cast<float>(result);
   }
 public:
+  /// Native half storage when supported by the target; otherwise sixteen raw bits.
+#if SIMD_HAS_NATIVE_BF16
   using underlying_type = __bf16;
+#else
+  using underlying_type = uint16_t;
+#endif
 
-  __bf16 content;
+  /// Target-dependent storage. Use to_bits()/from_bits() for portable representation access.
+  underlying_type content;
 
   /// Default-initialize storage without setting its bits; value-initialization zeroes it.
   simd_inline simd_artificial constexpr
@@ -301,11 +323,13 @@ public:
 
   /// Round a binary32 value to this format, ties to even.
   simd_inline simd_artificial constexpr
-  bf16(float f) noexcept : content(std::bit_cast<__bf16>(encode(f))) {}
+  bf16(float f) noexcept : content(std::bit_cast<underlying_type>(encode(f))) {}
 
+#if SIMD_HAS_NATIVE_BF16
   /// Copy native storage without a numerical conversion.
   simd_inline simd_artificial constexpr
   bf16(__bf16 f) noexcept : content(f) {}
+#endif
 
   /// Copy the native sixteen-bit representation.
   simd_inline simd_artificial constexpr
@@ -315,9 +339,11 @@ public:
   simd_inline simd_artificial constexpr
   bf16(simd_noescape bf16 &&) noexcept = default;
 
+#if SIMD_HAS_NATIVE_BF16
   /// Return native storage without rounding or normalizing NaN payloads.
   simd_nodiscard simd_inline simd_artificial simd_const constexpr
   operator __bf16 (this bf16 self) noexcept { return self.content; }
+#endif
 
   /// Decode to binary32; finite values are exact and signaling NaNs are quieted.
   simd_nodiscard simd_inline simd_artificial simd_const constexpr
