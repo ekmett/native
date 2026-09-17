@@ -131,5 +131,23 @@ also includes the generic wide value utilities. This run is ordinary CPU
 execution; the earlier sanitizer and assembly results keep their own scope.
 No GPU execution or throughput measurement is implied.
 
-The `0c4c0ae` run uses granular imports. It does not qualify the subsequently
-added `import simd;` omnibus on ARM; that installed-consumer check remains separate.
+The `0c4c0ae` run uses granular imports. The later omnibus has its own
+installed-consumer qualification below.
+
+## NEON omnibus — source `53d9a44`
+
+On the same Apple M3 and toolchain, source
+`53d9a44910b7f3e504e72e94ed7d01fe655764ad` passes 30 core tests,
+one granular relocated-package test and three omnibus consumer tests. The
+consumer tests cover archive-only linkage, baseline granular imports and
+`import simd;` with NEON vectors. No tests were skipped.
+
+Exceptions and PCH are enabled. Native kernels use ThinLTO; baseline executables
+keep IPO disabled. All 215 source files and both tracked symlinks are unchanged.
+The granular architecture capture has the same SHA-256 recorded above, and the
+compiler logs contain no warnings or errors.
+
+This qualifies the configured NEON-only omnibus on ARM. It adds no GPU,
+sanitizer, throughput or mixed-architecture omnibus claim. The retained receipt
+archive has SHA-256
+`c7b4b20aaacc597fc86f166af41a09c275331963c5b0f1a3941706cde653448d`.
