@@ -18,6 +18,7 @@ export namespace simd {
   /// x86-only queries and wait helpers. Feature queries belong outside hot loops;
   /// SIMD instruction admission also requires the appropriate OS vector state.
   /// \snippet api.cc capabilities
+
   /// \ingroup capabilities
   /// Raw CPUID register values, interpreted as signed storage words.
   struct simd_nodiscard cpuid_t {
