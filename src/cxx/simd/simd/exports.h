@@ -28,33 +28,57 @@ export namespace simd {
 }
 
 export namespace simd {
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator+;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator-;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator*;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator/;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator%;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator&;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator|;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator^;
   using ::simd::operator<<;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator>>;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator!;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator~;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator==;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator!=;
   using ::simd::operator<;
   using ::simd::operator<=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator>;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator>=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator+=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator-=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator*=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator/=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator%=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator&=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator|=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator^=;
   using ::simd::operator<<=;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::operator>>=;
 
   using ::simd::wide;
@@ -89,10 +113,14 @@ export namespace simd {
   using ::simd::mask_cast;
   using ::simd::to_predicate;
   using ::simd::to_vector_mask;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::bit_select;
   using ::simd::select;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::masked_add;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::masked_sub;
+  /// Make the corresponding simd overload set visible through this module.
   using ::simd::masked_mul;
   using ::simd::masked_scaleb;
   using ::simd::masked_scaleb_zero;

@@ -58,6 +58,7 @@ namespace simd {
   /// Carry a compile-time lane index or instruction immediate as a value.
   template <std::size_t K> struct imm_t {
     static constexpr std::size_t value = K;
+    /// Return the immediate value K during constant evaluation.
     simd_nodiscard simd_inline simd_const consteval operator std::size_t() const noexcept { return K; }
   };
   /// \ingroup vectors
@@ -71,7 +72,9 @@ namespace simd {
   template<class U> requires (std::is_unsigned_v<U> && !std::same_as<U,bool> && (sizeof(U)==1 || sizeof(U)==2 || sizeof(U)==4 || sizeof(U)==8))
   struct mask_lane {
     using storage_type=U;
+    /// Initialize this lane to false.
     simd_inline constexpr mask_lane() noexcept = default;
+    /// Represent the supplied truth value as zero or all-one bits.
     explicit simd_inline constexpr mask_lane(bool value) noexcept : value_(value?U(~U(0)):U(0)) {}
     /// Normalize nonzero bits to a true, all-one lane.
     simd_nodiscard static simd_inline simd_const constexpr mask_lane from_bits(U value) noexcept { return mask_lane(value!=0); }
@@ -79,11 +82,17 @@ namespace simd {
     simd_nodiscard simd_inline simd_pure constexpr U to_bits() const noexcept { return value_; }
     /// Return the lane truth value.
     simd_nodiscard simd_inline simd_pure constexpr bool to_bool() const noexcept { return value_!=0; }
+    /// Return the lane-wise logical complement, retaining this mask type.
     simd_nodiscard friend simd_inline simd_const constexpr mask_lane operator!(mask_lane a) noexcept { return mask_lane(!a.to_bool()); }
+    /// Invert each lane truth value, preserving the mask representation.
     simd_nodiscard friend simd_inline simd_const constexpr mask_lane operator~(mask_lane a) noexcept { return !a; }
+    /// Bitwise AND of corresponding lane representations.
     simd_nodiscard friend simd_inline simd_const constexpr mask_lane operator&(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()&&b.to_bool()); }
+    /// Bitwise OR of corresponding lane representations.
     simd_nodiscard friend simd_inline simd_const constexpr mask_lane operator|(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()||b.to_bool()); }
+    /// Bitwise XOR of corresponding lane representations.
     simd_nodiscard friend simd_inline simd_const constexpr mask_lane operator^(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()!=b.to_bool()); }
+    /// Compare the two canonical lane truth values and return bool.
     simd_nodiscard friend simd_inline simd_const constexpr bool operator==(mask_lane,mask_lane) noexcept = default;
   private:
     U value_=0;
@@ -157,8 +166,10 @@ namespace simd {
    * `N` describes lanes, not a count of registers. Unsupported shapes remain
    * incomplete; use wide for several registers. Two- and three-lane native
    * vectors have four-lane physical storage but touch only their logical lanes
-   * in memory. Float and integer default initialization leaves lanes unspecified;
-   * use braces, broadcast construction or a load before reading them.
+   * in memory. Scalar float and full-register integer storage initialize to zero. Default
+   * initialization of full native float and short vectors leaves storage unspecified. Use braces,
+   * broadcast construction or a load before reading those lanes. Custom elements
+   * retain their customization's initialization contract.
    *
    * `value_type`, `lanes`, `architecture`, `mask` and `rebind<U>` describe the
    * selected specialization. Comparisons return masks, not a scalar bool.
@@ -176,76 +187,109 @@ namespace simd {
       vec<typename simd_traits<T>::storage_type,N,Arch>,vec<T,N,Arch>>, detail::swizzle_access<T,N,Arch> {
     using base = simd_customization<T,vec<typename simd_traits<T>::storage_type,N,Arch>,vec<T,N,Arch>>;
     using base::base;
+    /// Default-construct the element customization; its initialization contract is retained.
     simd_inline constexpr vec() = default;
     using architecture = Arch;
     using mask = typename vec<typename simd_traits<T>::storage_type,N,Arch>::mask;
     using predicate_type = predicate<N,Arch>;
     template<class U> using rebind = vec<U,N,Arch>;
+    /// Select this architecture and forward arguments to the corresponding constructor.
+    /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<base,X...>
     simd_inline constexpr vec(Arch, X &&... x)
       noexcept(std::is_nothrow_constructible_v<base,X...>) : base(std::forward<X>(x)...) {}
   };
+  /// Deduce the element and lane count from an array, retaining the explicit architecture tag.
   template<architecture Arch, class T, std::size_t N> vec(Arch,std::array<T,N> const &) -> vec<T,N,Arch>;
+  /// Deduce integral lanes using their common type and retain the explicit architecture tag.
   template<architecture Arch, class... T> requires(sizeof...(T)>0) && (std::integral<T> && ...)
   vec(Arch,T...) -> vec<std::common_type_t<T...>,sizeof...(T),Arch>;
+  /// Deduce a homogeneous mask vector from its lane arguments and explicit architecture.
   template<architecture Arch, class T, class... X> requires simd_mask_element<T> && (std::same_as<T,X> && ...)
   vec(Arch,T,X...) -> vec<T,1+sizeof...(X),Arch>;
+  /// Deduce a custom element when present, otherwise float; retain the argument count and explicit architecture.
   template<architecture Arch, class... X> requires(sizeof...(X)>0) &&
     (!(std::integral<X> && ...)) && (!(simd_mask_element<X> && ...)) &&
     (std::convertible_to<X,detail::simd_deduced_element_t<X...>> && ...)
   vec(Arch,X...) -> vec<detail::simd_deduced_element_t<X...>,sizeof...(X),Arch>;
 
   // Native-register conversions must not make different architectures mix.
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator+(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator-(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator*(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator/(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator%(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator&(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator|(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator^(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator<<(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator>>(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator==(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator!=(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator<(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator<=(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator>(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator>=(vec<T,N,A>,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator+=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator-=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator*=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator/=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator%=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator&=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator|=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator^=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator<<=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,architecture A,architecture B> requires(!std::same_as<A,B> || (N!=M && (N==2 || N==3 || M==2 || M==3)))
   void operator>>=(vec<T,N,A> &,vec<U,M,B>) = delete;
 

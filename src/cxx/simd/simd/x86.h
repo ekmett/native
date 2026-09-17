@@ -8,6 +8,8 @@ namespace simd {
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
   template <x86_architecture Arch> struct simd_empty_bases vec<float, 4,Arch> : detail::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
     using architecture = Arch;
+    /// Select this architecture and forward arguments to the corresponding constructor.
+    /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
     simd_inline constexpr vec(Arch, X &&... x)
         noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
@@ -17,41 +19,53 @@ namespace simd {
     using mask = mask_type;
     using predicate_type = predicate<4,Arch>;
     __m128 value;
+    /// Default initialization leaves storage unspecified; value initialization with braces zero-initializes it.
     simd_inline vec() = default;
+    /// Copy the stored value without arithmetic or normalization.
     simd_inline constexpr vec(vec const &) = default;
+    /// Copy the stored value and return *this; no numerical conversion is performed.
     simd_reinitializes simd_inline constexpr vec & operator=(vec const &) = default;
     /// Broadcast x to all lanes.
     simd_inline vec(float x) : value(_mm_set1_ps(x)) {}
+    /// Adopt native lane storage without numerical conversion.
     simd_inline constexpr vec(__m128 x) : value(x) {}
     /// Load every logical lane; no extra alignment is required.
     simd_nodiscard static simd_inline simd_pure vec load(simd_noescape float const * p) { return load_memory<1>(p); }
     /// Store every logical lane; no extra alignment is required.
     simd_inline void store(simd_noescape float * p) const { store_memory<1>(p); }
+    /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator+(vec a, vec b) { return vec(_mm_add_ps(a.value, b.value)); }
+    /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator-(vec a, vec b) { return vec(_mm_sub_ps(a.value, b.value)); }
+    /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator*(vec a, vec b) { return vec(_mm_mul_ps(a.value, b.value)); }
+    /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator/(vec a, vec b) { return vec(_mm_div_ps(a.value, b.value)); }
+    /// Negate every logical lane; floating-point lanes change sign.
     simd_nodiscard friend simd_inline simd_const vec operator-(vec a) { return vec(_mm_xor_ps(a.value, _mm_set1_ps(-0.f))); }
+    /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator<(vec a, vec b) {
       if constexpr(std::same_as<Arch,avx512>)
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
+    /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator>(vec a, vec b) {
       if constexpr(std::same_as<Arch,avx512>)
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
+    /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator==(vec a, vec b) {
       if constexpr(std::same_as<Arch,avx512>)
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_EQ_OQ)));
     }
-    template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
     /// Choose a where the canonical mask is true, otherwise b; both operands are evaluated.
+    template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
     simd_nodiscard friend simd_inline simd_const vec select(M m,vec a,vec b) {
       if constexpr(M::compact) return vec(_mm_mask_blend_ps(m.to_native(),b.value,a.value));
       else
@@ -81,6 +95,7 @@ namespace simd {
     using register_type = vec;
     using native_type = __m128;
     using bits_type = vec<uint32_t,4,Arch>;
+    /// Return the native storage value without a numerical conversion.
     simd_nodiscard simd_inline simd_pure operator native_type() const noexcept { return value; }
     /// Project native register storage without a numerical conversion.
     simd_nodiscard simd_inline simd_pure native_type to_native() const noexcept { return value; }
@@ -110,25 +125,30 @@ namespace simd {
     simd_nodiscard static simd_inline simd_pure vec load_bits_partial(simd_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Store exactly n representation words; require n <= lanes.
     simd_inline void store_bits_partial(simd_noescape std::uint32_t * p,std::size_t n) const noexcept { bits().store_partial(p,n); }
-    /// Synonym for an unaligned full-vector load.
     /// Load one lane from each array element, in array order.
     simd_inline vec(std::array<float,4> const & values) noexcept : vec(loadu(values.data())) {}
 #if defined(__clang__)
-    template <class... X> requires (sizeof...(X)==4) && (std::convertible_to<X,float> && ...)
     /// Convert one argument per lane; exceptions follow those named-lvalue conversions.
+    template <class... X> requires (sizeof...(X)==4) && (std::convertible_to<X,float> && ...)
     simd_inline constexpr vec(X... x) noexcept((noexcept(static_cast<float>(x)) && ...)) : value{static_cast<float>(x)...} {}
 #else
-    template <class... X> requires (sizeof...(X)==4) && (std::convertible_to<X,float> && ...)
-    /// Synonym for an unaligned full-vector load.
     /// Convert one argument per lane; exceptions follow those named-lvalue conversions.
+    template <class... X> requires (sizeof...(X)==4) && (std::convertible_to<X,float> && ...)
     simd_inline vec(X... x) noexcept((noexcept(static_cast<float>(x)) && ...)) : vec(loadu(std::array<float,4>{static_cast<float>(x)...}.data())) {}
 #endif
+    /// Apply the corresponding lane-wise add operation in place and return *this.
     simd_inline vec & operator+=(vec b) noexcept { return *this=*this+b; }
+    /// Apply the corresponding lane-wise subtract operation in place and return *this.
     simd_inline vec & operator-=(vec b) noexcept { return *this=*this-b; }
+    /// Apply the corresponding lane-wise multiply operation in place and return *this.
     simd_inline vec & operator*=(vec b) noexcept { return *this=*this*b; }
+    /// Apply the corresponding lane-wise divide operation in place and return *this.
     simd_inline vec & operator/=(vec b) noexcept { return *this=*this/b; }
+    /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
     simd_nodiscard friend simd_inline simd_const mask_type operator!=(vec a,vec b) noexcept { return ~(a==b); }
+    /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator<=(vec a,vec b) noexcept { return (a<b)|(a==b); }
+    /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator>=(vec a,vec b) noexcept { return (a>b)|(a==b); }
   };
 
@@ -136,6 +156,8 @@ namespace simd {
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
   template <x86_architecture Arch> struct vec<float, 8,Arch> : detail::register_memory<vec<float,8,Arch>, 8> {
     using architecture = Arch;
+    /// Select this architecture and forward arguments to the corresponding constructor.
+    /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
     simd_inline constexpr vec(Arch, X &&... x)
         noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
@@ -145,41 +167,53 @@ namespace simd {
     using mask = mask_type;
     using predicate_type = predicate<8,Arch>;
     __m256 value;
+    /// Default initialization leaves storage unspecified; value initialization with braces zero-initializes it.
     simd_inline vec() = default;
+    /// Copy the stored value without arithmetic or normalization.
     simd_inline constexpr vec(vec const &) = default;
+    /// Copy the stored value and return *this; no numerical conversion is performed.
     simd_reinitializes simd_inline constexpr vec & operator=(vec const &) = default;
     /// Broadcast x to all lanes.
     simd_inline vec(float x) : value(_mm256_set1_ps(x)) {}
+    /// Adopt native lane storage without numerical conversion.
     simd_inline constexpr vec(__m256 x) : value(x) {}
     /// Load every logical lane; no extra alignment is required.
     simd_nodiscard static simd_inline simd_pure vec load(simd_noescape float const * p) { return load_memory<1>(p); }
     /// Store every logical lane; no extra alignment is required.
     simd_inline void store(simd_noescape float * p) const { store_memory<1>(p); }
+    /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator+(vec a, vec b) { return vec(_mm256_add_ps(a.value, b.value)); }
+    /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator-(vec a, vec b) { return vec(_mm256_sub_ps(a.value, b.value)); }
+    /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator*(vec a, vec b) { return vec(_mm256_mul_ps(a.value, b.value)); }
+    /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
     simd_artificial simd_nodiscard friend simd_inline simd_pure vec operator/(vec a, vec b) { return vec(_mm256_div_ps(a.value, b.value)); }
+    /// Negate every logical lane; floating-point lanes change sign.
     simd_nodiscard friend simd_inline simd_const vec operator-(vec a) { return vec(_mm256_xor_ps(a.value, _mm256_set1_ps(-0.f))); }
+    /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator<(vec a, vec b) {
       if constexpr(std::same_as<Arch,avx512>)
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
+    /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator>(vec a, vec b) {
       if constexpr(std::same_as<Arch,avx512>)
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
+    /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator==(vec a, vec b) {
       if constexpr(std::same_as<Arch,avx512>)
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_EQ_OQ)));
     }
-    template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
     /// Choose a where the canonical mask is true, otherwise b; both operands are evaluated.
+    template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
     simd_nodiscard friend simd_inline simd_const vec select(M m,vec a,vec b) {
       if constexpr(M::compact) return vec(_mm256_mask_blend_ps(m.to_native(),b.value,a.value));
       else
@@ -209,6 +243,7 @@ namespace simd {
     using register_type = vec;
     using native_type = __m256;
     using bits_type = vec<uint32_t,8,Arch>;
+    /// Return the native storage value without a numerical conversion.
     simd_nodiscard simd_inline simd_pure operator native_type() const noexcept { return value; }
     /// Project native register storage without a numerical conversion.
     simd_nodiscard simd_inline simd_pure native_type to_native() const noexcept { return value; }
@@ -238,25 +273,30 @@ namespace simd {
     simd_nodiscard static simd_inline simd_pure vec load_bits_partial(simd_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Store exactly n representation words; require n <= lanes.
     simd_inline void store_bits_partial(simd_noescape std::uint32_t * p,std::size_t n) const noexcept { bits().store_partial(p,n); }
-    /// Synonym for an unaligned full-vector load.
     /// Load one lane from each array element, in array order.
     simd_inline vec(std::array<float,8> const & values) noexcept : vec(loadu(values.data())) {}
 #if defined(__clang__)
-    template <class... X> requires (sizeof...(X)==8) && (std::convertible_to<X,float> && ...)
     /// Convert one argument per lane; exceptions follow those named-lvalue conversions.
+    template <class... X> requires (sizeof...(X)==8) && (std::convertible_to<X,float> && ...)
     simd_inline constexpr vec(X... x) noexcept((noexcept(static_cast<float>(x)) && ...)) : value{static_cast<float>(x)...} {}
 #else
-    template <class... X> requires (sizeof...(X)==8) && (std::convertible_to<X,float> && ...)
-    /// Synonym for an unaligned full-vector load.
     /// Convert one argument per lane; exceptions follow those named-lvalue conversions.
+    template <class... X> requires (sizeof...(X)==8) && (std::convertible_to<X,float> && ...)
     simd_inline vec(X... x) noexcept((noexcept(static_cast<float>(x)) && ...)) : vec(loadu(std::array<float,8>{static_cast<float>(x)...}.data())) {}
 #endif
+    /// Apply the corresponding lane-wise add operation in place and return *this.
     simd_inline vec & operator+=(vec b) noexcept { return *this=*this+b; }
+    /// Apply the corresponding lane-wise subtract operation in place and return *this.
     simd_inline vec & operator-=(vec b) noexcept { return *this=*this-b; }
+    /// Apply the corresponding lane-wise multiply operation in place and return *this.
     simd_inline vec & operator*=(vec b) noexcept { return *this=*this*b; }
+    /// Apply the corresponding lane-wise divide operation in place and return *this.
     simd_inline vec & operator/=(vec b) noexcept { return *this=*this/b; }
+    /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
     simd_nodiscard friend simd_inline simd_const mask_type operator!=(vec a,vec b) noexcept { return ~(a==b); }
+    /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator<=(vec a,vec b) noexcept { return (a<b)|(a==b); }
+    /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator>=(vec a,vec b) noexcept { return (a>b)|(a==b); }
   };
 
