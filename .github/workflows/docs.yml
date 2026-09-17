@@ -1,0 +1,87 @@
+# SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install documentation tools
+        run: |
+          python3 -m venv "$RUNNER_TEMP/docs-tools"
+          "$RUNNER_TEMP/docs-tools/bin/python" -m pip install cmake==4.4.3 ninja==1.13.0
+          echo "$RUNNER_TEMP/docs-tools/bin" >> "$GITHUB_PATH"
+          curl --fail --location --retry 3 \
+            https://github.com/doxygen/doxygen/releases/download/Release_1_18_0/doxygen-1.18.0.linux.bin.tar.gz \
+            --output "$RUNNER_TEMP/doxygen.tar.gz"
+          echo "14fa81bdc34171edb5f1f02b1d60e74802f0439b77fa44e592565d517d72df90  $RUNNER_TEMP/doxygen.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/doxygen"
+          tar -xzf "$RUNNER_TEMP/doxygen.tar.gz" -C "$RUNNER_TEMP/doxygen" --strip-components=1
+          echo "$RUNNER_TEMP/doxygen/bin" >> "$GITHUB_PATH"
+      - name: Generate and check the reference
+        run: |
+          set -o pipefail
+          cmake -S . -B build/docs -G Ninja \
+            -DSIMD_BUILD_HOST=OFF -DSIMD_BUILD_TESTS=OFF -DSIMD_BUILD_DOCS=ON \
+            2>&1 | tee configure-docs.log
+          cmake --build build/docs --target simd_docs --parallel 2 2>&1 | tee build-docs.log
+          python doc/test_module_anchors.py
+          python doc/test_links.py
+          python tests/api/audit_docs.py build/docs/docs/xml
+          python doc/check_links.py build/docs/docs/html
+          touch build/docs/docs/html/.nojekyll
+      - name: Retain documentation and diagnostics
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: documentation
+          if-no-files-found: warn
+          path: |
+            configure-docs.log
+            build-docs.log
+            build/docs/CMakeCache.txt
+            build/docs/CMakeFiles/CMakeConfigureLog.yaml
+            build/docs/docs/warnings.log
+            build/docs/docs/html/
+      - name: Upload site
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: build/docs/docs/html
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      - name: Publish generated reference
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

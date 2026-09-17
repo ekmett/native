@@ -23,4 +23,3 @@ endif()
 enable_testing()
 add_test(NAME half.storage COMMAND half_storage)
 set_tests_properties(half.storage PROPERTIES TIMEOUT 180 LABELS "host;modules;half;exact")
-

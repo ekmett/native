@@ -118,4 +118,3 @@ int main() {
   if (!check<simd::bf16,7,127>()) return 3;
   return omnibus_half_bits() == 0x3c003f80u ? 0 : 4;
 }
-

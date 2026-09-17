@@ -126,3 +126,17 @@ available, `python tests/api/audit_docs.py build/docs/docs/xml` checks indexed
 public callable documentation; it rejects missing descriptions and empty input.
 The [example project](../tests/api/README.md) compiles the snippets against an
 installed package. Generation alone does not compile examples or qualify an ISA.
+
+The Documentation workflow builds this reference for pull requests and `main`
+without enabling a C++ compiler. It checks callable descriptions, module
+navigation, and local page and fragment links, and retains HTML and diagnostics
+as an Actions artifact. Successful `main` builds publish the same HTML to
+[GitHub Pages](https://ekmett.github.io/simd/). Pull requests do not deploy.
+
+Run the generated-site checks locally with:
+
+```sh
+python doc/test_module_anchors.py
+python doc/test_links.py
+python doc/check_links.py build/docs/docs/html
+```
