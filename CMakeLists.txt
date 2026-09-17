@@ -99,3 +99,5 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/simdProfile.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/simdConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/simdConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
+
+install(FILES LICENSE.md DESTINATION "${CMAKE_INSTALL_DATADIR}/simd")
