@@ -21,9 +21,14 @@ NEON on ARM. Use clang++ on Apple. The caller supplies its resource gate.
 Doxygen's example path should include this directory.
 
 `audit_docs.py XML_DIRECTORY` checks the public function/friend IDs referenced by
-Doxygen's current `index.xml`. It ignores stale XML and private/detail entities,
+Doxygen's current `index.xml`, including definitions emitted only in groups.
+It de-duplicates IDs across namespace/class/struct/group pages, excludes friend
+class declarations, ignores stale XML and private/detail entities,
 and fails for missing descriptions or an empty result. A documented overload-set
 alias is counted separately when Doxygen emits a distinct ID. For a focused
 native-header review, use `--source-prefix src/cxx/simd/`; omit that option for the
 whole public source surface. Run the check for each documentation profile used to
 expose conditional declarations; a clean warning log alone is not coverage.
+
+Run `python tests/api/test_audit_docs.py` for the group-only definition, duplicate
+ID, hidden helper, stale XML and empty-index regression checks.

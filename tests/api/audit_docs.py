@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 def audit(xml, prefixes):
     public = {}
     for compound in ET.parse(xml / 'index.xml').findall('compound'):
-        if compound.get('kind') not in ('namespace', 'class', 'struct'):
+        if compound.get('kind') not in ('namespace', 'class', 'struct', 'group'):
             continue
         name = compound.findtext('name', '')
         if 'detail' in name.split('::'):
@@ -22,6 +22,14 @@ def audit(xml, prefixes):
                 continue
             if member.get('prot') not in (None, 'public'):
                 continue
+            # A documented friend class is not a callable.
+            if member.get('kind') == 'friend' and not member.findtext('argsstring', ''):
+                continue
+            qualified = member.findtext('qualifiedname', member.findtext('name', ''))
+            # Groups can hold definitions omitted from the namespace XML. Their
+            # group name says nothing about the namespace of an individual member.
+            if 'detail' in qualified.split('::'):
+                continue
             location = member.find('location')
             if location is None:
                 continue
@@ -29,7 +37,7 @@ def audit(xml, prefixes):
             if not any(file.startswith(prefix) for prefix in prefixes):
                 continue
             record = public.setdefault(member.get('id'), {
-                'name': member.findtext('qualifiedname', member.findtext('name')),
+                'name': qualified,
                 'file': file, 'line': int(location.get('line', 0)),
                 'documented': False,
             })
