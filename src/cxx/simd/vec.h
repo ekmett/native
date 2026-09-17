@@ -331,10 +331,10 @@ namespace simd {
     simd_nodiscard simd_inline simd_pure constexpr std::uint64_t to_bitset() const noexcept { return ops::bits(value_); }
     /// Read all logical lanes from an unaligned element pointer.
     simd_nodiscard static simd_inline simd_pure vec load(value_type const * p) noexcept {
-      native_type value;std::memcpy(&value,p,sizeof(value));return unsafe_from_native(value);
+      native_type value;std::memcpy(&value,static_cast<void const *>(p),sizeof(value));return unsafe_from_native(value);
     }
     /// Write all logical lanes to an unaligned element pointer.
-    simd_inline void store(value_type * p) const noexcept { std::memcpy(p,&value_,sizeof(value_)); }
+    simd_inline void store(value_type * p) const noexcept { std::memcpy(static_cast<void *>(p),&value_,sizeof(value_)); }
     /// Invert each lane truth value, preserving the mask representation.
     simd_nodiscard friend simd_inline simd_const constexpr vec operator~(vec a) noexcept { return vec(raw{},ops::bit_not(a.value_)); }
     /// Return the lane-wise logical complement, retaining this mask type.
@@ -2027,7 +2027,7 @@ namespace simd {
       std::array<T, lanes> data;
       data.fill(fill);
       if (n)
-        std::memcpy(data.data(), p, n * sizeof(T));
+        std::memcpy(data.data(), static_cast<void const *>(p), n * sizeof(T));
       return SIMD_BACKEND_NAMESPACE::load_simd<T, lanes>(data.data());
     }
     /// Write exactly n logical lanes; require n <= lanes. For n == 0, p may be null.
@@ -2531,14 +2531,14 @@ namespace simd {
         return from_native(vreinterpretq_u8_u32(result));
       } else if constexpr (sizeof(T) == 8) {
         std::uint64_t word;
-        std::memcpy(&word, p, 8);
+        std::memcpy(&word, static_cast<void const *>(p), 8);
         return from_native(vreinterpretq_u8_u64(vsetq_lane_u64(word, vreinterpretq_u64_u8(vec(fill).value), 0)));
       }
 #endif
       std::array<T, lanes> data;
       data.fill(fill);
       if (n)
-        std::memcpy(data.data(), p, n * sizeof(T));
+        std::memcpy(data.data(), static_cast<void const *>(p), n * sizeof(T));
       return SIMD_BACKEND_NAMESPACE::load_simd<T, lanes>(data.data());
     }
     /// Write exactly n logical lanes; require n <= lanes. For n == 0, p may be null.
@@ -2681,8 +2681,9 @@ namespace simd {
   simd_nodiscard simd_inline simd_pure vec<T, N,SIMD_ARCH> load_simd(T const *p, simd_memory<A, Access>) noexcept {
     using V = vec<T, N,SIMD_ARCH>;
     typename V::native_type value;
-    // memcpy is an alias-safe native move; the explicit alignment promise can
-    // select an aligned move. Streaming currently takes this ordinary fallback.
+    // Erase the element type at the byte-copy boundary: p need not satisfy
+    // alignof(T). Only an explicit alignment promise may select an aligned
+    // move. Streaming currently takes this ordinary fallback.
 #if defined(__GNUC__) || defined(__clang__)
     if constexpr (A > 1)
       p = static_cast<T const *>(__builtin_assume_aligned(p, A));
@@ -2690,7 +2691,7 @@ namespace simd {
     if constexpr (A > 1)
       __assume((reinterpret_cast<std::uintptr_t>(p) & (A - 1)) == 0);
 #endif
-    std::memcpy(&value, p, sizeof(value));
+    std::memcpy(&value, static_cast<void const *>(p), sizeof(value));
     return V::from_native(value);
   }
   template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
@@ -2703,7 +2704,7 @@ namespace simd {
     if constexpr (A > 1)
       __assume((reinterpret_cast<std::uintptr_t>(p) & (A - 1)) == 0);
 #endif
-    std::memcpy(p, &v.value, sizeof(v.value));
+    std::memcpy(static_cast<void *>(p), &v.value, sizeof(v.value));
   }
   template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
     requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
@@ -2712,7 +2713,7 @@ namespace simd {
     assert(count <= N);
     std::array<T, N> data{};
     if (count)
-      std::memcpy(data.data(), p, count * sizeof(T));
+      std::memcpy(data.data(), static_cast<void const *>(p), count * sizeof(T));
     return SIMD_BACKEND_NAMESPACE::load_simd<T, N>(data.data());
   }
   template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
@@ -2723,7 +2724,7 @@ namespace simd {
     std::array<T, N> data;
     store_simd(data.data(), v);
     if (count)
-      std::memcpy(p, data.data(), count * sizeof(T));
+      std::memcpy(static_cast<void *>(p), data.data(), count * sizeof(T));
   }
   template <simd_integer_element T, std::size_t N>
     requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
