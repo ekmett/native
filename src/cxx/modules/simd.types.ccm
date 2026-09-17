@@ -20,7 +20,11 @@ export namespace simd {
 /// \defgroup types Types
 /// \{
 
-/// \brief returns the unmangled name of a the type \p T
+/// Return a cached display name for T with static lifetime.
+/// Demangle where the platform exposes that facility; otherwise retain typeid's
+/// spelling. This is a diagnostic label, not a stable persistence identifier.
+/// Initialization owns a string and may allocate.
+/// \snippet api.cc common_utilities
 /// \details Ideally this would be fully `constexpr`, but I'm not building my own demangler.
 /// \hideinitializer \hideinlinesource
 template <typename T>
@@ -45,7 +49,8 @@ inline std::string_view const type = [] simd_nodiscard static -> std::string_vie
   return body;
 }();
 
-/// \brief returns the unmangled name of a the type of the (unused) argument passed to this function
+/// Return the cached display name of the argument's cv/ref-stripped static type.
+/// The argument is not inspected. This does not perform dynamic type discovery.
 /// \hideinlinesource
 simd_nodiscard
 std::string_view type_of(auto const & t) {

@@ -26,17 +26,31 @@ export namespace simd {
       static constexpr std::size_t size = N;
     };
   }
-  // A fixed-size pack of values. Operations preserve the element type
-  // contracts and may use its ADL array operations for a complete batch.
+  /** \defgroup wide_values Wide register packs
+   * A fixed number of independent elements, usually native registers. Operations
+   * preserve the element library's contracts. Batch-aware math calls one ADL
+   * array kernel when available; otherwise it applies the element operation.
+   * This does not repartition a pack or choose a different architecture.
+   * \snippet api.cc wide_values
+   */
+  /** \ingroup wide_values
+   * \brief Own `N` values of `T`, including an empty pack when `N == 0`.
+   * `registers` is the underlying array. Tuple access and structured bindings
+   * refer to the actual elements. Value initialization follows `T`'s rules;
+   * no general floating-point or zero-initialization policy is added here.
+   */
   template<class T, std::size_t N>
   struct wide {
     // Packed library aggregates can underalign arrays of native mask types.
     alignas(T) std::array<T, N> registers;
 
+    /// Default-initialize the underlying array. Use `wide{}` for value initialization.
     constexpr wide() = default;
+    /// Take an array of exactly the pack extent.
     simd_inline constexpr wide(std::array<T, N> values)
       noexcept(std::is_nothrow_move_constructible_v<std::array<T, N>>)
       : registers(std::move(values)) {}
+    /// Construct one element from each argument, preserving argument order.
     template<class... U> requires (sizeof...(U) == N && N != 0) &&
       (std::constructible_from<T,U &&> && ...) &&
       (N != 1 || ((!detail::wide_traits<std::remove_cvref_t<U>>::value &&
@@ -44,6 +58,7 @@ export namespace simd {
     explicit(N == 1) simd_inline constexpr wide(U &&... values)
       noexcept((std::is_nothrow_constructible_v<T,U &&> && ...))
       : registers{T(std::forward<U>(values))...} {}
+    /// Convert one value to `T`, then copy it across the pack.
     template<class U> requires (N != 1) && (!detail::wide_traits<std::remove_cvref_t<U>>::value) &&
       (!std::same_as<std::remove_cvref_t<U>,std::array<T, N>>) &&
       std::constructible_from<T,U const &> && (N == 0 || std::copy_constructible<T>)
@@ -52,35 +67,44 @@ export namespace simd {
         (N == 0 || std::is_nothrow_copy_constructible_v<T>))
       : wide(T(value), std::make_index_sequence<N>{}) {}
 
+    /// Convert each element of a same-size pack; explicitness follows the element conversion.
     template<class U> requires (!std::same_as<T,U>) && std::constructible_from<T,U const &>
     explicit(!std::is_convertible_v<U const &,T>) simd_inline constexpr wide(wide<U,N> const & source)
       noexcept(N == 0 || std::is_nothrow_constructible_v<T,U const &>)
       : wide(conversion_tag{}, source, std::make_index_sequence<N>{}) {}
+    /// Convert each element of a same-size pack; explicitness follows the element conversion.
     template<class U> requires (!std::same_as<T,U>) && std::constructible_from<T,U &&>
     explicit(!std::is_convertible_v<U &&,T>) simd_inline constexpr wide(wide<U,N> && source)
       noexcept(N == 0 || std::is_nothrow_constructible_v<T,U &&>)
       : wide(conversion_tag{}, std::move(source), std::make_index_sequence<N>{}) {}
 
+    /// Copy `value` to every element; an empty pack makes no copies.
     simd_nodiscard static simd_inline constexpr wide broadcast(T const & value)
       noexcept(N == 0 || std::is_nothrow_copy_constructible_v<T>)
       requires (N == 0 || std::copy_constructible<T>) {
       return wide(value, std::make_index_sequence<N>{});
     }
 
+    /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T & get() & noexcept simd_lifetimebound { return registers[I]; }
+    /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T const & get() const & noexcept simd_lifetimebound { return registers[I]; }
+    /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T && get() && noexcept simd_lifetimebound { return std::move(registers[I]); }
+    /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T const && get() const && noexcept simd_lifetimebound { return std::move(registers[I]); }
 
+    /// Invoke `f` with all elements as arguments; the empty pack calls `f()`.
     template<class F>
     simd_inline constexpr decltype(auto) apply(F && f) noexcept(noexcept(std::apply(std::forward<F>(f), registers))) {
       return apply_indices(std::forward<F>(f), registers, std::make_index_sequence<N>{});
     }
 
+    /// Invoke `f` with all elements as arguments; the empty pack calls `f()`.
     template<class F>
     simd_inline constexpr decltype(auto) apply(F && f) const noexcept(noexcept(std::apply(std::forward<F>(f), registers))) {
       return apply_indices(std::forward<F>(f), registers, std::make_index_sequence<N>{});
@@ -189,6 +213,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a + b; }
+  /// \ingroup wide_values
+  /// Apply `+` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator+(A const & a, B const & b)
       noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_add{}))) {
     return detail::wide_dispatch(a,b,detail::wide_add{});
@@ -196,6 +222,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a - b; }
+  /// \ingroup wide_values
+  /// Apply `-` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator-(A const & a, B const & b)
       noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_sub{}))) {
     return detail::wide_dispatch(a,b,detail::wide_sub{});
@@ -203,6 +231,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a * b; }
+  /// \ingroup wide_values
+  /// Apply `*` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator*(A const & a, B const & b)
       noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_mul{}))) {
     return detail::wide_dispatch(a,b,detail::wide_mul{});
@@ -210,6 +240,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a / b; }
+  /// \ingroup wide_values
+  /// Apply `/` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator/(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x / y) { return x / y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -217,6 +249,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a % b; }
+  /// \ingroup wide_values
+  /// Apply `%` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator%(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x % y) { return x % y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -224,6 +258,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a & b; }
+  /// \ingroup wide_values
+  /// Apply `&` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator&(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x & y) { return x & y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -231,6 +267,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a | b; }
+  /// \ingroup wide_values
+  /// Apply `|` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator|(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x | y) { return x | y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -238,6 +276,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a ^ b; }
+  /// \ingroup wide_values
+  /// Apply `^` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator^(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x ^ y) { return x ^ y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -245,6 +285,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a << b; }
+  /// \ingroup wide_values
+  /// Apply `<<` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator<<(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x << y) { return x << y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -252,6 +294,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >> b; }
+  /// \ingroup wide_values
+  /// Apply `>>` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator>>(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >> y) { return x >> y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -259,6 +303,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a == b; }
+  /// \ingroup wide_values
+  /// Apply `==` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator==(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x == y) { return x == y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -266,6 +312,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a != b; }
+  /// \ingroup wide_values
+  /// Apply `!=` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator!=(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x != y) { return x != y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -273,6 +321,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a < b; }
+  /// \ingroup wide_values
+  /// Apply `<` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator<(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x < y) { return x < y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -280,6 +330,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a > b; }
+  /// \ingroup wide_values
+  /// Apply `>` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator>(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x > y) { return x > y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -287,6 +339,8 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a <= b; }
+  /// \ingroup wide_values
+  /// Apply `<=` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator<=(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x <= y) { return x <= y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
@@ -294,27 +348,37 @@ export namespace simd {
 
   template<class A, class B> requires detail::wide_arguments<A, B> &&
     requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >= b; }
+  /// \ingroup wide_values
+  /// Apply `>=` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator>=(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >= y) { return x >= y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { +a; }
+  /// \ingroup wide_values
+  /// Apply `+` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator+(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(+x) { return +x; }, std::make_index_sequence<N>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { -a; }
+  /// \ingroup wide_values
+  /// Apply `-` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator-(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(-x) { return -x; }, std::make_index_sequence<N>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { ~a; }
+  /// \ingroup wide_values
+  /// Apply `~` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator~(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(~x) { return ~x; }, std::make_index_sequence<N>{});
   }
 
   template<class T, std::size_t N> requires requires(T const & a) { !a; }
+  /// \ingroup wide_values
+  /// Apply `!` to corresponding elements; a non-pack argument is broadcast.
   simd_nodiscard simd_inline constexpr auto operator!(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(!x) { return !x; }, std::make_index_sequence<N>{});
   }
@@ -323,6 +387,8 @@ export namespace simd {
     (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add> ||
       ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, detail::wide_element_t<B> const & b) { a += b; }))
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `+=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator+=(wide<T, N> & a, B const & b)
       noexcept([] {
         if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add>)
@@ -339,6 +405,8 @@ export namespace simd {
     (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub> ||
       ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, detail::wide_element_t<B> const & b) { a -= b; }))
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `-=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator-=(wide<T, N> & a, B const & b)
       noexcept([] {
         if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub>)
@@ -355,6 +423,8 @@ export namespace simd {
     (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul> ||
       ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, detail::wide_element_t<B> const & b) { a *= b; }))
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `*=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator*=(wide<T, N> & a, B const & b)
       noexcept([] {
         if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul>)
@@ -370,6 +440,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a /= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `/=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator/=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x /= y; }, std::make_index_sequence<N>{});
   }
@@ -377,6 +449,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a %= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `%=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator%=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x %= y; }, std::make_index_sequence<N>{});
   }
@@ -384,6 +458,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a &= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `&=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator&=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x &= y; }, std::make_index_sequence<N>{});
   }
@@ -391,6 +467,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a |= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `|=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator|=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x |= y; }, std::make_index_sequence<N>{});
   }
@@ -398,6 +476,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a ^= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `^=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator^=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x ^= y; }, std::make_index_sequence<N>{});
   }
@@ -405,6 +485,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a <<= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `<<=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator<<=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x <<= y; }, std::make_index_sequence<N>{});
   }
@@ -412,6 +494,8 @@ export namespace simd {
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a >>= b; }
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `>>=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator>>=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x >>= y; }, std::make_index_sequence<N>{});
   }
@@ -546,54 +630,77 @@ export namespace simd {
       return wide<wide_result<F,T,T>,N>{std::array<wide_result<F,T,T>,N>{F{}(x,y)...}};
     }
   }
+  /// \ingroup wide_values
+  /// Classify each element as finite, preserving its actual bool or mask result type.
+  /// The result construction and ADL call both contribute to conditional `noexcept`.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_isfinite,T>
   simd_nodiscard simd_inline constexpr auto isfinite(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_isfinite>(input))) {
     return detail::wide_map<detail::wide_isfinite>(input);
   }
+  /// \ingroup wide_values
+  /// Classify infinities using the element operation and its actual result type.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_isinf,T>
   simd_nodiscard simd_inline constexpr auto isinf(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_isinf>(input))) {
     return detail::wide_map<detail::wide_isinf>(input);
   }
+  /// \ingroup wide_values
+  /// Classify NaNs using the element operation and its actual result type.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_isnan,T>
   simd_nodiscard simd_inline constexpr auto isnan(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_isnan>(input))) {
     return detail::wide_map<detail::wide_isnan>(input);
   }
+  /// \ingroup wide_values
+  /// Read each element's sign predicate, retaining its actual mask or bool type.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_signbit,T>
   simd_nodiscard simd_inline constexpr auto signbit(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_signbit>(input))) {
     return detail::wide_map<detail::wide_signbit>(input);
   }
+  /// \ingroup wide_values
+  /// Copy signs from `b` to `a` using the homogeneous element operation.
+  /// The result construction and ADL call both contribute to conditional `noexcept`.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_copysign,T,T> &&
     std::same_as<detail::wide_result<detail::wide_copysign,T,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> copysign(wide<T,N> const & a,wide<T,N> const & b)
       noexcept(noexcept(detail::wide_map<detail::wide_copysign>(a,b))) {
     return detail::wide_map<detail::wide_copysign>(a,b);
   }
+  /// \ingroup wide_values
+  /// Round each element down, using its ADL operation and retaining the element type.
+  /// The result construction and ADL call both contribute to conditional `noexcept`.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_floor,T> &&
     std::same_as<detail::wide_result<detail::wide_floor,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> floor(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_floor>(input))) {
     return detail::wide_map<detail::wide_floor>(input);
   }
+  /// \ingroup wide_values
+  /// Round each element up, using its ADL operation and retaining the element type.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_ceil,T> &&
     std::same_as<detail::wide_result<detail::wide_ceil,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> ceil(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_ceil>(input))) {
     return detail::wide_map<detail::wide_ceil>(input);
   }
+  /// \ingroup wide_values
+  /// Round each element toward zero, using its ADL operation and retaining the element type.
   template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_trunc,T> &&
     std::same_as<detail::wide_result<detail::wide_trunc,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> trunc(wide<T,N> const & input)
       noexcept(noexcept(detail::wide_map<detail::wide_trunc>(input))) {
     return detail::wide_map<detail::wide_trunc>(input);
   }
+  /// \ingroup wide_values
+  /// Copy one value to a pack with the explicitly selected extent.
   template<class R,std::size_t N>
   simd_nodiscard simd_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
     return wide<R,N>::broadcast(value);
   }
+  /// \ingroup wide_values
+  /// Apply the element library's absolute-value operation.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_abs(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> abs(wide<R,N> const & input)
       noexcept([] {
@@ -612,6 +719,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's square-root operation.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_sqrt(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> sqrt(wide<R,N> const & input)
       noexcept([] {
@@ -630,6 +740,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's sine operation in radians.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_sin(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> sin(wide<R,N> const & input)
       noexcept([] {
@@ -648,6 +761,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's cosine operation in radians.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_cos(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> cos(wide<R,N> const & input)
       noexcept([] {
@@ -666,6 +782,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply exponential; pass the compile-time Flush tag when the element supports it.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<bool Flush = false,class R,std::size_t N> requires requires(R const & x) { detail::adl_exp<Flush>(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> exp(wide<R,N> const & input)
       noexcept([] {
@@ -684,6 +803,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's exp(x)-1 operation.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_expm1(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> expm1(wide<R,N> const & input)
       noexcept([] {
@@ -702,6 +824,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's natural logarithm.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_log(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> log(wide<R,N> const & input)
       noexcept([] {
@@ -720,6 +845,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's log(1+x) operation.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_log1p(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> log1p(wide<R,N> const & input)
       noexcept([] {
@@ -738,6 +866,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's hyperbolic tangent.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_tanh(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> tanh(wide<R,N> const & input)
       noexcept([] {
@@ -756,6 +887,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's atan2(y,x), preserving argument order.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_atan2(x,x); }
   simd_nodiscard simd_inline constexpr wide<R,N> atan2(wide<R,N> const & y,wide<R,N> const & x)
       noexcept([] {
@@ -777,6 +911,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Apply the element library's fused multiply-add to corresponding elements.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_fma(x,x,x); }
   simd_nodiscard simd_inline constexpr wide<R,N> fma(wide<R,N> const & a,wide<R,N> const & b,wide<R,N> const & c)
       noexcept([] {
@@ -799,6 +936,9 @@ export namespace simd {
       return result;
     }
   }
+  /// \ingroup wide_values
+  /// Return paired sine and cosine packs using the element's paired operation.
+  /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires requires(R const & x) { detail::adl_sincos(x); }
   simd_nodiscard simd_inline constexpr auto sincos(wide<R,N> const & input)
       noexcept([] {
@@ -821,6 +961,8 @@ export namespace simd {
       return std::pair{std::move(sine),std::move(cosine)};
     }
   }
+  /// \ingroup wide_values
+  /// Choose from `a` or `b` according to the corresponding element mask.
   template <class R, std::size_t N>
   simd_nodiscard simd_inline wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
       wide<R, N> const & a, wide<R, N> const & b)

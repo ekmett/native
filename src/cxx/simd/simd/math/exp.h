@@ -56,21 +56,35 @@ namespace SIMD_BACKEND_NAMESPACE::native {
 }
 
 namespace simd {
+  /** \ingroup vector_math
+   * \brief Evaluate the binary32 range-reduced exponential approximation.
+   * This uses the library's degree-seven polynomial and exponent scaling graph;
+   * it is not a claim of correctly rounded exp for every input. `Flush` selects
+   * the early underflow cutoff at compile time; it does not change CPU controls
+   * or turn a raw vector into a policy-bearing FTZ type.
+   * \snippet api.cc exponential
+   */
   template<bool Flush = false, std::size_t L>
   simd_nodiscard simd_inline simd_pure vec<float,L,SIMD_ARCH> exp(vec<float,L,SIMD_ARCH> input) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
+  /// \ingroup vector_math
+  /// Evaluate exp stage by stage across independent registers; N may be zero.
   template<bool Flush = false, std::size_t L, std::size_t N>
   simd_nodiscard simd_inline std::array<vec<float,L,SIMD_ARCH>,N> exp(std::array<vec<float,L,SIMD_ARCH>,N> const & input) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
   // A tag argument avoids confusing this policy with register-width template
   // arguments on other exp overloads during dependent lookup.
+  /// \ingroup vector_math
+  /// Select the same exp cutoff through a bool_constant tag for dependent calls.
   template<bool Flush, std::size_t L, std::size_t N>
   simd_nodiscard simd_inline std::array<vec<float,L,SIMD_ARCH>,N> exp(
       std::array<vec<float,L,SIMD_ARCH>,N> const & input, std::bool_constant<Flush>) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
+  /// \ingroup vector_math
+  /// Select the same exp cutoff through a bool_constant tag for dependent calls.
   template<bool Flush, std::size_t L>
   simd_nodiscard simd_inline vec<float,L,SIMD_ARCH> exp(vec<float,L,SIMD_ARCH> input, std::bool_constant<Flush>) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);

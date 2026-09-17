@@ -94,10 +94,13 @@ namespace SIMD_BACKEND_NAMESPACE::native {
 #endif
   } // namespace detail
 
-  // Clear the mantissa only when the exponent is zero. Both zero signs, all
-  // normal values, infinities and every NaN payload/sign remain byte-exact.
-  // Integer operations/bit casts, or AVX512 classification and masked bitwise AND;
-  // no FP arithmetic, exceptions or environment change.
+  /** \ingroup vector_math
+   * \brief Replace binary32 subnormal lanes with signed zero.
+   * Both zero signs, normal values, infinities and every NaN payload/sign are
+   * preserved exactly. This changes the values, not the floating-point control
+   * state, and does not raise floating-point exceptions. Empty arrays are valid.
+   * \snippet api.cc bit_transport
+   */
   template <fp32_bits_register V, std::size_t N>
   simd_inline std::array<V, N> flush_to_zero(std::array<V, N> const & x) noexcept {
     if constexpr (N == 0) return {};
@@ -124,6 +127,8 @@ namespace SIMD_BACKEND_NAMESPACE::native {
       }
     }
   }
+  /// \ingroup vector_math
+  /// Apply the same bit-preserving signed-zero flush to one register.
   template <fp32_bits_register V> simd_inline V flush_to_zero(V x) noexcept {
     return flush_to_zero(std::array{x})[0];
   }

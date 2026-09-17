@@ -13,14 +13,23 @@ module;
 
 export module simd.memory;
 
+/** \defgroup memory_ownership C allocation and mapping ownership
+ * Small unique_ptr deleters for allocations made outside C++ new/delete.
+ * They do not construct or destroy objects in the allocation.
+ * \snippet api.cc common_utilities
+ */
 export namespace simd {
 
-  /// \brief a type where the destructor does no work, and therefore it is safe to simply discard.
+  /// \ingroup memory_ownership
+  /// Require trivial destruction of the element type, including array elements.
   template<typename T>
   concept trivially_destructible = std::is_trivially_destructible_v<std::remove_extent_t<T>>;
 
-  /// \brief std::unique_ptr Deleter that calls free()
+  /// \ingroup memory_ownership
+  /// Release C-allocated storage with std::free; never use it for new-allocated storage.
   struct c_free {
+    /// Release p without running destructors. A null pointer is allowed.
+    /// \pre A non-null p comes from an allocation compatible with std::free.
     /// \hideinlinesource
     template <trivially_destructible T>
     simd_inline simd_artificial
@@ -29,16 +38,20 @@ export namespace simd {
     }
   };
 
-  /// a unique_ptr managed c pointer, deleted by free()
+  /// \ingroup memory_ownership
+  /// Exclusive ownership of C storage; move or reset it as with std::unique_ptr.
   template<trivially_destructible T>
   using unique_c_ptr = std::unique_ptr<T, c_free>;
 
   static_assert(sizeof(char *)== sizeof(unique_c_ptr<char>),"");
 
-  /// a c string, managed by unique_ptr
+  /// \ingroup memory_ownership
+  /// A read-only C string whose allocation is released by std::free.
   using unique_str = unique_c_ptr<char const>;
 
-  /// \brief duplicate a C string and manage it as a \ref unique_str
+  /// \ingroup memory_ownership
+  /// Duplicate a C string into independent owned storage. Check for allocation failure.
+  /// \snippet api.cc common_utilities
   /// \pre \p str is non-null
   /// \post result owns an independent null-terminated copy, or is null if allocation fails
   /// \hideinlinesource
@@ -59,7 +72,8 @@ export namespace simd {
 #if defined(__unix__) || defined(__APPLE__)
 export namespace simd {
 
-  /// \brief std::unique_ptr Deleter for memory mapped data
+  /// \ingroup memory_ownership
+  /// POSIX-only mapping deleter. The stored byte length is passed to munmap.
   struct c_munmap {
     std::size_t size;
     /// \hideinlinesource
@@ -72,10 +86,13 @@ export namespace simd {
     }
   };
 
-  /// memory mapped data, managed by std::unique_ptr. calls munmap to free.
+  /// \ingroup memory_ownership
+  /// Own a successful POSIX mapping; destruction unmaps it without destroying objects.
   using mmap_ptr = std::unique_ptr<void,c_munmap>;
 
-  /// construct a mmap_ptr using a base pointer and its size for munmap
+  /// \ingroup memory_ownership
+  /// Adopt a successful POSIX mapping and the exact byte length to unmap.
+  /// This does not call mmap or turn MAP_FAILED into an empty owner.
   /// \pre \p p is a non-null successful mmap result, not MAP_FAILED
   /// \hideinlinesource
   simd_inline simd_artificial simd_nonnull(1)

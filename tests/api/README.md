@@ -1,0 +1,21 @@
+# Compiled API examples
+
+<!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
+<!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
+The Doxygen examples are snippets of `api.cc`, compiled and executed against an
+installed package. They check API use and the displayed results; they are not an
+additional numerical accuracy or performance qualification. The local `check`
+helper aborts on a failed example assertion, including in Release builds.
+
+```sh
+cmake -S tests/api -B build/api -G Ninja -DCMAKE_CXX_COMPILER=clang-cl \
+  -DCMAKE_BUILD_TYPE=Release -Dsimd_DIR=/prefix/lib/cmake/simd \
+  '-DAPI_PROFILES=AVX2;AVX512'
+cmake --build build/api --parallel 2
+ctest --test-dir build/api --output-on-failure
+```
+
+Choose only architectures admitted for execution. The default is AVX2 on x86,
+NEON on ARM. Use clang++ on Apple. The caller supplies its resource gate.
+Doxygen's example path should include this directory.

@@ -24,6 +24,11 @@ namespace simd {
 
   // Logical short vectors use one physical four-lane register. Floating padding
   // stays zero; division supplies one in the unused denominator lanes.
+  /// \ingroup vectors
+  /// Two or three logical lanes in the corresponding four-lane native storage.
+  /// Loads and stores touch only logical lanes; mask reductions ignore padding.
+  /// Division supplies harmless inactive operands before using the full register.
+  /// \snippet api.cc swizzles
   template<detail::short_element T,std::size_t N,detail::native_short_arch Arch>
     requires(N==2 || N==3) && requires { typename vec<T,4,Arch>::native_type; }
   struct vec<T,N,Arch> : detail::swizzle_access<T,N,Arch> {

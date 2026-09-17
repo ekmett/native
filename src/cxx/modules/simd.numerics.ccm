@@ -19,7 +19,12 @@ export import simd.types;
 
 export namespace simd {
 
-/// \brief Two-byte fp16 storage with environment-independent binary32 RNE conversion.
+/// \ingroup numerics
+/// Two-byte binary16 storage with environment-independent binary32 ties-to-even conversion.
+/// Conversion from float handles subnormals and overflow explicitly. Native-half
+/// import and bit factories preserve representation; they do not perform rounding.
+/// This is a storage/conversion type, not an FTZ arithmetic policy.
+/// \snippet api.cc common_utilities
 struct fp16 {
 private:
   // Round binary32 to binary16, ties to even, independently of the FP controls.
@@ -70,12 +75,15 @@ public:
   simd_inline simd_artificial
   constexpr fp16(simd_noescape fp16 &&) noexcept = default;
 
+  /// Round a binary32 value to this format, ties to even.
   simd_inline simd_artificial
   constexpr fp16(float value) noexcept : content(std::bit_cast<_Float16>(encode(value))) {}
 
+  /// Copy native storage without a numerical conversion.
   simd_inline simd_artificial
   constexpr fp16(_Float16 content) noexcept : content(content) {}
 
+  /// Decode to binary32; finite values are exact and signaling NaNs are quieted.
   simd_nodiscard simd_inline simd_artificial
   constexpr operator float (this fp16 self) noexcept { return decode(self.to_bits()); }
 
@@ -133,11 +141,13 @@ public:
     swap(x.content,y.content);
   }
 
+  /// Adopt the exact sixteen representation bits without normalization.
   simd_inline simd_artificial simd_const
   static constexpr fp16 from_bits(uint16_t data) noexcept {
     return std::bit_cast<fp16>(data);
   }
 
+  /// Return the exact sixteen representation bits.
   simd_nodiscard simd_inline simd_const
   constexpr uint16_t to_bits(this fp16 self) noexcept {
     return std::bit_cast<uint16_t>(self.content);
@@ -145,6 +155,7 @@ public:
 
 };
 
+/// Round a literal through binary32 to fp16.
 simd_nodiscard simd_inline simd_artificial simd_const
 constexpr fp16 operator""_fp16(long double v) noexcept {
   return fp16(static_cast<float>(v));
@@ -233,7 +244,10 @@ export namespace std {
 
 export namespace simd {
 
-/// \brief Two-byte bf16 storage with environment-independent binary32 RNE conversion.
+/// \ingroup numerics
+/// Two-byte bfloat16 storage with environment-independent binary32 ties-to-even conversion.
+/// Native-bfloat and bit factories preserve representation. No arithmetic or FTZ
+/// policy is attached to the storage type.
 struct bf16 {
 private:
   // Conversion is integer RNE, including subnormals, under every FP environment.
@@ -256,9 +270,11 @@ public:
   simd_inline simd_artificial constexpr
   bf16() noexcept = default;
 
+  /// Round a binary32 value to this format, ties to even.
   simd_inline simd_artificial constexpr
   bf16(float f) noexcept : content(std::bit_cast<__bf16>(encode(f))) {}
 
+  /// Copy native storage without a numerical conversion.
   simd_inline simd_artificial constexpr
   bf16(__bf16 f) noexcept : content(f) {}
 
@@ -271,6 +287,7 @@ public:
   simd_nodiscard simd_inline simd_artificial simd_const constexpr
   operator __bf16 (this bf16 self) noexcept { return self.content; }
 
+  /// Decode to binary32; finite values are exact and signaling NaNs are quieted.
   simd_nodiscard simd_inline simd_artificial simd_const constexpr
   operator float (this bf16 self) noexcept { return decode(self.to_bits()); }
 
@@ -326,22 +343,28 @@ public:
     swap(x.content,y.content);
   }
 
+  /// Adopt the exact sixteen representation bits without normalization.
   simd_nodiscard simd_inline simd_artificial simd_const
   static constexpr bf16 from_bits(uint16_t data) noexcept {
     return std::bit_cast<bf16>(data);
   }
 
+  /// Return the exact sixteen representation bits.
   simd_nodiscard simd_inline simd_const
   constexpr uint16_t to_bits(this bf16 self) noexcept {
     return std::bit_cast<uint16_t>(self.content);
   }
 };
 
+/// Round a literal through binary32 to bf16.
 simd_nodiscard simd_inline simd_artificial
 constexpr bf16 operator""_bf16(long double v) noexcept {
   return bf16(static_cast<float>(v));
 }
 
+/// Compatibility fast conversion: runtime drops the low sixteen binary32 bits.
+/// Constant evaluation uses the ordinary rounded constructor instead. Use bf16(f)
+/// when both contexts must share rounding or NaN handling.
 simd_nodiscard simd_inline simd_artificial simd_const
 constexpr bf16 fast_to_bf16(float f) noexcept {
   if consteval {
@@ -351,6 +374,7 @@ constexpr bf16 fast_to_bf16(float f) noexcept {
   }
 }
 
+/// Return an already converted bfloat16 unchanged.
 simd_nodiscard simd_inline simd_artificial simd_const
 constexpr bf16 fast_to_bf16(bf16 f) noexcept {
   return f;
@@ -460,13 +484,13 @@ template <> struct integer_traits<32> { using signed_t = int32_t; using unsigned
 template <> struct integer_traits<64> { using signed_t = int64_t; using unsigned_t = uint64_t; };
 /// \endcond
 
-/// returns a signed integer type of the same size as \p T suitable for `std::bitcast`
+/// returns a signed integer type of the same size as \p T suitable for `std::bit_cast`
 /// \hideinitializer \hideinlinesource
 template <typename T>
 requires one_of<sizeof(T),1,2,4,8>
 using int_t = typename integer_traits<sizeof(T)*8>::signed_t;
 
-/// returns an unsigned integer type of the same size as \p T suitable for `std::bitcast`
+/// returns an unsigned integer type of the same size as \p T suitable for `std::bit_cast`
 /// \hideinitializer \hideinlinesource
 template <typename T>
 requires one_of<sizeof(T),1,2,4,8>
@@ -509,7 +533,9 @@ constexpr bool cmp_ord(T a, T b) noexcept(noexcept(!isnan(a) && !isnan(b))) {
 /// \endcond
 
 /// \hideinlinesource
-/// \brief Legacy scalar exponent scaling; retains its existing constexpr/runtime behavior.
+/// Legacy scalar exponent scaling; runtime uses scalbn(x, int(y)), truncating y.
+/// \pre y is representable as int. The separate constant-evaluation bit graph
+/// retains its historical boundary behavior; this is not the vector scaleb API.
 template <one_of_t<float, double> T>
 simd_nodiscard simd_inline simd_pure
 constexpr T scalef(T x, T y) noexcept {
@@ -559,6 +585,7 @@ constexpr T scalef(T x, T y) noexcept {
 }
 
 /// \hideinlinesource
+/// Scalar integer-comparison predicates, encoded like the corresponding x86 immediates.
 enum class simd_nodiscard CMPINT : std::size_t {
   EQ    = 0x0uz ///< `==`
 , LT    = 0x1uz ///< `<`
@@ -597,6 +624,8 @@ inline constexpr std::size_t max_fp_comparison_predicate = [] {
 }();
 
 /// \hideinlinesource
+/// Scalar floating-comparison predicates, including ordered and unordered truth tables.
+/// These scalar helpers implement truth values; suffixes do not promise hardware exception flags.
 enum class simd_nodiscard CMP : std::size_t {
   EQ_OQ     = 0x00uz  ///< Equal (ordered, nonsignaling)
 , LT_OS     = 0x01uz  ///< Less-than (ordered, signaling)

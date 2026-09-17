@@ -48,14 +48,23 @@ struct reify {
 // forward declaration
 class static_c_string;
 
-/// statically known interned strings
-/// these have O(1) comparison for equality
-///
-/// \invariant all such strings point to the start of the static member inside
-///            operator""_ss for some string and their \p len is unmodified.
-///            this ensures that they have O(1) comparison, because reference
-///            and pointer equality coincide.
-
+/** \defgroup static_strings Interned static strings
+ * Literal-backed storage has program lifetime and no allocation. With standard
+ * character traits, equality and hashing use the interned storage address.
+ * \snippet api.cc common_utilities
+ */
+/** \ingroup static_strings
+ * \brief A view of one complete interned string, with its length retained.
+ * The five standard character widths are supported by the _ss literal. Embedded
+ * NUL characters remain part of its length. Default construction selects the
+ * canonical empty string. The view constructor is a compatibility escape hatch,
+ * not a runtime interning operation: arbitrary string_view storage violates the
+ * lifetime and pointer-equality/hash contract.
+ *
+ * Custom Traits can change equality to a character comparison, but the supplied
+ * hash remains pointer-based. Do not use it for traits that equate distinct
+ * interned byte strings; supply a matching equality/hash pair yourself.
+ */
 template <
   typename CharT,
   typename Traits = std::char_traits<CharT>
@@ -64,9 +73,9 @@ class basic_static_string {
   std::basic_string_view<CharT,Traits> view{reify<CharT>::value, 0};
 
 public:
-  // Compatibility escape hatch: value must designate complete, null-terminated
-  // interned storage, as produced by _ss. Arbitrary views do not satisfy the
-  // pointer-equality/hash contract and can outlive their underlying storage.
+  /// Adopt an existing interned view without copying or allocating.
+  /// \pre value is the complete null-terminated interned storage produced by _ss,
+  /// with its original length. A substring or arbitrary string_view is not enough.
   simd_inline constexpr
   basic_static_string(std::basic_string_view<CharT,Traits> value) noexcept
   : view(value) {}
@@ -88,10 +97,12 @@ public:
   /// \name constructors
   /// \{
 
+  /// Intern a compile-time character sequence; append one terminator outside its length.
   template <CharT...xs>
   consteval explicit basic_static_string(std::integer_sequence<CharT,xs...>) noexcept
   : view(reify<CharT,xs...>::value,sizeof...(xs)) {}
 
+  /// Select the canonical empty interned string.
   simd_inline constexpr
   basic_static_string() noexcept = default;
 
@@ -116,16 +127,19 @@ public:
   /// \name conversions
   /// \{
 
+  /// Borrow the null-terminated storage; embedded NULs still stop C-string consumers.
   simd_nodiscard simd_inline simd_pure constexpr
   operator CharT const * () const noexcept {
     return view.data(); // an extra invariant that its null terminated is maintained
   }
 
+  /// Borrow the full view, including any embedded NUL characters.
   simd_nodiscard simd_inline simd_pure constexpr
   operator std::basic_string_view<CharT,Traits>() const noexcept {
     return view;
   }
 
+  /// Allocate an independent standard string containing the full view.
   simd_nodiscard simd_inline constexpr
   operator std::basic_string<CharT,Traits>() const {
     return std::basic_string<CharT,Traits>(view);
@@ -135,7 +149,7 @@ public:
   /// \name element access
   /// \{
 
-  /// access the specified character
+  /// Access character i. Requires i < size().
   simd_nodiscard simd_inline simd_pure constexpr
   CharT const & operator [](size_type i) const noexcept { return view[i]; }
 
@@ -147,10 +161,12 @@ public:
   simd_nodiscard simd_inline simd_pure constexpr
   const_reference front() const noexcept { return view.front(); }
 
+  /// Return the last character.
   /// \pre !empty()
   simd_nodiscard simd_inline simd_pure constexpr
   const_reference back() const noexcept { return view.back(); }
 
+  /// Borrow the canonical storage; the terminator is at data()[size()].
   simd_nodiscard simd_inline simd_pure constexpr
   const_pointer data() const noexcept { return view.data(); }
 
@@ -158,18 +174,23 @@ public:
   /// \name capacity
   /// \{
 
+  /// Return the stored number of characters, excluding the final terminator.
   simd_nodiscard simd_inline simd_pure constexpr
   size_type size() const noexcept { return view.size(); }
 
+  /// Synonym for size().
   simd_nodiscard simd_inline simd_pure constexpr
   size_type length() const noexcept { return view.length(); }
 
+  /// Return the underlying string_view capacity bound, not the current length.
   simd_nodiscard simd_inline simd_pure constexpr
   size_type max_size() const noexcept { return view.max_size(); }
 
+  /// Return whether the stored length is zero.
   simd_nodiscard simd_inline simd_pure constexpr
   bool empty() const noexcept { return view.empty(); }
 
+  /// Return whether the string is nonempty.
   simd_nodiscard simd_inline simd_pure
   explicit constexpr operator bool () const noexcept { return !view.empty(); }
 
@@ -200,7 +221,8 @@ public:
   /// input/output
   /// \{
 
-  /// \throws std::ios_base:failure if an exception is thrown during output.
+  /// Write the complete view, including embedded NULs.
+  /// \throws std::ios_base::failure if an exception is thrown during output.
   friend constexpr
   std::basic_ostream<CharT, Traits> & operator<<(std::basic_ostream<CharT, Traits>& os, basic_static_string<CharT, Traits> v) {
     return os << v.view;
@@ -211,32 +233,41 @@ public:
   /// \name iterators
   /// \{
 
+  /// Return the first character iterator.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   auto begin() const noexcept { return view.data(); }
 
+  /// Return the one-past-last character iterator; C-string form scans to its NUL.
   simd_nodiscard simd_inline simd_pure constexpr
   auto end() const noexcept { return view.data() + view.size(); }
 
+  /// Return the first const character iterator.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   auto cbegin() const noexcept { return begin(); }
 
+  /// Return the const end iterator; C-string form scans to its NUL.
   simd_nodiscard simd_inline simd_pure constexpr
   auto cend() const noexcept { return end(); }
 
+  /// Return the first reverse iterator; C-string form first finds its end.
   simd_nodiscard simd_inline simd_pure constexpr
   auto rbegin() const noexcept { return const_reverse_iterator(end()); }
 
+  /// Return the reverse end iterator.
   simd_nodiscard simd_inline simd_pure constexpr
   auto rend() const noexcept { return const_reverse_iterator(begin()); }
 
+  /// Return the first const reverse iterator.
   simd_nodiscard simd_inline simd_pure constexpr
   auto crbegin() const noexcept { return rbegin(); }
 
+  /// Return the const reverse end iterator.
   simd_nodiscard simd_inline simd_pure constexpr
   auto crend() const noexcept { return rend(); }
 
   /// \}
 
+  /// Exchange views without moving characters.
   simd_inline constexpr friend
   void swap(basic_static_string & x, basic_static_string & y) noexcept {
     using std::swap;
@@ -257,6 +288,12 @@ using static_u8string = basic_static_string<char8_t>;
 using static_u16string = basic_static_string<char16_t>;
 using static_u32string = basic_static_string<char32_t>;
 
+/** \ingroup static_strings
+ * \brief A pointer-sized view of a complete interned char string.
+ * Length is recovered from the first NUL. Use static_string when embedded NULs
+ * matter or repeated end/length scans are undesirable. Default construction
+ * selects the canonical empty string; equality compares addresses.
+ */
 class static_c_string {
   char const * p = reify<char>::value;
 public:
@@ -277,6 +314,7 @@ public:
   /// \name constructors
   /// \{
 
+  /// Select the canonical empty C string.
   simd_inline constexpr
   static_c_string() noexcept = default;
 
@@ -286,9 +324,9 @@ public:
   simd_inline constexpr
   static_c_string(static_c_string &&) noexcept = default;
 
+  /// Borrow the interned storage, dropping the separately stored length.
+  /// \pre x has no embedded NUL before x.size().
   simd_inline constexpr
-  // Requires a complete interned C string: no embedded NUL before x.size().
-  // As before, violating this precondition makes the conversion back shorter.
   static_c_string(static_string x) noexcept : p(x.data()) {}
 
   /// \}
@@ -305,12 +343,15 @@ public:
   /// \name conversion
   /// \{
 
+  /// Borrow the interned null-terminated character pointer.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   operator const char * () const noexcept { return p; }
 
+  /// Recover a static_string by scanning to the first NUL; O(length).
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   operator static_string () const noexcept { return static_string(std::string_view(p)); }
 
+  /// Return the borrowed interned pointer.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   const char * data() const noexcept { return p; }
 
@@ -329,38 +370,47 @@ public:
   /// \{
 
   /// O(1)
+  /// Return the first character iterator.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   auto begin() const noexcept { return p; }
 
+  /// Return the one-past-last character iterator; C-string form scans to its NUL.
   simd_nodiscard simd_inline simd_pure constexpr
   auto end() const noexcept { return p + std::char_traits<char>::length(p); }
 
   /// O(1)
+  /// Return the first const character iterator.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr
   auto cbegin() const noexcept { return p; }
 
   /// O(n)
+  /// Return the const end iterator; C-string form scans to its NUL.
   simd_nodiscard simd_inline simd_pure constexpr
   auto cend() const noexcept { return p + std::char_traits<char>::length(p); }
 
   /// O(n)
+  /// Return the first reverse iterator; C-string form first finds its end.
   simd_nodiscard simd_inline simd_pure constexpr
   auto rbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
 
   /// O(1)
+  /// Return the reverse end iterator.
   simd_nodiscard simd_inline simd_pure constexpr
   auto rend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
 
   /// O(n)
+  /// Return the first const reverse iterator.
   simd_nodiscard simd_inline simd_pure constexpr
   auto crbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
 
   /// O(1)
+  /// Return the const reverse end iterator.
   simd_nodiscard simd_inline simd_pure constexpr
   auto crend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
 
   /// \}
 
+  /// Exchange the interned pointers without touching characters.
   simd_inline friend
   void swap(static_c_string & x, static_c_string & y) noexcept {
     using std::swap;
@@ -368,6 +418,9 @@ public:
   }
 };
 
+/// \ingroup static_strings
+/// Intern a standard-width literal, retaining embedded NUL characters in its length.
+/// \snippet api.cc common_utilities
 // Structural string-literal NTTPs are standard C++; no GNU pack extension.
 template <detail::static_string_literal Text>
 consteval auto operator""_ss() noexcept {
@@ -377,6 +430,9 @@ consteval auto operator""_ss() noexcept {
   }(std::make_index_sequence<Text.size - 1>{});
 }
 
+/// \ingroup static_strings
+/// Intern a char literal as a pointer-sized C string.
+/// \pre No embedded NUL occurs before the literal's final terminator.
 template <detail::static_string_literal Text>
   requires std::same_as<typename decltype(Text)::char_type, char>
 consteval static_c_string operator""_scs() noexcept {

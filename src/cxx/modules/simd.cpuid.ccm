@@ -14,11 +14,20 @@ module;
 export module simd.cpuid;
 
 export namespace simd {
-  /// Raw CPUID registers. Unsupported leaves retain the instruction's behavior.
+  /// \defgroup capabilities CPU capabilities and waiting
+  /// x86-only queries and wait helpers. Feature queries belong outside hot loops;
+  /// SIMD instruction admission also requires the appropriate OS vector state.
+  /// \snippet api.cc capabilities
+  /// \ingroup capabilities
+  /// Raw CPUID register values, interpreted as signed storage words.
   struct simd_nodiscard cpuid_t {
     std::int32_t eax, ebx, ecx, edx;
   };
 
+  /// \ingroup capabilities
+  /// Execute CPUID with leaf eax and subleaf ecx, returning all four registers.
+  /// Unsupported leaves retain the instruction's behavior; check maximum leaves
+  /// before interpreting feature bits. This does not check XCR0/OS vector state.
   /// CPUID serializes execution; query capabilities outside critical paths.
   cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept;
 
