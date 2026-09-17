@@ -457,6 +457,100 @@ export namespace simd {
     template<class M,class T> simd_inline constexpr auto adl_select(M const & m,T const & a,T const & b)
         noexcept(noexcept(select(m,a,b))) -> decltype(select(m,a,b)) { return select(m,a,b); }
   }
+  namespace detail {
+    // Restrict standard fallbacks: some STLs leave their templates unconstrained.
+    template<class T> requires std::is_arithmetic_v<T>
+    simd_inline constexpr auto isfinite(T const & x)
+        noexcept(noexcept(std::isfinite(x))) -> decltype(std::isfinite(x)) { return std::isfinite(x); }
+    template<class T> requires std::is_arithmetic_v<T>
+    simd_inline constexpr auto isinf(T const & x)
+        noexcept(noexcept(std::isinf(x))) -> decltype(std::isinf(x)) { return std::isinf(x); }
+    template<class T> requires std::is_arithmetic_v<T>
+    simd_inline constexpr auto isnan(T const & x)
+        noexcept(noexcept(std::isnan(x))) -> decltype(std::isnan(x)) { return std::isnan(x); }
+    template<class T> requires std::is_arithmetic_v<T>
+    simd_inline constexpr auto signbit(T const & x)
+        noexcept(noexcept(std::signbit(x))) -> decltype(std::signbit(x)) { return std::signbit(x); }
+    template<class T> requires std::is_arithmetic_v<T>
+    simd_inline constexpr auto copysign(T const & x,T const & y)
+        noexcept(noexcept(std::copysign(x,y))) -> decltype(std::copysign(x,y)) { return std::copysign(x,y); }
+    struct wide_isfinite {
+      template<class... T> simd_inline constexpr auto operator()(T const &... x) const
+          noexcept(noexcept(isfinite(x...))) -> decltype(isfinite(x...)) { return isfinite(x...); }
+    };
+    struct wide_isinf {
+      template<class... T> simd_inline constexpr auto operator()(T const &... x) const
+          noexcept(noexcept(isinf(x...))) -> decltype(isinf(x...)) { return isinf(x...); }
+    };
+    struct wide_isnan {
+      template<class... T> simd_inline constexpr auto operator()(T const &... x) const
+          noexcept(noexcept(isnan(x...))) -> decltype(isnan(x...)) { return isnan(x...); }
+    };
+    struct wide_signbit {
+      template<class... T> simd_inline constexpr auto operator()(T const &... x) const
+          noexcept(noexcept(signbit(x...))) -> decltype(signbit(x...)) { return signbit(x...); }
+    };
+    struct wide_copysign {
+      template<class... T> simd_inline constexpr auto operator()(T const &... x) const
+          noexcept(noexcept(copysign(x...))) -> decltype(copysign(x...)) { return copysign(x...); }
+    };
+    template<class F,class... T>
+    using wide_result = std::remove_cvref_t<std::invoke_result_t<F,T const &...>>;
+    template<std::size_t N,class F,class... T> concept wide_value_operation =
+      std::invocable<F,T const &...> && std::is_object_v<wide_result<F,T...>> &&
+      std::is_move_constructible_v<std::array<wide_result<F,T...>,N>> &&
+      (N == 0 || requires(T const &... x) { std::array<wide_result<F,T...>,1>{F{}(x...)}; });
+
+    // Each lane is constructed directly from its ADL result; no default
+    // construction or assignment is required. The array then moves into wide.
+    template<class F,class T,std::size_t N> requires wide_value_operation<N,F,T>
+    simd_inline constexpr auto wide_map(wide<T,N> const & input)
+        noexcept([] {
+          if constexpr (N == 0) return true;
+          else return noexcept(wide<wide_result<F,T>,1>{
+            std::array<wide_result<F,T>,1>{F{}(std::declval<T const &>())}});
+        }()) {
+      auto const & [...x] = input;
+      return wide<wide_result<F,T>,N>{std::array<wide_result<F,T>,N>{F{}(x)...}};
+    }
+    template<class F,class T,std::size_t N> requires wide_value_operation<N,F,T,T>
+    simd_inline constexpr auto wide_map(wide<T,N> const & a,wide<T,N> const & b)
+        noexcept([] {
+          if constexpr (N == 0) return true;
+          else return noexcept(wide<wide_result<F,T,T>,1>{
+            std::array<wide_result<F,T,T>,1>{F{}(std::declval<T const &>(),std::declval<T const &>())}});
+        }()) {
+      auto const & [...x] = a;
+      auto const & [...y] = b;
+      return wide<wide_result<F,T,T>,N>{std::array<wide_result<F,T,T>,N>{F{}(x,y)...}};
+    }
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_isfinite,T>
+  simd_nodiscard simd_inline constexpr auto isfinite(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_isfinite>(input))) {
+    return detail::wide_map<detail::wide_isfinite>(input);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_isinf,T>
+  simd_nodiscard simd_inline constexpr auto isinf(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_isinf>(input))) {
+    return detail::wide_map<detail::wide_isinf>(input);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_isnan,T>
+  simd_nodiscard simd_inline constexpr auto isnan(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_isnan>(input))) {
+    return detail::wide_map<detail::wide_isnan>(input);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_signbit,T>
+  simd_nodiscard simd_inline constexpr auto signbit(wide<T,N> const & input)
+      noexcept(noexcept(detail::wide_map<detail::wide_signbit>(input))) {
+    return detail::wide_map<detail::wide_signbit>(input);
+  }
+  template<class T,std::size_t N> requires detail::wide_value_operation<N,detail::wide_copysign,T,T> &&
+    std::same_as<detail::wide_result<detail::wide_copysign,T,T>,T>
+  simd_nodiscard simd_inline constexpr wide<T,N> copysign(wide<T,N> const & a,wide<T,N> const & b)
+      noexcept(noexcept(detail::wide_map<detail::wide_copysign>(a,b))) {
+    return detail::wide_map<detail::wide_copysign>(a,b);
+  }
   template<class R,std::size_t N>
   simd_nodiscard simd_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
     return wide<R,N>::broadcast(value);
