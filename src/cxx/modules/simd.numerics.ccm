@@ -66,12 +66,15 @@ public:
 
   _Float16 content;
 
+  /// Default-initialize storage without setting its bits; value-initialization zeroes it.
   simd_inline simd_artificial
   constexpr fp16() noexcept = default;
 
+  /// Copy the native sixteen-bit representation.
   simd_inline simd_artificial
   constexpr fp16(simd_noescape fp16 const &) noexcept = default;
 
+  /// Copy the native representation; the source retains its bits.
   simd_inline simd_artificial
   constexpr fp16(simd_noescape fp16 &&) noexcept = default;
 
@@ -87,51 +90,62 @@ public:
   simd_nodiscard simd_inline simd_artificial
   constexpr operator float (this fp16 self) noexcept { return decode(self.to_bits()); }
 
+  /// Return native storage without rounding or normalizing NaN payloads.
   simd_nodiscard simd_inline simd_artificial
   constexpr operator _Float16 (this fp16 self) noexcept { return self.content; }
 
+  /// Copy the native representation, replacing all previous bits.
   simd_reinitializes simd_inline simd_artificial
   constexpr fp16 & operator = (simd_noescape fp16 const &) noexcept
   simd_lifetimebound = default;
 
+  /// Copy the native representation, leaving the source unchanged.
   simd_reinitializes simd_inline simd_artificial
   constexpr fp16 & operator = (simd_noescape fp16 &&) noexcept
   simd_lifetimebound = default;
 
+  /// Compare decoded values for equality; signed zeros compare equal and NaNs do not.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator == (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) == static_cast<float>(y);
   }
 
+  /// Compare decoded values for inequality; a NaN operand makes the result true.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator != (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) != static_cast<float>(y);
   }
 
+  /// Compare decoded values; NaNs are unordered and signed zeros equivalent.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr std::partial_ordering operator <=> (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) <=> static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is less; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator < (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) < static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is at most the right; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator <= (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) <= static_cast<float>(y);
   }
+  /// Return whether the decoded left value is greater; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator > (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) > static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is at least the right; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator >= (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) >= static_cast<float>(y);
   }
 
+  /// Exchange native representations, including signed zeros and NaN payloads.
   simd_inline simd_artificial
   friend constexpr void swap(
     simd_noescape fp16 & x,
@@ -163,26 +177,34 @@ constexpr fp16 operator""_fp16(long double v) noexcept {
 
 } // namespace simd
 
+/// \namespace std
+/// \brief Standard-library adaptations documented here for SIMD value types.
 export namespace std {
   using ::std::numeric_limits;
+  /// Classify the stored bits as NaN without performing a floating-point conversion.
   simd_nodiscard simd_artificial simd_inline simd_const
   constexpr bool isnan(simd::fp16 x) noexcept {
     // Sign doesn't matter, frac not zero (infinity)
     return (x.to_bits() & 0x7FFF) > 0x7c00;
   }
 
+  /// Representation limits for simd::fp16; conversions preserve subnormal encodings.
+  /// These constants describe the storage format, not the current floating-point controls.
   template <>
   class numeric_limits<simd::fp16> {
   public:
     static constexpr bool is_specialized = true;
+    /// Return the least positive normal value, 2^-14 (bits 0x0400).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 min() noexcept {
       return simd::fp16::from_bits(0x0400);
     }
+    /// Return the greatest finite value, 65504 (bits 0x7bff).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 max() noexcept {
       return simd::fp16::from_bits(0x7BFF);
     }
+    /// Return the most negative finite value, -65504 (bits 0xfbff).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 lowest() noexcept {
       return simd::fp16::from_bits(0xFBFF);
@@ -194,10 +216,12 @@ export namespace std {
     static constexpr bool is_integer = false;
     static constexpr bool is_exact = false;
     static constexpr int radix = 2;
+    /// Return the distance from one to its successor, 2^-10 (bits 0x1400).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 epsilon() noexcept {
       return simd::fp16::from_bits(0x1400);
     }
+    /// Return the round-to-nearest error bound, one half (bits 0x3800).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 round_error() noexcept {
       return simd::fp16::from_bits(0x3800);
@@ -213,18 +237,22 @@ export namespace std {
     static constexpr float_denorm_style has_denorm = denorm_present;
     [[deprecated("numeric_limits::has_denorm_loss is deprecated since C++23")]]
     static constexpr bool has_denorm_loss = false;
+    /// Return positive infinity (bits 0x7c00).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 infinity() noexcept {
       return simd::fp16::from_bits(0x7C00);
     }
+    /// Return a quiet NaN with the fixed encoding 0x7fff.
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 quiet_NaN() noexcept {
       return simd::fp16::from_bits(0x7FFF);
     }
+    /// Return a signaling NaN encoding (bits 0x7dff); decoding to float quiets it.
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 signaling_NaN() noexcept {
       return simd::fp16::from_bits(0x7DFF);
     }
+    /// Return the least positive subnormal value, 2^-24 (bits 0x0001).
     simd_inline simd_artificial simd_const
     static constexpr simd::fp16 denorm_min() noexcept {
       return simd::fp16::from_bits(1);
@@ -267,6 +295,7 @@ public:
 
   __bf16 content;
 
+  /// Default-initialize storage without setting its bits; value-initialization zeroes it.
   simd_inline simd_artificial constexpr
   bf16() noexcept = default;
 
@@ -278,12 +307,15 @@ public:
   simd_inline simd_artificial constexpr
   bf16(__bf16 f) noexcept : content(f) {}
 
+  /// Copy the native sixteen-bit representation.
   simd_inline simd_artificial constexpr
   bf16(simd_noescape bf16 const &) noexcept = default;
 
+  /// Copy the native representation; the source retains its bits.
   simd_inline simd_artificial constexpr
   bf16(simd_noescape bf16 &&) noexcept = default;
 
+  /// Return native storage without rounding or normalizing NaN payloads.
   simd_nodiscard simd_inline simd_artificial simd_const constexpr
   operator __bf16 (this bf16 self) noexcept { return self.content; }
 
@@ -291,49 +323,59 @@ public:
   simd_nodiscard simd_inline simd_artificial simd_const constexpr
   operator float (this bf16 self) noexcept { return decode(self.to_bits()); }
 
+  /// Copy the native representation, replacing all previous bits.
   simd_reinitializes simd_inline simd_artificial constexpr
   bf16 & operator = (simd_noescape bf16 const &) noexcept
   simd_lifetimebound = default;
 
+  /// Copy the native representation, leaving the source unchanged.
   simd_reinitializes simd_inline simd_artificial constexpr
   bf16 & operator = (simd_noescape bf16 &&) noexcept
   simd_lifetimebound = default;
 
+  /// Compare decoded values for equality; signed zeros compare equal and NaNs do not.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator == (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) == static_cast<float>(y);
   }
 
+  /// Compare decoded values; NaNs are unordered and signed zeros equivalent.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr std::partial_ordering operator <=> (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) <=> static_cast<float>(y);
   }
 
+  /// Compare decoded values for inequality; a NaN operand makes the result true.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator != (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) != static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is less; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator < (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) < static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is greater; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator > (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) > static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is at most the right; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator <= (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) <= static_cast<float>(y);
   }
 
+  /// Return whether the decoded left value is at least the right; false for NaN operands.
   simd_nodiscard simd_inline simd_artificial simd_const
   friend constexpr bool operator >= (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) >= static_cast<float>(y);
   }
 
+  /// Exchange native representations, including signed zeros and NaN payloads.
   simd_inline simd_artificial
   friend constexpr void swap(
     simd_noescape bf16 & x,
@@ -384,23 +426,29 @@ constexpr bf16 fast_to_bf16(bf16 f) noexcept {
 
 export namespace std {
   using ::std::numeric_limits;
+  /// Classify the stored bits as NaN without performing a floating-point conversion.
   simd_nodiscard simd_artificial simd_inline simd_const
   constexpr bool isnan(simd::bf16 x) noexcept {
     // Exponent maxed out and fraction non-zero indicates NaN
     return (x.to_bits() & 0x7FFF) > 0x7F80;
   }
 
+  /// Representation limits for simd::bf16; conversions preserve subnormal encodings.
+  /// These constants describe the storage format, not the current floating-point controls.
   template <> class numeric_limits<simd::bf16> {
   public:
     static constexpr bool is_specialized = true;
+    /// Return the least positive normal value, 2^-126 (bits 0x0080).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 min() noexcept {
       return simd::bf16::from_bits(0x0080);
     }
+    /// Return the greatest finite value, (2 - 2^-7) * 2^127 (bits 0x7f7f).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 max() noexcept {
       return simd::bf16::from_bits(0x7F7F);
     }
+    /// Return the negative of max() (bits 0xff7f).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 lowest() noexcept {
       return simd::bf16::from_bits(0xFF7F);
@@ -412,10 +460,12 @@ export namespace std {
     static constexpr bool is_integer = false;
     static constexpr bool is_exact = false;
     static constexpr int radix = 2;
+    /// Return the distance from one to its successor, 2^-7 (bits 0x3c00).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 epsilon() noexcept {
       return simd::bf16::from_bits(0x3C00);
     }
+    /// Return the round-to-nearest error bound, one half (bits 0x3f00).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 round_error() noexcept {
       return simd::bf16::from_bits(0x3F00);
@@ -431,18 +481,22 @@ export namespace std {
     static constexpr float_denorm_style has_denorm = denorm_present;
     [[deprecated("numeric_limits::has_denorm_loss is deprecated since C++23")]]
     static constexpr bool has_denorm_loss = false;
+    /// Return positive infinity (bits 0x7f80).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 infinity() noexcept {
       return simd::bf16::from_bits(0x7F80);
     }
+    /// Return a quiet NaN with the fixed encoding 0x7fc0.
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 quiet_NaN() noexcept {
       return simd::bf16::from_bits(0x7FC0);
     }
+    /// Return a signaling NaN encoding (bits 0x7f81); decoding to float quiets it.
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 signaling_NaN() noexcept {
       return simd::bf16::from_bits(0x7F81);
     }
+    /// Return the least positive subnormal value, 2^-133 (bits 0x0001).
     simd_nodiscard simd_inline simd_artificial simd_const
     static constexpr simd::bf16 denorm_min() noexcept {
       return simd::bf16::from_bits(1);
@@ -584,8 +638,9 @@ constexpr T scalef(T x, T y) noexcept {
   }
 }
 
-/// \hideinlinesource
-/// Scalar integer-comparison predicates, encoded like the corresponding x86 immediates.
+/// \showenumvalues
+/// \brief Scalar integer-comparison predicates, encoded like the corresponding x86 immediates.
+/// \details Select a truth table for cmpint(); comparison uses the signedness of its operands.
 enum class simd_nodiscard CMPINT : std::size_t {
   EQ    = 0x0uz ///< `==`
 , LT    = 0x1uz ///< `<`
@@ -597,6 +652,8 @@ enum class simd_nodiscard CMPINT : std::size_t {
 , TRUE  = 0x7uz ///< always `true`
 };
 
+/// Evaluate the selected integer truth table on two values of the same integer type.
+/// Signed and unsigned ordering follow T; the immediate selects one of eight predicates.
 template <CMPINT imm8, typename T>
 requires (one_of_t<T, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t> && (std::size_t(imm8) < 8uz))
 simd_nodiscard simd_inline simd_const
@@ -613,7 +670,8 @@ constexpr bool cmpint(T a, T b) noexcept {
   else static_assert(false);
 }
 
-/// AVX512 added many more floating point comparison types. Do we have them?
+/// Number of floating comparison immediates selected by the compile-time AVX-512 feature macro.
+/// This constant does not query the running CPU or admit any instruction set.
 /// \hideinitializer
 inline constexpr std::size_t max_fp_comparison_predicate = [] {
 #ifdef __AVX512F__
@@ -623,9 +681,11 @@ inline constexpr std::size_t max_fp_comparison_predicate = [] {
 #endif
 }();
 
-/// \hideinlinesource
-/// Scalar floating-comparison predicates, including ordered and unordered truth tables.
-/// These scalar helpers implement truth values; suffixes do not promise hardware exception flags.
+/// \showenumvalues
+/// \brief Scalar floating-comparison predicates, including ordered and unordered truth tables.
+/// \details Ordered predicates require neither operand to be NaN; unordered
+/// predicates include NaNs as indicated by their truth table. The Q/S suffixes
+/// retain the x86 encoding names, not a promise about hardware exception flags.
 enum class simd_nodiscard CMP : std::size_t {
   EQ_OQ     = 0x00uz  ///< Equal (ordered, nonsignaling)
 , LT_OS     = 0x01uz  ///< Less-than (ordered, signaling)
@@ -635,33 +695,35 @@ enum class simd_nodiscard CMP : std::size_t {
 , NLT_US    = 0x05uz  ///< Not-less-than (unordered, signaling)
 , NLE_US    = 0x06uz  ///< Not-less-than-or-equal (unordered, signaling)
 , ORD_Q     = 0x07uz  ///< Ordered (nonsignaling)
-, EQ_UQ     = 0x08uz  ///< Equal (unordered, nonsignaling) (AVX-512)
-, NGE_US    = 0x09uz  ///< Not-greater-than-or-equal (unordered, signaling) (AVX-512)
-, NGT_US    = 0x0Auz  ///< Not-greater-than (unordered, signaling) (AVX-512)
-, FALSE_OQ  = 0x0Buz  ///< False (ordered, nonsignaling) (AVX-512)
-, NEQ_OQ    = 0x0Cuz  ///< Not-equal (ordered, nonsignaling) (AVX-512)
-, GE_OS     = 0x0Duz  ///< Greater-than-or-equal (ordered, signaling) (AVX-512)
-, GT_OS     = 0x0Euz  ///< Greater-than (ordered, signaling) (AVX-512)
-, TRUE_UQ   = 0x0Fuz  ///< True (unordered, nonsignaling) (AVX-512)
-, EQ_OS     = 0x10uz  ///< Equal (ordered, signaling) (AVX-512)
-, LT_OQ     = 0x11uz  ///< Less-than (ordered, nonsignaling) (AVX-512)
-, LE_OQ     = 0x12uz  ///< Less-than-or-equal (ordered, nonsignaling) (AVX-512)
-, UNORD_S   = 0x13uz  ///< Unordered (signaling) (AVX-512)
-, NEQ_US    = 0x14uz  ///< Not-equal (unordered, signaling) (AVX-512)
-, NLT_UQ    = 0x15uz  ///< Not-less-than (unordered, nonsignaling) (AVX-512)
-, NLE_UQ    = 0x16uz  ///< Not-less-than-or-equal (unordered, nonsignaling) (AVX-512)
-, ORD_S     = 0x17uz  ///< Ordered (signaling) (AVX-512)
-, EQ_US     = 0x18uz  ///< Equal (unordered, signaling) (AVX-512)
-, NGE_UQ    = 0x19uz  ///< Not-greater-than-or-equal (unordered, nonsignaling) (AVX-512)
-, NGT_UQ    = 0x1Auz  ///< Not-greater-than (unordered, nonsignaling) (AVX-512)
-, FALSE_OS  = 0x1Buz  ///< False (ordered, signaling) (AVX-512)
-, NEQ_OS    = 0x1Cuz  ///< Not-equal (ordered, signaling) (AVX-512)
-, GE_OQ     = 0x1Duz  ///< Greater-than-or-equal (ordered, nonsignaling) (AVX-512)
-, GT_OQ     = 0x1Euz  ///< Greater-than (ordered, nonsignaling) (AVX-512)
-, TRUE_US   = 0x1Fuz  ///< True (unordered, signaling) (AVX-512)
+, EQ_UQ     = 0x08uz  ///< Equal (unordered, nonsignaling)
+, NGE_US    = 0x09uz  ///< Not-greater-than-or-equal (unordered, signaling)
+, NGT_US    = 0x0Auz  ///< Not-greater-than (unordered, signaling)
+, FALSE_OQ  = 0x0Buz  ///< False (ordered, nonsignaling)
+, NEQ_OQ    = 0x0Cuz  ///< Not-equal (ordered, nonsignaling)
+, GE_OS     = 0x0Duz  ///< Greater-than-or-equal (ordered, signaling)
+, GT_OS     = 0x0Euz  ///< Greater-than (ordered, signaling)
+, TRUE_UQ   = 0x0Fuz  ///< True (unordered, nonsignaling)
+, EQ_OS     = 0x10uz  ///< Equal (ordered, signaling)
+, LT_OQ     = 0x11uz  ///< Less-than (ordered, nonsignaling)
+, LE_OQ     = 0x12uz  ///< Less-than-or-equal (ordered, nonsignaling)
+, UNORD_S   = 0x13uz  ///< Unordered (signaling)
+, NEQ_US    = 0x14uz  ///< Not-equal (unordered, signaling)
+, NLT_UQ    = 0x15uz  ///< Not-less-than (unordered, nonsignaling)
+, NLE_UQ    = 0x16uz  ///< Not-less-than-or-equal (unordered, nonsignaling)
+, ORD_S     = 0x17uz  ///< Ordered (signaling)
+, EQ_US     = 0x18uz  ///< Equal (unordered, signaling)
+, NGE_UQ    = 0x19uz  ///< Not-greater-than-or-equal (unordered, nonsignaling)
+, NGT_UQ    = 0x1Auz  ///< Not-greater-than (unordered, nonsignaling)
+, FALSE_OS  = 0x1Buz  ///< False (ordered, signaling)
+, NEQ_OS    = 0x1Cuz  ///< Not-equal (ordered, signaling)
+, GE_OQ     = 0x1Duz  ///< Greater-than-or-equal (ordered, nonsignaling)
+, GT_OQ     = 0x1Euz  ///< Greater-than (ordered, nonsignaling)
+, TRUE_US   = 0x1Fuz  ///< True (unordered, signaling)
 };
 
-/// perform an avx512 style floating point comparison for scalar values.
+/// Evaluate the selected ordered/unordered truth table on two float or double values.
+/// The Q/S immediate variants have the same truth values; this helper does not
+/// emulate the x86 signaling versus nonsignaling exception behavior.
 template <CMP imm8, typename T>
 requires (one_of_t<T, float, double> && (std::size_t(imm8) < 32uz))
 simd_nodiscard simd_inline simd_pure
@@ -710,10 +772,16 @@ constexpr bool cmp(T a, T b) noexcept {
 
 
 namespace simd {
+  /// \copydoc cmp_unord(T,T)
   template bool cmp_unord(float, float) noexcept;
+  /// \copydoc cmp_unord(T,T)
   template bool cmp_unord(double, double) noexcept;
+  /// \copydoc cmp_ord(T,T)
   template bool cmp_ord(float, float) noexcept;
+  /// \copydoc cmp_ord(T,T)
   template bool cmp_ord(double, double) noexcept;
+  /// \copydoc scalef(T,T)
   template float scalef(float, float) noexcept;
+  /// \copydoc scalef(T,T)
   template double scalef(double, double) noexcept;
 }

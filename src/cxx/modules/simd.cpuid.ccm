@@ -32,10 +32,13 @@ export namespace simd {
   /// CPUID serializes execution; query capabilities outside critical paths.
   cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept;
 
+  /// \showenumvalues
+  /// \brief Recognized CPUID vendor strings; vendor identity alone does not imply features.
+  /// \details Values classify leaf zero only and are independent of OS vector-state support.
   enum class simd_nodiscard cpu_vendor : std::uint8_t {
-    intel = 0,
-    amd = 1,
-    unknown = 2
+    intel = 0, ///< CPUID reports GenuineIntel.
+    amd = 1, ///< CPUID reports AuthenticAMD.
+    unknown = 2 ///< Any other vendor string.
   };
 
   /// Cached vendor identification; vendor alone does not establish features.

@@ -40,6 +40,7 @@ namespace detail {
 }
 
 
+/// Store a compile-time sequence followed by one value-initialized terminator.
 template <typename T, T...xs>
 struct reify {
   static constexpr const T value[sizeof...(xs)+1] = {xs..., T() };
@@ -80,6 +81,7 @@ public:
   basic_static_string(std::basic_string_view<CharT,Traits> value) noexcept
   : view(value) {}
 
+  /// Allow the pointer-sized view to share this interned storage.
   friend class static_c_string;
   using traits_type = Traits;
   using value_type = CharT;
@@ -106,9 +108,11 @@ public:
   simd_inline constexpr
   basic_static_string() noexcept = default;
 
+  /// Copy the interned view without copying characters.
   simd_inline constexpr
   basic_static_string(basic_static_string const &) noexcept = default;
 
+  /// Copy the interned view; the source remains valid and unchanged.
   simd_inline constexpr
   basic_static_string(basic_static_string &&) noexcept = default;
 
@@ -116,9 +120,11 @@ public:
   /// \name assignments
   /// \{
 
+  /// Replace this view with the source view without allocation; the source is unchanged.
   simd_reinitializes simd_inline constexpr
   basic_static_string & operator = (basic_static_string const & that) noexcept = default;
 
+  /// Replace this view with the source view without allocation; the source is unchanged.
   simd_reinitializes simd_inline constexpr
   basic_static_string & operator = (basic_static_string && that) noexcept = default;
 
@@ -197,6 +203,8 @@ public:
   /// \}
   /// \name comparisons
   /// \{
+
+  /// Compare interned addresses with standard traits, otherwise compare addresses or character values.
   /// \pre `Traits::eq` is assumed reflexive even if overloaded
   simd_nodiscard simd_inline simd_artificial friend constexpr
   bool operator == (basic_static_string self, basic_static_string that) noexcept {
@@ -207,6 +215,7 @@ public:
     }
   }
 
+  /// Negate equality, using the same address or custom-traits comparison.
   /// \pre `Traits::eq` is assumed reflexive
   simd_nodiscard simd_inline simd_artificial friend constexpr
   bool operator != (basic_static_string self, basic_static_string that) noexcept {
@@ -318,9 +327,11 @@ public:
   simd_inline constexpr
   static_c_string() noexcept = default;
 
+  /// Copy the interned view without copying characters.
   simd_inline constexpr
   static_c_string(static_c_string const &) noexcept = default;
 
+  /// Copy the interned view; the source remains valid and unchanged.
   simd_inline constexpr
   static_c_string(static_c_string &&) noexcept = default;
 
@@ -333,9 +344,11 @@ public:
   /// \name assignment
   /// \{
 
+  /// Replace this view with the source view without allocation; the source is unchanged.
   simd_reinitializes simd_inline constexpr
   static_c_string & operator = (static_c_string const &) noexcept = default;
 
+  /// Replace this view with the source view without allocation; the source is unchanged.
   simd_reinitializes simd_inline constexpr
   static_c_string & operator = (static_c_string &&) noexcept = default;
 
@@ -359,9 +372,11 @@ public:
   /// \name comparison
   /// \{
 
+  /// Return whether both views refer to the same interned address.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr friend
   bool operator == (static_c_string x, static_c_string y) noexcept { return x.p == y.p; }
 
+  /// Return whether the interned addresses differ.
   simd_nodiscard simd_inline simd_pure simd_artificial constexpr friend
   bool operator != (static_c_string x, static_c_string y) noexcept { return x.p != y.p; }
 
@@ -445,12 +460,14 @@ export namespace std {
   using ::std::hash;
   template <typename CharT, typename Traits>
   struct hash<::simd::basic_static_string<CharT,Traits>> {
+    /// Hash the interned storage address, not the characters; stable only within this process.
     size_t operator()(::simd::basic_static_string<CharT,Traits> const & s) const noexcept {
       return reinterpret_cast<size_t>(s.data());
     }
   };
   template <>
   struct hash<::simd::static_c_string> {
+    /// Hash the interned storage address, not the characters; stable only within this process.
     size_t operator()(::simd::static_c_string s) const noexcept {
       return reinterpret_cast<size_t>(s.data());
     }

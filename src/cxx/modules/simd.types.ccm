@@ -16,6 +16,10 @@ export module simd.types;
 
 /// \ingroup types
 
+/// \namespace simd
+/// \brief Architecture-tagged vectors, register packs and supporting value types.
+/// Native arithmetic requires an explicit architecture and its instruction-set
+/// preconditions. Common utilities do not select or admit a runtime CPU profile.
 export namespace simd {
 /// \defgroup types Types
 /// \{

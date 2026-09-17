@@ -131,6 +131,7 @@ export namespace simd {
     }
 
   };
+  /// Deduce the common element type and the number of homogeneous constructor arguments.
   template<class T, class... U> requires (std::same_as<T,U> && ...)
   wide(T,U...) -> wide<T,1 + sizeof...(U)>;
 
@@ -211,184 +212,184 @@ export namespace simd {
     }
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a + b; }
   /// \ingroup wide_values
   /// Apply `+` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a + b; }
   simd_nodiscard simd_inline constexpr auto operator+(A const & a, B const & b)
       noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_add{}))) {
     return detail::wide_dispatch(a,b,detail::wide_add{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a - b; }
   /// \ingroup wide_values
   /// Apply `-` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a - b; }
   simd_nodiscard simd_inline constexpr auto operator-(A const & a, B const & b)
       noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_sub{}))) {
     return detail::wide_dispatch(a,b,detail::wide_sub{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a * b; }
   /// \ingroup wide_values
   /// Apply `*` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a * b; }
   simd_nodiscard simd_inline constexpr auto operator*(A const & a, B const & b)
       noexcept(noexcept(detail::wide_dispatch(a,b,detail::wide_mul{}))) {
     return detail::wide_dispatch(a,b,detail::wide_mul{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a / b; }
   /// \ingroup wide_values
   /// Apply `/` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a / b; }
   simd_nodiscard simd_inline constexpr auto operator/(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x / y) { return x / y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a % b; }
   /// \ingroup wide_values
   /// Apply `%` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a % b; }
   simd_nodiscard simd_inline constexpr auto operator%(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x % y) { return x % y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a & b; }
   /// \ingroup wide_values
   /// Apply `&` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a & b; }
   simd_nodiscard simd_inline constexpr auto operator&(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x & y) { return x & y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a | b; }
   /// \ingroup wide_values
   /// Apply `|` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a | b; }
   simd_nodiscard simd_inline constexpr auto operator|(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x | y) { return x | y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a ^ b; }
   /// \ingroup wide_values
   /// Apply `^` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a ^ b; }
   simd_nodiscard simd_inline constexpr auto operator^(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x ^ y) { return x ^ y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a << b; }
   /// \ingroup wide_values
   /// Apply `<<` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a << b; }
   simd_nodiscard simd_inline constexpr auto operator<<(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x << y) { return x << y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >> b; }
   /// \ingroup wide_values
   /// Apply `>>` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >> b; }
   simd_nodiscard simd_inline constexpr auto operator>>(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >> y) { return x >> y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a == b; }
   /// \ingroup wide_values
   /// Apply `==` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a == b; }
   simd_nodiscard simd_inline constexpr auto operator==(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x == y) { return x == y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a != b; }
   /// \ingroup wide_values
   /// Apply `!=` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a != b; }
   simd_nodiscard simd_inline constexpr auto operator!=(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x != y) { return x != y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a < b; }
   /// \ingroup wide_values
   /// Apply `<` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a < b; }
   simd_nodiscard simd_inline constexpr auto operator<(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x < y) { return x < y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a > b; }
   /// \ingroup wide_values
   /// Apply `>` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a > b; }
   simd_nodiscard simd_inline constexpr auto operator>(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x > y) { return x > y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a <= b; }
   /// \ingroup wide_values
   /// Apply `<=` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a <= b; }
   simd_nodiscard simd_inline constexpr auto operator<=(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x <= y) { return x <= y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class A, class B> requires detail::wide_arguments<A, B> &&
-    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >= b; }
   /// \ingroup wide_values
   /// Apply `>=` to corresponding elements; a non-pack argument is broadcast.
+  template<class A, class B> requires detail::wide_arguments<A, B> &&
+    requires(detail::wide_element_t<A> const & a, detail::wide_element_t<B> const & b) { a >= b; }
   simd_nodiscard simd_inline constexpr auto operator>=(A const & a, B const & b) {
     return detail::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >= y) { return x >= y; },
       std::make_index_sequence<detail::wide_size<A, B>>{});
   }
 
-  template<class T, std::size_t N> requires requires(T const & a) { +a; }
   /// \ingroup wide_values
   /// Apply unary `+` to each element, retaining its result type.
+  template<class T, std::size_t N> requires requires(T const & a) { +a; }
   simd_nodiscard simd_inline constexpr auto operator+(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(+x) { return +x; }, std::make_index_sequence<N>{});
   }
 
-  template<class T, std::size_t N> requires requires(T const & a) { -a; }
   /// \ingroup wide_values
   /// Apply unary `-` to each element, retaining its result type.
+  template<class T, std::size_t N> requires requires(T const & a) { -a; }
   simd_nodiscard simd_inline constexpr auto operator-(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(-x) { return -x; }, std::make_index_sequence<N>{});
   }
 
-  template<class T, std::size_t N> requires requires(T const & a) { ~a; }
   /// \ingroup wide_values
   /// Apply unary `~` to each element, retaining its result type.
+  template<class T, std::size_t N> requires requires(T const & a) { ~a; }
   simd_nodiscard simd_inline constexpr auto operator~(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(~x) { return ~x; }, std::make_index_sequence<N>{});
   }
 
-  template<class T, std::size_t N> requires requires(T const & a) { !a; }
   /// \ingroup wide_values
   /// Apply unary `!` to each element, retaining its result type.
+  template<class T, std::size_t N> requires requires(T const & a) { !a; }
   simd_nodiscard simd_inline constexpr auto operator!(wide<T, N> const & a) {
     return detail::wide_unary(a, [](auto const & x) -> decltype(!x) { return !x; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `+=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add> ||
       ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, detail::wide_element_t<B> const & b) { a += b; }))
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `+=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator+=(wide<T, N> & a, B const & b)
       noexcept([] {
         if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_add>)
@@ -401,12 +402,12 @@ export namespace simd {
     else return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x += y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `-=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub> ||
       ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, detail::wide_element_t<B> const & b) { a -= b; }))
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `-=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator-=(wide<T, N> & a, B const & b)
       noexcept([] {
         if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_sub>)
@@ -419,12 +420,12 @@ export namespace simd {
     else return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x -= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `*=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul> ||
       ((detail::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, detail::wide_element_t<B> const & b) { a *= b; }))
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `*=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator*=(wide<T, N> & a, B const & b)
       noexcept([] {
         if constexpr (detail::wide_batch_assignable<wide<T,N>,B,detail::wide_mul>)
@@ -437,65 +438,65 @@ export namespace simd {
     else return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x *= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `/=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a /= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `/=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator/=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x /= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `%=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a %= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `%=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator%=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x %= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `&=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a &= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `&=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator&=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x &= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `|=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a |= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `|=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator|=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x |= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `^=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a ^= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `^=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator^=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x ^= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `<<=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a <<= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `<<=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator<<=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x <<= y; }, std::make_index_sequence<N>{});
   }
 
+  /// \ingroup wide_values
+  /// Update the left pack with elementwise `>>=`; a scalar right side is broadcast.
   template<class T, std::size_t N, class B> requires detail::wide_arguments<wide<T, N>, B> &&
     (detail::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, detail::wide_element_t<B> const & b) { a >>= b; }
-  /// \ingroup wide_values
-  /// Update the left pack with elementwise `>>=`; a scalar right side is broadcast.
   simd_inline constexpr wide<T, N> & operator>>=(wide<T, N> & a, B const & b) {
     return detail::wide_mutate(a, b, [](auto & x, auto const & y) { x >>= y; }, std::make_index_sequence<N>{});
   }

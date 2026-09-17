@@ -67,7 +67,9 @@ export namespace simd {
   /// A universally supported x86 spin waiter using PAUSE; monitor is a no-op.
   struct spin {
     using timer_t = std::uint64_t;
+    /// Ignore the address; PAUSE waiting does not arm a hardware monitor.
     simd_inline simd_artificial static void monitor(volatile void *) noexcept {}
+    /// Issue one PAUSE, ignoring the timer; no sleep duration or memory ordering is promised.
     simd_inline simd_artificial static void mwait(std::uint32_t = 0) noexcept simd_blocking { _mm_pause(); }
     /// \hideinlinesource
     inline static constinit bool supported = true;

@@ -76,9 +76,10 @@ export namespace simd {
   /// POSIX-only mapping deleter. The stored byte length is passed to munmap.
   struct c_munmap {
     std::size_t size;
+    /// Unmap a non-null region of size bytes, ignoring the munmap return status.
+    /// A null pointer is a no-op.
+    /// \pre A non-null p is a successful mmap result with this recorded byte length.
     /// \hideinlinesource
-    /// \pre \p p is a memory region mapped by `mmap` \p size bytes long
-    /// \post \p p has been `munmap`ped
     simd_inline simd_artificial
     void operator()(void * p) const noexcept {
       if (p != nullptr)
