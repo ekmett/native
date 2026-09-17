@@ -51,18 +51,39 @@ foreach(profile IN LISTS SIMD_PROFILES)
   list(APPEND simd_module_targets simd_${name})
 endforeach()
 
+# CMake synthesizes imported BMIs using consumer options. The re-export-only
+# producer therefore needs the strongest selected profile, privately.
+set(simd_omnibus_imports "export import simd.scalar;\nexport import simd.wide;\nexport import simd.types;\nexport import simd.memory;\nexport import simd.static_string;\nexport import simd.numerics;\n")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+  string(APPEND simd_omnibus_imports "export import simd.cpuid;\nexport import simd.wait;\n")
+endif()
+foreach(profile IN LISTS SIMD_PROFILES)
+  string(TOLOWER "${profile}" name)
+  string(APPEND simd_omnibus_imports "export import simd.${name};\n")
+endforeach()
+configure_file(cxx/modules/simd.ccm.in "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm" @ONLY)
 add_library(simd STATIC)
 add_library(simd::simd ALIAS simd)
 simd_host_settings(simd)
-set_target_properties(simd PROPERTIES POSITION_INDEPENDENT_CODE ON)
+set_target_properties(simd PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_MODULES ON)
+target_sources(simd PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+  BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/modules"
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm")
+if("AVX512" IN_LIST SIMD_PROFILES)
+  simd_target_profile(simd AVX512)
+elseif("AVX2" IN_LIST SIMD_PROFILES)
+  simd_target_profile(simd AVX2)
+elseif("NEON" IN_LIST SIMD_PROFILES)
+  simd_target_profile(simd NEON)
+endif()
 foreach(target IN LISTS simd_module_targets)
   target_sources(simd PRIVATE $<TARGET_OBJECTS:${target}>)
 endforeach()
-# Consumers link the provider(s) for modules they import. The final executable
-# links this archive. Keeping those layers explicit avoids CMake's transitive
-# synthetic-BMI ambiguity when two producers use different ISA options.
-target_link_libraries(simd PUBLIC simd_headers)
-install(TARGETS simd EXPORT simdHostTargets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+# The archive carries omnibus module metadata, but no profile compile flags.
+# Granular provider targets remain available for narrower imports.
+target_link_libraries(simd PUBLIC simd_headers ${simd_module_targets})
+install(TARGETS simd EXPORT simdHostTargets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  FILE_SET cxx_modules DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/modules")
 # Object files are already in simd's archive. Install the module source/metadata
 # targets as interfaces, without shipping compiler-specific PCMs or loose objects.
 install(TARGETS ${simd_module_targets} EXPORT simdHostTargets
