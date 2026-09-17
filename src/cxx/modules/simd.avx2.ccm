@@ -1,6 +1,7 @@
 module;
 #define SIMD_PROFILE 256
 #include <simd/vec.h>
+#include <simd/integer.h>
 #include <simd/simd/math/exp.h>
 #include <simd/simd/math/bits.h>
 export module simd.avx2;

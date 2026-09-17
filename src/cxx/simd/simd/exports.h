@@ -109,6 +109,10 @@ export namespace simd {
   using ::simd::simd_mask_element;
   using ::simd::flush_to_zero;
   using ::simd::convert;
+  using ::simd::reinterpret_bits;
+  using ::simd::popcount;
+  using ::simd::pairwise_add_widened;
+  using ::simd::reduce_add_widened;
   using ::simd::mask_bits;
   using ::simd::mask_cast;
   using ::simd::to_predicate;
