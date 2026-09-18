@@ -115,12 +115,21 @@ It never changes CMake's files. This makes the pinned cache's existing module
 input hashing and object/BMI output storage available to those commands.
 
 Unknown flags, malformed or compound quotes, single quotes, escapes, whitespace
-inside values, nested/other response files and oversized inputs leave the whole
-invocation unchanged. Expanded argv has a conservative size limit, with an
-additional original-argument retry if `exec` reports `E2BIG`. Paths with spaces
-inside the map retain the original cache bypass. This is intentionally not a
-general response-file parser. Its focused semantic tests run in the POSIX CI
-lanes with `python3 -B .github/scripts/test_sccache_launcher.py`.
+inside values, nested/other response files and oversized inputs execute the
+original compiler arguments directly without caching. Expanded argv has a
+conservative size limit; an `E2BIG` retry also runs the original compiler
+directly. This is intentionally not a general response-file parser.
+
+Explicit `-include-pch` binary inputs, including CMake's `-Xclang` spelling,
+are appended to `SCCACHE_EXTRAFILES`, preserving existing entries. The pinned
+sccache release otherwise treats this flag only as a preprocessing argument;
+an unchanged preprocessor result can conceal a changed PCH binary recorded
+inside a cached module. Unknown or missing PCH inputs bypass caching.
+
+POSIX CI runs `test_sccache_launcher.py` and the real PCH/module warm-cache
+fixture `test_sccache_pch.py`. Compiler validation remains enabled. See the
+[validation boundary](https://github.com/ekmett/simd/blob/main/docs/validation.md#pch-dependent-module-invalidation)
+for the observed regression and checks required of this repair.
 
 To opt into the same launcher locally, replace the plain sccache configure
 argument with this CMake list (Python 3 and sccache must be available):

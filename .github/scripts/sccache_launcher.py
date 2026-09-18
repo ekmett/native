@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 """Expand a conservative subset of CMake's Clang module maps before sccache.
 
-This is deliberately not a general response-file parser. Unknown syntax keeps
-all original arguments, allowing sccache to bypass caching as usual. CMake's
-files are never rewritten. Windows/clang-cl retain their original arguments.
+This is deliberately not a general response-file parser. Unknown response or
+PCH syntax runs the original compiler invocation without caching. Explicit PCH
+binary inputs are hashed through SCCACHE_EXTRAFILES. CMake's files are never
+rewritten. Windows/clang-cl retain their original arguments.
 """
 import errno
 import os
@@ -98,18 +99,64 @@ def normalize(arguments):
     return result if argv_fits(['sccache', *result]) else arguments
 
 
+def pch_inputs(arguments):
+    """Return explicit PCH inputs, or None when their dependencies are opaque.
+
+    sccache 0.16 hashes module files but treats -include-pch only as a
+    preprocessor argument. Hash the binary too: a cached BMI embeds its PCH's
+    identity even when the preprocessed source is unchanged.
+    """
+    result = []
+    index = 1
+    while index < len(arguments):
+        arg = arguments[index]
+        if arg.startswith('@'):
+            return None
+        if arg == '-include-pch':
+            forwarded = index > 1 and arguments[index - 1] == '-Xclang'
+            index += 1
+            if forwarded:
+                if index >= len(arguments) or arguments[index] != '-Xclang':
+                    return None
+                index += 1
+            if index >= len(arguments):
+                return None
+            path = arguments[index]
+            if not path or path.startswith(('-', '@')) or os.pathsep in path:
+                return None
+            if not Path(path).is_file():
+                return None
+            result.append(str(Path(path).absolute()))
+        elif 'include-pch' in arg or 'include-pth' in arg:
+            return None
+        index += 1
+    return result
+
+
 def main(arguments):
     if not arguments:
         print('usage: sccache_launcher.py COMPILER [ARGUMENT ...]', file=sys.stderr)
         return 2
     original = ['sccache', *arguments]
-    command = ['sccache', *normalize(arguments)]
+    normalized = normalize(arguments)
+    if (os.name != 'nt' and COMPILER.fullmatch(Path(arguments[0]).name)):
+        inputs = pch_inputs(normalized)
+        if inputs is None:
+            os.execvp(arguments[0], arguments)
+            return 0
+        if inputs:
+            previous = os.environ.get('SCCACHE_EXTRAFILES')
+            os.environ['SCCACHE_EXTRAFILES'] = os.pathsep.join(
+                ([previous] if previous else []) + inputs)
+    command = ['sccache', *normalized]
     try:
         os.execvp(command[0], command)
     except OSError as error:
         if error.errno != errno.E2BIG or command == original:
             raise
-        os.execvp(original[0], original)
+        # The unexpanded invocation may hide PCH dependencies. Keep the
+        # original compiler arguments, but bypass the cache on this retry.
+        os.execvp(arguments[0], arguments)
 
 
 if __name__ == '__main__':
