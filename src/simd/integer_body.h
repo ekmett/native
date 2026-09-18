@@ -5,8 +5,8 @@
 namespace simd {
   /// Repartition the bits of an integer register without conversion or a spill.
   /// Both element types must describe supported shapes with equal physical native storage sizes.
-  template <simd_integer_element To, simd_integer_element From, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires (sizeof(From) * N % sizeof(To) == 0 && requires {
+  template <simd_integer_element To, simd_integer_element From, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (sizeof(From) * N % sizeof(To) == 0 && requires {
       typename vec<From,N,Arch>::native_type;
       typename vec<To,sizeof(From)*N/sizeof(To),Arch>::native_type;
     } && sizeof(typename vec<From,N,Arch>::native_type) ==
@@ -21,8 +21,8 @@ namespace simd {
 
   /// Sum adjacent unsigned lanes into lanes twice as wide. No sum can overflow.
   /// The result contains half as many lanes; full-register inputs keep their width.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires (std::is_unsigned_v<T> && sizeof(T) <= 4 && N > 1 && N % 2 == 0 &&
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T) <= 4 && N > 1 && N % 2 == 0 &&
       requires { typename vec<T,N,Arch>::native_type; })
   simd_nodiscard simd_inline simd_const auto pairwise_add_widened(vec<T,N,Arch> value) noexcept {
     using U = std::conditional_t<sizeof(T)==1,std::uint16_t,
@@ -64,8 +64,8 @@ namespace simd {
 
   /// Count set bits independently in each unsigned integer lane.
   /// Byte populations use CNT on NEON and register nibble tables on x86.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires (std::is_unsigned_v<T> && requires { typename vec<T,N,Arch>::native_type; })
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && requires { typename vec<T,N,Arch>::native_type; })
   simd_nodiscard simd_inline simd_const vec<T,N,Arch> popcount(vec<T,N,Arch> value) noexcept {
     using result = vec<T,N,Arch>;
     if constexpr (N==1) return result(T(std::popcount(value.to_native())));
@@ -125,8 +125,8 @@ namespace simd {
 
   /// Sum unsigned 8-, 16-, or 32-bit lanes exactly into a 64-bit scalar.
   /// Reduction widens before adding: it never wraps at the input lane width.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires (std::is_unsigned_v<T> && sizeof(T)<=4 &&
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T)<=4 &&
       requires { typename vec<T,N,Arch>::native_type; })
   simd_nodiscard simd_inline simd_const std::uint64_t reduce_add_widened(vec<T,N,Arch> value) noexcept {
     if constexpr (N==1) return value.to_native();

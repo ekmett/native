@@ -1,10 +1,11 @@
-#define SIMD_ARCH_CONCEPT ::simd::detail::neon_bf16_architecture
+#define SIMD_ARCH_REQUIRES(A) (::simd::neon_bf16 <= A)
 #pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
 export namespace simd {
   namespace detail {
-    template<SIMD_ARCH_CONCEPT A>
+    template<::simd::isa A> requires SIMD_ARCH_REQUIRES(A)
     struct value_traits<vec<bf16,8,A>> {
-      using type=neon_bf16;
+      static constexpr isa value=neon_bf16;
+      static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
   }
@@ -15,11 +16,11 @@ export namespace simd {
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<SIMD_ARCH_CONCEPT Arch> struct vec<bf16,8,Arch> {
+  template<::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct vec<bf16,8,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
-    /// The distinct compile-time NEON_BF16 instruction-profile tag.
-    using architecture = Arch;
+    /// The distinct compile-time NEON_BF16 instruction profile.
+    static constexpr isa architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit BF16 register representation; native bridges copy bits.
@@ -52,11 +53,6 @@ export namespace simd {
     /// Construct all 8 lanes from BF16 values in argument order, preserving their bits.
     template<class... T> requires(sizeof...(T) == lanes && (std::same_as<T,bf16> && ...))
     simd_inline vec(T... values) noexcept : vec(std::array<bf16,lanes>{values...}) {}
-    /// Select this profile explicitly and forward to the matching constructor.
-    /// The tag changes neither the argument contract nor runtime ISA admission.
-    template<class... T> requires std::constructible_from<vec,T...>
-    simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
-      : vec(std::forward<T>(values)...) {}
     /// Adopt a native register without conversion or representation changes.
     simd_inline vec(native_type value) noexcept : value_(value) {}
     /// Project the native register for direct intrinsic interoperability.
@@ -133,11 +129,6 @@ export namespace simd {
     }
   };
 
-  /// Deduce BF16 element type, argument-count lanes, and the explicit BF16 profile.
-  /// Arguments must all be BF16 values. Only 8 lanes have an implementation;
-  /// deduction of another lane count does not make that shape available.
-  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,bf16> && ...)
-  vec(Arch,bf16,T...) -> vec<bf16,1+sizeof...(T),Arch>;
 
   /// Native BFDOT: output i combines adjacent products a[2*i]*b[2*i] and
   /// a[2*i+1]*b[2*i+1], then adds accumulator[i]. This follows Arm's native
@@ -150,7 +141,7 @@ export namespace simd {
   /// return default NaNs, ignore exception enables, and leave FPSR unchanged.
   /// No operation changes FPCR. Applications own FPCR and ISA admission; this
   /// API makes no reproducible cross-ISA or cross-FPCR result promise.
-  template<SIMD_ARCH_CONCEPT Arch>
+  template<::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline vec<float,4,Arch> dot2(
       vec<bf16,8,Arch> a, vec<bf16,8,Arch> b,
       vec<float,4,Arch> accumulator) noexcept {
@@ -160,4 +151,4 @@ export namespace simd {
 }
 
 #pragma clang attribute pop
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES

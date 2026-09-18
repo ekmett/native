@@ -1,10 +1,11 @@
-#define SIMD_ARCH_CONCEPT ::simd::detail::avx512_bf16_architecture
+#define SIMD_ARCH_REQUIRES(A) (::simd::avx512_bf16 <= A)
 #pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
 export namespace simd {
   namespace detail {
-    template<std::size_t N,SIMD_ARCH_CONCEPT A> requires(N==8 || N==16 || N==32)
+    template<std::size_t N,::simd::isa A> requires SIMD_ARCH_REQUIRES(A) &&(N==8 || N==16 || N==32)
     struct value_traits<vec<bf16,N,A>> {
-      using type=avx512_bf16;
+      static constexpr isa value=avx512_bf16;
+      static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
   }
@@ -15,12 +16,12 @@ export namespace simd {
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires(N == 8 || N == 16 || N == 32)
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
   struct vec<bf16,N,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
-    /// The distinct compile-time AVX512_BF16 instruction-profile tag.
-    using architecture = Arch;
+    /// The distinct compile-time AVX512_BF16 instruction profile.
+    static constexpr isa architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native register-width BF16 register representation; native bridges copy bits.
@@ -53,11 +54,6 @@ export namespace simd {
     /// Construct all N lanes from BF16 values in argument order, preserving their bits.
     template<class... T> requires(sizeof...(T) == lanes && (std::same_as<T,bf16> && ...))
     simd_inline vec(T... values) noexcept : vec(std::array<bf16,lanes>{values...}) {}
-    /// Select this profile explicitly and forward to the matching constructor.
-    /// The tag changes neither the argument contract nor runtime ISA admission.
-    template<class... T> requires std::constructible_from<vec,T...>
-    simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
-      : vec(std::forward<T>(values)...) {}
     /// Adopt a native register without conversion or representation changes.
     simd_inline vec(native_type value) noexcept : value_(value) {}
     /// Project the native register for direct intrinsic interoperability.
@@ -134,11 +130,6 @@ export namespace simd {
     }
   };
 
-  /// Deduce BF16 element type, argument-count lanes, and the explicit BF16 profile.
-  /// Arguments must all be BF16 values. Only 8, 16 and 32 lanes have an implementation;
-  /// deduction of another lane count does not make that shape available.
-  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,bf16> && ...)
-  vec(Arch,bf16,T...) -> vec<bf16,1+sizeof...(T),Arch>;
 
   /// Native VDPBF16PS: for each output i, accumulate a[2*i+1]*b[2*i+1]
   /// first, then a[2*i]*b[2*i]. Each FP32 FMA rounds to nearest, ties to even;
@@ -146,7 +137,7 @@ export namespace simd {
   /// MXCSR is neither consulted nor updated, including exception status.
   /// This is not a single-rounding three-term sum. NaN propagation follows
   /// the instruction, with low input lanes taking priority over high lanes.
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires(N == 8 || N == 16 || N == 32)
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
   simd_nodiscard simd_inline vec<float,N/2,Arch> dot2(
       vec<bf16,N,Arch> a, vec<bf16,N,Arch> b,
       vec<float,N/2,Arch> accumulator) noexcept {
@@ -156,4 +147,4 @@ export namespace simd {
 }
 
 #pragma clang attribute pop
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES

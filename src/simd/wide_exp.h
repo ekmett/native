@@ -8,7 +8,7 @@ export namespace simd {
   /// The caller's complete architecture, lane count and pack extent are retained.
 #define SIMD_EMIT_WIDE_EXP(i,name) \
   SIMD_TARGET_PUSH(name) \
-  template<bool Flush=false,std::size_t L,std::size_t N,architecture Arch> \
+  template<bool Flush=false,std::size_t L,std::size_t N,isa Arch> \
     requires (detail::exp_target<Arch> == i) \
   simd_nodiscard simd_inline constexpr wide<vec<float,L,Arch>,N> \
   exp(wide<vec<float,L,Arch>,N> const & input) \

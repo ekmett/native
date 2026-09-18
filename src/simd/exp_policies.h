@@ -11,7 +11,7 @@
 
 namespace simd::detail {
   // Every callee in the binary32 graph uses this same five-way split.
-  template<class A> inline constexpr auto exp_target=
+  template<isa A> inline constexpr auto exp_target=
     target<A,avx512,kernel_bw,kernel_vl,kernel_base,avx2>;
 }
 
@@ -24,6 +24,6 @@ namespace simd::detail {
   X(4,avx2)
 
 #define CHECK_EXP_TARGET(i,name) \
-  static_assert(simd::detail::exp_target<SIMD_TARGET_TYPE(name)> == i);
+  static_assert(simd::detail::exp_target<SIMD_TARGET_ISA(name)> == i);
 SIMD_EXP_TARGETS(CHECK_EXP_TARGET)
 #undef CHECK_EXP_TARGET

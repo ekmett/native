@@ -2,7 +2,7 @@
 #define SIMD_BACKEND scalar_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 6
-#define SIMD_ARCH_CONCEPT ::simd::detail::scalar_architecture
+#define SIMD_ARCH_REQUIRES(A) (A == ::simd::scalar)
 #define SIMD_DEFAULT_ARCH ::simd::scalar
 #define SIMD_HAS_AVX2 0
 #define SIMD_HAS_AVX512F 0
@@ -10,14 +10,14 @@
 #define SIMD_HAS_AVX512BW 0
 #define SIMD_HAS_AVX512VL 0
 #define SIMD_HAS_ARM_NEON 0
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_0));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || __VA_ARGS__::features == 0))
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_0));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || (__VA_ARGS__) == ::simd::scalar))
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2
@@ -31,7 +31,7 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_BACKEND avx2_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 4
-#define SIMD_ARCH_CONCEPT ::simd::requires_target<4,::simd::detail::raw_kernel_policies>
+#define SIMD_ARCH_REQUIRES(A) (::simd::abi_lookup<A,::simd::detail::raw_kernel_policies>::index == 4)
 #define SIMD_DEFAULT_ARCH ::simd::avx2
 #define SIMD_HAS_AVX2 1
 #define SIMD_HAS_AVX512F 0
@@ -40,15 +40,15 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_HAS_AVX512VL 0
 #define SIMD_HAS_ARM_NEON 0
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_1))), apply_to=function)
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_1));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || __VA_ARGS__::features == 0))
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_1));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || (__VA_ARGS__) == ::simd::scalar))
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #pragma clang attribute pop
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2
@@ -63,8 +63,8 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_BACKEND avx512_nobw_novl_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 3
-#define SIMD_ARCH_CONCEPT ::simd::requires_target<3,::simd::detail::raw_kernel_policies>
-#define SIMD_DEFAULT_ARCH ::simd::isa<::simd::avx2::features | ::simd::feature::avx512f | ::simd::feature::avx512dq>
+#define SIMD_ARCH_REQUIRES(A) (::simd::abi_lookup<A,::simd::detail::raw_kernel_policies>::index == 3)
+#define SIMD_DEFAULT_ARCH ::simd::detail::kernel_base
 #define SIMD_HAS_AVX2 1
 #define SIMD_HAS_AVX512F 1
 #define SIMD_HAS_AVX512DQ 1
@@ -72,15 +72,15 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_HAS_AVX512VL 0
 #define SIMD_HAS_ARM_NEON 0
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_2))), apply_to=function)
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_2));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || __VA_ARGS__::features == 0))
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_2));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || (__VA_ARGS__) == ::simd::scalar))
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #pragma clang attribute pop
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2
@@ -95,8 +95,8 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_BACKEND avx512_bw_novl_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 1
-#define SIMD_ARCH_CONCEPT ::simd::requires_target<1,::simd::detail::raw_kernel_policies>
-#define SIMD_DEFAULT_ARCH ::simd::isa<::simd::avx2::features | ::simd::feature::avx512f | ::simd::feature::avx512dq | ::simd::feature::avx512bw>
+#define SIMD_ARCH_REQUIRES(A) (::simd::abi_lookup<A,::simd::detail::raw_kernel_policies>::index == 1)
+#define SIMD_DEFAULT_ARCH ::simd::detail::kernel_bw
 #define SIMD_HAS_AVX2 1
 #define SIMD_HAS_AVX512F 1
 #define SIMD_HAS_AVX512DQ 1
@@ -104,15 +104,15 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_HAS_AVX512VL 0
 #define SIMD_HAS_ARM_NEON 0
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_3))), apply_to=function)
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_3));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || __VA_ARGS__::features == 0))
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_3));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || (__VA_ARGS__) == ::simd::scalar))
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #pragma clang attribute pop
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2
@@ -127,8 +127,8 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_BACKEND avx512_nobw_vl_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 2
-#define SIMD_ARCH_CONCEPT ::simd::requires_target<2,::simd::detail::raw_kernel_policies>
-#define SIMD_DEFAULT_ARCH ::simd::isa<::simd::avx2::features | ::simd::feature::avx512f | ::simd::feature::avx512dq | ::simd::feature::avx512vl>
+#define SIMD_ARCH_REQUIRES(A) (::simd::abi_lookup<A,::simd::detail::raw_kernel_policies>::index == 2)
+#define SIMD_DEFAULT_ARCH ::simd::detail::kernel_vl
 #define SIMD_HAS_AVX2 1
 #define SIMD_HAS_AVX512F 1
 #define SIMD_HAS_AVX512DQ 1
@@ -136,15 +136,15 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_HAS_AVX512VL 1
 #define SIMD_HAS_ARM_NEON 0
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_4))), apply_to=function)
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_4));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || __VA_ARGS__::features == 0))
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_4));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || (__VA_ARGS__) == ::simd::scalar))
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #pragma clang attribute pop
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2
@@ -159,8 +159,8 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_BACKEND avx512_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 0
-#define SIMD_ARCH_CONCEPT ::simd::requires_target<0,::simd::detail::raw_kernel_policies>
-#define SIMD_DEFAULT_ARCH ::simd::isa<::simd::avx2::features | ::simd::feature::avx512f | ::simd::feature::avx512dq | ::simd::feature::avx512bw | ::simd::feature::avx512vl>
+#define SIMD_ARCH_REQUIRES(A) (::simd::abi_lookup<A,::simd::detail::raw_kernel_policies>::index == 0)
+#define SIMD_DEFAULT_ARCH ::simd::avx512
 #define SIMD_HAS_AVX2 1
 #define SIMD_HAS_AVX512F 1
 #define SIMD_HAS_AVX512DQ 1
@@ -168,15 +168,15 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_HAS_AVX512VL 1
 #define SIMD_HAS_ARM_NEON 0
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_5))), apply_to=function)
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_5));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 3)
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_5));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 3)
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #pragma clang attribute pop
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2
@@ -191,7 +191,7 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_BACKEND neon_backend
 #define SIMD_BACKEND_NAMESPACE simd::detail::SIMD_BACKEND
 #define SIMD_RAW_TARGET 5
-#define SIMD_ARCH_CONCEPT ::simd::requires_target<5,::simd::detail::raw_kernel_policies>
+#define SIMD_ARCH_REQUIRES(A) (::simd::abi_lookup<A,::simd::detail::raw_kernel_policies>::index == 5)
 #define SIMD_DEFAULT_ARCH ::simd::neon
 #define SIMD_HAS_AVX2 0
 #define SIMD_HAS_AVX512F 0
@@ -200,15 +200,15 @@ static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_T
 #define SIMD_HAS_AVX512VL 0
 #define SIMD_HAS_ARM_NEON 1
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_20))), apply_to=function)
-static_assert(::simd::target<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies> == SIMD_RAW_TARGET);
-static_assert(SIMD_DEFAULT_ARCH::features==::simd::target_features(SIMD_KERNEL_TARGET_20));
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 11)
+static_assert(::simd::abi_lookup<SIMD_DEFAULT_ARCH,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET);
+static_assert(SIMD_DEFAULT_ARCH==::simd::target_features(SIMD_KERNEL_TARGET_20));
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 11)
 #include SIMD_BACKEND_BODY
 #undef SIMD_COMMON_ARCH
 #pragma clang attribute pop
 #undef SIMD_BACKEND
 #undef SIMD_BACKEND_NAMESPACE
-#undef SIMD_ARCH_CONCEPT
+#undef SIMD_ARCH_REQUIRES
 #undef SIMD_RAW_TARGET
 #undef SIMD_DEFAULT_ARCH
 #undef SIMD_HAS_AVX2

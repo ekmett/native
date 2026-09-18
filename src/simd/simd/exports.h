@@ -96,7 +96,8 @@ export namespace simd {
   using ::simd::neon;
   using ::simd::neon_fp16;
   using ::simd::neon_bf16;
-  using ::simd::architecture;
+  using ::simd::isa;
+  using ::simd::arch;
   using std::int8_t;
   using std::int16_t;
   using std::int32_t;

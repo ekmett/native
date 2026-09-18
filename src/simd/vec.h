@@ -20,17 +20,17 @@
 #undef SIMD_BACKEND_BODY
 
 #if SIMD_HOST_X86 && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 1)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 1)
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_9))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
 #undef SIMD_COMMON_ARCH
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 2)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 2)
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_13))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
 #undef SIMD_COMMON_ARCH
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 0)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 0)
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_17))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
@@ -38,17 +38,17 @@
 #endif
 
 #if SIMD_HOST_NEON && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 9)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 9)
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_21))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
 #undef SIMD_COMMON_ARCH
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 10)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 10)
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_22))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
 #undef SIMD_COMMON_ARCH
-#define SIMD_COMMON_ARCH(...) (::simd::target<__VA_ARGS__,::simd::detail::memory_kernel_policies> == 8)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 8)
 #pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_23))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop

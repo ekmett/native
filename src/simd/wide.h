@@ -31,31 +31,27 @@ namespace simd {
 
   namespace detail {
     template<class T, class = void> struct wide_features {
-      static constexpr feature_set value = 0;
+      static constexpr isa value=scalar;
     };
-    template<class T> struct wide_features<T,std::void_t<typename T::architecture>> {
-      static constexpr feature_set value = [] {
-        if constexpr (architecture<typename T::architecture> && architecture<value_architecture_t<T>>)
-          return value_architecture_t<T>::features;
-        else return feature_set{0};
-      }();
+    template<class T> struct wide_features<T,std::void_t<decltype(T::architecture)>> {
+      static constexpr isa value=value_architecture_v<T>;
     };
     template<class T,std::size_t N> struct wide_features<wide<T,N>> : wide_features<T> {};
     template<class T,std::size_t N> struct wide_features<std::array<T,N>> : wide_features<T> {};
     template<class T,class U> struct wide_features<std::pair<T,U>> {
-      static constexpr feature_set value=wide_features<std::remove_cvref_t<T>>::value|
+      static constexpr isa value=wide_features<std::remove_cvref_t<T>>::value &
         wide_features<std::remove_cvref_t<U>>::value;
     };
     // Only operands with a SIMD architecture participate. Scalar/custom values
     // retain the generic ADL path. Arrays and nested packs contribute their
     // element features; mixed conversions use the union of both endpoints.
     template<class... T> inline constexpr auto wide_target=[] {
-      constexpr auto bits=(feature_set{0} | ... | wide_features<std::remove_cvref_t<T>>::value);
-      // A custom cross-host conversion cannot form an isa tag. Preserve the
+      constexpr isa bits=(scalar & ... & wide_features<std::remove_cvref_t<T>>::value);
+      // A custom cross-host conversion combines both hosts. Preserve the
       // previous operand-union preference for its x86 declaration scope.
-      constexpr auto selected=(bits&x86_features) && (bits&arm_features)
-        ? ((bits&avx2::features)==avx2::features ? bits&x86_features : bits&arm_features) : bits;
-      return target<isa<selected>,wide_kernel_policies>;
+      constexpr isa x86=intersection(bits,x86_features), arm=intersection(bits,arm_features);
+      constexpr isa selected=x86!=scalar && arm!=scalar ? (avx2<=bits ? x86 : arm) : bits;
+      return abi_lookup<selected,wide_kernel_policies>::index;
     }();
     template<class T> inline constexpr bool wide_equivalent_default=
       value_traits<std::remove_cv_t<T>>::aggregate_default;

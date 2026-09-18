@@ -60,13 +60,13 @@ namespace simd {
    * or turn a raw vector into a policy-bearing FTZ type.
    * \snippet api.cc exponential
    */
-  template<bool Flush = false, std::size_t L, SIMD_ARCH_CONCEPT Arch>
+  template<bool Flush = false, std::size_t L, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_pure vec<float,L,Arch> exp(vec<float,L,Arch> input) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
   /// \ingroup vector_math
   /// Evaluate exp stage by stage across independent registers; N may be zero.
-  template<bool Flush = false, std::size_t L, std::size_t N, SIMD_ARCH_CONCEPT Arch>
+  template<bool Flush = false, std::size_t L, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline std::array<vec<float,L,Arch>,N> exp(std::array<vec<float,L,Arch>,N> const & input) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
@@ -74,14 +74,14 @@ namespace simd {
   // arguments on other exp overloads during dependent lookup.
   /// \ingroup vector_math
   /// Select the same exp cutoff through a bool_constant tag for dependent calls.
-  template<bool Flush, std::size_t L, std::size_t N, SIMD_ARCH_CONCEPT Arch>
+  template<bool Flush, std::size_t L, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline std::array<vec<float,L,Arch>,N> exp(
       std::array<vec<float,L,Arch>,N> const & input, std::bool_constant<Flush>) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
   /// \ingroup vector_math
   /// Select the same exp cutoff through a bool_constant tag for dependent calls.
-  template<bool Flush, std::size_t L, SIMD_ARCH_CONCEPT Arch>
+  template<bool Flush, std::size_t L, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline vec<float,L,Arch> exp(vec<float,L,Arch> input, std::bool_constant<Flush>) noexcept {
     return SIMD_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
