@@ -4,7 +4,7 @@
 # Keep producer flags and installed BMI regeneration in one mapping.
 function(simd_profile_options profile output)
   set(flags)
-  if(NOT profile STREQUAL "NEON")
+  if(NOT profile MATCHES "^NEON")
     list(APPEND flags -mavx2 -mfma -mbmi2)
   endif()
   if(profile MATCHES "^AVX512")
@@ -12,6 +12,10 @@ function(simd_profile_options profile output)
   endif()
   if(profile STREQUAL "AVX512_BF16")
     list(APPEND flags -mavx512bf16)
+  endif()
+  if(profile STREQUAL "NEON_FP16")
+    # Add only half arithmetic; do not reset the configured CPU/architecture.
+    list(APPEND flags -Xclang=-target-feature -Xclang=+fullfp16)
   endif()
   if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     list(TRANSFORM flags PREPEND "/clang:")
@@ -26,10 +30,10 @@ function(simd_target_profile target profile)
     message(FATAL_ERROR "simd_target_profile requires an existing target: ${target}")
   endif()
   string(TOUPPER "${profile}" profile)
-  if(NOT profile MATCHES "^(AVX2|AVX512|AVX512_BF16|NEON)$")
+  if(NOT profile MATCHES "^(AVX2|AVX512|AVX512_BF16|NEON|NEON_FP16)$")
     message(FATAL_ERROR "Unknown simd target profile: ${profile}")
   endif()
-  if(profile STREQUAL "NEON")
+  if(profile MATCHES "^NEON")
     if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
       message(FATAL_ERROR "The NEON profile requires an arm64 target toolchain.")
     endif()
@@ -48,10 +52,10 @@ function(simd_target_profile target profile)
     message(FATAL_ERROR "The Windows simd profiles require clang-cl.")
   endif()
   simd_profile_options("${profile}" flags)
-  # These are implementation options, not options for regenerating imported
-  # dependencies. COMPILE_FLAGS also covers CMake's generated PCH source;
-  # ordinary source properties alone would leave that PCH at the wrong ISA.
-  # Clang's BMI and PCH compatibility validation remains enabled.
+  # Keep implementation options out of target COMPILE_OPTIONS: CMake uses that
+  # property to regenerate imported dependencies, which would clone common BMIs
+  # at each caller's ISA. Late source options below also override an explicitly
+  # disabled feature in the configured minimum. Clang's BMI/PCH checks stay on.
   string(JOIN " " implementation_flags ${flags})
   set_property(TARGET "${target}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${implementation_flags}")
   set_property(TARGET "${target}" PROPERTY SIMD_SOURCE_ISA_OPTIONS "${flags}")
@@ -68,4 +72,46 @@ function(simd_source_profile target)
     set_property(SOURCE ${module_sources} TARGET_DIRECTORY "${target}" APPEND PROPERTY
       COMPILE_OPTIONS ${options})
   endforeach()
+  get_target_property(sources "${target}" SOURCES)
+  get_target_property(source_dir "${target}" SOURCE_DIR)
+  foreach(source IN LISTS sources)
+    # Module sources above retain their own literal provider options, including
+    # when CMake creates a synthetic installed BMI target. Object inputs and
+    # non-C++ source entries do not need ordinary translation-unit options.
+    if(NOT source MATCHES "^\\$<" AND source MATCHES "[.](cc|cpp|cxx|C)$")
+      cmake_path(ABSOLUTE_PATH source BASE_DIRECTORY "${source_dir}" NORMALIZE)
+      simd_context_source_profile("${target}" "${source}")
+    endif()
+  endforeach()
+  get_target_property(pch "${target}" PRECOMPILE_HEADERS)
+  if(pch)
+    # CMake has no target PCH compile-options property. These are the generated
+    # C++ PCH source names for the qualified Ninja generators and Clang frontends;
+    # keep creation and use at the same ISA even with negative minimum features.
+    get_target_property(binary_dir "${target}" BINARY_DIR)
+    if(CMAKE_LINK_PCH)
+      set(pch_name cmake_pch.cxx)
+    else()
+      set(pch_name cmake_pch.hxx.cxx)
+    endif()
+    set(intermediate "${binary_dir}/CMakeFiles/${target}.dir")
+    simd_context_source_profile("${target}" "${intermediate}/${pch_name}")
+  endif()
+endfunction()
+
+# Source properties have directory scope, so a literal profile would contaminate
+# a shared kernel compiled by two targets. Evaluate the owning target's options
+# instead, and attach that expression only once to each source in this directory.
+function(simd_context_source_profile target source)
+  get_property(configured SOURCE "${source}" TARGET_DIRECTORY "${target}"
+    PROPERTY SIMD_CONTEXT_PROFILE_OPTIONS_SET)
+  if(NOT configured)
+    get_property(existing SOURCE "${source}" TARGET_DIRECTORY "${target}" PROPERTY COMPILE_OPTIONS)
+    # Source-specific overrides remain last (for example a deliberate no-VL
+    # textual regression), after both the minimum and this target's profile.
+    set_property(SOURCE "${source}" TARGET_DIRECTORY "${target}" PROPERTY
+      COMPILE_OPTIONS "$<TARGET_PROPERTY:SIMD_SOURCE_ISA_OPTIONS>" ${existing})
+    set_property(SOURCE "${source}" TARGET_DIRECTORY "${target}" PROPERTY
+      SIMD_CONTEXT_PROFILE_OPTIONS_SET TRUE)
+  endif()
 endfunction()

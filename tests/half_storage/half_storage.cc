@@ -112,7 +112,7 @@ template<class T, unsigned Fraction, int Bias> bool check() {
     Fraction, boundaries, !std::integral<typename T::underlying_type>);
   return true;
 }
-int main() {
+int half_storage_entry() {
   if (!environment()) { std::fputs("requires nearest-even gradual binary32\n", stderr); return 1; }
   if (!check<simd::fp16,10,15>()) return 2;
   if (!check<simd::bf16,7,127>()) return 3;

@@ -27,6 +27,13 @@
 #error The AVX512_BF16 profile requires AVX512 and compiler BF16 support
 #endif
 #define SIMD_HAS_AVX512_BF16 SIMD_PROFILE_BF16
+#ifndef SIMD_PROFILE_FP16
+#define SIMD_PROFILE_FP16 0
+#endif
+#if SIMD_PROFILE_FP16 && (SIMD_PROFILE != 128 || !defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC) || !defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC))
+#error The NEON_FP16 profile requires compiler scalar and vector FP16 arithmetic support
+#endif
+#define SIMD_HAS_NEON_FP16 SIMD_PROFILE_FP16
 
 #if SIMD_PROFILE == 512 && SIMD_PROFILE_BF16
 #define SIMD_ARCH ::simd::avx512_bf16
@@ -37,6 +44,9 @@
 #elif SIMD_PROFILE == 256
 #define SIMD_ARCH ::simd::avx2
 #define SIMD_BACKEND avx2_backend
+#elif SIMD_PROFILE == 128 && SIMD_PROFILE_FP16
+#define SIMD_ARCH ::simd::neon_fp16
+#define SIMD_BACKEND neon_fp16_backend
 #elif SIMD_PROFILE == 128
 #define SIMD_ARCH ::simd::neon
 #define SIMD_BACKEND neon_backend

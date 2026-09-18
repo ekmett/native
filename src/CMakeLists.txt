@@ -44,19 +44,33 @@ block()
   string(TOUPPER "${CMAKE_TRY_COMPILE_CONFIGURATION}" minimal_config)
   string(SHA256 minimal_key
     "${CMAKE_CXX_FLAGS};${CMAKE_BUILD_TYPE};${CMAKE_TRY_COMPILE_CONFIGURATION};${CMAKE_CXX_FLAGS_${minimal_config}};${CMAKE_CXX_FLAGS_DEBUG};${minimal_flags}")
-  foreach(feature IN ITEMS AVX2 AVX512 AVX512_BF16)
+  foreach(feature IN ITEMS AVX2 AVX512 AVX512_BF16 NEON_FP16)
     if(feature STREQUAL "AVX2")
       set(condition "defined(__AVX2__)")
     elseif(feature STREQUAL "AVX512_BF16")
       set(condition "defined(__AVX512BF16__)")
+    elseif(feature STREQUAL "NEON_FP16")
+      set(condition "defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC) && defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC)")
     else()
       set(condition "defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)")
     endif()
     set(probe "SIMD_MINIMAL_${feature}_${minimal_key}")
-    check_cxx_source_compiles("#if !(${condition})
+    if(feature STREQUAL "NEON_FP16")
+      # Some AArch64 targets retain the FP16 macros via FP16FML after an explicit
+      # -fullfp16. Test usable arithmetic, not just the advertised macros.
+      string(APPEND probe "_intrinsics_v1")
+      check_cxx_source_compiles([=[
+        #include <arm_neon.h>
+        float16x8_t probe(float16x8_t a, float16x8_t b, float16x8_t c) {
+          return vfmaq_f16(vaddq_f16(a,b),vmulq_f16(b,c),c);
+        }
+      ]=] ${probe})
+    else()
+      check_cxx_source_compiles("#if !(${condition})
 #error feature absent
 #endif
 int probe() { return 0; }" ${probe})
+    endif()
     target_compile_definitions(simd_minimal PUBLIC SIMD_MINIMAL_HAS_${feature}=$<BOOL:${${probe}}>)
   endforeach()
 endblock()
@@ -79,6 +93,9 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES simd.cpuid.ccm simd.wait.ccm)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.arm.ccm)
 endif()
 
 set(simd_module_targets simd_minimal)
@@ -87,7 +104,7 @@ foreach(profile IN LISTS SIMD_PROFILES)
   string(TOLOWER "${profile}" name)
   if(profile STREQUAL "AVX2")
     set(bits 256)
-  elseif(profile STREQUAL "NEON")
+  elseif(profile MATCHES "^NEON")
     set(bits 128)
   else()
     set(bits 512)
@@ -107,6 +124,8 @@ endforeach()
 set(simd_omnibus_imports "export import simd.scalar;\nexport import simd.wide;\nexport import simd.types;\nexport import simd.memory;\nexport import simd.static_string;\nexport import simd.numerics;\n")
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   string(APPEND simd_omnibus_imports "export import simd.cpuid;\nexport import simd.wait;\n")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  string(APPEND simd_omnibus_imports "export import simd.arm;\n")
 endif()
 foreach(profile IN LISTS SIMD_PROFILES)
   string(TOLOWER "${profile}" name)
@@ -126,6 +145,8 @@ elseif("AVX512" IN_LIST SIMD_PROFILES)
   simd_target_profile(simd AVX512)
 elseif("AVX2" IN_LIST SIMD_PROFILES)
   simd_target_profile(simd AVX2)
+elseif("NEON_FP16" IN_LIST SIMD_PROFILES)
+  simd_target_profile(simd NEON_FP16)
 elseif("NEON" IN_LIST SIMD_PROFILES)
   simd_target_profile(simd NEON)
 endif()
