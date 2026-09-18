@@ -13,7 +13,9 @@
 // The same literal drives compiler attributes, canonical tags and admission.
 // Only positive feature names in simd's registry are accepted; CPU names and
 // arbitrary C++ aliases cannot be reverse-engineered into compiler attributes.
-#define SIMD_TARGET_scalar "default"
+// Clang reserves target("default") for function multiversioning. An empty
+// target preserves the ordinary caller baseline without emitting a resolver.
+#define SIMD_TARGET_scalar ""
 #define SIMD_TARGET_avx2 "avx2,fma,bmi2"
 #define SIMD_TARGET_avx512 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl"
 #define SIMD_TARGET_avx512_bf16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"

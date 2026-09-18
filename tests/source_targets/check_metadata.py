@@ -45,6 +45,9 @@ run('macros-ir',[*consumer,'-S','-emit-llvm',source/'macros.cc','-o',out/'macros
 run('macros-assembly',[*consumer,'-S',source/'macros.cc','-o',out/'macros.s'])
 run('macros-object',[*consumer,'-c',source/'macros.cc','-o',out/'macros.obj'])
 run('scalar-and-empty-list',[*consumer,'-c',source/'scalar.cc','-o',out/'scalar.obj'])
+run('scalar-link',[*flags,source/'scalar_main.cc',out/'scalar.obj',out/'metadata.obj',
+    '-o',out/'scalar.exe'])
+run('scalar-run',[out/'scalar.exe'])
 objdump=pathlib.Path(a.compiler).with_name('llvm-objdump.exe')
 run('object-codegen',[sys.executable,source/'check_codegen.py','--objdump',objdump,
     '--output',out/'macros.disassembly',out/'macros.obj',out/'scalar.obj'])

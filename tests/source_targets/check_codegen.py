@@ -10,9 +10,11 @@ p.add_argument('--objdump',required=True)
 p.add_argument('--output',required=True,type=pathlib.Path)
 p.add_argument('objects',nargs='+')
 a=p.parse_args()
-r=subprocess.run([a.objdump,'--demangle','--disassemble',*a.objects],capture_output=True,text=True)
+r=subprocess.run([a.objdump,'--demangle','--syms','--disassemble',*a.objects],capture_output=True,text=True)
 a.output.write_text(r.stdout+r.stderr,encoding='utf-8')
 if r.returncode: raise SystemExit(r.stderr)
+if re.search(r'__cpu_indicator_init|__cpu_model|source_scalar[^\n]*resolver',r.stdout):
+    raise SystemExit('Scalar source scope unexpectedly emits compiler multiversioning machinery.')
 functions=re.split(r'(?m)^([0-9a-f]+) <([^\n]+)>:\s*$',r.stdout)
 kernels=[]
 for i in range(1,len(functions),3):
