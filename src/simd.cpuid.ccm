@@ -65,6 +65,7 @@ export namespace simd {
     bool invalid_profile = false, missing_leaf1 = false, missing_leaf7 = false;
     bool missing_osxsave = false, missing_xcr0_observation = false;
 
+    /// True only when every CPU feature and required OS vector-state component is present.
     constexpr bool admitted() const noexcept {
       return !invalid_profile && !missing_leaf1 && !missing_leaf7 &&
         !missing_leaf1_ecx && !missing_leaf1_edx && !missing_leaf7_ebx &&
