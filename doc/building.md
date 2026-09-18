@@ -95,7 +95,7 @@ and linker consistent with that installation. `CMAKE_PREFIX_PATH` points to
 installed library packages, not to a producer's build directory.
 
 The CI workflow configures Ninja directly, builds with PCH and IPO, runs CTest,
-and checks installation. It selects AVX2 tests on Linux, macOS and Windows x86-64 runners and NEON
+and checks installation. It selects AVX2 tests on Linux and Windows x86-64 runners and NEON
 on Linux, macOS and Windows ARM64 runners; the x86 archives also build the AVX-512 module. The
 baseline profile tests check CPU and OS support before entering AVX-512 code.
 The workflow is a reproducible build recipe; platform execution claims are
@@ -106,6 +106,11 @@ JUnit results and configure logs. Standard hosted runner labels select an OS
 and architecture, not a fixed CPU model. AVX-512 compilation and unsupported
 profile skips are not AVX-512 execution coverage. These jobs qualify native CPU
 packages; they do not establish GPU behavior.
+
+Intel macOS is pending a qualified Clang 23 toolchain artifact: the hosted
+image compiler is too old, and the current LLVM/Homebrew releases do not
+provide an Intel macOS binary for the required compiler. It is not an
+execution lane in this workflow.
 
 `make`, `make test` and `make install` wrap the `clang-release` preset. Override
 `PRESET=clang-cl-release` when using clang-cl, or pass explicit configure options

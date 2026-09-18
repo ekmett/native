@@ -2,6 +2,7 @@ name: C++26 modules
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -36,10 +37,6 @@ jobs:
             runner: ubuntu-24.04-arm
             profile: NEON
             profiles: NEON
-          - name: macOS Intel LLVM 23 / AVX2
-            runner: macos-15-intel
-            profile: AVX2
-            profiles: AVX2;AVX512
           - name: macOS LLVM 23 / NEON
             runner: macos-15
             profile: NEON
