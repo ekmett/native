@@ -157,7 +157,7 @@ jobs:
           fi
           cmake -S . -B build/core -G Ninja \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
-            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_EXCEPTIONS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
+            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
             -DSIMD_TEST_ISA="${{ matrix.profile }}" \
             '-DSIMD_PROFILES=${{ matrix.profiles }}' "${extra[@]}"
       - name: Build
