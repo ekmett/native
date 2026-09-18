@@ -16,27 +16,35 @@ import simd.scalar;
 #error Optional AVX512 flags leaked into the minimum dispatcher
 #endif
 extern "C" bool bf16_storage();
+extern "C" void bf16_dot2_8(std::uint16_t const *,std::uint16_t const *,std::uint32_t const *,std::uint32_t *) noexcept;
+extern "C" void bf16_dot2_16(std::uint16_t const *,std::uint16_t const *,std::uint32_t const *,std::uint32_t *) noexcept;
 extern "C" void bf16_dot2(std::uint16_t const *,std::uint16_t const *,std::uint32_t const *,std::uint32_t *) noexcept;
 namespace {
   struct input { std::array<std::uint16_t,32> a{},b{}; std::array<std::uint32_t,16> c{},expected{}; };
   bool check(input const & data) {
-    std::array<std::uint32_t,16> out;
+    std::array<std::array<std::uint32_t,16>,3> out;
     auto saved=_mm_getcsr();
     bool result=true;
     for (unsigned rounding=0;rounding!=4;++rounding)
       for (unsigned denormal=0;denormal!=4;++denormal)
         for (unsigned flags:{0u,63u}) {
           auto control=0x1f80u | (rounding<<13) | ((denormal&1u)<<6) | ((denormal&2u)<<14) | flags;
-          _mm_setcsr(control);
-          bf16_dot2(data.a.data(),data.b.data(),data.c.data(),out.data());
-          auto after=_mm_getcsr();
-          _mm_setcsr(saved);
-          if(after!=control) {std::puts("BF16 changed MXCSR");result=false;}
-          for(unsigned i=0;i!=16;++i)
-            if(out[i]!=data.expected[i]) {
-              std::printf("lane %u control %08x: %08x expected %08x\n",i,control,out[i],data.expected[i]);
-              return false;
-            }
+          for(unsigned width=0;width!=3;++width) {
+            auto kernel=width==0 ? bf16_dot2_8 : width==1 ? bf16_dot2_16 : bf16_dot2;
+            unsigned lanes=8u<<width;
+            _mm_setcsr(control);
+            for(unsigned offset=0;offset!=32;offset+=lanes)
+              kernel(data.a.data()+offset,data.b.data()+offset,data.c.data()+offset/2,out[width].data()+offset/2);
+            auto after=_mm_getcsr();
+            _mm_setcsr(saved);
+            if(after!=control) {std::printf("BF16x%u changed MXCSR\n",lanes);result=false;}
+            for(unsigned i=0;i!=16;++i)
+              if(out[width][i]!=data.expected[i]) {
+                std::printf("BF16x%u lane %u control %08x: %08x expected %08x\n",lanes,i,control,out[width][i],data.expected[i]);
+                return false;
+              }
+          }
+          if(out[0]!=out[2] || out[1]!=out[2]) {std::puts("BF16 width partition mismatch");return false;}
         }
     _mm_setcsr(saved);
     return result;
@@ -98,5 +106,5 @@ int main(int argc,char **argv) {
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   if(!bf16_storage()) {std::puts("BF16 storage failure");return 3;}
   if(!contract())return 4;
-  std::puts("BF16 storage: 65536 encodings and guarded tails; dot2: 4112 lanes in 32 MXCSR states");
+  std::puts("BF16x8/x16/x32: 65536 encodings per width and all guarded tails; dot2: 4112 lanes per width in 32 MXCSR states with partition agreement");
 }
