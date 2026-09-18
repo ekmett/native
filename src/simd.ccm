@@ -7,6 +7,9 @@ module;
 #include <simd/simd/math/exp.h>
 #include <simd/simd/math/bits.h>
 #if SIMD_HOST_X86
+#include "simd/exp_policies.h"
+#endif
+#if SIMD_HOST_X86
 #include "simd/simd/avx512_bf16_native.h"
 #include "simd/simd/avx512_fp16_native.h"
 #endif
@@ -27,6 +30,7 @@ export import simd.wait;
 #if SIMD_HOST_NEON
 export import simd.arm;
 #endif
+#include "simd/wide_exp.h"
 #include "simd/simd/exports.h"
 #if SIMD_HOST_X86
 #include "simd/simd/avx512_bf16_body.h"

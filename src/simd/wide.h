@@ -58,6 +58,15 @@ namespace simd {
     }
     template<unsigned Family,class... T> concept wide_family_is =
       wide_family((feature_set{0} | ... | wide_features<std::remove_cvref_t<T>>::value)) == Family;
+    // MSVC's empty array can own a dummy T with a nontrivial constructor.
+    // Aggregate-initialize that storage in T's target scope, bypassing the
+    // library's unattributed implicit array constructor. Leave trivial/deleted
+    // defaults and every nonempty pack on the original defaulted path.
+    template<class T,std::size_t N> inline constexpr bool wide_empty_default =
+      N == 0 && std::is_default_constructible_v<T> &&
+      !std::is_trivially_default_constructible_v<T> &&
+      std::is_default_constructible_v<std::array<T,N>> &&
+      !std::is_trivially_default_constructible_v<std::array<T,N>>;
   }
   /** \defgroup wide_values Wide register packs
    * A fixed number of independent elements, usually native registers. Operations
@@ -78,7 +87,7 @@ namespace simd {
     alignas(T) std::array<T, N> registers;
 
     /// Default-initialize the underlying array. Use `wide{}` for value initialization.
-    constexpr wide() = default;
+    constexpr wide() requires (!detail::wide_empty_default<T,N>) = default;
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T & get() & noexcept simd_lifetimebound { return registers[I]; }

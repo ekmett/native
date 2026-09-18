@@ -19,6 +19,10 @@ add_executable(simd_test_source_variants $<TARGET_OBJECTS:simd_source_variants>)
 target_link_libraries(simd_test_source_variants PRIVATE simd::simd)
 foreach(target IN ITEMS simd_test_source_metadata simd_source_variants simd_test_source_variants)
   set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+endforeach()
+# Runtime linkage and DLL deployment belong to the final executables. Object
+# libraries have no link step and cannot carry a POST_BUILD deployment command.
+foreach(target IN ITEMS simd_test_source_metadata simd_test_source_variants)
   if(COMMAND simd_link_clang_cl_asan)
     simd_link_clang_cl_asan(${target})
   endif()
