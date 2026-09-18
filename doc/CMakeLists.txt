@@ -29,7 +29,7 @@ set(DOXYGEN_PREDEFINED
   "SIMD_HAS_NATIVE_FP16=1" "SIMD_HAS_NATIVE_BF16=1"
   "explicit(...):=explicit" "__cplusplus=202600L" "SIMD_PROFILE=512" "SIMD_BACKEND:=avx512_backend" "SIMD_ARCH:=::simd::avx512"
   "SIMD_BACKEND_NAMESPACE:=simd::detail::avx512_backend"
-  "SIMD_ARCH_CONCEPT:=simd::architecture"
+  "SIMD_ARCH_REQUIRES(Arch):=(::simd::avx512 <= Arch)"
   "SIMD_WIDE_FAMILY:=0" "SIMD_WIDE_DETAIL:=detail::wide_generic_detail"
   "SIMD_WIDE_TARGET:="
   "SIMD_HAS_AVX2:=1" "SIMD_HAS_AVX512F:=1" "SIMD_HAS_AVX512DQ:=1"

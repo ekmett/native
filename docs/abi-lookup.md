@@ -1,63 +1,133 @@
-# Targets
+# ISA values and target selection
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-`target<A, Choices...>` returns the zero-based index of the first choice whose
-features are a subset of `A`. Extra flags on `A` do not matter. Put more specific
-choices first; an earlier weak choice shadows a later strong one.
+`isa` is a structural feature set that can be a template argument. `feature`
+names instruction features; `&` combines their requirements by union:
 
 ```cpp
 using namespace simd;
 
-template<class A>
-inline constexpr auto exp_target = target<A, avx512, avx2>;
+constexpr isa needs = [] {
+  using enum feature;
+  return avx2 & fma & f16c;
+}();
 
-static_assert(exp_target<avx512_bf16> == 0);
-static_assert(exp_target<avx2> == 1);
+static_assert(needs.has(feature::fma));
+static_assert(feature::avx2 <= needs);
+static_assert(needs <= avx512);
 
-template<architecture A> requires(exp_target<A> == 1)
-void operation(A);
+constexpr isa adjusted = [] {
+  auto a = avx2;
+  a.f16c = true;
+  a.bmi2 = false;
+  return a;
+}();
+static_assert(adjusted.f16c && !adjusted.bmi2);
 ```
 
-An empty list or no match gives `target_npos`. An explicit final `scalar` choice
-matches any valid tag. Invalid tag types fail substitution. Feature prerequisites
-are normalized; list order is preserved.
+The properties read and update the set's bits; they store no additional state.
+`a.has(b)` accepts a feature or another `isa`. `a <= b` means every bit of `a`
+occurs in `b`, and `<` means strict inclusion. The reverse comparisons have the
+corresponding meanings. This is a partial order: distinct singleton features
+are incomparable. `&` works for every feature/ISA pairing; there is no `|`
+operator.
 
-The helper is available through `<simd/isa.h>` in C++20 or `import simd;`.
-It selects an overload. Give each implementation its required Clang target
-attributes, and use `with_isa` for CPU admission before running it. The complete
-caller tag stays in argument and result types.
-
-A reusable `isa_list` works in place of the pack:
+Default construction gives the empty set, equal to `scalar`. Construction from
+one feature sets exactly one bit. It never adds implied features:
 
 ```cpp
-using choices = isa_list<avx512, avx2>;
-static_assert(target<avx512, choices> == 0);
-
-template<requires_target<0, choices> A>
-void operation(A);
+constexpr isa one = feature::avx2;
+static_assert(one.avx2 && !one.avx && !one.fma);
+constexpr isa compiler_features = feature_closure(one);
+static_assert(compiler_features.avx);
 ```
 
-`requires_target<A, I, Choices...>` is the same check as a constraint, with the
-index before the pack so it also works as a constrained type parameter. It is
-false for invalid types and for the no-match sentinel.
+`feature_closure` explicitly adds compiler prerequisites. Compiler target parsing
+and CPU admission apply that closure. The existing `scalar`, `avx2`, `avx512`,
+`avx512_bf16`, `avx512_fp16`, `neon`, `neon_fp16` and `neon_bf16` presets are
+`constexpr isa` values whose prerequisite closure is already included. For
+example, the `avx2` preset also requests FMA and BMI2. CPU-model bundles remain
+future work.
 
-For selected-type introspection, `abi_lookup<A, choices>` exposes `index`,
-`matched`, the original entry as `type`, its `architecture`, and its
-`required_features`. No match produces void types and zero feature fields.
-A `target_entry<Tag, Minimum>` includes inherited compiler requirements in the
-subset test while preserving the original tag and entry. Malformed minimum
-bits are diagnosed.
+The feature enumerators `feature::avx512bf16` and `feature::avx512fp16` name single
+bits. The presets `avx512_bf16` and `avx512_fp16` include the broader AVX-512
+requirements.
 
-The built-in FP32 exp kernel has five target choices because its raw callees
-share five declaration scopes. `exp_target<A>` selects that list directly.
-FP32, integer and mask values ignore unrelated half features; native FP16 and
-BF16 values require their own extension. Internal traits handle these builtin
-requirements. Custom types keep their declared architecture without any extra
-metadata protocol.
+## Select an implementation
 
-Composed kernels whose callees have different lists need their common refinement,
-not concatenation. Those checks stay internal. See the
+`target<A, Choices...>` is an `int`: the zero-based index of the first choice
+contained in `A`, or `-1` when none matches. An empty choice pack also returns
+`-1`. The `arch` concept admits either a `feature` or an `isa`; generic value
+parameters can use `template<arch auto A>`. Vector algorithms normally use
+`template<isa A>`:
+
+```cpp
+template<isa A>
+inline constexpr int operation_target = target<A, avx512, avx2>;
+
+static_assert(operation_target<avx512_bf16> == 0);
+static_assert(operation_target<avx2> == 1);
+static_assert(operation_target<scalar> == -1);
+static_assert(target<feature::avx2, feature::avx2> == 0);
+
+template<isa A> requires(target<A, avx512, avx2> == 1)
+void operation(float const * input, float * output);
+```
+
+Selection compares the exact sets supplied; it does not add prerequisites.
+An explicit final `scalar` matches every set. `A` may contain features beyond
+the selected requirement, and the complete caller ISA remains in argument and
+result types.
+
+Put stronger requirements before weaker ones. Every pair `i < j` is checked:
+if `Choices[i] <= Choices[j]`, the later choice is unreachable and compilation
+fails. This rejects duplicates and backward subsumption, even if an earlier
+choice already matched or the supplied `A` matches nothing:
+
+```cpp
+// Each declaration below is intentionally ill-formed.
+// constexpr int shadowed = target<avx512, avx2, avx512>;
+// constexpr int duplicate = target<avx2, avx2, avx2>;
+// constexpr int unmatched = target<neon, avx2, avx512>;
+// constexpr int late = target<avx512, avx512, scalar, avx2>;
+```
+
+Incomparable choices may appear in either order; the first matching one wins.
+The helper is available through `<simd/isa.h>` in C++20 or `import simd;`.
+It performs compile-time selection only. Give native implementations their
+required Clang target attributes, and use `with_isa` for CPU/OS admission before
+execution. See the [source-target guide](omnibus.md).
+
+## Compiler-minimum metadata
+
+`isa_list<...>` and `abi_lookup<A, List>` retain the internal ordered metadata
+used by source variants and composed kernels. Use the direct choice pack above
+for ordinary target selection. A structural `target_entry{architecture, minimum}`
+records an ISA and its inherited compiler minimum:
+
+```cpp
+constexpr auto inherited = target_entry{avx2, feature::avx512vl};
+using choices = isa_list<inherited, avx2>;
+using picked = abi_lookup<avx512, choices>;
+static_assert(picked::index == 0);
+static_assert(picked::architecture == avx2);
+static_assert(picked::minimum == feature::avx512vl);
+```
+
+The lookup exposes `matched`, an `int index`, and `isa` values `architecture`,
+`minimum` and `required_features`. It includes compiler prerequisite closure
+when testing the entry's requested ISA and minimum. Unknown minimum bits are
+diagnosed. No match gives `matched == false`, `index == -1` and empty ISA values.
+
+The built-in FP32 exp kernel has five implementation choices because its raw
+callees share five declaration scopes. FP32, integer and mask values ignore
+unrelated half features; native FP16 and BF16 values require their own extension.
+Internal traits handle these built-in requirements. Custom types keep their
+declared ISA without an extra metadata protocol.
+
+Composed kernels whose callees have different lists need a common refinement
+that preserves each callee's first match. Those checks stay internal. See the
 [exp tests](../tests/exp_policy_refinement/README.md) for target, value and codegen
 coverage.

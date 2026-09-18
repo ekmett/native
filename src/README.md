@@ -3,7 +3,7 @@
 C++ consumers import `simd` for native operations or individual common modules.
 The hub compiles at the project minimum and holds all supported host ISA
 families under Clang target attributes. Internal definition fragments are
-emitted under the matching scopes. They select canonical feature tags instead
+emitted under the matching scopes. They select structural ISA values instead
 of inheriting the importer's compiler macros.
 
 | Path | Responsibility |
@@ -26,14 +26,24 @@ supplies textual source-generation macros.
 Custom numerical elements use one common extension, independent of the ISA.
 
 Target selection is a first-match feature check: `target<A, avx512, avx2>`
-returns the first list position whose requirements fit `A`. Operations compare
-that index directly. Shared lists describe raw operations, memory and wide
+returns an `int` position whose requirements fit `A`, or `-1`. Every pair is
+checked for a weaker earlier choice that would make a later choice unreachable.
+The selector compares exact sets. Shared `isa_list` metadata describes raw operations, memory and wide
 storage; literal Clang attributes are checked against those requirements.
-Scalar raw vectors still require the exact scalar tag.
+`abi_lookup` retains compiler-prerequisite closure for those internal lists.
+Scalar raw vectors still require the empty `scalar` value.
+
+`feature` enumerators are ordinal bit indices. `isa` owns one public `flags`
+array; feature properties read and update that storage. `&` unions requirements,
+`has` checks containment, and comparisons use set inclusion. Construction from
+one feature is exact. Presets and compiler admission apply `feature_closure`
+explicitly. Generic native definitions use `template<isa A>` and
+`SIMD_ARCH_REQUIRES(A)` constraints. The [ISA guide](../docs/abi-lookup.md)
+describes the public value API.
 
 Built-in values use internal traits to select their implementation scope.
 Ordinary float, integer and mask values ignore unrelated half features; native
-FP16 and BF16 values require their own extension. The complete caller tag stays
+FP16 and BF16 values require their own extension. The complete caller ISA stays
 in the value's type. Custom domains keep their declared architecture without
 having to supply additional metadata. Arrays, nested packs and pairs contribute
 their element requirements to mixed-input operations.

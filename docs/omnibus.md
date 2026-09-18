@@ -14,18 +14,19 @@ target_link_libraries(example PRIVATE simd::simd)
 
 ## Generate only the variants you need
 
-This x86 example compiles two overloads in one translation unit. The reusable
-body receives the function name and the exact architecture type. Each expansion
-is inside a matching Clang target scope.
+This x86 example compiles two constrained function templates in one translation
+unit. The reusable body receives the function name and the exact ISA value.
+Each expansion is inside a matching Clang target scope.
 
 ```cpp
 #include <simd/targets.h>
 import simd;
 
 #define MY_TARGETS(X, ...) X(avx512, __VA_ARGS__) X(avx2, __VA_ARGS__)
-#define DOUBLE_BODY(name, tag)                                           \
-  void name(tag, float const * input, float * output) {                 \
-    using V = simd::vec<float, 4, tag>;                                 \
+#define DOUBLE_BODY(name, ISA)                                         \
+  template<simd::isa A> requires(A == ISA)                              \
+  void name(float const * input, float * output) {                     \
+    using V = simd::vec<float, 4, A>;                                   \
     auto x = simd::load_simd<V>(input);                                 \
     simd::store_simd(output, x + x);                                    \
   }
@@ -34,8 +35,8 @@ SIMD_TARGET_VARIANTS(double_four, MY_TARGETS, DOUBLE_BODY)
 
 bool run(float const * input, float * output) {
   auto cpu = simd::observe_x86_capabilities();
-  return simd::with_isa(SIMD_TARGET_LIST(MY_TARGETS), cpu, [&](auto arch) {
-    double_four(arch, input, output);
+  return simd::with_isa(SIMD_TARGET_LIST(MY_TARGETS), cpu, [&]<simd::isa A> {
+    double_four<A>(input, output);
   });
 }
 
@@ -43,18 +44,19 @@ bool run(float const * input, float * output) {
 #undef MY_TARGETS
 ```
 
-List order is selection order. `with_isa` calls the callback once for the first
-admitted entry, or returns `false` without calling it if none qualifies. On
-AArch64 use the NEON presets and `observe_arm_capabilities()`.
+List order is selection order. `with_isa` invokes `callback.operator()<A>()`
+once for the first admitted entry, or returns `false` without calling it if none
+qualifies. On AArch64 use the NEON presets and `observe_arm_capabilities()`.
 
-For an existing architecture type, [compile-time policy lookup](abi-lookup.md)
+For an existing ISA value, [compile-time target selection](abi-lookup.md)
 selects an implementation entry and its ordinal without querying the CPU.
-Use `requires (target<A, Policies...> == I)` for disjoint operation overloads;
-`requires_target<A,I,Policies...>` is the general shorthand for constrained type parameters.
+Use `requires (target<A, Choices...> == I)` for disjoint operation overloads.
+The result is an `int`, with `-1` for no match. A weaker choice before a stronger
+one, or a duplicate choice, makes that direct target pack ill-formed.
 
-The callback is ordinary code compiled where it was defined. Passing a tag
-does not change its compiler target. Keep the native body in the generated
-overload, or use `SIMD_TARGET_PUSH(name)` / `SIMD_TARGET_POP()` around functions
+The callback is ordinary code compiled where it was defined. Selecting its ISA
+template argument does not change its compiler target. Keep the native body in
+the generated overload, or use `SIMD_TARGET_PUSH(name)` / `SIMD_TARGET_POP()` around functions
 you define yourself. Pointer/scalar entry parameters avoid transferring native
 register values across different calling conventions.
 
@@ -67,18 +69,19 @@ requirements. If nesting is intentional, include the outer scope's features in
 
 ## Choose feature sets
 
-Presets are names for canonical `isa<feature bits>` types. To register another
-source name, give it one target feature literal:
+Presets are `constexpr isa` values with compiler prerequisites included. To
+register another source name, give it one target feature literal:
 
 ```cpp
 #define SIMD_TARGET_avx2_half "avx2,fma,bmi2,f16c"
 #define MY_TARGETS(X, ...) X(avx2_half, __VA_ARGS__) X(avx2, __VA_ARGS__)
+static_assert(SIMD_TARGET_ISA(avx2_half).f16c);
 ```
 
-That same literal supplies the Clang attribute and the type used for admission.
-The registry accounts for compiler-implied prerequisites, and the generated
+That same literal supplies the Clang attribute and `SIMD_TARGET_ISA(name)` value
+used for admission. The registry accounts for compiler-implied prerequisites, and the generated
 list includes inherited translation-unit requirements. Reordering feature
-names or repeating an implied feature does not make another type. Do not put
+names or repeating an implied feature does not make another ISA value. Do not put
 two spellings of the same canonical feature set in one list.
 
 Supported positive feature names may be combined freely within one host
@@ -86,7 +89,13 @@ architecture. Unknown features, CPU-name shortcuts and negative feature strings
 are rejected: silently guessing their admission requirements would make the
 dispatch unsafe. The registry in `simd/isa.h` defines the supported vocabulary.
 Clang target pragmas do not change predefined macros such as `__AVX512F__`;
-write variant choices using the tag and `has_feature`.
+write variant choices using `A.has(simd::feature::avx512f)`, `A.avx512f`, or
+subset comparisons such as `simd::avx512 <= A`.
+
+Ordinary feature construction and conjunction do not add prerequisites:
+`simd::isa(simd::feature::avx2)` has exactly the AVX2 bit. Use
+`feature_closure` when constructing compiler requirements yourself. The named
+presets are feature bundles; CPU-model bundles remain future work.
 
 ## Native intrinsics and packages
 
@@ -100,13 +109,13 @@ BMI and one provider for each common module; target variants do not multiply
 them. Compiler, C++ dialect, exception mode and standard-library configuration
 must still agree. Consumer PCHs remain optional and belong to the consumer.
 
-Canonical feature tags replace the former empty tag structs. This changes the
-names of vector template instantiations in compiled interfaces. Rebuild code
-that exchanges these vector types across a library boundary when updating;
+Structural ISA value arguments replace the former architecture tag types. This
+changes template identity and symbol names in compiled interfaces. Rebuild BMIs
+and code that exchanges these vector types across a library boundary when updating;
 ordinary pointer/scalar entry interfaces keep their declared ABI.
 
-`simd::avx2`, `simd::avx512` and the native-half CMake targets are compatibility
-aliases for `simd::simd`. The old ISA-specific module names are replaced by the
+The CMake targets named `simd::avx2`, `simd::avx512` and the native-half profiles
+are compatibility aliases for `simd::simd`. The old ISA-specific module names are replaced by the
 hub import. `simd_target_omnibus` is retained as a compatibility no-op.
 `simd_target_profile` remains available for applications that explicitly want
 whole-translation-unit targeting; it is not needed for source target lists.
@@ -119,6 +128,6 @@ The source helper records registered features advertised by Clang's predefined
 macros. CPU-model options can enable additional instructions without a matching
 macro, so it cannot infer every requirement of an arbitrary `-mcpu` or `-march`
 name. When needed, define `SIMD_TARGET_EXTRA_MINIMUM` before including
-`<simd/targets.h>` as an additional registered feature mask, for example
+`<simd/targets.h>` as an additional ISA value, for example
 `simd::target_features("avx2,f16c")`. This adds to admission requirements;
 it does not change compiler flags or make startup safe below the project minimum.
