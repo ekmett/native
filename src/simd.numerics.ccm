@@ -613,53 +613,63 @@ constexpr bool cmp_ord(T a, T b) noexcept(noexcept(!isnan(a) && !isnan(b))) {
 /// \endcond
 
 /// \hideinlinesource
-/// Legacy scalar exponent scaling; runtime uses scalbn(x, int(y)), truncating y.
-/// \pre y is representable as int. The separate constant-evaluation bit graph
-/// retains its historical boundary behavior; this is not the vector scaleb API.
+/// Scale x by 2 raised to the exponent obtained by truncating y toward zero.
+/// \pre The truncated value of y is representable as int.
+/// Constant evaluation uses round-to-nearest, ties-to-even with gradual underflow.
+/// Runtime uses std::scalbn and follows the active rounding and denormal modes;
+/// it agrees with constant evaluation under the same floating-point assumptions.
+/// Signed zeros and overflow signs are preserved; NaN payloads are not promised.
+/// This scalar truncation contract differs from the vector scaleb API.
 template <one_of_t<float, double> T>
 simd_nodiscard simd_inline simd_pure
 constexpr T scalef(T x, T y) noexcept {
   if consteval {
-    // Constexpr path using bit manipulation
+    using U = uint_t<T>;
+    constexpr int fraction_bits = std::numeric_limits<T>::digits - 1;
+    constexpr int bias = std::numeric_limits<T>::max_exponent - 1;
+    constexpr U hidden = U(1) << fraction_bits;
+    constexpr U sign_mask = U(1) << (sizeof(T) * 8 - 1);
+    constexpr U exponent_mask = U(2 * bias + 1) << fraction_bits;
+    auto const word = std::bit_cast<U>(x);
+    auto const sign = word & sign_mask;
+    auto const field = (word & exponent_mask) >> fraction_bits;
+    auto significand = word & (hidden - 1);
+    if (field == U(2 * bias + 1) || (field == 0 && significand == 0)) return x;
+    int const scale = static_cast<int>(y);
 
-    using uint_type = uint_t<T>; //  std::conditional_t<std::is_same_v<T, float>, uint32_t, uint64_t>;
-    constexpr int exponent_bias = std::is_same_v<T, float> ? 127 : 1023;
-    constexpr uint_type exponent_mask = std::is_same_v<T, float> ? uint_type(0x7F800000) : uint_type(0x7FF0000000000000ull);
-    constexpr uint_type mantissa_mask = std::is_same_v<T, float> ? uint_type(0x007FFFFF) : uint_type(0x000FFFFFFFFFFFFFull);
-
-    if (x == 0.0 || isnan(x) || std::isinf(x))
-      return x; // Handle special cases
-
-    // Get the raw bits of the floating-point number
-    uint_type x_bits = std::bit_cast<uint_type>(x);
-
-    // Extract exponent and mantissa
-    int exponent = static_cast<int>(((x_bits & exponent_mask) >> (std::is_same_v<T, float> ? 23 : 52)) - exponent_bias);
-    uint_type mantissa = x_bits & mantissa_mask;
-
-    // Normalize the mantissa (implicit leading 1 for normalized numbers)
-    if (exponent != -exponent_bias)
-      mantissa |= std::is_same_v<T, float> ? (1u << 23) : (1ull << 52); // Set implicit leading bit
-
-    // Scale the exponent by adding y
-    exponent += static_cast<int>(y);
-
-    // Check for overflow and underflow
-    if (exponent > std::numeric_limits<T>::max_exponent)
-      return std::numeric_limits<T>::infinity();
-
-    if (exponent < std::numeric_limits<T>::min_exponent)
-      return static_cast<T>(0.0); // Underflow to zero
-
-    // Rebuild the floating-point number from the new exponent and mantissa
-    x_bits =
-      (x_bits & (std::is_same_v<T, float> ? 0x80000000u : 0x8000000000000000ull)) | // Preserve the sign bit
-      (static_cast<uint_type>(exponent + exponent_bias) << (std::is_same_v<T, float> ? 23 : 52)) | // Apply new exponent
-      (mantissa & mantissa_mask); // Mask mantissa bits
-
-    return std::bit_cast<T>(x_bits);
+    // Probe behavior, not just a library version: some constexpr math facilities
+    // reject range errors during constant evaluation, including signed underflow.
+    if constexpr (requires {
+      typename std::enable_if_t<
+        std::scalbn(T(1), 1 - bias) == std::numeric_limits<T>::min() &&
+        std::scalbn(T(1), 1 - bias - fraction_bits) == std::numeric_limits<T>::denorm_min() &&
+        std::scalbn(T(-1), bias + 1) == -std::numeric_limits<T>::infinity() &&
+        std::bit_cast<U>(std::scalbn(T(-1), -bias - fraction_bits)) == sign_mask &&
+        std::scalbn(T(1), std::numeric_limits<int>::min()) == T(0) &&
+        std::scalbn(T(1), std::numeric_limits<int>::max()) == std::numeric_limits<T>::infinity()>;
+    }) {
+      return std::scalbn(x, scale);
+    } else {
+      // Normalize even the smallest subnormal before changing its exponent.
+      std::int64_t exponent = field ? std::int64_t(field) - bias : 1 - bias;
+      if (field) significand |= hidden;
+      else while (significand < hidden) { significand <<= 1; --exponent; }
+      exponent += scale; // The full int exponent cannot overflow this wider sum.
+      if (exponent > bias) return std::bit_cast<T>(sign | exponent_mask);
+      if (exponent >= 1 - bias) {
+        return std::bit_cast<T>(sign | (U(exponent + bias) << fraction_bits) |
+          (significand & (hidden - 1)));
+      }
+      auto const shift = (1 - bias) - exponent;
+      if (shift > fraction_bits + 1) return std::bit_cast<T>(sign);
+      U const remainder = significand & ((U(1) << shift) - 1);
+      U const halfway = U(1) << (shift - 1);
+      U rounded = significand >> shift;
+      rounded += remainder > halfway || (remainder == halfway && (rounded & 1));
+      // Rounding can carry into the minimum normal; its encoding is hidden.
+      return std::bit_cast<T>(sign | rounded);
+    }
   } else {
-    // Runtime path using fast standard library call
     return std::scalbn(x, static_cast<int>(y));
   }
 }

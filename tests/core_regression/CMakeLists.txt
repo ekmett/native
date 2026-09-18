@@ -62,7 +62,8 @@ set_tests_properties(simd.consumer.exact PROPERTIES
 
 add_executable(simd_test_numerics_import numerics_contract.cc)
 add_executable(simd_test_numerics_api numerics_api.cc)
-foreach(kind IN ITEMS import api)
+add_executable(simd_test_numerics_scalef numerics_scalef.cc)
+foreach(kind IN ITEMS import api scalef)
   target_link_libraries(simd_test_numerics_${kind} PRIVATE simd::simd)
   add_test(NAME simd.numerics.${kind} COMMAND simd_test_numerics_${kind})
   set_tests_properties(simd.numerics.${kind} PROPERTIES LABELS "host;numerics;modules")
@@ -96,7 +97,7 @@ foreach(suite IN ITEMS noexcept_wait)
 endforeach()
 
 if(COMMAND simd_link_clang_cl_asan)
-  foreach(suite IN ITEMS integer mask bit_bridge scaleb wide_exp header import numerics_api numerics_import noexcept_header noexcept_import)
+  foreach(suite IN ITEMS integer mask bit_bridge scaleb wide_exp header import numerics_api numerics_import numerics_scalef noexcept_header noexcept_import)
     simd_link_clang_cl_asan(simd_test_${suite})
   endforeach()
 endif()
