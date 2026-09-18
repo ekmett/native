@@ -298,6 +298,7 @@ namespace simd {
       static constexpr bool matched=true;
       static constexpr std::size_t index=I;
       static constexpr feature_set minimum=entry_traits<E>::minimum;
+      static_assert((minimum&~known_features)==0,"ABI policy minimum contains an unregistered ISA feature");
       static constexpr feature_set required_features=feature_closure(architecture::features|minimum);
     };
     template<architecture A,std::size_t I,class... E> struct abi_lookup_impl {

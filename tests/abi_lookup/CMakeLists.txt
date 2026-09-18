@@ -20,3 +20,18 @@ foreach(kind IN ITEMS header module)
   add_test(NAME simd.abi_lookup.${kind} COMMAND simd_test_abi_lookup_${kind})
   set_tests_properties(simd.abi_lookup.${kind} PROPERTIES LABELS "host;abi_lookup" TIMEOUT 30)
 endforeach()
+
+# Naming target_entry does not instantiate its own validation; the lookup must
+# diagnose unknown inherited feature bits before falling through to a fallback.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_library(simd_abi_lookup_reject_minimum OBJECT EXCLUDE_FROM_ALL invalid_minimum.cc)
+target_link_libraries(simd_abi_lookup_reject_minimum PRIVATE simd::headers)
+target_compile_features(simd_abi_lookup_reject_minimum PRIVATE cxx_std_20)
+add_test(NAME simd.abi_lookup.reject_minimum COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../source_targets/check_negative.py"
+  --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
+  --target simd_abi_lookup_reject_minimum --config "$<CONFIG>"
+  --log "${CMAKE_CURRENT_BINARY_DIR}/reject-minimum-$<CONFIG>.log"
+  --diagnostic "ABI policy minimum contains an unregistered ISA feature")
+set_tests_properties(simd.abi_lookup.reject_minimum PROPERTIES
+  LABELS "host;abi_lookup" RUN_SERIAL TRUE TIMEOUT 180)
