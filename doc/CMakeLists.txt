@@ -44,7 +44,7 @@ set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
 # them for Doxygen without a shell filter (whose quoting differs on Windows).
 set(docs_markdown_root "${CMAKE_CURRENT_BINARY_DIR}/markdown")
 set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md src/README.md tests/api/README.md
-  doc/building.md tests/omnibus/README.md)
+  doc/building.md tests/omnibus/README.md tests/bf16_profile/README.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")
 list(APPEND docs_pages ${docs_guides})
