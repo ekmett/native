@@ -12,9 +12,13 @@ translation-unit target.
 
 MSVC's `array<T,0>` contains a dummy element. Its implicit default constructor
 can therefore call a targeted nontrivial `T` constructor from an unattributed
-function. Only nontrivial, default-constructible empty storage containing such a
+function. Nontrivial, default-constructible empty storage containing such a
 `T` receives aggregate initialization inside wide's existing target family.
-Trivial/deleted defaults and nonempty packs keep the defaulted constructor.
+The same problem affects nonempty packs of one-lane native floats. That exact
+element type explicitly permits aggregate initialization because both default
+and value initialization already produce positive zero. The marker names its
+owner, so a derived custom type cannot inherit the permission accidentally.
+Trivial/deleted defaults and other nonempty packs keep the defaulted constructor.
 The array member, layout, and element initialization rules remain unchanged.
 
 The tests compare layout, default/copy/move/assignment/destructor traits and
@@ -22,6 +26,8 @@ exception specifications with the former storage/default-constructor form.
 They check constant evaluation, scalar value initialization, member initializers,
 deleted and move-only types, and observable custom construction/destruction.
 N=0/1/3 and default/value initialization are covered independently.
+Positive-extent native float packs are checked against direct element defaults
+and value initialization, including their exact floating-point bits.
 
 With exceptions enabled, ordinary throwing construction is checked in-process.
 Empty throwing construction runs in child processes: MSVC's original empty
