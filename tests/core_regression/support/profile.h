@@ -15,7 +15,10 @@
 #endif
 #endif
 #if SIMD_TEST_IMPORT
-#if SIMD_TEST_PROFILE == 512 && SIMD_TEST_BF16
+#if SIMD_TEST_PROFILE == 512 && SIMD_TEST_AVX512_FP16
+import simd.avx512_fp16;
+using test_arch = simd::avx512_fp16;
+#elif SIMD_TEST_PROFILE == 512 && SIMD_TEST_BF16
 import simd.avx512_bf16;
 using test_arch = simd::avx512_bf16;
 #elif SIMD_TEST_PROFILE == 512
@@ -40,6 +43,9 @@ using test_arch = simd::scalar;
 namespace test_simd = simd;
 #else
 #define SIMD_PROFILE SIMD_TEST_PROFILE
+#if SIMD_TEST_AVX512_FP16
+#define SIMD_PROFILE_AVX512_FP16 1
+#endif
 #if SIMD_TEST_BF16
 #define SIMD_PROFILE_BF16 1
 #endif

@@ -55,6 +55,10 @@ calling them. Keep IPO disabled on the baseline dispatch object when preserving
 that boundary; the native implementation may still use ThinLTO.
 
 The compatibility re-export producer uses the union of selected profiles.
+`simd_target_omnibus(target)` reads that union from installed target metadata and
+applies it to a consumer, including a consumer PCH. AVX512_BF16 and AVX512_FP16
+are independent; admit both when both are included. Granular profile selection
+continues to use `simd_target_profile(target profile)`.
 Its body contains only imports. Granular consumers and downstream libraries that
 import only `simd.scalar` keep their existing compilation requirements.
 

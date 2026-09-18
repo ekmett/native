@@ -111,6 +111,13 @@ entry. Native BFDOT has its own rounding/FPCR contract, including optional EBF16
 see the [BF16 guide](tests/neon_bf16/README.md). FP16 and BF16 are independent
 optional features; default profiles and scalar conversions remain unchanged.
 
+Add `AVX512_FP16` to `SIMD_PROFILES` for native half arithmetic with
+`vec<fp16,32,avx512_fp16>`. It follows MXCSR rounding and uses gradual half
+underflow regardless of DAZ/FTZ. Compile granular kernels for `AVX512_FP16` and
+admit `x86_profile::avx512_fp16` before entry. See the [native AVX-512 half guide](tests/avx512_fp16/README.md).
+For `import simd;`, use `simd_target_omnibus(target)` to enable the installed
+package's exact feature union, and admit every included optional profile.
+
 Add `AVX512_BF16` to `SIMD_PROFILES` to opt into native BF16 pairwise dot
 products. Its distinct `avx512_bf16` tag adds `vec<bf16,32,avx512_bf16>` storage
 and `dot2(a,b,accumulator)` with an FP32 accumulator/result of 16 lanes. Compile

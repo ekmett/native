@@ -172,9 +172,14 @@ namespace simd {
   /// Import simd.avx512_bf16 and compile with the AVX512_BF16 profile. This tag
   /// neither selects compiler flags nor performs CPU/OS feature admission.
   struct avx512_bf16 {};
+  /// \ingroup vectors
+  /// AVX-512 F/DQ/BW/VL plus native half arithmetic, with a distinct vector type.
+  /// Import simd.avx512_fp16 and compile for AVX512_FP16. This tag neither selects
+  /// compiler flags nor admits CPU/OS features; use simd.cpuid before entry.
+  struct avx512_fp16 {};
   namespace detail {
     template<class A> concept avx512_architecture = std::same_as<A,avx512> ||
-      std::same_as<A,avx512_bf16>;
+      std::same_as<A,avx512_bf16> || std::same_as<A,avx512_fp16>;
   }
   /// \ingroup vectors
   /// AArch64 NEON profile. The tag does not change the caller's compiler flags.

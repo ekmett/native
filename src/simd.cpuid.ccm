@@ -46,7 +46,8 @@ export namespace simd {
   enum class x86_profile : std::uint8_t {
     avx2, ///< AVX2/FMA/BMI2, compiler-implied CPU features, and XMM/YMM OS state.
     avx512, ///< AVX2 requirements plus AVX512F/DQ/BW/VL, F16C, and ZMM/opmask OS state.
-    avx512_bf16 ///< Full AVX512 requirements plus CPUID.7.1 EAX bit 5 (AVX512_BF16).
+    avx512_bf16, ///< Full AVX512 requirements plus CPUID.7.1 EAX bit 5 (AVX512_BF16).
+    avx512_fp16 ///< Full AVX512 requirements plus CPUID.7.0 EDX bit 23 (AVX512_FP16).
   };
 
   /// Observed registers. Unavailable leaves and unread XCR0 remain zero.
@@ -62,6 +63,8 @@ export namespace simd {
     /// CPUID.7.1 EAX feature bits; bit 5 reports AVX512_BF16.
     /// Zero unless leaf 7 and subleaf 1 were reported as available.
     std::uint32_t leaf7_1_eax = 0;
+    /// CPUID.7.0 EDX; bit 23 reports AVX512_FP16. Zero without leaf 7.
+    std::uint32_t leaf7_edx = 0;
   };
 
   /// Capture CPUID and, only with XSAVE and OSXSAVE, XCR0. No ISA profile required.
@@ -81,11 +84,13 @@ export namespace simd {
     /// True when BF16 admission requires subleaf 1 but leaf 7 is unavailable or
     /// CPUID.7.0 EAX reports a maximum subleaf below 1. False for other profiles.
     bool missing_leaf7_1 = false;
+    /// Required but absent CPUID.7.0 EDX bits; bit 23 for AVX512_FP16.
+    std::uint32_t missing_leaf7_edx = 0;
 
     /// True only when every CPU feature and required OS vector-state component is present.
     constexpr bool admitted() const noexcept {
       return !invalid_profile && !missing_leaf1 && !missing_leaf7 && !missing_leaf7_1 && !missing_leaf7_1_eax &&
-        !missing_leaf1_ecx && !missing_leaf1_edx && !missing_leaf7_ebx &&
+        !missing_leaf1_ecx && !missing_leaf1_edx && !missing_leaf7_ebx && !missing_leaf7_edx &&
         !missing_osxsave && !missing_xcr0_observation && !missing_xcr0;
     }
 
@@ -113,6 +118,7 @@ export namespace simd {
       if (missing_leaf7_ebx & (1u << 17)) return "CPU lacks AVX512DQ";
       if (missing_leaf7_ebx & (1u << 30)) return "CPU lacks AVX512BW";
       if (missing_leaf7_ebx & (1u << 31)) return "CPU lacks AVX512VL";
+      if (missing_leaf7_edx & (1u << 23)) return "CPU lacks AVX512_FP16";
       if (missing_leaf7_1_eax & (1u << 5)) return "CPU lacks AVX512_BF16";
       if (missing_osxsave) return "OS has not enabled XSAVE";
       if (missing_xcr0_observation) return "XCR0 was not observed";
@@ -130,7 +136,7 @@ export namespace simd {
   constexpr x86_admission classify_x86_profile(x86_capabilities const & cpu,
       x86_profile profile) noexcept {
     x86_admission result;
-    if (profile != x86_profile::avx2 && profile != x86_profile::avx512 && profile != x86_profile::avx512_bf16) {
+    if (profile != x86_profile::avx2 && profile != x86_profile::avx512 && profile != x86_profile::avx512_bf16 && profile != x86_profile::avx512_fp16) {
       result.invalid_profile = true;
       return result;
     }
@@ -148,6 +154,8 @@ export namespace simd {
     result.missing_leaf1_ecx = ecx & ~(result.missing_leaf1 ? 0u : cpu.leaf1_ecx);
     result.missing_leaf1_edx = edx & ~(result.missing_leaf1 ? 0u : cpu.leaf1_edx);
     result.missing_leaf7_ebx = ebx & ~(result.missing_leaf7 ? 0u : cpu.leaf7_ebx);
+    if (profile == x86_profile::avx512_fp16)
+      result.missing_leaf7_edx = (1u << 23) & ~(result.missing_leaf7 ? 0u : cpu.leaf7_edx);
     if (profile == x86_profile::avx512_bf16) {
       result.missing_leaf7_1 = result.missing_leaf7 || cpu.max_leaf7_subleaf < 1;
       result.missing_leaf7_1_eax = (1u << 5) &
@@ -202,6 +210,7 @@ namespace simd {
     if (result.max_basic_leaf >= 7) {
       auto leaf = cpuid(7, 0);
       result.leaf7_ebx = std::uint32_t(leaf.ebx);
+      result.leaf7_edx = std::uint32_t(leaf.edx);
       result.max_leaf7_subleaf = std::uint32_t(leaf.eax);
       if (result.max_leaf7_subleaf >= 1)
         result.leaf7_1_eax = std::uint32_t(cpuid(7, 1).eax);

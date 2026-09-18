@@ -17,6 +17,9 @@ controls; raw operations retain the active environment's semantics. Use the
 host's resource gate when builds or native tests share a machine with other work.
 
 Focused standalone projects document their commands in adjacent READMEs.
+The optional [AVX512 FP16 fixture](avx512_fp16/README.md) checks baseline admission,
+native code generation and relocated mixed-profile BMIs, even on hosts where
+the native execution test must report an unsupported-profile skip.
 Generated packets, compiler output and machine reports belong in build
 directories. A passing CPU test does not establish GPU behavior or measured
 performance.

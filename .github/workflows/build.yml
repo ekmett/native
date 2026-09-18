@@ -276,6 +276,32 @@ jobs:
           ctest --test-dir build/bf16-package --no-tests=error --output-on-failure -j1 \
             --output-junit "$GITHUB_WORKSPACE/build/bf16-package-tests.xml"
           echo 'Opt-in BF16 storage and dot2 compiled and packaged; native execution requires the complete CPUID/XCR0 admission test (skip 77 otherwise).' >> "$GITHUB_STEP_SUMMARY"
+      - name: Compile and test opt-in AVX512 FP16 and BF16 union
+        if: matrix.platform.profile == 'AVX2' && (runner.os == 'Linux' || runner.os == 'Windows')
+        shell: bash
+        run: |
+          compiler=clang++
+          if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
+          cmake -S . -B build/avx512-fp16-ci -G Ninja \
+            -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
+            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_IPO=ON \
+            -DSIMD_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} \
+            '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16;AVX512_FP16' -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          cmake --build build/avx512-fp16-ci --target simd simd_test_avx512_fp16 simd_test_admission --parallel 2
+          ctest --test-dir build/avx512-fp16-ci -R '^simd[.](avx512_fp16[.]|cpuid[.]admission)' \
+            --no-tests=error --output-on-failure -j1 --output-junit "$GITHUB_WORKSPACE/build/avx512-fp16-tests.xml"
+          cmake --install build/avx512-fp16-ci --prefix build/avx512-fp16-install
+          cmake -E rename build/avx512-fp16-install 'build/avx512-fp16 relocated package'
+          for suite in avx512_fp16 omnibus half_storage; do
+            cmake -S "tests/$suite" -B "build/avx512-fp16-$suite" -G Ninja \
+              -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
+              -Dsimd_DIR="$GITHUB_WORKSPACE/build/avx512-fp16 relocated package/lib/cmake/simd" \
+              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+            cmake --build "build/avx512-fp16-$suite" --parallel 2
+            ctest --test-dir "build/avx512-fp16-$suite" --no-tests=error --output-on-failure -j1 \
+              --output-junit "$GITHUB_WORKSPACE/build/avx512-fp16-$suite-tests.xml"
+          done
+          echo 'AVX512_FP16 compile/codegen and installed BF16+FP16 union checked. Native execution is admitted by actual CPUID/XCR0; unsupported CPUs report skipped, not qualified.' >> "$GITHUB_STEP_SUMMARY"
       - name: Compile and test opt-in NEON FP16 package
         if: matrix.platform.profile == 'NEON'
         shell: bash
@@ -350,6 +376,15 @@ jobs:
             build/bf16-ci/Testing/Temporary/
             build/bf16-package/Testing/Temporary/
             build/bf16-package/compile_commands.json
+            build/avx512-fp16-ci/CMakeCache.txt
+            build/avx512-fp16-ci/CMakeFiles/CMakeConfigureLog.yaml
+            build/avx512-fp16-ci/Testing/Temporary/
+            build/avx512-fp16-ci/tests/avx512_fp16/codegen.txt
+            build/avx512-fp16-avx512_fp16/Testing/Temporary/
+            build/avx512-fp16-avx512_fp16/compile_commands.json
+            build/avx512-fp16-avx512_fp16/codegen.txt
+            build/avx512-fp16-omnibus/Testing/Temporary/
+            build/avx512-fp16-half_storage/Testing/Temporary/
             build/fp16-ci/CMakeCache.txt
             build/fp16-ci/CMakeFiles/CMakeConfigureLog.yaml
             build/fp16-ci/Testing/Temporary/

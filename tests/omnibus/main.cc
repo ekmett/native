@@ -24,6 +24,10 @@ int main() {
 #endif
   auto admission = simd::classify_x86_profile(simd::observe_x86_capabilities(), profile);
   if (!admission.admitted()) { std::puts(admission.reason()); return 77; }
+#if TEST_REQUIRED_AVX512_FP16
+  auto half_admission=simd::classify_x86_profile(simd::observe_x86_capabilities(),simd::x86_profile::avx512_fp16);
+  if(!half_admission.admitted()) {std::puts(half_admission.reason());return 77;}
+#endif
 #endif
 #if TEST_REQUIRED_NEON_FP16
   {

@@ -47,6 +47,13 @@ accepts the syntax. The configure-time check exercises a property implemented
 with an explicit object parameter, rather than accepting a compiler version
 number alone. Direct header consumers must provide the same language option.
 
+For an omnibus containing independent extensions such as AVX512_BF16 and
+AVX512_FP16, use `simd_target_omnibus(target)`. It reads the exported
+`SIMD_OMNIBUS_PROFILES` property on `simd::simd` and enables their union locally.
+Existing `simd_target_profile` calls still select exactly one granular profile.
+Admission remains the application's responsibility for every compiled extension.
+See the [AVX-512 half profile](../tests/avx512_fp16/README.md) for its contract.
+
 ## Installed C++ modules
 
 ```cmake
@@ -259,7 +266,7 @@ python doc/check_links.py build/docs/docs/html
 ```
 
 The minimal target exports `SIMD_MINIMAL_HAS_AVX2`, `SIMD_MINIMAL_HAS_AVX512`,
-`SIMD_MINIMAL_HAS_AVX512_BF16`, `SIMD_MINIMAL_HAS_NEON_FP16` and
+`SIMD_MINIMAL_HAS_AVX512_BF16`, `SIMD_MINIMAL_HAS_AVX512_FP16`, `SIMD_MINIMAL_HAS_NEON_FP16` and
 `SIMD_MINIMAL_HAS_NEON_BF16` as 0/1 compile
 definitions from feature probes using the selected options. The NEON FP16 probe
 compiles native arithmetic intrinsics because feature macros alone can survive
