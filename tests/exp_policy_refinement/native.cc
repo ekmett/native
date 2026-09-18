@@ -10,10 +10,37 @@
 import simd;
 
 static_assert((SIMD_TARGET_MINIMUM&~simd::avx2::features)==0,
-  "This exp refinement prototype requires a translation-unit minimum no stronger than AVX2/FMA/BMI2");
+  "This exp refinement check requires a translation-unit minimum no stronger than AVX2/FMA/BMI2");
 #if __has_feature(address_sanitizer)
 extern "C" int exp_refinement_asan_instrumented() { return 1; }
 #endif
+
+namespace custom_exp {
+  struct tagged { int value{}; };
+  struct plain { int value{}; };
+  struct throwing { int value{}; };
+  inline int array_calls=0;
+  template<bool F> tagged exp(tagged x,std::bool_constant<F>) noexcept { return {x.value+(F?2:1)}; }
+  template<bool F,std::size_t N> auto exp(std::array<tagged,N> values,std::bool_constant<F>) noexcept {
+    ++array_calls;
+    for(auto & value:values) value=exp(value,std::bool_constant<F>{});
+    return values;
+  }
+  plain exp(plain x) noexcept { return {x.value+3}; }
+  throwing exp(throwing x) noexcept(false) { return x; }
+  template<class T> concept has_flush=requires(simd::wide<T,2> const & x) { simd::exp<true>(x); };
+  static_assert(has_flush<tagged> && !has_flush<plain>);
+  static_assert(noexcept(simd::exp(simd::wide<tagged,2>{})));
+  static_assert(!noexcept(simd::exp(simd::wide<throwing,2>{})));
+  bool check() {
+    auto a=simd::exp<true>(simd::wide<tagged,2>{tagged{4},tagged{5}});
+    auto b=simd::exp(simd::wide<plain,2>{plain{4},plain{5}});
+    auto c=simd::exp(simd::wide<float,2>{0.f,0.f});
+    return array_calls==1 && a.registers[0].value==6 && a.registers[1].value==7 &&
+      b.registers[0].value==7 && b.registers[1].value==8 &&
+      c.registers[0]==1.f && c.registers[1]==1.f;
+  }
+}
 
 namespace refinement_test {
   // The original Arch is deliberately independent of the policy's minimal tag.
@@ -23,13 +50,6 @@ namespace refinement_test {
   // std::array's implicit constructor, even inside a correctly targeted caller.
 #define EMIT_EXP_POLICY(i,name,raw,result) \
   SIMD_TARGET_PUSH(name) \
-  template<bool Flush=false,std::size_t L,std::size_t N,simd::architecture A> \
-    requires simd::requires_abi<A,exp_policies,i> \
-  __attribute__((always_inline)) inline simd::wide<simd::vec<float,L,A>,N> \
-  refined_exp(simd::wide<simd::vec<float,L,A>,N> const & input) \
-    noexcept(noexcept(simd::wide<simd::vec<float,L,A>,N>{simd::exp<Flush>(input.registers)})) { \
-    return simd::wide<simd::vec<float,L,A>,N>{simd::exp<Flush>(input.registers)}; \
-  } \
   template<bool Reference,bool Flush,std::size_t L,std::size_t N,simd::architecture A> \
     requires simd::requires_abi<A,exp_policies,i> \
   __attribute__((noinline)) void evaluate(std::uint32_t const * input,std::uint32_t * output) { \
@@ -38,23 +58,28 @@ namespace refinement_test {
       if constexpr(N==0) return simd::wide<V,0>{std::array<V,0>{{}}}; \
       else return simd::wide<V,N>{V::load_bits(input+K*L)...}; \
     }(std::make_index_sequence<N>{}); \
-    static_assert(noexcept(refined_exp<Flush>(values))==noexcept(simd::exp<Flush>(values))); \
+    static_assert(noexcept(simd::exp<Flush>(values))==noexcept(simd::exp<Flush,V,N>(values))); \
+    using W=simd::wide<V,N>; \
+    using F=W (*)(W const &); \
+    static_assert(static_cast<F>(&simd::exp<Flush>)==static_cast<F>(&simd::exp<Flush,L,N,A>)); \
+    static_assert(static_cast<F>(&simd::math::exp<Flush>)==static_cast<F>(&simd::exp<Flush>)); \
+    static_assert(static_cast<F>(&simd::exp<Flush>)!=static_cast<F>(&simd::exp<Flush,V,N>)); \
     auto computed=[&] { \
-      if constexpr(Reference) return simd::exp<Flush>(values); \
-      else return refined_exp<Flush>(values); \
+      if constexpr(Reference) return simd::exp<Flush,V,N>(values); \
+      else return simd::exp<Flush>(values); \
     }(); \
     static_assert(std::same_as<decltype(computed),simd::wide<V,N>>); \
     for(std::size_t k=0;k<N;++k) computed.registers[k].store_bits(output+k*L); \
   } \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_narrow(float const * input,float * output) { \
     using V=simd::vec<float,8,SIMD_TARGET_TYPE(name)>; \
-    auto value=refined_exp(simd::wide<V,2>{V::load(input),V::load(input+8)}); \
+    auto value=simd::exp(simd::wide<V,2>{V::load(input),V::load(input+8)}); \
     value.registers[0].store(output);value.registers[1].store(output+8); \
   } \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_native(float const * input,float * output) { \
     constexpr std::size_t lanes=simd::has_features<SIMD_TARGET_TYPE(name),SIMD_TARGET_TYPE(exp_base)::features>?16:8; \
     using V=simd::vec<float,lanes,SIMD_TARGET_TYPE(name)>; \
-    auto value=refined_exp(simd::wide<V,2>{V::load(input),V::load(input+lanes)}); \
+    auto value=simd::exp(simd::wide<V,2>{V::load(input),V::load(input+lanes)}); \
     value.registers[0].store(output);value.registers[1].store(output+lanes); \
   } \
   SIMD_TARGET_POP()
@@ -101,6 +126,7 @@ namespace refinement_test {
 }
 
 int main() {
+  if(!custom_exp::check()) return 4;
   auto cpu=simd::observe_x86_capabilities();
   auto controls=_mm_getcsr()&~0x3fu;
   unsigned executed=0,skipped=0;
