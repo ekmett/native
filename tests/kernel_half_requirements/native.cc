@@ -25,6 +25,28 @@ struct malformed_constant {
 };
 static_assert(!can_load<malformed_constant> && !can_store<malformed_constant>);
 
+// A foreign value may use this member name for ordinary data. It must remain
+// on wide's generic ADL path rather than opting into compile-time ISA routing.
+namespace foreign {
+  struct value {
+    simd::isa architecture{};
+    int number=0;
+    friend constexpr value operator+(value a,value b) noexcept { return {{},a.number+b.number}; }
+  };
+  struct mutable_value {
+    inline static simd::isa architecture{};
+    int number=0;
+    friend constexpr mutable_value operator+(mutable_value a,mutable_value b) noexcept { return {a.number+b.number}; }
+  };
+}
+static_assert(!can_load<foreign::value> && !can_store<foreign::value> &&
+  !can_load<foreign::mutable_value> && !can_store<foreign::mutable_value>);
+static_assert([] {
+  simd::wide<foreign::value,1> a{foreign::value{{},3}};
+  simd::wide<foreign::mutable_value,1> b{foreign::mutable_value{4}};
+  return (a+a).registers[0].number==6 && (b+b).registers[0].number==8;
+}());
+
 #if defined(__x86_64__) || defined(_M_X64)
 #define RAW_TARGET avx512
 #define FP_TARGET avx512_fp16

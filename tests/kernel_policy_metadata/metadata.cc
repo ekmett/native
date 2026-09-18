@@ -9,6 +9,8 @@ namespace {
   struct custom_value { static constexpr isa architecture=kernel_full_half; };
   struct malformed_value { using architecture=int; };
   struct malformed_constant { static constexpr int architecture=0; };
+  struct nonstatic_architecture { isa architecture{}; };
+  struct mutable_architecture { inline static isa architecture{}; };
   template<isa A,isa Expected> consteval bool raw_value_requirements() {
     return (value_architecture_v<vec<float,1,A>> == Expected) &&
       (value_architecture_v<vec<float,16,A> const> == Expected) &&
@@ -24,7 +26,8 @@ namespace {
   static_assert(raw_value_requirements<scalar,scalar>());
   static_assert((value_architecture_v<custom_value> == kernel_full_half));
   static_assert(!value_traits<int>::known && !value_traits<malformed_value>::known &&
-    !value_traits<malformed_constant>::known);
+    !value_traits<malformed_constant>::known &&
+    !value_traits<nonstatic_architecture>::known && !value_traits<mutable_architecture>::known);
   static_assert(value_traits<vec<float,1,kernel_full_half>>::aggregate_default);
   static_assert(!value_traits<vec<float,2,kernel_full_half>>::aggregate_default &&
     !value_traits<vec<std::uint32_t,1,kernel_full_half>>::aggregate_default &&
