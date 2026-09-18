@@ -1,13 +1,11 @@
 # Native NEON BF16 profile
 
-Configure `SIMD_PROFILES=NEON;NEON_BF16` on AArch64 to opt in. Defaults stay
-`NEON`. `simd::neon_bf16` is a separate archive and `simd.neon_bf16` a separate
-module. `simd_target_profile(kernel NEON_BF16)` adds only Clang's `bf16` target
-feature, retaining the configured CPU and minimum. Common modules, including
-`simd.numerics` and `simd.arm`, keep a single provider at the configured minimum.
-Single-module providers do not use PCH. Consumer-owned PCH remains supported.
-Use `simd_target_omnibus(target)` for `import simd;` consumers; it applies the
-configured feature union, including both FP16 and BF16 when present.
+The AArch64 hub exposes the `neon_bf16` API through `import simd;` at the
+configured minimum. Native operations carry their Clang target requirements.
+Use the [source target helper](../../docs/omnibus.md) to generate selected
+variants in one translation unit, or keep a separate targeted kernel as this
+fixture does. Each common module retains one provider. FP16 and BF16 can be
+used independently without raising every importer's ISA requirements.
 
 `vec<bf16,8,neon_bf16>` stores one native 128-bit register. Construction,
 load/store, native and unsigned bit bridges, and partial loads/stores preserve
@@ -75,8 +73,8 @@ not advertised. EBF=1 is exercised only when EBF16 is observed; AH/FIZ nonzero
 states are exercised only when those controls read back as writable.
 
 Install, physically relocate the prefix, then configure this directory with
-`simd_DIR` pointing into the moved package. It builds granular and omnibus
-consumers, consumer PCH, and verifies one provider per common BMI. Native
+`simd_DIR` pointing into the moved package. It builds hub consumers with and
+without a PCH, and verifies one BMI for the hub and each common module. Native
 execution, compile-only checks, and software-oracle checks are distinct evidence.
 M1 does not implement BF16; compiling there and seeing skip 77 is not native BF16
 qualification. Hosted ARM runs may qualify it when OS admission succeeds.

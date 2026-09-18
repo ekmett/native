@@ -808,16 +808,18 @@ constexpr bool cmp(T a, T b) noexcept {
 
 
 namespace simd {
-  /// \copydoc cmp_unord(T,T)
+  /// \brief Return true if either argument is NaN.
   template bool cmp_unord(float, float);
-  /// \copydoc cmp_unord(T,T)
+  /// \brief Return true if either argument is NaN.
   template bool cmp_unord(double, double);
-  /// \copydoc cmp_ord(T,T)
+  /// \brief Return true if neither argument is NaN.
   template bool cmp_ord(float, float);
-  /// \copydoc cmp_ord(T,T)
+  /// \brief Return true if neither argument is NaN.
   template bool cmp_ord(double, double);
-  /// \copydoc scalef(T,T)
+  /// \brief Scale by a power of two after truncating the exponent toward zero.
+  /// \see scalef
   template float scalef(float, float) noexcept;
-  /// \copydoc scalef(T,T)
+  /// \brief Scale by a power of two after truncating the exponent toward zero.
+  /// \see scalef
   template double scalef(double, double) noexcept;
 }

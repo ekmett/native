@@ -1,12 +1,12 @@
 # Native BF16 profile
 
-The optional `AVX512_BF16` profile adds `simd::avx512_bf16`, a distinct
-instruction-profile tag, and a separate `simd::avx512_bf16` archive/module
-provider. Existing tags, default profiles, the configured minimum, and scalar
-`fp16`/`bf16` storage and conversion semantics are unchanged.
+The x86 hub exposes native BF16 storage and dot products through the
+`avx512_bf16` feature tag. Existing scalar half storage and conversion semantics
+are unchanged. Native operations require an attributed or separately compiled
+function with the matching ISA support.
 
 ```cpp
-import simd.avx512_bf16;
+import simd;
 using B = simd::vec<simd::bf16,32,simd::avx512_bf16>;
 using F = simd::vec<float,16,simd::avx512_bf16>;
 F result = simd::dot2(B::load(a), B::load(b), accumulator);
@@ -34,19 +34,15 @@ profile admission and scalar conversions are unchanged.
 
 ## Build and admission
 
-Configure the producer with `-DSIMD_PROFILES="AVX2;AVX512;AVX512_BF16"`.
-It probes actual BF16 intrinsic compilation. Link a kernel against
-`simd::minimal` and `simd::avx512_bf16`, then apply
-`simd_target_profile(kernel AVX512_BF16)`. Keep the caller at the configured
-minimum and pass pointers/scalars across the call boundary. The caller must
-admit `classify_x86_profile(observe_x86_capabilities(),
-x86_profile::avx512_bf16)` before calling the kernel. This requires the entire
-existing AVX512 profile, CPUID.7.1 EAX bit 5, and OS-enabled XCR0 state `0xe6`.
-Vendor names do not grant admission.
+The producer checks actual BF16 intrinsic compilation. The fixture compiles
+its native kernel with `simd_target_profile(kernel AVX512_BF16)`; applications
+can instead use the [source target helper](../../docs/omnibus.md). Keep the
+caller at the configured minimum and pass pointers/scalars across the entry.
 
-`import simd;` re-exports this profile when configured and requires BF16
-compilation too. Common modules still have one BMI at the chosen minimum.
-ISA flags belong to the profile producer/consumer, not the baseline caller.
+Admission checks the selected feature set, compiler-implied prerequisites and
+OS-enabled vector state. The preset includes AVX512F/DQ/BW/VL and CPUID.7.1 EAX
+bit 5. Vendor names do not establish support. Importing the hub itself requires
+neither BF16 execution nor a stronger compilation mode.
 
 ## Verification
 
@@ -76,9 +72,9 @@ cmake --build build/bf16-package --parallel 2
 ctest --test-dir build/bf16-package --output-on-failure
 ```
 
-It compiles granular and omnibus import consumers (the latter with a PCH), checks old/new type and
-mask identities, and verifies one BMI for each common dependency and the new
-profile. It uses only installed production sources; guarded pages come from
+It compiles hub consumers with and without a PCH, checks vector and mask
+identities, and verifies one BMI for the hub and each common dependency.
+It uses only installed production sources; guarded pages come from
 the adjacent test-only `../core_regression/support` directory.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->

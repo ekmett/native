@@ -7,7 +7,7 @@
 import simd.wide;
 import simd.scalar;
 #include "support/fp_environment.h"
-import simd.neon;
+import simd;
 
 static_assert(!std::is_same_v<simd::vec<float,1,simd::scalar>,simd::vec<float,1,simd::neon>>);
 static_assert(sizeof(simd::vec<float,4,simd::neon>) == 16);

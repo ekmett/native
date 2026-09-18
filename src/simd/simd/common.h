@@ -12,7 +12,7 @@
 
 /** \defgroup vectors Vectors and architecture tags
  * One register-shaped value, with the element, lane count and architecture in
- * its type. Import the matching profile and compile the caller for that ISA.
+ * its type. Import `simd` and compile the caller for the required ISA.
  * CPU and OS feature admission belongs at the application boundary.
  * \snippet api.cc vector_construction
  */

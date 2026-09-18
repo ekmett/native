@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #if TEST_AVX2
-import simd.avx2;
+import simd;
 using Arch=simd::avx2;
 #elif TEST_AVX512
-import simd.avx512;
+import simd;
 using Arch=simd::avx512;
 #elif TEST_NEON_BF16
-import simd.neon_bf16;
+import simd;
 using Arch=simd::neon_bf16;
 #elif TEST_NEON_FP16
-import simd.neon_fp16;
+import simd;
 using Arch=simd::neon_fp16;
 #else
-import simd.neon;
+import simd;
 using Arch=simd::neon;
 #endif
 extern "C" void granular_kernel(float const *input,float *output) {

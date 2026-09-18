@@ -4,11 +4,11 @@ import simd.static_string;
 using namespace simd;
 static_assert("abi"_ss.size() == 3);
 #if PROFILE_AVX2
-import simd.avx2;
+import simd;
 using V=simd::vec<float,8,simd::avx2>;
 #define PAIR_ENTRY pair_avx2
 #else
-import simd.avx512;
+import simd;
 using V=simd::vec<float,16,simd::avx512>;
 #define PAIR_ENTRY pair_avx512
 #endif

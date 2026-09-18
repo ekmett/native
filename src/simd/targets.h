@@ -34,6 +34,9 @@
 
 // The named pragma stack prevents accidentally popping an unrelated user's
 // clang attribute stack. This does not generate preprocessor #include lines.
+// Generate outside other ISA target scopes: Clang combines nested requirements,
+// which predefines cannot observe. Intentional nesting must record the outer
+// requirements in SIMD_TARGET_EXTRA_MINIMUM for admission.
 #define SIMD_DETAIL_TARGET_SECOND(a,b,...) b
 #define SIMD_DETAIL_TARGET_PROBE() unused,1
 #define SIMD_DETAIL_TARGET_SCALAR_scalar SIMD_DETAIL_TARGET_PROBE()

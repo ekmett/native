@@ -1,15 +1,15 @@
 # Native AVX-512 half profile
 
-Opt in with `SIMD_PROFILES=AVX2;AVX512;AVX512_FP16`. The separate
-`simd::avx512_fp16` archive and `import simd.avx512_fp16;` provide
+The x86 hub exposes this API through `import simd;` at the configured minimum.
+The `avx512_fp16` tag selects
 `vec<fp16,32,avx512_fp16>`: one 512-bit register, unsigned bit bridges, exact
 representation loads/stores, bounded partial memory, native add/sub/mul/div/FMA and `sqrt(x)` (found by ADL),
 ordered comparisons, bitwise sign negation and representation-preserving select.
 Its mask is `predicate<32,avx512_fp16>`. Only the 32-lane half shape is provided;
 numeric conversion operations remain absent.
 
-Compile the optional kernel with `simd_target_profile(kernel AVX512_FP16)`.
-Keep the pointer/scalar entry and dispatcher in separate targets; admit
+This fixture compiles the optional kernel with `simd_target_profile(kernel AVX512_FP16)`.
+Its pointer/scalar entry and dispatcher are separate targets; it admits
 `x86_profile::avx512_fp16` using `simd.cpuid` before entering the optional kernel.
 Admission requires AVX2/FMA/BMI2 and compiler-implied features, AVX512F/DQ/BW/VL,
 CPUID.7.0.EDX[23], OSXSAVE and XCR0 XMM/YMM/opmask/ZMM state. Leaf availability
@@ -18,12 +18,11 @@ minimum still applies before any dispatcher executes. This checkpoint appends
 `leaf7_edx`/`missing_leaf7_edx` to the public capability/admission records;
 rebuild producers and consumers together after updating the package.
 
-`simd_target_omnibus(consumer)` applies the union recorded in the installed
-`simd::simd` target's `SIMD_OMNIBUS_PROFILES` property. This matters when both
-AVX512_BF16 and AVX512_FP16 are selected: neither extension implies the other.
-Admit both profiles before executing an omnibus consumer compiled for both.
-Granular consumers retain their individual flags; common modules share one BMI.
-Providers compile directly without PCH; the fixture also checks a consumer PCH.
+The hub contains both BF16 and FP16 definitions without requiring either
+extension in the importing function. Use the [source target helper](../../docs/omnibus.md)
+to generate only the application variants you need, or retain the fixture's
+separate kernel compilation. Admission covers the chosen function's actual
+requirements. BF16 and FP16 remain independent features.
 
 ## Arithmetic contract
 
@@ -63,8 +62,8 @@ comparisons, with no host floating-point square root.
 without FP16 hardware. `none` enters no optional kernel. `codegen` requires one
 native 512-bit half instruction per arithmetic entry and native half comparison
 and masked selection, rejecting widening and out-of-line calls. The package
-fixture compiles both granular and omnibus imports and checks a single provider
-for common and optional module BMIs.
+fixture imports the hub from baseline and attributed kernels and checks one
+provider for the hub and each common module.
 
 ```sh
 cmake -S . -B build/fp16 -G Ninja -DCMAKE_CXX_COMPILER=clang++ \

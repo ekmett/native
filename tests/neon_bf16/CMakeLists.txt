@@ -9,8 +9,11 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 if(NOT TARGET simd::neon_bf16)
   if(neon_bf16_standalone)
-    message(FATAL_ERROR "This fixture requires a package configured with NEON_BF16.")
+    message(FATAL_ERROR "This fixture requires a package for a host supporting NEON_BF16.")
   endif()
+  return()
+endif()
+if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR AND NOT "NEON_BF16" IN_LIST SIMD_PROFILES)
   return()
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -57,7 +60,7 @@ if(SIMD_NEON_BF16_OBJDUMP AND NOT neon_bf16_usage_options MATCHES "sanitize=addr
 endif()
 if(neon_bf16_standalone AND CMAKE_GENERATOR STREQUAL "Ninja")
   add_test(NAME simd.neon_bf16.shared_bmi COMMAND "${CMAKE_COMMAND}"
-    "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DMODULES=simd.scalar;simd.wide;simd.numerics;simd.arm;simd.neon_bf16"
+    "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DMODULES=simd.scalar;simd.wide;simd.numerics;simd.arm;simd"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/../profile_package/check_bmi.cmake")
   set_tests_properties(simd.neon_bf16.shared_bmi PROPERTIES LABELS "host;modules;neon_bf16;profiles")
 endif()

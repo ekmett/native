@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <concepts>
 #include <cstdint>
-import simd.neon;
-import simd.neon_bf16;
+import simd;
 using old = simd::vec<float,4,simd::neon>;
 using next = simd::vec<float,4,simd::neon_bf16>;
 static_assert(!std::same_as<old,next>);

@@ -15,48 +15,47 @@
 #endif
 #endif
 #if SIMD_TEST_IMPORT
-#if SIMD_TEST_PROFILE == 512 && SIMD_TEST_AVX512_FP16
-import simd.avx512_fp16;
-using test_arch = simd::avx512_fp16;
-#elif SIMD_TEST_PROFILE == 512 && SIMD_TEST_BF16
-import simd.avx512_bf16;
-using test_arch = simd::avx512_bf16;
-#elif SIMD_TEST_PROFILE == 512
-import simd.avx512;
-using test_arch = simd::avx512;
-#elif SIMD_TEST_PROFILE == 256
-import simd.avx2;
-using test_arch = simd::avx2;
-#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_BF16
-import simd.neon_bf16;
-using test_arch = simd::neon_bf16;
-#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_FP16
-import simd.neon_fp16;
-using test_arch = simd::neon_fp16;
-#elif SIMD_TEST_PROFILE == 128
-import simd.neon;
-using test_arch = simd::neon;
-#else
+#if SIMD_TEST_PROFILE == 0
 import simd.scalar;
-using test_arch = simd::scalar;
-#endif
-namespace test_simd = simd;
 #else
-#define SIMD_PROFILE SIMD_TEST_PROFILE
-#if SIMD_TEST_AVX512_FP16
-#define SIMD_PROFILE_AVX512_FP16 1
+import simd;
 #endif
-#if SIMD_TEST_BF16
-#define SIMD_PROFILE_BF16 1
-#endif
-#if SIMD_TEST_FP16
-#define SIMD_PROFILE_FP16 1
+#else
+#if SIMD_TEST_PROFILE == 0
+#define SIMD_PROFILE 0
 #endif
 #include <simd/vec.h>
 #include <simd/simd/math/exp.h>
 #include <simd/simd/math/bits.h>
-using test_arch = SIMD_ARCH;
+#endif
+#if SIMD_TEST_PROFILE == 512 && SIMD_TEST_AVX512_FP16
+using test_arch = simd::avx512_fp16;
+#elif SIMD_TEST_PROFILE == 512 && SIMD_TEST_BF16
+using test_arch = simd::avx512_bf16;
+#elif SIMD_TEST_PROFILE == 512
+using test_arch = simd::avx512;
+#elif SIMD_TEST_PROFILE == 256
+using test_arch = simd::avx2;
+#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_BF16
+using test_arch = simd::neon_bf16;
+#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_FP16
+using test_arch = simd::neon_fp16;
+#elif SIMD_TEST_PROFILE == 128
+using test_arch = simd::neon;
+#else
+using test_arch = simd::scalar;
+#endif
 namespace test_simd = simd;
+#if !SIMD_TEST_IMPORT
+#if SIMD_TEST_PROFILE == 512
+namespace test_backend = simd::detail::avx512_backend;
+#elif SIMD_TEST_PROFILE == 256
+namespace test_backend = simd::detail::avx2_backend;
+#elif SIMD_TEST_PROFILE == 128
+namespace test_backend = simd::detail::neon_backend;
+#else
+namespace test_backend = simd::detail::scalar_backend;
+#endif
 #endif
 
 template<class T,std::size_t N> using test_vec = simd::vec<T,N,test_arch>;

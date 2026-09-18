@@ -17,11 +17,11 @@ import simd.wide;
 #else
 import simd.scalar;
 #if SIMD_ROUNDING_PROFILE == 256
-import simd.avx2;
+import simd;
 #elif SIMD_ROUNDING_PROFILE == 512
-import simd.avx512;
+import simd;
 #elif SIMD_ROUNDING_PROFILE == 128
-import simd.neon;
+import simd;
 #endif
 #endif
 

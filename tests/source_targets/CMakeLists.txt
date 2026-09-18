@@ -29,7 +29,7 @@ set_tests_properties(simd.source_targets.native PROPERTIES SKIP_RETURN_CODE 77)
 add_test(NAME simd.source_targets.codegen COMMAND "${Python3_EXECUTABLE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py" --objdump "${source_targets_objdump}"
   --output "${CMAKE_CURRENT_BINARY_DIR}/variants-$<CONFIG>.disassembly"
-  $<TARGET_OBJECTS:simd_source_variants>)
+  $<TARGET_OBJECTS:simd_source_variants> COMMAND_EXPAND_LISTS)
 
 foreach(kind IN ITEMS invalid no_target)
   add_library(simd_source_reject_${kind} OBJECT EXCLUDE_FROM_ALL ${kind}.cc)

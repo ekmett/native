@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
-# Keep producer flags and installed BMI regeneration in one mapping.
+# Optional whole-translation-unit targeting for existing applications/tests.
+# The hub and source-level target-list helper do not use these options.
 function(simd_profile_options profile output)
   set(flags)
   if(NOT profile MATCHES "^NEON")
@@ -69,43 +70,12 @@ function(simd_target_profile target profile)
   cmake_language(EVAL CODE "cmake_language(DEFER CALL simd_source_profile [[${target}]])")
 endfunction()
 
-# Compile a consumer of import simd with exactly the installed producer's union.
-# Unlike choosing one granular profile, this may enable independent extensions.
+# Compatibility entry point. Importing the hub adds no ISA beyond the project
+# minimum; each stronger function carries its own Clang target attribute.
 function(simd_target_omnibus target)
   if(NOT TARGET "${target}" OR NOT TARGET simd::simd)
     message(FATAL_ERROR "simd_target_omnibus requires its target and simd::simd.")
   endif()
-  get_target_property(previous "${target}" SIMD_TARGET_PROFILE)
-  if(previous AND NOT previous STREQUAL "OMNIBUS")
-    message(FATAL_ERROR "Target ${target} already selects ${previous}, not OMNIBUS.")
-  endif()
-  if(previous)
-    return()
-  endif()
-  get_target_property(profiles simd::simd SIMD_OMNIBUS_PROFILES)
-  if(profiles STREQUAL "profiles-NOTFOUND")
-    message(FATAL_ERROR "simd::simd lacks configured omnibus profile metadata.")
-  endif()
-  set(flags)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    message(FATAL_ERROR "The Windows simd profiles require clang-cl.")
-  endif()
-  foreach(profile IN LISTS profiles)
-    if(profile MATCHES "^NEON")
-      if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-        message(FATAL_ERROR "The ${profile} profile requires an arm64 target toolchain.")
-      endif()
-    elseif(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
-      message(FATAL_ERROR "The ${profile} profile requires an x86-64 target toolchain.")
-    endif()
-    simd_profile_options("${profile}" profile_flags)
-    list(APPEND flags ${profile_flags})
-  endforeach()
-  set_property(TARGET "${target}" PROPERTY SIMD_TARGET_PROFILE OMNIBUS)
-  string(JOIN " " implementation_flags ${flags})
-  set_property(TARGET "${target}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${implementation_flags}")
-  set_property(TARGET "${target}" PROPERTY SIMD_SOURCE_ISA_OPTIONS "${flags}")
-  cmake_language(EVAL CODE "cmake_language(DEFER CALL simd_source_profile [[${target}]])")
 endfunction()
 
 function(simd_source_profile target)

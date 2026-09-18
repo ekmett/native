@@ -1,28 +1,11 @@
 # Native NEON FP16 profile
 
-Configure `SIMD_PROFILES=NEON;NEON_FP16` on AArch64 to opt in. Defaults remain
-`NEON`. `simd::neon_fp16` is a separate archive and `simd.neon_fp16` is a separate
-module. `simd_target_profile(kernel NEON_FP16)` privately adds Clang's `fullfp16`
-feature without resetting the configured CPU or minimum architecture. Common
-modules, including `simd.numerics` and `simd.arm`, retain one provider at the
-configured minimum. Linking archives does not admit an optional instruction set.
-The minimum feature probe compiles real FP16 intrinsics: some AArch64 compilers
-retain FP16 macros after an explicit `-fullfp16`. A regression compiles the same
-probe using the baseline dispatcher's exact effective options. The focused ARM
-CI build selects an ARMv8-A minimum without FP16 and enables it for native
-kernels and their PCH, while ordinary default builds keep their existing minimum.
-LLVM 23 accepts these stronger imports, but rejects importing a common BMI built
-with an explicit `-fullfp16` feature disable into a `+fullfp16` translation unit.
-Use `-march=armv8-a` (clang-cl: `/clang:-march=armv8-a`) for this capability-absent
-minimum on LLVM 23; BMI validation remains enabled. The explicit negative feature
-case additionally passed on the development compiler recorded below.
-
-Late options automatically cover literal C++ source paths and the qualified
-Ninja C++ PCH sources. A path computed by a source-list generator expression
-needs explicit registration with `simd_context_source_profile(target
-"/absolute/path/kernel.cc")` after selecting the profile; otherwise conflicting
-minimum feature options can still override that source's profile. Registration
-uses the compiling target's options, so one file can serve different profiles.
+The AArch64 hub exposes the `neon_fp16` API through `import simd;` at the
+configured project minimum. Native operations carry Clang's `fullfp16`
+requirement. Use the [source target helper](../../docs/omnibus.md) for variants
+in one translation unit, or compile a separate kernel with
+`simd_target_profile(kernel NEON_FP16)` as this fixture does. Common modules
+keep one provider. Importing the hub does not admit optional instructions.
 
 `vec<fp16,8,neon_fp16>` provides exact representation storage, addition,
 subtraction, multiplication, division, `sqrt(x)` (found by ADL), unary negation, comparisons, selection, and
@@ -74,10 +57,10 @@ point to determine arithmetic results.
 
 After installation, physically move the install prefix and configure this
 directory as a standalone project with `simd_DIR` pointing into the moved package.
-The consumer compiles both granular and omnibus imports (the latter with a PCH),
-runs the same admitted native tests, and verifies one BMI provider per common
-module. The existing `tests/omnibus` and `tests/half_storage` fixtures also select
-and admit the strongest enabled ARM profile.
+The consumer compiles hub imports with and without a PCH, runs the same admitted
+native tests, and verifies one BMI for the hub and each common module.
+`tests/omnibus` also exercises an admitted ARM kernel; `tests/half_storage`
+checks the scalar storage API at the project minimum.
 
 Primary references: [Arm ACLE](https://arm-software.github.io/acle/main/acle.html),
 [Advanced SIMD intrinsics](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html),

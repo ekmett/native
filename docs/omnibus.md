@@ -1,80 +1,119 @@
-# One import, explicit execution profile
+# One hub, source-level target selection
 
-`import simd;` re-exports the common utilities and every native profile selected
-when the package is built. It defines no additional vector types or arithmetic.
-The granular imports remain available and refer to the same entities.
-
-```cpp
-import simd;
-
-using V = simd::vec<float, 8, simd::avx2>;
-V x(2.f), y(3.f);
-auto z = fma(x, y, V(1.f));
-simd::wide<V, 12> batch(z);
-```
-
-The installed archive owns the omnibus module's public `CXX_MODULES` file set.
-Linking it supplies the module and dependency metadata:
+`import simd;` exposes every implemented ISA family for the host architecture.
+It compiles at the configured project minimum. AVX-512, FP16 and BF16 operations
+carry Clang function target attributes inside that same module, so importing it
+does not strengthen an unrelated caller. `static_string`, scalar numerics and
+the other common modules each retain one provider.
 
 ```cmake
 find_package(simd CONFIG REQUIRED COMPONENTS simd)
 add_executable(example example.cc)
 target_link_libraries(example PRIVATE simd::simd)
-# This package was built with SIMD_PROFILES=AVX2;AVX512.
-simd_target_omnibus(example)
 ```
 
-## Match the configured profiles
+## Generate only the variants you need
 
-CMake generates `simd.ccm` from `SIMD_PROFILES` and installs that concrete source.
-The common scalar, wide, numerics, types, memory and static-string modules are
-always re-exported. x86 packages also re-export CPUID and wait. Only the selected
-native profile modules appear in the import list.
+This x86 example compiles two overloads in one translation unit. The reusable
+body receives the function name and the exact architecture type. Each expansion
+is inside a matching Clang target scope.
 
-Each provider owns its ISA options. Clang allows a stronger target to import
-the common baseline BMI, but rejects the reverse: an importer of an AVX-512
-BMI must enable AVX-512 itself. `simd_target_omnibus(target)` reads the package's
-exported `SIMD_OMNIBUS_PROFILES` metadata and applies the union of those features.
-This includes both `NEON_FP16` and `NEON_BF16` when configured together; neither
-extension implies the other. Admit every required optional profile before entry.
-For example, an omnibus containing `NEON_BF16` requires
-`arm_profile::neon_bf16` even when a particular kernel uses ordinary float lanes.
-Granular imports retain their individual compilation/admission requirements.
+```cpp
+#include <simd/targets.h>
+import simd;
 
-This requirement stays on the omnibus and profile sources. It does not rebuild
-common modules with stronger ISA options. Prefer granular profile libraries
-when only one implementation is needed.
+#define MY_TARGETS(X, ...) X(avx512, __VA_ARGS__) X(avx2, __VA_ARGS__)
+#define DOUBLE_BODY(name, tag)                                           \
+  void name(tag, float const * input, float * output) {                 \
+    using V = simd::vec<float, 4, tag>;                                 \
+    auto x = simd::load_simd<V>(input);                                 \
+    simd::store_simd(output, x + x);                                    \
+  }
 
-## Keep dispatch at baseline
+SIMD_TARGET_VARIANTS(double_four, MY_TARGETS, DOUBLE_BODY)
 
-A baseline dispatcher can link `simd::simd` without importing the omnibus. It may
-use granular common modules such as `simd.cpuid`, `simd.scalar` or `simd.numerics`.
-Native functions belong in separately compiled targets with explicit profiles
-and pointer/scalar entry signatures. Check CPU and OS vector-state support before
-calling them. Keep IPO disabled on the baseline dispatch object when preserving
-that boundary; the native implementation may still use ThinLTO.
+bool run(float const * input, float * output) {
+  auto cpu = simd::observe_x86_capabilities();
+  return simd::with_isa(SIMD_TARGET_LIST(MY_TARGETS), cpu, [&](auto arch) {
+    double_four(arch, input, output);
+  });
+}
 
-The compatibility re-export producer uses the union of selected profiles.
-`simd_target_omnibus(target)` reads that union from installed target metadata and
-applies it to a consumer, including a consumer PCH. AVX512_BF16 and AVX512_FP16
-are independent; admit both when both are included. Granular profile selection
-continues to use `simd_target_profile(target profile)`.
-Its body contains only imports. Granular consumers and downstream libraries that
-import only `simd.scalar` keep their existing compilation requirements.
+#undef DOUBLE_BODY
+#undef MY_TARGETS
+```
 
-The [installed-consumer fixture](../tests/omnibus/README.md) exercises relocation,
-consumer PCH/ThinLTO, both vector families, granular imports and isolation of
-stronger profile flags from the configured minimum.
-A separate Apple M3 run passes all three NEON-only omnibus consumer tests,
-plus the 30 core tests and one granular relocated consumer. See the
-[source-specific validation record](validation.md).
+List order is selection order. `with_isa` calls the callback once for the first
+admitted entry, or returns `false` without calling it if none qualifies. On
+AArch64 use the NEON presets and `observe_arm_capabilities()`.
 
+The callback is ordinary code compiled where it was defined. Passing a tag
+does not change its compiler target. Keep the native body in the generated
+overload, or use `SIMD_TARGET_PUSH(name)` / `SIMD_TARGET_POP()` around functions
+you define yourself. Pointer/scalar entry parameters avoid transferring native
+register values across different calling conventions.
 
-## Package baseline
+Emit these variants outside other Clang ISA target-attribute scopes. Clang
+combines nested target requirements: an AVX2 body inside an outer AVX-512 scope
+can still use AVX-512, even though predefined feature macros do not reveal it.
+The named pragma stack preserves the surrounding scope; it does not remove its
+requirements. If nesting is intentional, include the outer scope's features in
+`SIMD_TARGET_EXTRA_MINIMUM` so the generated admission list checks them too.
 
-`simd::minimal` owns the common ABI. Project setup chooses
-`SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
-ARM. `simd::common` remains an alias. Linking minimal carries its configured
-requirements to consumers; stronger profile code lives in separate libraries.
-Admission checks may select a stronger implementation, but the process must
-already satisfy its configured minimum.
+## Choose feature sets
+
+Presets are names for canonical `isa<feature bits>` types. To register another
+source name, give it one target feature literal:
+
+```cpp
+#define SIMD_TARGET_avx2_half "avx2,fma,bmi2,f16c"
+#define MY_TARGETS(X, ...) X(avx2_half, __VA_ARGS__) X(avx2, __VA_ARGS__)
+```
+
+That same literal supplies the Clang attribute and the type used for admission.
+The registry accounts for compiler-implied prerequisites, and the generated
+list includes inherited translation-unit requirements. Reordering feature
+names or repeating an implied feature does not make another type. Do not put
+two spellings of the same canonical feature set in one list.
+
+Supported positive feature names may be combined freely within one host
+architecture. Unknown features, CPU-name shortcuts and negative feature strings
+are rejected: silently guessing their admission requirements would make the
+dispatch unsafe. The registry in `simd/isa.h` defines the supported vocabulary.
+Clang target pragmas do not change predefined macros such as `__AVX512F__`;
+write variant choices using the tag and `has_feature`.
+
+## Native intrinsics and packages
+
+Vector types retain implicit conversion to and from their native register
+representation. An attributed body can mix standard intrinsics with SIMD
+operations without explicit bridge calls. Those intrinsics still require the
+same target support as they would in ordinary Clang code.
+
+Installed packages distribute module sources. CMake builds one compatible hub
+BMI and one provider for each common module; target variants do not multiply
+them. Compiler, C++ dialect, exception mode and standard-library configuration
+must still agree. Consumer PCHs remain optional and belong to the consumer.
+
+Canonical feature tags replace the former empty tag structs. This changes the
+names of vector template instantiations in compiled interfaces. Rebuild code
+that exchanges these vector types across a library boundary when updating;
+ordinary pointer/scalar entry interfaces keep their declared ABI.
+
+`simd::avx2`, `simd::avx512` and the native-half CMake targets are compatibility
+aliases for `simd::simd`. The old ISA-specific module names are replaced by the
+hub import. `simd_target_omnibus` is retained as a compatibility no-op.
+`simd_target_profile` remains available for applications that explicitly want
+whole-translation-unit targeting; it is not needed for source target lists.
+
+Project setup chooses `SIMD_MINIMAL_COMPILE_OPTIONS`. Its default is AVX2/FMA/BMI2
+on x86 and NEON on ARM. The process must satisfy that minimum before executing
+any code, including the dispatcher.
+
+The source helper records registered features advertised by Clang's predefined
+macros. CPU-model options can enable additional instructions without a matching
+macro, so it cannot infer every requirement of an arbitrary `-mcpu` or `-march`
+name. When needed, define `SIMD_TARGET_EXTRA_MINIMUM` before including
+`<simd/targets.h>` as an additional registered feature mask, for example
+`simd::target_features("avx2,f16c")`. This adds to admission requirements;
+it does not change compiler flags or make startup safe below the project minimum.

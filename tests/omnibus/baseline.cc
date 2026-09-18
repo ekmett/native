@@ -4,9 +4,7 @@
 #include <concepts>
 #include <cstdio>
 #include <type_traits>
-import simd.scalar;
-import simd.numerics;
-import simd.wide;
+import simd;
 #if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
@@ -19,5 +17,5 @@ int main() {
   if(value!=4.f) return 1;
   simd::fp16 half(1.5f);
   if(float(half)!=1.5f) return 2;
-  std::puts("Baseline archive consumer: scalar and numerics available without AVX flags.");
+  std::puts("Baseline hub consumer: optional APIs do not raise the caller ISA.");
 }

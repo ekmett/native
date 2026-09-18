@@ -1,9 +1,9 @@
 #if PROFILE_AVX2
-import simd.avx2;
+import simd;
 using V=simd::vec<float,8,simd::avx2>;
 #define ENTRY kernel_avx2
 #else
-import simd.avx512;
+import simd;
 using V=simd::vec<float,16,simd::avx512>;
 #define ENTRY kernel_avx512
 #endif

@@ -22,11 +22,11 @@ endif()
 set(SIMD_TEST_ISA "${simd_default_isa}" CACHE STRING "ISA used by the native regression tests")
 set_property(CACHE SIMD_TEST_ISA PROPERTY STRINGS AVX2 AVX512 NEON)
 if(simd_default_isa STREQUAL "NEON")
-  set(simd_default_profiles "NEON")
+  set(simd_default_profiles "NEON;NEON_FP16;NEON_BF16")
 else()
-  set(simd_default_profiles "AVX2;AVX512")
+  set(simd_default_profiles "AVX2;AVX512;AVX512_BF16;AVX512_FP16")
 endif()
-set(SIMD_PROFILES "${simd_default_profiles}" CACHE STRING "Named module profiles included in the archive")
+set(SIMD_PROFILES "${simd_default_profiles}" CACHE STRING "Profiles exercised by the regression tests; the hub exposes all supported host profiles")
 list(REMOVE_DUPLICATES SIMD_PROFILES)
 foreach(profile IN LISTS SIMD_PROFILES)
   if(NOT profile MATCHES "^(AVX2|AVX512|AVX512_BF16|AVX512_FP16|NEON|NEON_FP16|NEON_BF16)$")
@@ -42,7 +42,7 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# Only macro configuration and attributes are public textual headers.
+# Configuration, attributes and source-level target generation are textual.
 # Downstream libraries can consume them without enabling the host module build.
 add_library(simd_headers INTERFACE)
 add_library(simd::headers ALIAS simd_headers)
@@ -53,7 +53,7 @@ target_compile_options(simd_headers INTERFACE
   "$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<NOT:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>>>:-fms-extensions>")
 target_sources(simd_headers INTERFACE
   FILE_SET headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  FILES src/simd/config.h src/simd/attributes.h)
+  FILES src/simd/config.h src/simd/attributes.h src/simd/isa.h src/simd/targets.h)
 target_include_directories(simd_headers INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -90,6 +90,7 @@ if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
   add_subdirectory(tests/apple_headers)
   add_subdirectory(tests/rounding)
   add_subdirectory(tests/compaction)
+  add_subdirectory(tests/source_targets)
 endif()
 
 configure_file(etc/cmake/simdProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/simdProfile.cmake" COPYONLY)

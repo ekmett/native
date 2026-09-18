@@ -27,23 +27,23 @@ jobs:
           - name: Linux LLVM 23 / AVX2
             runner: ubuntu-24.04
             profile: AVX2
-            profiles: AVX2;AVX512
+            profiles: AVX2;AVX512;AVX512_BF16;AVX512_FP16
           - name: Windows x64 LLVM 23 / AVX2
             runner: windows-2025
             profile: AVX2
-            profiles: AVX2;AVX512
+            profiles: AVX2;AVX512;AVX512_BF16;AVX512_FP16
           - name: Windows ARM64 LLVM 23 / NEON
             runner: windows-11-arm
             profile: NEON
-            profiles: NEON
+            profiles: NEON;NEON_FP16;NEON_BF16
           - name: Linux ARM64 LLVM 23 / NEON
             runner: ubuntu-24.04-arm
             profile: NEON
-            profiles: NEON
+            profiles: NEON;NEON_FP16;NEON_BF16
           - name: macOS LLVM 23 / NEON
             runner: macos-15
             profile: NEON
-            profiles: NEON
+            profiles: NEON;NEON_FP16;NEON_BF16
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -206,9 +206,11 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          suites=(public_headers omnibus api)
+          suites=(public_headers omnibus api half_storage source_targets)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package)
+            suites+=(cpuid_package profile_package bf16_profile avx512_fp16)
+          else
+            suites+=(neon_fp16 neon_bf16)
           fi
           for suite in "${suites[@]}"; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
@@ -220,125 +222,6 @@ jobs:
             ctest --test-dir "build/$suite" --no-tests=error --output-on-failure \
               --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
           done
-      - name: Compile and test opt-in BF16 package (clang-cl)
-        if: runner.os == 'Windows' && matrix.platform.profile == 'AVX2'
-        shell: pwsh
-        env:
-          BF16_EXCEPTIONS: ${{ matrix.exceptions }}
-        run: |
-          cmake -S . -B build/bf16-ci -G Ninja `
-            -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD `
-            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON `
-            "-DSIMD_ENABLE_EXCEPTIONS=$env:BF16_EXCEPTIONS" `
-            '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16'
-          if ($LASTEXITCODE) { throw 'BF16 configuration failed.' }
-          cmake --build build/bf16-ci --target simd simd_test_admission simd_test_bf16 --parallel 2
-          if ($LASTEXITCODE) { throw 'BF16 compilation failed.' }
-          ctest --test-dir build/bf16-ci -R '^simd[.](cpuid[.]admission|bf16[.])' `
-            --no-tests=error --output-on-failure -j1 --output-junit "$env:GITHUB_WORKSPACE/build/bf16-tests.xml"
-          if ($LASTEXITCODE) { throw 'BF16 tests failed.' }
-          cmake --install build/bf16-ci --prefix build/bf16-install
-          if ($LASTEXITCODE) { throw 'BF16 installation failed.' }
-          cmake -E rename build/bf16-install 'build/bf16 relocated package'
-          if ($LASTEXITCODE) { throw 'BF16 relocation failed.' }
-          cmake -S tests/bf16_profile -B build/bf16-package -G Ninja `
-            -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD `
-            "-Dsimd_DIR=$env:GITHUB_WORKSPACE/build/bf16 relocated package/lib/cmake/simd" `
-            -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
-          if ($LASTEXITCODE) { throw 'BF16 consumer configuration failed.' }
-          cmake --build build/bf16-package --parallel 2
-          if ($LASTEXITCODE) { throw 'BF16 consumer compilation failed.' }
-          ctest --test-dir build/bf16-package --no-tests=error --output-on-failure -j1 `
-            --output-junit "$env:GITHUB_WORKSPACE/build/bf16-package-tests.xml"
-          if ($LASTEXITCODE) { throw 'BF16 consumer tests failed.' }
-          'Opt-in BF16 storage and dot2 compiled and packaged; native execution requires the complete CPUID/XCR0 admission test (skip 77 otherwise).' >> $env:GITHUB_STEP_SUMMARY
-      - name: Compile and test opt-in BF16 package (clang++)
-        if: runner.os == 'Linux' && matrix.platform.profile == 'AVX2'
-        shell: bash
-        env:
-          BF16_EXCEPTIONS: ${{ matrix.exceptions }}
-        run: |
-          cmake -S . -B build/bf16-ci -G Ninja \
-            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
-            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
-            -DSIMD_ENABLE_EXCEPTIONS="$BF16_EXCEPTIONS" \
-            '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16'
-          cmake --build build/bf16-ci --target simd simd_test_admission simd_test_bf16 --parallel 2
-          ctest --test-dir build/bf16-ci -R '^simd[.](cpuid[.]admission|bf16[.])' \
-            --no-tests=error --output-on-failure -j1 --output-junit "$GITHUB_WORKSPACE/build/bf16-tests.xml"
-          cmake --install build/bf16-ci --prefix build/bf16-install
-          cmake -E rename build/bf16-install 'build/bf16 relocated package'
-          cmake -S tests/bf16_profile -B build/bf16-package -G Ninja \
-            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
-            -Dsimd_DIR="$GITHUB_WORKSPACE/build/bf16 relocated package/lib/cmake/simd" \
-            -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
-          cmake --build build/bf16-package --parallel 2
-          ctest --test-dir build/bf16-package --no-tests=error --output-on-failure -j1 \
-            --output-junit "$GITHUB_WORKSPACE/build/bf16-package-tests.xml"
-          echo 'Opt-in BF16 storage and dot2 compiled and packaged; native execution requires the complete CPUID/XCR0 admission test (skip 77 otherwise).' >> "$GITHUB_STEP_SUMMARY"
-      - name: Compile and test opt-in AVX512 FP16 and BF16 union
-        if: matrix.platform.profile == 'AVX2' && (runner.os == 'Linux' || runner.os == 'Windows')
-        shell: bash
-        run: |
-          compiler=clang++
-          if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
-          cmake -S . -B build/avx512-fp16-ci -G Ninja \
-            -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
-            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_IPO=ON \
-            -DSIMD_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} \
-            '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16;AVX512_FP16' -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-          cmake --build build/avx512-fp16-ci --target simd simd_test_avx512_fp16 simd_test_admission --parallel 2
-          ctest --test-dir build/avx512-fp16-ci -R '^simd[.](avx512_fp16[.]|cpuid[.]admission)' \
-            --no-tests=error --output-on-failure -j1 --output-junit "$GITHUB_WORKSPACE/build/avx512-fp16-tests.xml"
-          cmake --install build/avx512-fp16-ci --prefix build/avx512-fp16-install
-          cmake -E rename build/avx512-fp16-install 'build/avx512-fp16 relocated package'
-          for suite in avx512_fp16 omnibus half_storage; do
-            cmake -S "tests/$suite" -B "build/avx512-fp16-$suite" -G Ninja \
-              -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
-              -Dsimd_DIR="$GITHUB_WORKSPACE/build/avx512-fp16 relocated package/lib/cmake/simd" \
-              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
-            cmake --build "build/avx512-fp16-$suite" --parallel 2
-            ctest --test-dir "build/avx512-fp16-$suite" --no-tests=error --output-on-failure -j1 \
-              --output-junit "$GITHUB_WORKSPACE/build/avx512-fp16-$suite-tests.xml"
-          done
-          echo 'AVX512_FP16 compile/codegen and installed BF16+FP16 union checked. Native execution is admitted by actual CPUID/XCR0; unsupported CPUs report skipped, not qualified.' >> "$GITHUB_STEP_SUMMARY"
-      - name: Compile and test opt-in NEON FP16 package
-        if: matrix.platform.profile == 'NEON'
-        shell: bash
-        env:
-          FP16_EXCEPTIONS: ${{ matrix.exceptions }}
-        run: |
-          compiler=clang++
-          extra=()
-          # Keep FP16 out of the minimum while qualifying stronger source/PCH imports.
-          minimum='-march=armv8-a'
-          if [[ "$RUNNER_OS" == Windows ]]; then
-            compiler=clang-cl
-            minimum='/clang:-march=armv8-a'
-          fi
-          if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          cmake -S . -B build/fp16-ci -G Ninja \
-            -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
-            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_IPO=ON \
-            -DSIMD_ENABLE_EXCEPTIONS="$FP16_EXCEPTIONS" \
-            '-DSIMD_PROFILES=NEON;NEON_FP16;NEON_BF16' "-DSIMD_MINIMAL_COMPILE_OPTIONS=$minimum" "${extra[@]}"
-          cmake --build build/fp16-ci --target simd simd_test_neon_fp16 simd_test_neon_bf16 \
-            simd_compaction_neon_fp16_header simd_compaction_neon_fp16_import \
-            simd_compaction_neon_bf16_header simd_compaction_neon_bf16_import --parallel 2
-          ctest --test-dir build/fp16-ci -R '^simd[.](neon_fp16[.]|neon_bf16[.]|compaction[.]neon_(fp16|bf16)[.])' \
-            --no-tests=error --output-on-failure -j1 --output-junit "$GITHUB_WORKSPACE/build/fp16-tests.xml"
-          cmake --install build/fp16-ci --prefix build/fp16-install
-          cmake -E rename build/fp16-install 'build/fp16 relocated package'
-          for suite in neon_fp16 neon_bf16 omnibus half_storage; do
-            cmake -S "tests/$suite" -B "build/fp16-$suite" -G Ninja \
-              -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
-              -Dsimd_DIR="$GITHUB_WORKSPACE/build/fp16 relocated package/lib/cmake/simd" \
-              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF "${extra[@]}"
-            cmake --build "build/fp16-$suite" --parallel 2
-            ctest --test-dir "build/fp16-$suite" --no-tests=error --output-on-failure -j1 \
-              --output-junit "$GITHUB_WORKSPACE/build/fp16-$suite-tests.xml"
-          done
-          echo 'Opt-in FP16 and BF16 compiled, relocated and tested; native entry requires the corresponding baseline and FP16/BF16 OS admission (skip 77 otherwise).' >> "$GITHUB_STEP_SUMMARY"
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
         shell: bash
@@ -371,29 +254,14 @@ jobs:
             build/omnibus/Testing/Temporary/
             build/cpuid_package/Testing/Temporary/
             build/cpuid_package/compile_commands.json
-            build/bf16-ci/CMakeCache.txt
-            build/bf16-ci/CMakeFiles/CMakeConfigureLog.yaml
-            build/bf16-ci/Testing/Temporary/
-            build/bf16-package/Testing/Temporary/
-            build/bf16-package/compile_commands.json
-            build/avx512-fp16-ci/CMakeCache.txt
-            build/avx512-fp16-ci/CMakeFiles/CMakeConfigureLog.yaml
-            build/avx512-fp16-ci/Testing/Temporary/
-            build/avx512-fp16-ci/tests/avx512_fp16/codegen.txt
-            build/avx512-fp16-avx512_fp16/Testing/Temporary/
-            build/avx512-fp16-avx512_fp16/compile_commands.json
-            build/avx512-fp16-avx512_fp16/codegen.txt
-            build/avx512-fp16-omnibus/Testing/Temporary/
-            build/avx512-fp16-half_storage/Testing/Temporary/
-            build/fp16-ci/CMakeCache.txt
-            build/fp16-ci/CMakeFiles/CMakeConfigureLog.yaml
-            build/fp16-ci/Testing/Temporary/
-            build/fp16-neon_fp16/Testing/Temporary/
-            build/fp16-neon_fp16/compile_commands.json
-            build/fp16-neon_bf16/Testing/Temporary/
-            build/fp16-neon_bf16/compile_commands.json
-            build/fp16-omnibus/Testing/Temporary/
-            build/fp16-half_storage/Testing/Temporary/
+            build/core/tests/*/codegen.txt
+            build/*/codegen.txt
+            build/core/tests/source_targets/*.disassembly
+            build/source_targets/*.disassembly
+            build/core/tests/source_targets/reject-*.log
+            build/source_targets/reject-*.log
+            build/*/compile_commands.json
+            build/*/Testing/Temporary/
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/
