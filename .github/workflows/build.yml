@@ -193,7 +193,11 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          for suite in public_headers omnibus; do
+          suites=(public_headers omnibus)
+          if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
+            suites+=(cpuid_package)
+          fi
+          for suite in "${suites[@]}"; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
               -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
               -Dsimd_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/simd" \
@@ -231,6 +235,8 @@ jobs:
             build/*-tests.xml
             build/public_headers/Testing/Temporary/
             build/omnibus/Testing/Temporary/
+            build/cpuid_package/Testing/Temporary/
+            build/cpuid_package/compile_commands.json
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/

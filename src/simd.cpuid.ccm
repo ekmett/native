@@ -41,6 +41,102 @@ export namespace simd {
     unknown = 2 ///< Any other vendor string.
   };
 
+
+  /// Instruction profiles from simd_target_profile; not a tuning or dispatch policy.
+  enum class x86_profile : std::uint8_t { avx2, avx512 };
+
+  /// Observed registers. Unavailable leaves and unread XCR0 remain zero.
+  /// This snapshot describes the executing logical CPU, not every CPU in a system.
+  struct x86_capabilities {
+    std::uint32_t max_basic_leaf = 0;
+    std::uint32_t leaf1_ecx = 0, leaf1_edx = 0, leaf7_ebx = 0;
+    std::uint64_t xcr0 = 0;
+    bool xcr0_observed = false;
+  };
+
+  /// Capture CPUID and, only with XSAVE and OSXSAVE, XCR0. No ISA profile required.
+  x86_capabilities observe_x86_capabilities() noexcept;
+
+  /// Missing CPU bits use their architectural CPUID register positions.
+  /// OSXSAVE is reported separately from the CPU's XSAVE instruction support.
+  struct x86_admission {
+    std::uint32_t missing_leaf1_ecx = 0, missing_leaf1_edx = 0, missing_leaf7_ebx = 0;
+    std::uint64_t missing_xcr0 = 0;
+    bool invalid_profile = false, missing_leaf1 = false, missing_leaf7 = false;
+    bool missing_osxsave = false, missing_xcr0_observation = false;
+
+    constexpr bool admitted() const noexcept {
+      return !invalid_profile && !missing_leaf1 && !missing_leaf7 &&
+        !missing_leaf1_ecx && !missing_leaf1_edx && !missing_leaf7_ebx &&
+        !missing_osxsave && !missing_xcr0_observation && !missing_xcr0;
+    }
+
+    /// First rejection reason; the masks retain every missing requirement.
+    constexpr char const * reason() const noexcept {
+      if (invalid_profile) return "unknown x86 profile";
+      if (missing_leaf1) return "CPUID leaf 1 unavailable";
+      if (missing_leaf7) return "CPUID leaf 7 unavailable";
+      if (missing_leaf1_edx & (1u << 23)) return "CPU lacks MMX";
+      if (missing_leaf1_edx & (1u << 25)) return "CPU lacks SSE";
+      if (missing_leaf1_edx & (1u << 26)) return "CPU lacks SSE2";
+      if (missing_leaf1_ecx & (1u << 0)) return "CPU lacks SSE3";
+      if (missing_leaf1_ecx & (1u << 9)) return "CPU lacks SSSE3";
+      if (missing_leaf1_ecx & (1u << 19)) return "CPU lacks SSE4.1";
+      if (missing_leaf1_ecx & (1u << 20)) return "CPU lacks SSE4.2";
+      if (missing_leaf1_ecx & (1u << 23)) return "CPU lacks POPCNT";
+      if (missing_leaf1_ecx & (1u << 12)) return "CPU lacks FMA";
+      if (missing_leaf1_ecx & (1u << 26)) return "CPU lacks XSAVE";
+      if (missing_leaf1_ecx & (1u << 28)) return "CPU lacks AVX";
+      if (missing_leaf1_ecx & (1u << 29)) return "CPU lacks F16C";
+      if (missing_leaf7_ebx & (1u << 5)) return "CPU lacks AVX2";
+      if (missing_leaf7_ebx & (1u << 8)) return "CPU lacks BMI2";
+      if (missing_leaf7_ebx & (1u << 16)) return "CPU lacks AVX512F";
+      if (missing_leaf7_ebx & (1u << 17)) return "CPU lacks AVX512DQ";
+      if (missing_leaf7_ebx & (1u << 30)) return "CPU lacks AVX512BW";
+      if (missing_leaf7_ebx & (1u << 31)) return "CPU lacks AVX512VL";
+      if (missing_osxsave) return "OS has not enabled XSAVE";
+      if (missing_xcr0_observation) return "XCR0 was not observed";
+      if (missing_xcr0 & (1u << 1)) return "OS has not enabled XMM state";
+      if (missing_xcr0 & (1u << 2)) return "OS has not enabled YMM state";
+      if (missing_xcr0 & (1u << 5)) return "OS has not enabled opmask state";
+      if (missing_xcr0 & (1u << 6)) return "OS has not enabled ZMM high state";
+      if (missing_xcr0 & (1u << 7)) return "OS has not enabled high ZMM registers";
+      return "admitted";
+    }
+  };
+
+  /// Pure classification, including compiler-implied features of the profile flags.
+  /// Does not execute CPUID, XGETBV, or any vector instruction.
+  constexpr x86_admission classify_x86_profile(x86_capabilities const & cpu,
+      x86_profile profile) noexcept {
+    x86_admission result;
+    if (profile != x86_profile::avx2 && profile != x86_profile::avx512) {
+      result.invalid_profile = true;
+      return result;
+    }
+    bool wide = profile == x86_profile::avx512;
+    // Clang's -mavx2 implies SSE3, SSSE3, SSE4.1/4.2 and POPCNT;
+    // -mavx512f additionally implies F16C. FMA and BMI2 are explicit flags.
+    auto ecx = (1u << 0) | (1u << 9) | (1u << 12) | (1u << 19) |
+      (1u << 20) | (1u << 23) | (1u << 26) | (1u << 28);
+    if (wide) ecx |= 1u << 29;
+    constexpr auto edx = (1u << 23) | (1u << 25) | (1u << 26);
+    auto ebx = (1u << 5) | (1u << 8);
+    if (wide) ebx |= (1u << 16) | (1u << 17) | (1u << 30) | (1u << 31);
+    result.missing_leaf1 = cpu.max_basic_leaf < 1;
+    result.missing_leaf7 = cpu.max_basic_leaf < 7;
+    result.missing_leaf1_ecx = ecx & ~(result.missing_leaf1 ? 0u : cpu.leaf1_ecx);
+    result.missing_leaf1_edx = edx & ~(result.missing_leaf1 ? 0u : cpu.leaf1_edx);
+    result.missing_leaf7_ebx = ebx & ~(result.missing_leaf7 ? 0u : cpu.leaf7_ebx);
+    result.missing_osxsave = result.missing_leaf1 || !(cpu.leaf1_ecx & (1u << 27));
+    bool readable = !result.missing_leaf1 && (cpu.leaf1_ecx & (1u << 26)) &&
+      !result.missing_osxsave;
+    result.missing_xcr0_observation = !readable || !cpu.xcr0_observed;
+    result.missing_xcr0 = (wide ? 0xe6ull : 0x6ull) &
+      ~(result.missing_xcr0_observation ? 0ull : cpu.xcr0);
+    return result;
+  }
+
   /// Cached vendor identification; vendor alone does not establish features.
   extern const enum cpu_vendor cpu_vendor;
 }
@@ -56,6 +152,31 @@ namespace simd {
     __cpuid_count(eax, ecx, result.eax, result.ebx, result.ecx, result.edx);
     return result;
 #endif
+  }
+
+
+  x86_capabilities observe_x86_capabilities() noexcept {
+    x86_capabilities result;
+    result.max_basic_leaf = std::uint32_t(cpuid(0, 0).eax);
+    if (result.max_basic_leaf >= 1) {
+      auto leaf = cpuid(1, 0);
+      result.leaf1_ecx = std::uint32_t(leaf.ecx);
+      result.leaf1_edx = std::uint32_t(leaf.edx);
+      constexpr auto xsave = (1u << 26) | (1u << 27);
+      if ((result.leaf1_ecx & xsave) == xsave) {
+#if defined(_MSC_VER)
+        result.xcr0 = _xgetbv(0);
+#else
+        std::uint32_t low, high;
+        __asm__("xgetbv" : "=a"(low), "=d"(high) : "c"(0));
+        result.xcr0 = std::uint64_t(low) | (std::uint64_t(high) << 32);
+#endif
+        result.xcr0_observed = true;
+      }
+    }
+    if (result.max_basic_leaf >= 7)
+      result.leaf7_ebx = std::uint32_t(cpuid(7, 0).ebx);
+    return result;
   }
 
   const enum cpu_vendor cpu_vendor = [] static noexcept {

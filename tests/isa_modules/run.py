@@ -31,7 +31,7 @@ def main():
   if not all((cmake, ninja, compiler)):
     parser.error('CMake, Ninja, and clang-cl must be available in the configured compiler environment')
   sha = lambda data: hashlib.sha256(data).hexdigest()
-  paths = ['CMakeLists.txt', 'backend.inc', 'consumer.cc', 'dispatcher.cc', 'engine.h', 'fixture.engine.ccm']
+  paths = ['../../src/simd.cpuid.ccm', '../../src/simd/attributes.h', '../../etc/cmake/simdProfile.cmake', 'CMakeLists.txt', 'backend.inc', 'consumer.cc', 'dispatcher.cc', 'engine.h', 'fixture.engine.ccm']
   for backend in ('avx2', 'avx512'):
     paths += [backend + '-header.h', backend + '.cc', 'bridge_' + backend + '.cc', 'simd.' + backend + '.ccm']
   pins = {name: sha((source / name).read_bytes()) for name in paths}

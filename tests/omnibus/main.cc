@@ -2,11 +2,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdio>
 #include <cstdint>
-#if defined(_MSC_VER)
-#include <intrin.h>
-#elif defined(__x86_64__)
-#include <immintrin.h>
-#endif
 #if !TEST_NEON
 import simd.cpuid;
 #endif
@@ -17,31 +12,14 @@ extern "C" int omnibus_kernel(float const *,float *);
 extern "C" void granular_kernel(float const *,float *);
 int main() {
 #if !TEST_NEON
-  auto max=simd::cpuid(0,0).eax;
-  if(max<7) return 77;
-  auto c=std::uint32_t(simd::cpuid(1,0).ecx);
-  constexpr auto required=(1u<<27)|(1u<<28)|(1u<<12);
-  if((c&required)!=required) return 77;
-#if defined(_MSC_VER)
-  auto state=_xgetbv(0);
-#else
-  std::uint32_t low,high;
-  __asm__("xgetbv" : "=a"(low),"=d"(high) : "c"(0));
-  auto state=(std::uint64_t(high)<<32)|low;
-#endif
-  auto bits=std::uint32_t(simd::cpuid(7,0).ebx);
-  constexpr auto mask=(1u<<5)|(1u<<8)
+  constexpr auto profile =
 #if TEST_REQUIRED_AVX512
-    |(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31)
-#endif
-    ;
-  constexpr auto enabled=
-#if TEST_REQUIRED_AVX512
-    0xe6u;
+    simd::x86_profile::avx512;
 #else
-    0x6u;
+    simd::x86_profile::avx2;
 #endif
-  if((state&enabled)!=enabled || (bits&mask)!=mask) return 77;
+  auto admission = simd::classify_x86_profile(simd::observe_x86_capabilities(), profile);
+  if (!admission.admitted()) { std::puts(admission.reason()); return 77; }
 #endif
   float input[4]={1.f,2.f,3.f,4.f},output[20]{},control[4]{};
   auto count=omnibus_kernel(input,output);

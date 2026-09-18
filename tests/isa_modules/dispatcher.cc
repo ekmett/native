@@ -4,18 +4,18 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
-#include <intrin.h>
+import simd.cpuid;
+#if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(__FMA__) || defined(__BMI2__)
+#error Baseline dispatcher inherited ISA flags
+#endif
 extern "C" int backend_avx2(float const*,float const*,float*);
 extern "C" int backend_avx512(float const*,float const*,float*);
 extern "C" __declspec(dllexport) __declspec(noinline) unsigned supported_backends(){
- int r[4];__cpuidex(r,0,0);unsigned maximum=unsigned(r[0]);if(maximum<1)return 0;
- __cpuidex(r,1,0);unsigned ecx=unsigned(r[2]);
- if((ecx&((1u<<27)|(1u<<28)|(1u<<12)))!=((1u<<27)|(1u<<28)|(1u<<12)))return 0;
- auto xcr0=_xgetbv(0);if((xcr0&6)!=6||maximum<7)return 0;
- __cpuidex(r,7,0);unsigned ebx=unsigned(r[1]);unsigned result=(ebx&(1u<<5))?1u:0u;
- constexpr unsigned avx512=(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31);
- if((result&1)&&(ebx&avx512)==avx512&&(xcr0&0xe6)==0xe6)result|=2;
- std::printf("leaf7ebx=%u xcr0=%llu supported=%u\n",ebx,static_cast<unsigned long long>(xcr0),result);
+ auto cpu=simd::observe_x86_capabilities();
+ auto avx2=simd::classify_x86_profile(cpu,simd::x86_profile::avx2);
+ auto avx512=simd::classify_x86_profile(cpu,simd::x86_profile::avx512);
+ unsigned result=unsigned(avx2.admitted())|(unsigned(avx512.admitted())<<1);
+ std::printf("AVX2: %s; AVX512: %s; supported=%u\n",avx2.reason(),avx512.reason(),result);
  return result;
 }
 int main(int argc,char**argv){
