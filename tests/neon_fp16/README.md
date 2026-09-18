@@ -34,7 +34,8 @@ is not promised. Existing scalar `fp16` conversions retain their independent
 round-to-nearest, ties-to-even, gradual-underflow contract. Storage and selection
 preserve all representations, including signaling NaNs, without arithmetic.
 Comparison masks have eight full zero/all-one 16-bit lanes. Only this half shape
-is implemented; division, square root, x86 FP16 and ARM BF16 remain future work.
+is implemented; division and square root remain future work. Native ARM BF16 storage/dot
+products have a separate [NEON_BF16 profile](../neon_bf16/README.md).
 
 Before entering a translation unit compiled for NEON_FP16, a minimum-profile
 caller imports `simd.arm`, calls `observe_arm_capabilities()`, and requires

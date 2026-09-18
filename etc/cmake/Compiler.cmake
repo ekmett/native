@@ -117,6 +117,27 @@ if("AVX512_BF16" IN_LIST SIMD_PROFILES)
   endblock()
 endif()
 
+if("NEON_BF16" IN_LIST SIMD_PROFILES)
+  block()
+    simd_profile_options(NEON_BF16 bf16_options)
+    string(JOIN " " bf16_flags ${bf16_options})
+    string(APPEND CMAKE_REQUIRED_FLAGS " ${bf16_flags}")
+    set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+    check_cxx_source_compiles([=[
+      #include <arm_neon.h>
+      #ifndef __ARM_FEATURE_BF16_VECTOR_ARITHMETIC
+      #error BF16 target support missing
+      #endif
+      float32x4_t probe(float32x4_t c, bfloat16x8_t a, bfloat16x8_t b) {
+        return vbfdotq_f32(c,a,b);
+      }
+    ]=] SIMD_HAS_NEON_BF16_INTRINSICS)
+    if(NOT SIMD_HAS_NEON_BF16_INTRINSICS)
+      message(FATAL_ERROR "NEON_BF16 requires compiler support for native BF16 dot products.")
+    endif()
+  endblock()
+endif()
+
 if("NEON_FP16" IN_LIST SIMD_PROFILES)
   block()
     simd_profile_options(NEON_FP16 fp16_options)

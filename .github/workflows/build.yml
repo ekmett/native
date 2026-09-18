@@ -295,14 +295,15 @@ jobs:
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_IPO=ON \
             -DSIMD_ENABLE_EXCEPTIONS="$FP16_EXCEPTIONS" \
-            '-DSIMD_PROFILES=NEON;NEON_FP16' "-DSIMD_MINIMAL_COMPILE_OPTIONS=$minimum" "${extra[@]}"
-          cmake --build build/fp16-ci --target simd simd_test_neon_fp16 \
-            simd_compaction_neon_fp16_header simd_compaction_neon_fp16_import --parallel 2
-          ctest --test-dir build/fp16-ci -R '^simd[.](neon_fp16[.]|compaction[.]neon_fp16[.])' \
+            '-DSIMD_PROFILES=NEON;NEON_FP16;NEON_BF16' "-DSIMD_MINIMAL_COMPILE_OPTIONS=$minimum" "${extra[@]}"
+          cmake --build build/fp16-ci --target simd simd_test_neon_fp16 simd_test_neon_bf16 \
+            simd_compaction_neon_fp16_header simd_compaction_neon_fp16_import \
+            simd_compaction_neon_bf16_header simd_compaction_neon_bf16_import --parallel 2
+          ctest --test-dir build/fp16-ci -R '^simd[.](neon_fp16[.]|neon_bf16[.]|compaction[.]neon_(fp16|bf16)[.])' \
             --no-tests=error --output-on-failure -j1 --output-junit "$GITHUB_WORKSPACE/build/fp16-tests.xml"
           cmake --install build/fp16-ci --prefix build/fp16-install
           cmake -E rename build/fp16-install 'build/fp16 relocated package'
-          for suite in neon_fp16 omnibus half_storage; do
+          for suite in neon_fp16 neon_bf16 omnibus half_storage; do
             cmake -S "tests/$suite" -B "build/fp16-$suite" -G Ninja \
               -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
               -Dsimd_DIR="$GITHUB_WORKSPACE/build/fp16 relocated package/lib/cmake/simd" \
@@ -311,7 +312,7 @@ jobs:
             ctest --test-dir "build/fp16-$suite" --no-tests=error --output-on-failure -j1 \
               --output-junit "$GITHUB_WORKSPACE/build/fp16-$suite-tests.xml"
           done
-          echo 'Opt-in FP16 compiled, relocated and tested; native entry requires baseline and scalar/vector FP16 OS admission (skip 77 otherwise).' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Opt-in FP16 and BF16 compiled, relocated and tested; native entry requires the corresponding baseline and FP16/BF16 OS admission (skip 77 otherwise).' >> "$GITHUB_STEP_SUMMARY"
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
         shell: bash
@@ -354,6 +355,8 @@ jobs:
             build/fp16-ci/Testing/Temporary/
             build/fp16-neon_fp16/Testing/Temporary/
             build/fp16-neon_fp16/compile_commands.json
+            build/fp16-neon_bf16/Testing/Temporary/
+            build/fp16-neon_bf16/compile_commands.json
             build/fp16-omnibus/Testing/Temporary/
             build/fp16-half_storage/Testing/Temporary/
             build/core/CMakeCache.txt

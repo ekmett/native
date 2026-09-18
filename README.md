@@ -51,6 +51,7 @@ custom element types and application dispatch.
 | `simd.avx512_bf16` | Optional AVX-512 BF16 storage and pairwise FP32 dot accumulation |
 | `simd.neon` | `vec<T,N,neon>`, AArch64 NEON |
 | `simd.neon_fp16` | Optional native eight-lane FP16 storage and arithmetic |
+| `simd.neon_bf16` | Optional native eight-lane BF16 storage and pairwise FP32 dot accumulation |
 | `simd.arm` | Baseline AArch64 OS capability observation and profile admission |
 | `simd.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
@@ -102,6 +103,13 @@ Compile optional kernels with `simd_target_profile(target NEON_FP16)` and admit
 `arm_profile::neon_fp16` through `simd.arm` before entry. An omnibus importing this
 profile also requires NEON_FP16 consumer flags. See the [native FP16 guide](tests/neon_fp16/README.md)
 for arithmetic, OS admission and relocated package tests.
+
+Add `NEON_BF16` to the ARM `SIMD_PROFILES` list for exact native BF16 storage
+and `dot2(a,b,accumulator)` with `vec<bf16,8,neon_bf16>` inputs and a four-lane
+FP32 accumulator/result. Admit `arm_profile::neon_bf16` through `simd.arm` before
+entry. Native BFDOT has its own rounding/FPCR contract, including optional EBF16;
+see the [BF16 guide](tests/neon_bf16/README.md). FP16 and BF16 are independent
+optional features; default profiles and scalar conversions remain unchanged.
 
 Add `AVX512_BF16` to `SIMD_PROFILES` to opt into native BF16 pairwise dot
 products. Its distinct `avx512_bf16` tag adds `vec<bf16,32,avx512_bf16>` storage

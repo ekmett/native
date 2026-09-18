@@ -352,3 +352,29 @@ aggregate initializers, but they grow the public `x86_capabilities` and
 `x86_admission` records and change their binary layouts. Consumers passing or
 storing these records across compiled boundaries must rebuild together. This
 is not an ABI-neutral change to those two records.
+
+
+## Optional native NEON BF16 checkpoint
+
+The [NEON_BF16 fixture](../tests/neon_bf16/README.md) provides native eight-lane
+storage and four-lane BFDOT accumulation. Windows x64 LLVM 23.1.1 compiled the
+ARM64 provider, kernel, baseline admission driver, PCH and combined FP16/BF16
+omnibus with an ARMv8-A minimum. Instruction inspection and the minimum-feature
+check passed; ARM64 code did not execute on that x64 host. The unchanged default
+x86 profiles passed all 49 tests.
+
+On Apple M1/macOS 14.3, Clang 24 development revision `f471750e042c` compiled the
+combined NEON/FP16/BF16 package and physically relocated consumers. Source checks
+passed 52 tests and correctly skipped three BF16 native entries. The installed
+BF16 fixture passed five checks and skipped its native entry; FP16 passed six;
+omnibus passed baseline/archive checks and skipped three optional-union entries;
+half-storage passed shared-BMI validation and skipped optional-union entry.
+These are compilation, package, common-BMI, and unsupported-hardware admission
+results, not native BF16 execution. M1 does not implement BF16.
+
+The 2,048-case exact-rational corpus has 18,432 baseline/EBF16 expected values and
+326,497 generator selfchecks. An independent binary-search rounding review
+matched all 40,960 rounded intermediates. Neither software check establishes
+native hardware behavior. Hosted ARM CI now builds both independent optional
+profiles and executes BF16 only when OS capability admission succeeds.
+No production FTZ rounding policy or scalar half conversion changed.

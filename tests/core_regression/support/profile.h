@@ -24,6 +24,9 @@ using test_arch = simd::avx512;
 #elif SIMD_TEST_PROFILE == 256
 import simd.avx2;
 using test_arch = simd::avx2;
+#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_BF16
+import simd.neon_bf16;
+using test_arch = simd::neon_bf16;
 #elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_FP16
 import simd.neon_fp16;
 using test_arch = simd::neon_fp16;

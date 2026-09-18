@@ -15,7 +15,8 @@ cmake --install build/core --prefix /path/to/simd
 The optional [native NEON FP16 profile](../tests/neon_fp16/README.md) adds a
 separate `simd::neon_fp16` archive. Configure `SIMD_PROFILES=NEON;NEON_FP16`, select
 `NEON_FP16` on its consumers, and admit it through the baseline `simd.arm` module.
-An omnibus consumer must select `NEON_FP16` when that module is included.
+Use `simd_target_omnibus(target)` for a consumer of the omnibus module; the
+helper selects the configured feature union.
 The added `fullfp16` feature does not replace a configured minimum CPU/ISA.
 Profile options follow inherited minimum options for literal C++ sources and the
 qualified Ninja generators' C++ PCH sources; explicit source overrides remain last.
@@ -24,6 +25,12 @@ that eventual path automatically. Register each possible absolute path with
 `simd_context_source_profile(target "/absolute/path/kernel.cc")` after selecting
 the target profile. This is required to override a conflicting minimum feature
 for such conditional sources; ordinary `COMPILE_FLAGS` alone come too early.
+
+The independent [native NEON BF16 profile](../tests/neon_bf16/README.md) adds
+`simd::neon_bf16`, enabled by `SIMD_PROFILES=NEON;NEON_BF16`. It provides exact
+eight-lane storage and BFDOT pairwise accumulation into four FP32 lanes. BF16 and
+FP16 can coexist; the omnibus helper enables both, while baseline dispatchers
+retain the configured minimum and admit each required feature before entry.
 
 `SIMD_PROFILES` names the ISA modules to build. The default is `AVX2;AVX512` on
 x86 and `NEON` on arm64. `SIMD_TEST_ISA` chooses the test implementation; it does
@@ -252,7 +259,8 @@ python doc/check_links.py build/docs/docs/html
 ```
 
 The minimal target exports `SIMD_MINIMAL_HAS_AVX2`, `SIMD_MINIMAL_HAS_AVX512`,
-`SIMD_MINIMAL_HAS_AVX512_BF16` and `SIMD_MINIMAL_HAS_NEON_FP16` as 0/1 compile
+`SIMD_MINIMAL_HAS_AVX512_BF16`, `SIMD_MINIMAL_HAS_NEON_FP16` and
+`SIMD_MINIMAL_HAS_NEON_BF16` as 0/1 compile
 definitions from feature probes using the selected options. The NEON FP16 probe
 compiles native arithmetic intrinsics because feature macros alone can survive
 an explicit target-feature disable. Admission tests can distinguish the
