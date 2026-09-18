@@ -12,47 +12,16 @@ ctest --test-dir build/core --output-on-failure
 cmake --install build/core --prefix /path/to/simd
 ```
 
-The optional [native NEON FP16 profile](../tests/neon_fp16/README.md) adds a
-separate `simd::neon_fp16` archive. Configure `SIMD_PROFILES=NEON;NEON_FP16`, select
-`NEON_FP16` on its consumers, and admit it through the baseline `simd.arm` module.
-Use `simd_target_omnibus(target)` for a consumer of the omnibus module; the
-helper selects the configured feature union.
-The added `fullfp16` feature does not replace a configured minimum CPU/ISA.
-Profile options follow inherited minimum options for literal C++ sources and the
-qualified Ninja generators' C++ PCH sources; explicit source overrides remain last.
-If a generator expression computes a source filename, the helper cannot discover
-that eventual path automatically. Register each possible absolute path with
-`simd_context_source_profile(target "/absolute/path/kernel.cc")` after selecting
-the target profile. This is required to override a conflicting minimum feature
-for such conditional sources; ordinary `COMPILE_FLAGS` alone come too early.
+`SIMD_MINIMAL_COMPILE_OPTIONS` selects the project minimum using native compiler
+options. Defaults are AVX2/FMA/BMI2 on x86 and NEON on ARM. The hub and common
+modules compile at that minimum; stronger implementations carry Clang function
+target attributes. `SIMD_PROFILES` selects test coverage and `SIMD_TEST_ISA`
+selects the primary regression implementation. Neither changes the hub API.
 
-The independent [native NEON BF16 profile](../tests/neon_bf16/README.md) adds
-`simd::neon_bf16`, enabled by `SIMD_PROFILES=NEON;NEON_BF16`. It provides exact
-eight-lane storage and BFDOT pairwise accumulation into four FP32 lanes. BF16 and
-FP16 can coexist; the omnibus helper enables both, while baseline dispatchers
-retain the configured minimum and admit each required feature before entry.
-
-`SIMD_PROFILES` names the ISA modules to build. The default is `AVX2;AVX512` on
-x86 and `NEON` on arm64. `SIMD_TEST_ISA` chooses the test implementation; it does
-not choose a runtime backend. The default package minimum is AVX2/FMA/BMI2 on x86
-and NEON on ARM; project setup can change `SIMD_MINIMAL_COMPILE_OPTIONS`. Keep ISA flags off global CMake variables. Each single-module
-profile compiles directly to a BMI without a PCH; `SIMD_ENABLE_PCH` is retained
-only for compatibility with older build commands.
-`SIMD_ENABLE_EXCEPTIONS` defaults to OFF; consumer and producer runtime/STL modes
-must agree. `SIMD_ENABLE_ASAN` supports focused host-memory checks.
-
-Named swizzles require Clang's property extension. Linking the exported header
-or module targets supplies `-fms-extensions` for `clang++`; `clang-cl` already
-accepts the syntax. The configure-time check exercises a property implemented
-with an explicit object parameter, rather than accepting a compiler version
-number alone. Direct header consumers must provide the same language option.
-
-For an omnibus containing independent extensions such as AVX512_BF16 and
-AVX512_FP16, use `simd_target_omnibus(target)`. It reads the exported
-`SIMD_OMNIBUS_PROFILES` property on `simd::simd` and enables their union locally.
-Existing `simd_target_profile` calls still select exactly one granular profile.
-Admission remains the application's responsibility for every compiled extension.
-See the [AVX-512 half profile](../tests/avx512_fp16/README.md) for its contract.
+`SIMD_ENABLE_EXCEPTIONS` defaults to OFF. Producer and consumer compiler,
+standard-library and exception modes must agree. `SIMD_ENABLE_ASAN` enables
+host-memory checks. Named swizzles require Clang's property extension; exported
+targets supply `-fms-extensions` for `clang++`, and `clang-cl` accepts it directly.
 
 ## Installed C++ modules
 
@@ -62,42 +31,35 @@ project(example LANGUAGES CXX)
 find_package(simd CONFIG REQUIRED COMPONENTS simd)
 add_executable(example example.cc)
 target_link_libraries(example PRIVATE simd::simd)
-simd_target_profile(example AVX512)  # default x86 package
 ```
 
 ```cpp
 import simd;
 using V = simd::vec<float, 8, simd::avx2>;
-using M = V::mask;
 ```
 
-`simd::minimal` owns the baseline archive and common modules. Project setup
-selects `SIMD_MINIMAL_COMPILE_OPTIONS` (a CMake list in native compiler spelling);
-the defaults are AVX2/FMA/BMI2 on x86 and the platform NEON baseline on ARM.
-`simd::common` is a compatibility alias to `simd::minimal`, with no second BMI. Each profile
-(`simd::avx2`, `simd::avx512`, `simd::neon`) owns its own archive and module,
-and depends on common. `simd::simd` provides the omnibus and transitively links
-the configured archives. Granular consumers can link only their provider.
+`simd::simd` owns the hub module and links `simd::minimal`, which owns the common
+utilities. `simd::common` aliases minimal. Old native-profile target names alias
+the hub, with no extra archive, BMI or feature flags. Use `import simd;` in place
+of the former `simd.avx2`, `simd.avx512` and native-half module imports.
 
-The installed package distributes module sources, not compiler-specific PCMs.
-CMake builds a local BMI for each compatible compiler configuration. Profile
-source options keep AVX-512 implementation flags off the common provider;
-AVX2 and AVX-512 consumers share its baseline BMI. Use `simd_target_profile`
-to select the consumer's code-generation profile. Exception/STL modes must
-still match; this does not disable compiler module validation.
+The package installs module sources instead of compiler-specific PCMs. CMake
+regenerates one compatible baseline hub BMI and shares each common module.
+Clang's module validation stays enabled. Function targets do not change the
+compiler/STL/exception compatibility rules.
 
-The profile helper keeps implementation ISA flags local to the target, including
-its generated PCH if a consumer uses one. Module sources retain their provider's
-ISA when CMake regenerates a BMI; imported dependencies retain the minimal ABI.
+The [source target-list helper](../docs/omnibus.md) generates selected kernel
+overloads under Clang target pragmas in one source file. CPU/OS admission uses
+the same feature descriptions. No per-variant CMake target is required.
+`simd_target_profile(target profile)` remains an optional convenience for older
+applications that compile kernels in separate translation units.
+`simd_target_omnibus(target)` is now a compatibility no-op.
 
 ## Headers and downstream libraries
 
-An import does not export macros. For the named compiler modifiers, include
-`<simd/attributes.h>` and consume `simd::headers`. Only `config.h` and
-`attributes.h` are exported textual headers. Native module
-implementation headers are installed privately under `lib/simd/include`; CMake
-uses them to regenerate consumer BMIs without adding them to the public include
-path.
+Imports do not export macros. `simd::headers` supplies `config.h`, `attributes.h`,
+`isa.h` and `targets.h` under the `simd/` include directory. Native implementation
+headers are installed privately under `lib/simd/include` for BMI regeneration.
 
 ```sh
 cmake -S . -B build/headers -G Ninja -DSIMD_BUILD_HOST=OFF
@@ -105,22 +67,19 @@ cmake --install build/headers --prefix /path/to/simd-headers
 ```
 
 A shader-only or tooling consumer can use `project(... LANGUAGES NONE)` and
-`find_package(simd CONFIG REQUIRED COMPONENTS headers)` without enabling a C++
-compiler. FTZ's shader wrapper and mathematical contract belong to its own
-`ftz::hlsl` target, which depends on these headers.
+`find_package(simd CONFIG REQUIRED COMPONENTS headers)` without a C++ compiler.
+FTZ's shader wrapper and arithmetic contract belong to its own `ftz::hlsl` target.
 
 ## PCH and LTO
 
-The single-module profile providers compile directly without PCHs. Consumer-
-owned PCHs remain supported with IPO; their namespace, ISA, compiler/STL,
-exception settings and macros must match the consuming translation unit.
-The package does not export a PCH.
+Module providers compile directly without a PCH; `SIMD_ENABLE_PCH` remains a
+compatibility setting. A consumer may own a PCH with standard headers and the
+textual macro headers. Its compiler, exception mode, feature flags and macros
+must agree with its translation unit. The package does not export a PCH.
 
-A consumer may build its own PCH with the standard headers and
-`<simd/attributes.h>`. Use ordinary native objects at the baseline dispatch
-boundary when other code uses ThinLTO; disabling a target IPO property cannot
-undo manually inherited LTO flags. See [the module guide](../docs/modules.md)
-for intrinsic linkage and transitive BMI details.
+Target attributes preserve function requirements when using ThinLTO. Keep
+baseline dispatch and native entry signatures independent of register calling
+conventions. Review global initializers as well as explicit native calls.
 
 ## Compiler caching
 
@@ -209,7 +168,7 @@ installed library packages, not to a producer's build directory.
 The CI workflow configures Ninja directly, builds the providers with IPO and
 without PCHs, exercises consumer-owned PCHs in relocated fixtures, runs CTest,
 and checks installation. It selects AVX2 tests on Linux and Windows x86-64 runners and NEON
-on Linux, macOS and Windows ARM64 runners; the x86 archives also build the AVX-512 module. The
+on Linux, macOS and Windows ARM64 runners; the hub includes every implemented host ISA family. The
 baseline profile tests check CPU and OS support before entering AVX-512 code.
 The workflow is a reproducible build recipe; platform execution claims are
 listed separately in [validation](../docs/validation.md).

@@ -1,38 +1,18 @@
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-module;
-#define SIMD_PROFILE 128
-#define SIMD_PROFILE_BF16 1
-#include <simd/vec.h>
-#include <simd/integer.h>
-#include <simd/packing.h>
-#include <simd/simd/math/exp.h>
-#include <simd/simd/math/bits.h>
-// Intrinsic wrappers retain global-module linkage, like the raw register code.
-namespace simd::detail::neon_bf16_backend {
-  simd_inline float32x4_t dot2_native(bfloat16x8_t a, bfloat16x8_t b, float32x4_t accumulator) noexcept {
-    return vbfdotq_f32(accumulator, a, b);
-  }
-}
-export module simd.neon_bf16;
-export import simd.wide;
-export import simd.numerics;
-#include "simd/simd/exports.h"
-
+#define SIMD_ARCH_CONCEPT ::simd::detail::neon_bf16_architecture
+#pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
 export namespace simd {
   /// \ingroup vectors
   /// One 128-bit register of BF16 representations. Loads, stores and bit bridges
   /// preserve every encoding. This does not add elementwise BF16 arithmetic or
   /// change the scalar bf16 conversion contract. Only the 8-lane shape is provided.
-  /// Import simd.neon_bf16 and compile its users for the NEON_BF16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<> struct vec<bf16,8,neon_bf16> {
+  template<SIMD_ARCH_CONCEPT Arch> struct vec<bf16,8,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
     /// The distinct compile-time NEON_BF16 instruction-profile tag.
-    using architecture = neon_bf16;
+    using architecture = Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit BF16 register representation; native bridges copy bits.
@@ -70,6 +50,12 @@ export namespace simd {
     template<class... T> requires std::constructible_from<vec,T...>
     simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
       : vec(std::forward<T>(values)...) {}
+    /// Adopt a native register without conversion or representation changes.
+    simd_inline vec(native_type value) noexcept : value_(value) {}
+    /// Project the native register for direct intrinsic interoperability.
+    simd_nodiscard simd_inline operator native_type() const noexcept { return value_; }
+    // Native interoperability must not add elementwise BF16 arithmetic.
+#include "simd/simd/bf16_reject_operators.h"
     /// Return all lane bits as a native register, without conversion or lane reordering.
     simd_nodiscard simd_inline native_type to_native() const noexcept { return value_; }
     /// Copy a native BF16 register into this vector, preserving every representation bit.
@@ -143,8 +129,8 @@ export namespace simd {
   /// Deduce BF16 element type, argument-count lanes, and the explicit BF16 profile.
   /// Arguments must all be BF16 values. Only 8 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T> requires(sizeof...(T) > 0 && (std::same_as<T,bf16> && ...))
-  vec(neon_bf16,T...) -> vec<bf16,sizeof...(T),neon_bf16>;
+  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,bf16> && ...)
+  vec(Arch,bf16,T...) -> vec<bf16,1+sizeof...(T),Arch>;
 
   /// Native BFDOT: output i combines adjacent products a[2*i]*b[2*i] and
   /// a[2*i+1]*b[2*i+1], then adds accumulator[i]. This follows Arm's native
@@ -157,10 +143,14 @@ export namespace simd {
   /// return default NaNs, ignore exception enables, and leave FPSR unchanged.
   /// No operation changes FPCR. Applications own FPCR and ISA admission; this
   /// API makes no reproducible cross-ISA or cross-FPCR result promise.
-  simd_nodiscard simd_inline vec<float,4,neon_bf16> dot2(
-      vec<bf16,8,neon_bf16> a, vec<bf16,8,neon_bf16> b,
-      vec<float,4,neon_bf16> accumulator) noexcept {
-    return vec<float,4,neon_bf16>::from_native(
+  template<SIMD_ARCH_CONCEPT Arch>
+  simd_nodiscard simd_inline vec<float,4,Arch> dot2(
+      vec<bf16,8,Arch> a, vec<bf16,8,Arch> b,
+      vec<float,4,Arch> accumulator) noexcept {
+    return vec<float,4,Arch>::from_native(
       detail::neon_bf16_backend::dot2_native(a.to_native(), b.to_native(), accumulator.to_native()));
   }
 }
+
+#pragma clang attribute pop
+#undef SIMD_ARCH_CONCEPT

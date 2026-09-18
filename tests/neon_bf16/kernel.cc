@@ -10,8 +10,11 @@
 #include <utility>
 #include <simd/attributes.h>
 #include "support/guarded_pages.h"
-import simd.neon_bf16;
+#include "../half_storage/native_bridge.h"
+import simd;
 using B = simd::vec<simd::bf16,8,simd::neon_bf16>;
+static_assert(simd::test::native_bridge<B>);
+static_assert(simd::test::bf16_storage_only<B>);
 static_assert(sizeof(B) == 16 && alignof(B) == 16 && std::is_trivially_copyable_v<B>);
 static_assert(sizeof(simd::bf16) == 2 && !B::mask::compact);
 static_assert(std::same_as<decltype(simd::vec(simd::neon_bf16{},std::array<simd::bf16,8>{})),B>);
@@ -39,6 +42,10 @@ extern "C" bool bf16_storage() {
     for (unsigned i=0;i!=8;++i)
       if (copy[i].to_bits()!=base+i || words[i]!=base+i) return false;
     B::from_native(value.to_native()).store(copy.data());
+    for (unsigned i=0;i!=B::lanes;++i) if (copy[i].to_bits()!=base+i) return false;
+    typename B::native_type native = value;
+    B restored = native;
+    restored.store(copy.data());
     for (unsigned i=0;i!=8;++i) if (copy[i].to_bits()!=base+i) return false;
     B::from_bits(value.bits()).store(copy.data());
     for (unsigned i=0;i!=8;++i) if (copy[i].to_bits()!=base+i) return false;

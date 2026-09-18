@@ -10,8 +10,10 @@
 #include <utility>
 #include <simd/attributes.h>
 #include "support/guarded_pages.h"
-import simd.avx512_fp16;
+#include "../half_storage/native_bridge.h"
+import simd;
 using B = simd::vec<simd::fp16,32,simd::avx512_fp16>;
+static_assert(simd::test::native_bridge<B>);
 static_assert(sizeof(B) == 64 && alignof(B) == 64 && std::is_trivially_copyable_v<B>);
 static_assert(sizeof(simd::fp16) == 2 && B::mask::compact);
 static_assert(std::same_as<decltype(simd::vec(simd::avx512_fp16{},std::array<simd::fp16,32>{})),B>);
@@ -40,6 +42,10 @@ extern "C" bool fp16_storage() {
     for (unsigned i=0;i!=32;++i)
       if (copy[i].to_bits()!=base+i || words[i]!=base+i) return false;
     B::from_native(value.to_native()).store(copy.data());
+    for (unsigned i=0;i!=B::lanes;++i) if (copy[i].to_bits()!=base+i) return false;
+    typename B::native_type native = value;
+    B restored = native;
+    restored.store(copy.data());
     for (unsigned i=0;i!=32;++i) if (copy[i].to_bits()!=base+i) return false;
     B::from_bits(value.bits()).store(copy.data());
     for (unsigned i=0;i!=32;++i) if (copy[i].to_bits()!=base+i) return false;

@@ -6,7 +6,7 @@ import simd.wide;
 #include <limits>
 
 namespace exp_before {
-  using namespace SIMD_BACKEND_NAMESPACE::native;
+  using namespace test_backend::native;
   using simd::wide;
   namespace detail {
     template<float_register V> struct exp_state {

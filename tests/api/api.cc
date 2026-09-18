@@ -12,13 +12,13 @@
 #include <tuple>
 #include <utility>
 #if API_AVX512
-import simd.avx512;
+import simd;
 using selected_arch = simd::avx512;
 #elif API_NEON
-import simd.neon;
+import simd;
 using selected_arch = simd::neon;
 #else
-import simd.avx2;
+import simd;
 using selected_arch = simd::avx2;
 #endif
 import simd.wide;

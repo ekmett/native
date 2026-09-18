@@ -1,18 +1,15 @@
 # Installed omnibus consumer
 
-This standalone project consumes an installed package. `kernel.cc` imports only
-`simd`, exercises tag-based vector deduction, comparison-mask identity, FMA,
-wide arithmetic and owning swizzles, and compares results with a granular-import
-translation unit. A combined x86 package also checks AVX2 and AVX-512 types in
-one importing translation unit. Profile selection is explicit; see
-[the omnibus guide](../../docs/omnibus.md).
+This installed-package fixture imports the hub at the configured minimum and
+from separately targeted kernels. It checks vector deduction, mask identity,
+FMA, wide arithmetic, owning swizzles and native type identity across source
+files. The `tests/source_targets` fixture checks variants in
+one translation unit without per-variant CMake settings.
 
-`archive_only.cc` has no imports. `baseline.cc` uses only granular common modules.
-Both reject AVX-512 flags unless the configured minimum explicitly enables
-them. Defaults are AVX2/FMA/BMI2 on x86 and NEON on ARM. Each native executable has a separate common-
-baseline main that checks additional CPU features and OS vector state before
-calling a stronger profile. Hosts must already meet the package baseline;
-unsupported stronger profiles return CTest skip code 77, not an execution pass.
+`archive_only.cc` links without imports. `baseline.cc` imports the full hub and
+executes scalar utilities. Both reject accidental AVX-512 flags when the project
+minimum does not include them. Each native kernel's baseline main admits only
+that kernel's profile. Unsupported hardware returns CTest skip code 77.
 
 ```sh
 cmake -S . -B build/producer -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
@@ -31,11 +28,15 @@ ctest --test-dir build/consumer --output-on-failure
 ```
 
 Use distinct unused prefix paths, and `clang-cl` in a Windows MSVC SDK environment.
-Repeat with a separate producer using `SIMD_PROFILES=AVX2` to check the narrower
-package. On AArch64 use `SIMD_PROFILES=NEON`; x86 CPUID/wait are absent there.
-The fixture uses the installed profile union by default. The override
-`OMNIBUS_CONSUMER_PROFILE` exists for explicit compiler/BMI diagnostics; choosing
-a weaker profile than the package supports is not a successful-consumer mode.
+`SIMD_PROFILES` changes regression coverage, not the installed hub's API.
+On AArch64, the hub contains NEON and native half families; x86 CPUID/wait are
+absent. `OMNIBUS_CONSUMER_PROFILE` is an optional whole-kernel flag override for
+compiler diagnostics. Normal execution uses each kernel's own profile.
+
+## Earlier separate-module qualification
+
+The following records describe the previous provider layout, not validation
+of the current hub change.
 
 The Windows Clang 23.1.1/CMake 4.4.3 qualification passed four tests for the
 combined relocated package and three for AVX2-only, with exceptions enabled,

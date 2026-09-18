@@ -1,7 +1,7 @@
 # Apple ARM64 NEON checks
 
-`SIMD_TEST_ISA=NEON` selects the test profile; `SIMD_PROFILES=NEON` adds the
-named raw module. Profile types are distinct while `simd::wide` remains shared.
+`SIMD_TEST_ISA=NEON` selects the primary test profile. The AArch64 hub includes
+NEON and native half families. Architecture tags distinguish their types.
 No runtime SIMD dispatch or x86 flags are needed.
 
 Run `run.py` through the host's CPU resource gate, using a fresh output directory:

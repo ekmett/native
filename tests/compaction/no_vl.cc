@@ -4,11 +4,11 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
-#if !SIMD_HAS_AVX512F || SIMD_HAS_AVX512VL || SIMD_HAS_AVX512BW || SIMD_EXPLICIT_PROFILE
-#error This control requires implicit F/DQ without VL or BW
-#endif
+using partial_arch = simd::isa<simd::avx2::features | simd::feature::avx512f | simd::feature::avx512dq>;
+static_assert(!simd::has_feature<partial_arch, simd::feature::avx512vl>);
+static_assert(!simd::has_feature<partial_arch, simd::feature::avx512bw>);
 template<std::size_t N> bool check() {
-  using V=simd::vec<std::uint32_t,N,simd::avx512>;
+  using V=simd::vec<std::uint32_t,N,partial_arch>;
   std::array<std::uint32_t,N> input{},out{},expected{};
   for(std::size_t lane=0;lane<N;++lane) input[lane]=std::uint32_t(lane+100);
   auto value=V::load(input.data());
@@ -26,9 +26,7 @@ template<std::size_t N> bool check() {
   return true;
 }
 int compaction_entry(int,char**) {
-  // Existing AVX512-tag short memory methods require VL; this compatibility
-  // control covers the full widths supported by the older no-VL memory API.
-  // Declared AVX512 profiles include VL and test short widths exhaustively.
+  // The tag requests F/DQ explicitly; smaller registers cannot assume VL.
   if(!check<4>() || !check<8>() || !check<16>()) return 1;
-  std::puts("Implicit F/DQ without VL/BW compaction passed");return 0;
+  std::puts("Explicit F/DQ without VL/BW compaction passed");return 0;
 }

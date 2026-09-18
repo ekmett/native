@@ -6,8 +6,7 @@
 #include <type_traits>
 #include <utility>
 import simd.wide;
-import simd.avx2;
-import simd.avx512;
+import simd;
 
 template<class Arch> struct family {
   using value = simd::vec<float,4,Arch>;

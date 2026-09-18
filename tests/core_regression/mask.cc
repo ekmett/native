@@ -44,12 +44,12 @@ template<class T,std::size_t N> void full() {
   static_assert(alignof(decltype(nested))==alignof(M));
   for(auto const & row:nested) for(std::size_t i=0;i<row.size();++i) {
     require(reinterpret_cast<std::uintptr_t>(&row[i])%alignof(M)==0,"mask container alignment");
-    require(row[i].to_bitset()==((i+1)&SIMD_BACKEND_NAMESPACE::mask_low_bits<N>),"mask array copy value");
+    require(row[i].to_bitset()==((i+1)&test_backend::mask_low_bits<N>),"mask array copy value");
   }
   static_assert(sizeof(M)==sizeof(T)*N);
   static_assert(std::is_trivially_copyable_v<M>);
   static_assert(!implicit_truth<M> && !plusable<M>);
-  constexpr auto low=SIMD_BACKEND_NAMESPACE::mask_low_bits<N>;
+  constexpr auto low=test_backend::mask_low_bits<N>;
   for(auto bits: {std::uint64_t(0),std::uint64_t(1),std::uint64_t(0x5555555555555555),low,~std::uint64_t(0)}) {
     auto m=M::from_bitset(bits);auto b=M::from_bitset(0xaaaaaaaaaaaaaaaaull);
     require(m.to_bitset()==(bits&low),"full bits");
@@ -64,7 +64,7 @@ template<class T,std::size_t N> void full() {
     require(again.to_bitset()==m.to_bitset() && deduce(again)==N,"mask typed memory/deduction");
     for(std::size_t i=0;i<N;++i) require(values[i].to_bits()==(((bits>>i)&1)?U(~U(0)):U(0)),"mask stored canonical");
 #if defined(__AVX512F__)
-    if constexpr(SIMD_BACKEND_NAMESPACE::predicate_shape<N>) require(to_vector_mask<T>(to_predicate(m)).to_bitset()==m.to_bitset(),"predicate/full roundtrip");
+    if constexpr(test_backend::predicate_shape<N>) require(to_vector_mask<T>(to_predicate(m)).to_bitset()==m.to_bitset(),"predicate/full roundtrip");
 #endif
   }
   std::array<U,N> raw{};
@@ -82,7 +82,7 @@ template<class T,std::size_t N> void full() {
 #endif
 template<std::size_t N,int Case> simd_mask_test_noinline bool compact_case(std::uint64_t input) {
 #if defined(__AVX512F__)
-  using P=simd::predicate<N,test_arch>;using U=typename P::native_type;constexpr auto low=SIMD_BACKEND_NAMESPACE::mask_low_bits<N>;
+  using P=simd::predicate<N,test_arch>;using U=typename P::native_type;constexpr auto low=test_backend::mask_low_bits<N>;
   auto a=P::from_bitset(input),b=P::from_bitset(input>>1);
   if constexpr(Case==0) return P::from_native(U(~U(0))).to_bitset()==low;
   else if constexpr(Case==1) return P::unsafe_from_native(U(~U(0))).to_bitset()==low;
@@ -127,7 +127,7 @@ template<std::size_t N> void booleans() {
   auto selected=select(a==B(true),B(true),B(false));std::array<bool,N> result{};selected.store(result.data());require(result==values,"Boolean select");
   to_bool(to_vector_mask(a)).store(result.data());require(result==values,"Boolean/full explicit roundtrip");
 #if defined(__AVX512F__)
-  if constexpr(SIMD_BACKEND_NAMESPACE::predicate_shape<N>) {to_bool(to_predicate(a)).store(result.data());require(result==values,"Boolean/predicate roundtrip");}
+  if constexpr(test_backend::predicate_shape<N>) {to_bool(to_predicate(a)).store(result.data());require(result==values,"Boolean/predicate roundtrip");}
 #endif
   require(none(B::load_partial(nullptr,0)),"zero Boolean load");a.store_partial(nullptr,0);
   for(std::size_t count=0;count<=N;++count) {

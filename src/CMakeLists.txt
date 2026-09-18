@@ -2,8 +2,8 @@
 # SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
-# Each ABI owns its archive and module provider. Common modules use the
-# platform baseline; stronger ISA options belong to profile sources only.
+# Modules compile at the project minimum. Native operations carry their own
+# Clang target attributes inside the shared hub.
 function(simd_module_target target export_name)
   add_library(${target} STATIC)
   add_library(simd::${export_name} ALIAS ${target})
@@ -102,58 +102,32 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.arm.ccm)
 endif()
 
-set(simd_module_targets simd_minimal)
-
-foreach(profile IN LISTS SIMD_PROFILES)
-  string(TOLOWER "${profile}" name)
-  if(profile STREQUAL "AVX2")
-    set(bits 256)
-  elseif(profile MATCHES "^NEON")
-    set(bits 128)
-  else()
-    set(bits 512)
-  endif()
-  simd_module_target(simd_${name} ${name})
-  simd_target_profile(simd_${name} "${profile}")
-  target_compile_definitions(simd_${name} PRIVATE
-    SIMD_PROFILE=${bits})
-  target_sources(simd_${name} PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.${name}.ccm)
-  target_link_libraries(simd_${name} PUBLIC simd_minimal)
-  list(APPEND simd_module_targets simd_${name})
-endforeach()
-
-# The optional compatibility omnibus imports every selected profile; Clang
-# requires its own source to enable their strongest ISA. Common stays baseline.
-set(simd_omnibus_imports "export import simd.scalar;\nexport import simd.wide;\nexport import simd.types;\nexport import simd.memory;\nexport import simd.static_string;\nexport import simd.numerics;\n")
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
-  string(APPEND simd_omnibus_imports "export import simd.cpuid;\nexport import simd.wait;\n")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-  string(APPEND simd_omnibus_imports "export import simd.arm;\n")
-endif()
-foreach(profile IN LISTS SIMD_PROFILES)
-  string(TOLOWER "${profile}" name)
-  string(APPEND simd_omnibus_imports "export import simd.${name};\n")
-endforeach()
-configure_file(simd.ccm.in "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm" @ONLY)
-add_library(simd STATIC)
-add_library(simd::simd ALIAS simd)
-simd_host_settings(simd)
-set_target_properties(simd PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_MODULES ON)
+simd_module_target(simd simd)
+target_link_libraries(simd PUBLIC simd_minimal)
 target_sources(simd PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-  BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/modules"
-  FILES "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm")
-set_property(TARGET simd PROPERTY SIMD_OMNIBUS_PROFILES "${SIMD_PROFILES}")
-set_property(TARGET simd APPEND PROPERTY EXPORT_PROPERTIES SIMD_OMNIBUS_PROFILES)
-simd_target_omnibus(simd)
-# The archive carries omnibus module metadata, but no profile compile flags.
-# Granular provider targets remain available for narrower imports.
-target_link_libraries(simd PUBLIC simd_headers ${simd_module_targets})
-install(TARGETS simd EXPORT simdHostTargets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  FILE_SET cxx_modules DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/modules")
-# Install each ABI archive with its module sources and metadata. BMIs remain
-# local to the consuming compiler/configuration.
-install(TARGETS ${simd_module_targets} EXPORT simdHostTargets
+  BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.ccm)
+
+# Older build files may link these names. They all refer to the same hub and
+# add neither another archive/BMI nor stronger compile options.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+  set(simd_hub_profiles AVX2 AVX512 AVX512_BF16 AVX512_FP16)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  set(simd_hub_profiles NEON NEON_FP16 NEON_BF16)
+else()
+  set(simd_hub_profiles)
+endif()
+foreach(profile IN LISTS simd_hub_profiles)
+  string(TOLOWER "${profile}" name)
+  add_library(simd_${name} ALIAS simd)
+  add_library(simd::${name} ALIAS simd)
+endforeach()
+set_property(TARGET simd PROPERTY SIMD_HUB_PROFILES "${simd_hub_profiles}")
+# Retain the old metadata key for build-file compatibility; it no longer means
+# that importing the hub requires the union of these instruction sets.
+set_property(TARGET simd PROPERTY SIMD_OMNIBUS_PROFILES "${simd_hub_profiles}")
+set_property(TARGET simd APPEND PROPERTY EXPORT_PROPERTIES
+  SIMD_HUB_PROFILES SIMD_OMNIBUS_PROFILES)
+install(TARGETS simd simd_minimal EXPORT simdHostTargets
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   FILE_SET cxx_modules DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/modules")
 install(EXPORT simdHostTargets NAMESPACE simd:: CXX_MODULES_DIRECTORY cxx-modules
@@ -165,4 +139,5 @@ export(EXPORT simdHostTargets NAMESPACE simd:: CXX_MODULES_DIRECTORY cxx-modules
 # them public headers or exposing their directory through simd::headers.
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/simd/"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/include/simd"
-  FILES_MATCHING PATTERN "*.h" PATTERN "attributes.h" EXCLUDE PATTERN "config.h" EXCLUDE)
+  FILES_MATCHING PATTERN "*.h" PATTERN "attributes.h" EXCLUDE PATTERN "config.h" EXCLUDE
+    PATTERN "isa.h" EXCLUDE PATTERN "targets.h" EXCLUDE)

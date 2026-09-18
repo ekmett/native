@@ -1,34 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-module;
-#define SIMD_PROFILE 128
-#define SIMD_PROFILE_FP16 1
-#include <simd/vec.h>
-#include <simd/integer.h>
-#include <simd/packing.h>
-#include <simd/simd/math/exp.h>
-#include <simd/simd/math/bits.h>
-// Intrinsics remain in the global module fragment, like the raw registers.
-namespace simd::detail::neon_fp16_backend {
-  simd_inline float16x8_t add_half(float16x8_t a, float16x8_t b) noexcept { return vaddq_f16(a,b); }
-  simd_inline float16x8_t sub_half(float16x8_t a, float16x8_t b) noexcept { return vsubq_f16(a,b); }
-  simd_inline float16x8_t mul_half(float16x8_t a, float16x8_t b) noexcept { return vmulq_f16(a,b); }
-  simd_inline float16x8_t div_half(float16x8_t a, float16x8_t b) noexcept { return vdivq_f16(a,b); }
-  simd_inline float16x8_t sqrt_half(float16x8_t a) noexcept { return vsqrtq_f16(a); }
-  simd_inline float16x8_t neg_half(float16x8_t a) noexcept { return vnegq_f16(a); }
-  simd_inline float16x8_t fma_half(float16x8_t a, float16x8_t b, float16x8_t c) noexcept { return vfmaq_f16(c,a,b); }
-  simd_inline uint8x16_t eq_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vceqq_f16(a,b)); }
-  simd_inline uint8x16_t lt_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vcltq_f16(a,b)); }
-  simd_inline uint8x16_t le_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vcleq_f16(a,b)); }
-  simd_inline float16x8_t select_half(uint8x16_t m, float16x8_t a, float16x8_t b) noexcept {
-    return vbslq_f16(vreinterpretq_u16_u8(m),a,b);
-  }
-}
-export module simd.neon_fp16;
-export import simd.wide;
-export import simd.numerics;
-#include "simd/simd/exports.h"
-
+#define SIMD_ARCH_CONCEPT ::simd::detail::neon_fp16_architecture
+#pragma clang attribute push(__attribute__((target("neon,fullfp16"))), apply_to=function)
 export namespace simd {
   /// \ingroup vectors
   /// One 128-bit register of FP16 representations. Loads, stores and bit bridges
@@ -39,15 +10,14 @@ export namespace simd {
   /// No operation changes FPCR. NaN payload/sign propagation is instruction- and
   /// FPCR-dependent, not a portable promise. Scalar fp16 conversions are unchanged.
   /// Only the 8-lane shape is provided.
-  /// Import simd.neon_fp16 and compile its users for the NEON_FP16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<> struct vec<fp16,8,neon_fp16> {
+  template<SIMD_ARCH_CONCEPT Arch> struct vec<fp16,8,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = fp16;
     /// The distinct compile-time NEON_FP16 instruction-profile tag.
-    using architecture = neon_fp16;
+    using architecture = Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit FP16 register representation; native bridges copy bits.
@@ -85,6 +55,10 @@ export namespace simd {
     template<class... T> requires std::constructible_from<vec,T...>
     simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
       : vec(std::forward<T>(values)...) {}
+    /// Adopt a native register without conversion or representation changes.
+    simd_inline vec(native_type value) noexcept : value_(value) {}
+    /// Project the native register for direct intrinsic interoperability.
+    simd_nodiscard simd_inline operator native_type() const noexcept { return value_; }
     /// Return all lane bits as a native register, without conversion or lane reordering.
     simd_nodiscard simd_inline native_type to_native() const noexcept { return value_; }
     /// Copy a native FP16 register into this vector, preserving every representation bit.
@@ -210,15 +184,19 @@ export namespace simd {
   /// Deduce FP16 element type, argument-count lanes, and the explicit FP16 profile.
   /// Arguments must all be FP16 values. Only 8 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T> requires(sizeof...(T) > 0 && (std::same_as<T,fp16> && ...))
-  vec(neon_fp16,T...) -> vec<fp16,sizeof...(T),neon_fp16>;
+  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,fp16> && ...)
+  vec(Arch,fp16,T...) -> vec<fp16,1+sizeof...(T),Arch>;
 
   /// Compute a*b+c in each lane with one final half-precision rounding (FMLA).
   /// The caller's FPCR rounding/FZ16/DN/exception controls apply, FPSR may change,
   /// and FPCR is preserved. NaN payload/sign follow the native instruction.
-  simd_nodiscard simd_inline vec<fp16,8,neon_fp16> fma(
-      vec<fp16,8,neon_fp16> a,vec<fp16,8,neon_fp16> b,vec<fp16,8,neon_fp16> c) noexcept {
-    return vec<fp16,8,neon_fp16>::from_native(
+  template<SIMD_ARCH_CONCEPT Arch>
+  simd_nodiscard simd_inline vec<fp16,8,Arch> fma(
+      vec<fp16,8,Arch> a,vec<fp16,8,Arch> b,vec<fp16,8,Arch> c) noexcept {
+    return vec<fp16,8,Arch>::from_native(
       detail::neon_fp16_backend::fma_half(a.to_native(),b.to_native(),c.to_native()));
   }
 }
+
+#pragma clang attribute pop
+#undef SIMD_ARCH_CONCEPT

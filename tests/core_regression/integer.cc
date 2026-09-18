@@ -119,7 +119,7 @@ template <class T, std::size_t N> void test() {
       check(pm[i] == (a[i] > b[i] ? U<T>(~U<T>(0)) : U<T>(0)));
   }
   shifts(simd::load_simd<test_vec<T,N>>(a.data()), a, std::make_index_sequence<sizeof(T) * 8>{});
-  auto full = test_vec<SIMD_BACKEND_NAMESPACE::mask_lane_for<T>, N>::from_bitset(0xaaaaaaaaaaaaaaaaull);
+  auto full = test_vec<test_backend::mask_lane_for<T>, N>::from_bitset(0xaaaaaaaaaaaaaaaaull);
   auto fa = simd::load_simd<test_vec<T,N>>(a.data()), fb = simd::load_simd<test_vec<T,N>>(b.data());
   std::array<T, N> selected{};
   simd::store_simd(selected.data(), masked_add(full, fb, fa, fb));

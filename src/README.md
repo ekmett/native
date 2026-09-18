@@ -1,10 +1,10 @@
 # Definition ownership
 
-C++ consumers import `simd` or individual named modules. The omnibus is generated
-from the package's configured profiles and contains only re-exports. Headers
-under `simd/` are implementation inputs for rebuilding consumer BMIs. Register and intrinsic definitions live in
-the global module fragment. Array math kernels use `std::array<V,N>` and C++26
-structured-binding packs; they do not depend on `wide`.
+C++ consumers import `simd` for native operations or individual common modules.
+The hub compiles at the project minimum and holds all supported host ISA
+families under Clang target attributes. Internal definition fragments are
+emitted under the matching scopes. They select canonical feature tags instead
+of inheriting the importer's compiler macros.
 
 | Path | Responsibility |
 | --- | --- |
@@ -18,12 +18,11 @@ SDK `<simd/simd.h>`; the SDK keeps ownership of that include path.
 
 The generic container, operators, forwarding and tuple protocol belong to
 `simd.wide`. ADL selects an element's array kernel without a dependency on SIMD.
-`simd.scalar` supplies a baseline scalar register implementation and the common
-SIMD extension declarations. ISA modules expose `vec<T,N,Arch>` specializations for their architecture tags.
-The optional `simd.avx512_bf16`, `simd.avx512_fp16` and `simd.neon_fp16` modules
-import `simd.numerics` and own their half-vector specializations after that import; scalar half definitions stay in
-their original common module. Native intrinsic bridges remain in the global
-module fragment.
+`simd.scalar` supplies the scalar register implementation and common extension
+declarations. `simd` adds constrained native families and half-vector operations
+after importing their numerical storage types. Intrinsic bridges stay in the
+global module fragment. `simd/isa.h` owns feature metadata; `simd/targets.h`
+supplies textual source-generation macros.
 Custom numerical elements use one common extension, independent of the ISA.
 
 `simd.static_string`, `simd.types`, `simd.memory`, `simd.cpuid`, `simd.wait` and

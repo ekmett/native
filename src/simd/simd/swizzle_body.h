@@ -1,10 +1,5 @@
-#pragma once
-#include <array>
-#include <bit>
-#include <cstring>
-#include <type_traits>
 
-namespace simd::detail {
+namespace simd::detail::SIMD_BACKEND {
   template<class T> using swizzle_word = std::conditional_t<sizeof(T)==1,std::uint8_t,
     std::conditional_t<sizeof(T)==2,std::uint16_t,std::conditional_t<sizeof(T)==4,std::uint32_t,std::uint64_t>>>;
   template<class T> using swizzle_native = swizzle_word<T> __attribute__((ext_vector_type(4)));
@@ -95,17 +90,18 @@ namespace simd::detail {
       return rhs;
     }
   };
-  template<class T,std::size_t N,class Arch> struct swizzle_access {};
+}
+namespace simd::detail {
   // Properties are compiler accessors, not proxy objects: a read owns its lanes,
   // and assignment materializes the complete right side before any scatter.
-  template<class T,std::size_t N,class Arch> requires(N<=4)
+  template<class T,std::size_t N,SIMD_ARCH_CONCEPT Arch> requires(N<=4)
   struct swizzle_access<T,N,Arch> {
     template<std::size_t K> using result = std::conditional_t<K==1,T,vec<T,K,Arch>>;
 #define SIMD_SWIZZLE_FIELD(NAME,K,...) \
-    template<class Self> requires(swizzle<__VA_ARGS__>::template readable<Self>()) \
-    simd_nodiscard simd_inline result<K> get_##NAME(this Self const & self) { return swizzle<__VA_ARGS__>::read(self); } \
-    template<class Self> requires(swizzle<__VA_ARGS__>::template writable<Self>()) \
-    simd_inline result<K> set_##NAME(this Self & self,result<K> rhs) { return swizzle<__VA_ARGS__>::write(self,rhs); } \
+    template<class Self> requires(SIMD_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template readable<Self>()) \
+    simd_nodiscard simd_inline result<K> get_##NAME(this Self const & self) { return SIMD_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); } \
+    template<class Self> requires(SIMD_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template writable<Self>()) \
+    simd_inline result<K> set_##NAME(this Self & self,result<K> rhs) { return SIMD_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::write(self,rhs); } \
     __declspec(property(get=get_##NAME,put=set_##NAME)) result<K> NAME;
 #define SIMD_SWIZZLE_ROW2(A,I,X,Y,Z,W) \
     SIMD_SWIZZLE_FIELD(A##X,2,I,0) SIMD_SWIZZLE_FIELD(A##Y,2,I,1) \

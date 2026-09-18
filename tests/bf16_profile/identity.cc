@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <concepts>
 #include <cstdint>
-import simd.avx2;
-import simd.avx512;
-import simd.avx512_bf16;
+import simd;
 using old2 = simd::vec<float,8,simd::avx2>;
 using old5 = simd::vec<float,8,simd::avx512>;
 using next = simd::vec<float,8,simd::avx512_bf16>;

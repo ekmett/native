@@ -1,45 +1,19 @@
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-module;
-#define SIMD_PROFILE 512
-#define SIMD_PROFILE_BF16 1
-#include <simd/vec.h>
-#include <simd/integer.h>
-#include <simd/packing.h>
-#include <simd/simd/math/exp.h>
-#include <simd/simd/math/bits.h>
-// Intrinsic wrappers retain global-module linkage, like the raw register code.
-namespace simd::detail::avx512_bf16_backend {
-  simd_inline __m128 dot2_native(__m128bh a, __m128bh b, __m128 accumulator) noexcept {
-    return _mm_dpbf16_ps(accumulator, a, b);
-  }
-  simd_inline __m256 dot2_native(__m256bh a, __m256bh b, __m256 accumulator) noexcept {
-    return _mm256_dpbf16_ps(accumulator, a, b);
-  }
-  simd_inline __m512 dot2_native(__m512bh a, __m512bh b, __m512 accumulator) noexcept {
-    return _mm512_dpbf16_ps(accumulator, a, b);
-  }
-}
-export module simd.avx512_bf16;
-export import simd.wide;
-export import simd.numerics;
-#include "simd/simd/exports.h"
-
+#define SIMD_ARCH_CONCEPT ::simd::detail::avx512_bf16_architecture
+#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
 export namespace simd {
   /// \ingroup vectors
   /// One 128-, 256-, or 512-bit register of BF16 representations. Loads, stores and bit bridges
   /// preserve every encoding. This does not add elementwise BF16 arithmetic or
   /// change the scalar bf16 conversion contract. The 8-, 16-, and 32-lane shapes are provided.
-  /// Import simd.avx512_bf16 and compile its users for the AVX512_BF16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<std::size_t N> requires(N == 8 || N == 16 || N == 32)
-  struct vec<bf16,N,avx512_bf16> {
+  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires(N == 8 || N == 16 || N == 32)
+  struct vec<bf16,N,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
     /// The distinct compile-time AVX512_BF16 instruction-profile tag.
-    using architecture = avx512_bf16;
+    using architecture = Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native register-width BF16 register representation; native bridges copy bits.
@@ -77,6 +51,12 @@ export namespace simd {
     template<class... T> requires std::constructible_from<vec,T...>
     simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
       : vec(std::forward<T>(values)...) {}
+    /// Adopt a native register without conversion or representation changes.
+    simd_inline vec(native_type value) noexcept : value_(value) {}
+    /// Project the native register for direct intrinsic interoperability.
+    simd_nodiscard simd_inline operator native_type() const noexcept { return value_; }
+    // Native interoperability must not add elementwise BF16 arithmetic.
+#include "simd/simd/bf16_reject_operators.h"
     /// Return all lane bits as a native register, without conversion or lane reordering.
     simd_nodiscard simd_inline native_type to_native() const noexcept { return value_; }
     /// Copy a native BF16 register into this vector, preserving every representation bit.
@@ -150,8 +130,8 @@ export namespace simd {
   /// Deduce BF16 element type, argument-count lanes, and the explicit BF16 profile.
   /// Arguments must all be BF16 values. Only 8, 16 and 32 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T> requires(sizeof...(T) > 0 && (std::same_as<T,bf16> && ...))
-  vec(avx512_bf16,T...) -> vec<bf16,sizeof...(T),avx512_bf16>;
+  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,bf16> && ...)
+  vec(Arch,bf16,T...) -> vec<bf16,1+sizeof...(T),Arch>;
 
   /// Native VDPBF16PS: for each output i, accumulate a[2*i+1]*b[2*i+1]
   /// first, then a[2*i]*b[2*i]. Each FP32 FMA rounds to nearest, ties to even;
@@ -159,11 +139,14 @@ export namespace simd {
   /// MXCSR is neither consulted nor updated, including exception status.
   /// This is not a single-rounding three-term sum. NaN propagation follows
   /// the instruction, with low input lanes taking priority over high lanes.
-  template<std::size_t N> requires(N == 8 || N == 16 || N == 32)
-  simd_nodiscard simd_inline vec<float,N/2,avx512_bf16> dot2(
-      vec<bf16,N,avx512_bf16> a, vec<bf16,N,avx512_bf16> b,
-      vec<float,N/2,avx512_bf16> accumulator) noexcept {
-    return vec<float,N/2,avx512_bf16>::from_native(
+  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires(N == 8 || N == 16 || N == 32)
+  simd_nodiscard simd_inline vec<float,N/2,Arch> dot2(
+      vec<bf16,N,Arch> a, vec<bf16,N,Arch> b,
+      vec<float,N/2,Arch> accumulator) noexcept {
+    return vec<float,N/2,Arch>::from_native(
       detail::avx512_bf16_backend::dot2_native(a.to_native(), b.to_native(), accumulator.to_native()));
   }
 }
+
+#pragma clang attribute pop
+#undef SIMD_ARCH_CONCEPT

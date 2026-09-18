@@ -1,31 +1,16 @@
 # Types, modules and application dispatch
 
-`import simd;` exposes common utilities and the package's configured native
-profiles. Granular imports such as `simd.avx2` retain the same type identities
-and let a translation unit use a narrower profile. The
-[omnibus guide](omnibus.md) describes the explicit compilation requirements.
-
-The type records the choices that affect storage and code generation:
-
-```cpp
-simd::vec<float, 4, simd::avx2>
-simd::vec<float, 8, simd::avx512>
-simd::vec<float, 4, simd::neon>
-simd::vec<float, 1, simd::scalar>
-```
-
-The architecture tag names the instruction profile. `N` counts lanes in one native
-register; it does not require the profile's largest register. Unsupported shapes
-have no silent multi-register fallback. Use `simd::wide<V,M>` for an explicit
-pack of `M` registers.
+`import simd;` exposes the native ISA families and common utilities in one
+baseline hub. [Source target lists](omnibus.md) select which application
+kernels to compile and how to admit them before execution.
 
 ## Identity and generic algorithms
 
 `simd::vec<T,N,Arch>` is a class template with ordinary types as architecture
 tags. Vectors with different architecture arguments remain distinct even when their register widths match. The module name
 controls visibility; the template arguments control overload resolution and ABI.
-Importing an AVX2 module into an AVX-512 translation unit does not upgrade its
-vectors or mask representation.
+Using an AVX2-tagged vector in an AVX-512 function keeps its original
+mask representation and type identity.
 
 There is no default architecture. Class template argument deduction takes an
 explicit tag, followed by lane values or an array:
@@ -129,29 +114,20 @@ currently uses ordinary accesses, so it carries no non-temporal-store guarantee.
 
 ## Definition placement
 
-The profile interfaces include standard headers and native intrinsic wrappers
-in their global module fragments, before `export module`. The native templates
-keep that linkage and are exposed through explicit exports. This arrangement
-keeps intrinsic definitions available when downstream consumers instantiate them.
-It is an implementation boundary, not a requirement to put every template above
-the module declaration.
+The hub includes system headers and native intrinsic wrappers in its global
+module fragment. Canonical architecture tags select constrained definitions;
+Clang function target attributes establish each implementation's requirements.
+Consumer feature macros do not change a module's definitions.
 
-Each profile fixes `SIMD_PROFILE` in its producer configuration. The implementation
-derives its architecture tag and private helper namespace from that value. A consumer with additional compiler features must not
-change that profile's definitions. Configuration macros do not enable instructions;
-normal target-local compiler flags establish the ISA.
+`simd.wide` owns the container, tuple protocol and composed operations. Native
+element families select matching target overloads, while custom elements keep
+their ADL array-kernel preference and generic fallback. Raw array math kernels
+do not depend on `wide`.
 
-`simd.wide` defines its container, pointwise operators, tuple protocol and
-forwarding directly in its named module. It depends only on its element type.
-ADL selects array kernels where provided; otherwise the element fallback applies.
-Raw array kernels accept `std::array<V,M>` and use C++26 structured-binding packs.
-They have no dependency on `wide`.
-
-The common `simd.static_string`, `simd.types`, `simd.memory`, `simd.numerics`,
-`simd.cpuid` and `simd.wait` APIs are also defined directly in named modules.
-`simd.numerics` owns fp16/bf16 and their instantiations. CPUID/wait are x86-only;
-optional wait leaves are separately targeted and do not give baseline callers
-AVX requirements. These utilities have no duplicate implementation-header API.
+Common string, type, memory and numerical utilities retain independent named
+modules with one provider each. `simd.numerics` owns fp16/bf16 storage and scalar
+conversions. `simd.cpuid` and `simd.wait` are x86-only; `simd.arm` supplies Arm
+observation. Optional wait functions have their own target requirements.
 
 ## Extending the element type
 
@@ -164,7 +140,7 @@ An extension must define the arithmetic semantics of its custom element.
 The downstream FTZ library uses this boundary: it owns normalization,
 reproducible math and environment admission, while using this library's raw
 registers, masks and arrays. The dependency goes from FTZ to SIMD only.
-All ISA modules can use the common scalar type without importing each other.
+Every ISA family can use the common scalar type.
 
 ## Build and dispatch
 
@@ -176,62 +152,32 @@ driver, including installed consumers. The clang-cl driver enables it already.
 Installed module sources and build metadata permit consumer BMI regeneration;
 PCMs are compiler-specific artifacts.
 
-```cmake
-find_package(simd CONFIG REQUIRED COMPONENTS simd)
-add_library(kernel_avx2 OBJECT kernel_avx2.cc)
-target_link_libraries(kernel_avx2 PRIVATE simd::common simd::avx2)
-simd_target_profile(kernel_avx2 AVX2)
-add_executable(application dispatch.cc $<TARGET_OBJECTS:kernel_avx2>)
-target_link_libraries(application PRIVATE simd::avx2 simd::common)
-```
+Link `simd::simd` and import `simd`. The [target-list guide](omnibus.md) shows
+how to compile a body for a chosen ordered list of feature tags and dispatch
+after CPU/OS admission. The helper uses ordinary Clang function attributes;
+users can also write attributed functions themselves or retain separate
+translation units with `simd_target_profile`.
 
-Add an AVX-512 object target with its own profile when needed. The baseline
-translation unit checks the full CPU and OS-enabled vector-state requirements
-before invoking an admitted entry. Pointer/scalar entry signatures keep the
-boundary independent of register ABI. AVX-512 profile flags remain private to the selected producer/consumer
-target; minimal usage requirements establish the configured project minimum.
-The common baseline and each configured ISA profile have separate static
-archives. `simd::minimal` (also named `simd::common`) supplies common modules
-and runtime definitions;
-`simd::avx2`, `simd::avx512` and `simd::neon` supply their respective profile
-definitions and depend on common. The compatibility target `simd::simd`
-provides the omnibus and links the configured archives transitively. When
-extracting kernel objects with `TARGET_OBJECTS`, explicitly link their profile
-archives on the final executable, as above.
-
-A translation unit that imports both x86 modules uses AVX-512 compiler flags
-and explicitly links both providers. For an ordinary baseline dispatch boundary
-with ThinLTO elsewhere, disable IPO on its object target and avoid manually
-inherited LTO flags. Review global initializers as well as explicit calls.
+Native register conversions remain implicit. Include the platform intrinsic
+header before the module import when directly calling those intrinsics, and
+put the containing function under the appropriate target scope.
 
 ## PCHs, attributes and transitive modules
 
-Modules do not export macros. Include `<simd/attributes.h>` to use modifiers such
-as `simd_inline`, `simd_lifetimebound` or `simd_noescape`. The independent
-`simd::headers` target makes these available to host and shader libraries.
-Use the attributes only where their actual contracts hold.
+Include `<simd/attributes.h>` for named compiler modifiers and
+`<simd/targets.h>` for source target generation. Modules do not export macros.
+Provider modules compile without PCHs; consumer PCHs are optional and must
+match their translation unit's compiler, exception and preprocessing settings.
 
-The single-module profile providers do not use PCHs. A consumer may build its
-own PCH with standard headers and the attribute header, including with IPO.
-It must match the consumer's ISA, compiler/STL, exception mode and preprocessing
-state.
+The hub and common modules each have one compatible baseline BMI. Installed
+module sources carry the metadata needed for regeneration. A downstream
+numerical library should put its public `CXX_MODULES` file set directly on its
+archive target so CMake can discover the transitive providers.
 
-A downstream library needs both the native archive and the correct module
-provider metadata. A numerical addon places its public `CXX_MODULES` file set directly on its archive target. An additional
-imported interface layer can prevent CMake 4.4 from discovering transitive module
-providers; the installed third-library fixtures cover this boundary.
-
-Build each consumer against one consistent dependency-BMI configuration. Mixing
-a baseline producer BMI with another synthesized copy of the same dependency
-under different ISA settings has triggered Clang 23 imported-STL crashes.
-Rebuild the addon and its dependencies together from installed metadata. The
-installed-package tests exercise that arrangement with PCH and ThinLTO enabled.
-
-Compiler-mechanism fixtures, numerical regressions and relocated package tests
-answer different questions. Their recorded scope is described in
-[validation](validation.md). Raw approximate math retains each function's stated
-domain and operation graph; wrapping it in `wide` does not strengthen its accuracy
-or floating-point-environment contract.
+Raw approximate math retains each function's stated domain and operation
+graph; wrapping it in `wide` does not strengthen its accuracy or floating-point
+environment contract. The [validation record](validation.md) distinguishes
+compiler fixtures, numerical tests and native execution results.
 
 ## Stable compaction and expansion
 
@@ -275,6 +221,6 @@ returned counts.
 `simd::minimal` owns the common ABI. Project setup chooses
 `SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
 ARM. `simd::common` remains an alias. Linking minimal carries its configured
-requirements to consumers; stronger profile code lives in separate libraries.
+requirements to consumers; stronger functions carry their own target attributes.
 Admission checks may select a stronger implementation, but the process must
 already satisfy its configured minimum.

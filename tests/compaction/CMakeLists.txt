@@ -47,7 +47,7 @@ foreach(profile IN ITEMS SCALAR ${SIMD_PROFILES})
   endforeach()
 endforeach()
 
-# Implicit textual profiles may have F/DQ without VL/BW: smaller registers
+# Explicit feature tags may have F/DQ without VL/BW: smaller registers
 # retain the AVX2 path instead of referencing unavailable VL instructions.
 if("AVX512" IN_LIST SIMD_PROFILES)
   add_library(simd_compaction_no_vl_body OBJECT no_vl.cc)

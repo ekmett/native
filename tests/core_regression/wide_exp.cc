@@ -7,8 +7,8 @@
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
-using SIMD_BACKEND_NAMESPACE::native::fp32x1;
-static_assert(std::tuple_size_v<decltype(SIMD_BACKEND_NAMESPACE::native::exp(std::array<fp32x1,0>{}))> == 0);
+using test_backend::native::fp32x1;
+static_assert(std::tuple_size_v<decltype(test_backend::native::exp(std::array<fp32x1,0>{}))> == 0);
 bool equal(unsigned a,unsigned b) { return a==b || ((a&0x7fffffffu)>0x7f800000u && (b&0x7fffffffu)>0x7f800000u); }
 template<class V> void check(std::vector<unsigned> const & input) {
   constexpr std::size_t count=96/V::lanes;
@@ -20,7 +20,7 @@ template<class V> void check(std::vector<unsigned> const & input) {
       x.registers[k]=V::load_bits(words.data());
     }
     auto before=exp_before::exp(x);
-    auto after=SIMD_BACKEND_NAMESPACE::native::exp(x.registers);
+    auto after=test_backend::native::exp(x.registers);
     for(std::size_t k=0;k<count;++k) {
       std::array<unsigned,V::lanes>a,b; before.registers[k].store_bits(a.data());after[k].store_bits(b.data());
       for(std::size_t j=0;j<V::lanes;++j) {
@@ -41,13 +41,13 @@ int main() {
   for(auto mode:{simd::test::fp_mode::gradual,simd::test::fp_mode::flush}) {
     simd::test::fp_scope scope(mode);check<fp32x1>(words);
 #if defined(__AVX2__) || defined(__ARM_NEON)
-    check<SIMD_BACKEND_NAMESPACE::native::fp32x4>(words);
+    check<test_backend::native::fp32x4>(words);
 #endif
 #if defined(__AVX2__)
-    check<SIMD_BACKEND_NAMESPACE::native::fp32x8>(words);
+    check<test_backend::native::fp32x8>(words);
 #endif
 #if defined(__AVX512F__)
-    check<SIMD_BACKEND_NAMESPACE::native::fp32x16>(words);
+    check<test_backend::native::fp32x16>(words);
 #endif
     if(!scope.controls_match())simd::test::fail(std::runtime_error("controls changed"));
   }

@@ -45,13 +45,7 @@ custom element types and application dispatch.
 
 | Module | Public interface |
 | --- | --- |
-| `simd` | Common utilities and every configured native profile |
-| `simd.avx2` | `vec<T,N,avx2>`, AVX2/FMA/BMI2 operations |
-| `simd.avx512` | `vec<T,N,avx512>`, additionally AVX-512 F/DQ/BW/VL |
-| `simd.avx512_bf16` | Optional AVX-512 BF16 storage and pairwise FP32 dot accumulation |
-| `simd.neon` | `vec<T,N,neon>`, AArch64 NEON |
-| `simd.neon_fp16` | Optional native eight-lane FP16 storage and arithmetic |
-| `simd.neon_bf16` | Optional native eight-lane BF16 storage and pairwise FP32 dot accumulation |
+| `simd` | All native ISA variants for the host architecture and common utilities |
 | `simd.arm` | Baseline AArch64 OS capability observation and profile admission |
 | `simd.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
@@ -59,7 +53,7 @@ custom element types and application dispatch.
 | `simd.types`, `simd.memory`, `simd.static_string` | Type, memory and string utilities |
 | `simd.cpuid`, `simd.wait` | Baseline x86 feature queries and wait utilities |
 
-The profile modules expose the common vector template and `wide`. Generic math
+The hub exposes the common vector template, ISA feature tags and `wide`. Generic math
 uses argument-dependent lookup, so an element library can supply its own
 arithmetic and batched kernels. The downstream FTZ library
 uses that extension for reproducible binary32 arithmetic. SIMD itself leaves
@@ -86,62 +80,43 @@ Producer and consumer compiler, standard-library and runtime modes must agree.
 find_package(simd CONFIG REQUIRED COMPONENTS simd)
 add_executable(example example.cc)
 target_link_libraries(example PRIVATE simd::simd)
-simd_target_profile(example AVX512)  # default x86 package includes both profiles
 ```
 
-The default x86 package contains AVX2 and AVX-512. With the tested CMake/Clang
-module toolchain, `import simd;` requires an AVX-512 compilation in that package,
-even when the code uses an AVX2 vector type. For an AVX2-only omnibus, build with
-`-DSIMD_PROFILES=AVX2` and select `AVX2` on the consumer. On AArch64 the default
-is `NEON`; use `simd::vec<float,4,simd::neon>` and select `NEON` on the consumer.
-[The omnibus guide](docs/omnibus.md) explains this BMI constraint and the granular
-imports available to baseline dispatchers.
+The hub compiles once at the project minimum: AVX2/FMA/BMI2 on x86 and NEON on
+AArch64 by default. Set `SIMD_MINIMAL_COMPILE_OPTIONS` in project setup to choose
+a different minimum. Importing `simd` exposes stronger APIs without enabling
+their instructions in ordinary caller code. Each native implementation carries
+its own Clang target requirements; common utilities have one provider.
 
-Add `NEON_FP16` to the ARM `SIMD_PROFILES` list to opt into native half arithmetic.
-Its `vec<fp16,8,neon_fp16>` follows the caller's FPCR and uses full-lane masks.
-Native arithmetic includes division and `sqrt(x)` through argument-dependent lookup.
-Compile optional kernels with `simd_target_profile(target NEON_FP16)` and admit
-`arm_profile::neon_fp16` through `simd.arm` before entry. An omnibus importing this
-profile also requires NEON_FP16 consumer flags. See the [native FP16 guide](tests/neon_fp16/README.md)
-for arithmetic, OS admission and relocated package tests.
+Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
+you choose, then pass the matching list to `with_isa`. It checks CPU and OS
+support and invokes your callable with the first supported tag. It does not
+retarget a lambda. Generated variants have distinct overloads and matching
+function attributes, with no per-variant CMake targets or BMIs.
 
-Add `NEON_BF16` to the ARM `SIMD_PROFILES` list for exact native BF16 storage
-and `dot2(a,b,accumulator)` with `vec<bf16,8,neon_bf16>` inputs and a four-lane
-FP32 accumulator/result. Admit `arm_profile::neon_bf16` through `simd.arm` before
-entry. Native BFDOT has its own rounding/FPCR contract, including optional EBF16;
-see the [BF16 guide](tests/neon_bf16/README.md). FP16 and BF16 are independent
-optional features; default profiles and scalar conversions remain unchanged.
+Presets include AVX2, AVX-512, AVX-512 BF16/FP16, NEON and NEON BF16/FP16. They
+are aliases for canonical feature sets; supported feature combinations can have
+their own source names. The native half operations retain their instruction
+contracts: [AVX-512 FP16](tests/avx512_fp16/README.md),
+[AVX-512 BF16](tests/bf16_profile/README.md),
+[NEON FP16](tests/neon_fp16/README.md), and [NEON BF16](tests/neon_bf16/README.md).
+Importing those APIs does not require that the CPU can execute them. Admission
+belongs at the call boundary, and the process must already meet its configured
+minimum.
 
-Add `AVX512_FP16` to `SIMD_PROFILES` for native half arithmetic with
-`vec<fp16,32,avx512_fp16>`, including division and `sqrt(x)` through
-argument-dependent lookup. It follows MXCSR rounding and uses gradual half
-underflow regardless of DAZ/FTZ. Compile granular kernels for `AVX512_FP16` and
-admit `x86_profile::avx512_fp16` before entry. See the [native AVX-512 half guide](tests/avx512_fp16/README.md).
-For `import simd;`, use `simd_target_omnibus(target)` to enable the installed
-package's exact feature union, and admit every included optional profile.
+`simd::simd` owns the hub and links `simd::minimal`, which owns the common
+utilities. Old profile target names are aliases to the hub. The former
+`simd.avx2`, `simd.avx512` and native-half modules are replaced by `import simd;`.
+`SIMD_PROFILES` selects regression coverage, not the public API or BMI set.
+Applications that prefer separately compiled kernels may still use
+`simd_target_profile`; the source target-list helper needs no such setup.
 
-Add `AVX512_BF16` to `SIMD_PROFILES` to opt into native BF16 pairwise dot
-products. Its distinct `avx512_bf16` tag adds `vec<bf16,N,avx512_bf16>` storage
-for N = 8, 16, or 32 and `dot2(a,b,accumulator)` with an FP32 accumulator/result
-of N/2 lanes. Compile
-that consumer with `simd_target_profile(target AVX512_BF16)` and admit
-`x86_profile::avx512_bf16` before entering it. The configured omnibus then also
-requires that compilation profile. Default profiles and scalar half conversions
-are unchanged. [The focused fixture](tests/bf16_profile/README.md) documents the
-instruction contract and remaining half-format work.
-
-Each ABI has its own static archive. `simd::simd` supplies omnibus module
-metadata and links the configured archives; minimal and profile targets remain
-available for granular imports. CMake rebuilds consumer
-BMIs from installed sources. `simd_target_profile` applies ISA flags only to its
-target.
-An application checks CPU and OS vector-state support before calling a native
-entry point; linking the archive does not grant that support.
-
-`simd::headers` exposes `<simd/attributes.h>` and the textual inputs needed to
-build modules. It also supports a `LANGUAGES NONE` consumer and a headers-only
+`simd::headers` exposes configuration, attributes, ISA metadata and
+`<simd/targets.h>` for source generation. It also supports a `LANGUAGES NONE` consumer and a headers-only
 installation with `SIMD_BUILD_HOST=OFF`. Include the attribute header when using
 macros such as `simd_inline`; imports do not carry macros.
+Using `isa.h` without modules requires C++20; the host modules require C++26.
+The configuration and attribute headers impose no new C++ language mode.
 
 [Compiled API examples](tests/api/README.md) exercise vector construction, masks,
 memory, swizzles, wide values and the common utilities. [Build details](doc/building.md)

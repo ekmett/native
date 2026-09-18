@@ -1,7 +1,7 @@
 # Native ISA module regression
 
-Each AVX2 and AVX512 bridge compiles with private profile flags and imports its
-raw provider. The baseline x86-64 dispatcher imports neither ISA module, checks
+Each AVX2 and AVX512 bridge compiles with private profile flags and imports the
+shared hub. The baseline x86-64 dispatcher checks
 CPUID and OS vector state, then enters an admitted bridge through a C function.
 The `none` control enters neither profile. Type checks verify distinct profile
 types and architecture tags with shared `simd::wide` storage. Generic consumers
@@ -25,8 +25,7 @@ packet for cross-host comparison. These are bounded CPU regressions, not a
 complete-domain accuracy proof or GPU validation.
 
 The separate NEON fixture follows the same packet contract; see
-[its runner](../neon/README.md). Bridges link the common provider and their own
-profile explicitly, keeping consumer BMI configuration tied to that profile.
+[its runner](../neon/README.md). Both bridges use the same baseline hub BMI.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

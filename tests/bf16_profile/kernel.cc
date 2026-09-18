@@ -10,13 +10,16 @@
 #include <utility>
 #include <simd/attributes.h>
 #include "support/guarded_pages.h"
-import simd.avx512_bf16;
+#include "../half_storage/native_bridge.h"
+import simd;
 template<std::size_t N> using bf16_vector = simd::vec<simd::bf16,N,simd::avx512_bf16>;
 template<std::size_t N> using float_vector = simd::vec<float,N/2,simd::avx512_bf16>;
 template<class V> concept addable = requires(V a) { a+a; };
 template<std::size_t N> constexpr bool shape() {
   using B = bf16_vector<N>;
   using F = float_vector<N>;
+  static_assert(simd::test::native_bridge<B>);
+  static_assert(simd::test::bf16_storage_only<B>);
   static_assert(sizeof(B) == 2*N && alignof(B) == 2*N && std::is_trivially_copyable_v<B>);
   static_assert(sizeof(simd::bf16) == 2 && B::mask::compact && B::lanes == N);
   static_assert(std::same_as<decltype(simd::vec(simd::avx512_bf16{},std::array<simd::bf16,N>{})),B>);
@@ -57,6 +60,10 @@ template<std::size_t N> bool storage() {
     for (unsigned i=0;i!=N;++i)
       if (copy[i].to_bits()!=base+i || words[i]!=base+i) return false;
     B::from_native(value.to_native()).store(copy.data());
+    for (unsigned i=0;i!=B::lanes;++i) if (copy[i].to_bits()!=base+i) return false;
+    typename B::native_type native = value;
+    B restored = native;
+    restored.store(copy.data());
     for (unsigned i=0;i!=N;++i) if (copy[i].to_bits()!=base+i) return false;
     B::from_bits(value.bits()).store(copy.data());
     for (unsigned i=0;i!=N;++i) if (copy[i].to_bits()!=base+i) return false;

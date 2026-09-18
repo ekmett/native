@@ -1,12 +1,8 @@
-#pragma once
-#include "simd/simd/common.h"
-#include <immintrin.h>
 
 namespace simd {
-  template<class Arch> concept x86_architecture = std::same_as<Arch,avx2> || ::simd::detail::avx512_architecture<Arch>;
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <x86_architecture Arch> struct simd_empty_bases vec<float, 4,Arch> : detail::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
+  template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 4,Arch> : detail::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
     using architecture = Arch;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
@@ -15,7 +11,7 @@ namespace simd {
         noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
     template <class T> using rebind = vec<T,4,Arch>;
     using vector_mask_type=vec<mask32,4,Arch>;
-    using mask_type=std::conditional_t<::simd::detail::avx512_architecture<Arch>,predicate<4,Arch>,vec<mask32,4,Arch>>;
+    using mask_type=std::conditional_t<bool(SIMD_HAS_AVX512VL),predicate<4,Arch>,vec<mask32,4,Arch>>;
     using mask = mask_type;
     using predicate_type = predicate<4,Arch>;
     __m128 value;
@@ -45,21 +41,21 @@ namespace simd {
     simd_nodiscard friend simd_inline simd_const vec operator-(vec a) { return vec(_mm_xor_ps(a.value, _mm_set1_ps(-0.f))); }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator<(vec a, vec b) {
-      if constexpr(::simd::detail::avx512_architecture<Arch>)
+      if constexpr(bool(SIMD_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator>(vec a, vec b) {
-      if constexpr(::simd::detail::avx512_architecture<Arch>)
+      if constexpr(bool(SIMD_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator==(vec a, vec b) {
-      if constexpr(::simd::detail::avx512_architecture<Arch>)
+      if constexpr(bool(SIMD_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_EQ_OQ)));
@@ -154,7 +150,7 @@ namespace simd {
 
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <x86_architecture Arch> struct vec<float, 8,Arch> : detail::register_memory<vec<float,8,Arch>, 8> {
+  template <SIMD_ARCH_CONCEPT Arch> struct vec<float, 8,Arch> : detail::register_memory<vec<float,8,Arch>, 8> {
     using architecture = Arch;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
@@ -163,7 +159,7 @@ namespace simd {
         noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
     template <class T> using rebind = vec<T,8,Arch>;
     using vector_mask_type=vec<mask32,8,Arch>;
-    using mask_type=std::conditional_t<::simd::detail::avx512_architecture<Arch>,predicate<8,Arch>,vec<mask32,8,Arch>>;
+    using mask_type=std::conditional_t<bool(SIMD_HAS_AVX512VL),predicate<8,Arch>,vec<mask32,8,Arch>>;
     using mask = mask_type;
     using predicate_type = predicate<8,Arch>;
     __m256 value;
@@ -193,21 +189,21 @@ namespace simd {
     simd_nodiscard friend simd_inline simd_const vec operator-(vec a) { return vec(_mm256_xor_ps(a.value, _mm256_set1_ps(-0.f))); }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator<(vec a, vec b) {
-      if constexpr(::simd::detail::avx512_architecture<Arch>)
+      if constexpr(bool(SIMD_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator>(vec a, vec b) {
-      if constexpr(::simd::detail::avx512_architecture<Arch>)
+      if constexpr(bool(SIMD_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
     simd_nodiscard friend simd_inline simd_const mask_type operator==(vec a, vec b) {
-      if constexpr(::simd::detail::avx512_architecture<Arch>)
+      if constexpr(bool(SIMD_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_EQ_OQ)));
