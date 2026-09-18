@@ -67,6 +67,9 @@ if(SIMD_BUILD_HOST)
   include(etc/cmake/Compiler.cmake)
   if(SIMD_BUILD_TESTS)
     enable_testing()
+    # Boundary tests inspect provider commands as well as test executables.
+    # Enable the database before creating the module targets.
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
   endif()
   add_subdirectory(src)
 endif()
