@@ -182,3 +182,35 @@ The compatibility alias in this FTZ build selects manual policy; its dual-policy
 tests also execute `m32` under gradual/flush controls and admitted `h32` under
 flush controls. These are CPU/module checks, without Linux AVX-512 execution,
 GPU execution, sanitizer or performance claims.
+
+## Compiler cache
+
+Source `b6da508` plus the sccache workflow change was checked on macOS 15.5
+ARM64 with Clang 23.1.1, CMake 4.4.3, Ninja 1.12.1 and sccache 0.16.0.
+The Release producer enabled NEON, tests, PCH and IPO, with exceptions disabled
+and `CMAKE_CXX_COMPILER_LAUNCHER=sccache`. A separate local disk cache and server
+were used; this was not a GitHub Actions cache-service test.
+
+| Build | Launcher requests | Cache hits | Cache misses | Non-cacheable calls | CTest |
+| --- | --- | --- | --- | --- | --- |
+| Empty cache | 48 | 0 | 11 | 37 | 36/36 passed |
+| Clean rebuild, retained cache | 48 | 11 | 0 | 37 | 36/36 passed |
+
+The eleven cacheable requests comprised ten C++ compilations and one Clang PCH
+creation. All 37 bypasses reported `@`: the generated CMake module-map response
+files contain quoted paths, which the pinned sccache parser does not expand.
+Cache statistics exclude dependency scanning, linking and CMake-synthesized BMI
+commands that do not use the launcher. Both passes reported zero cache errors
+and zero compilation failures. The warm pass used the same source/build paths
+and a Ninja clean before rebuilding; it was not a no-op incremental build.
+
+Installation succeeded. The installed omnibus consumer, configured without a
+compiler launcher and with sccache absent from `PATH`, passed all three tests;
+installed CMake metadata contains no sccache dependency. PCH, ThinLTO, module
+sources and library code were unchanged.
+
+The workflow's YAML and Bash scripts were checked locally. Upstream release
+assets were verified to exist for Linux x86-64/ARM64, Windows x64/ARM64 and macOS
+ARM64. Native Windows/Linux execution and reuse between hosted workflow runs
+remain unverified by this check; each CI lane retains its own cache statistics.
+No wall-clock speedup or complete module-cache coverage is claimed.

@@ -86,6 +86,47 @@ boundary when other code uses ThinLTO; disabling a target IPO property cannot
 undo manually inherited LTO flags. See [the module guide](../docs/modules.md)
 for intrinsic linkage and transitive BMI details.
 
+## Compiler caching
+
+The producer CI jobs use sccache 0.16.0 through Mozilla's commit-pinned
+[sccache action](https://github.com/Mozilla-Actions/sccache-action/tree/fc920bf0ec8de6ee65d409111f7ec508035751ba)
+and GitHub Actions cache backend. The action verifies the release archive's
+published SHA-256 and supplies the cache service environment. The workflow keeps
+`contents: read` permissions and needs no additional repository secrets or
+separate `actions/cache` step.
+
+For an opt-in local disk cache, install sccache separately, put it on `PATH`, and
+add `-DCMAKE_CXX_COMPILER_LAUNCHER=sccache` to the producer configure command.
+Keep PCH and IPO enabled. This launcher is a build-tree setting; installed
+packages neither require sccache nor select a consumer's launcher. Configure
+without that argument for an uncached new tree, or set
+`-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear an existing tree's launcher.
+
+Cache coverage is partial. The pinned release understands explicit Clang named
+module flags, but its
+[response-file reader](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/gcc.rs)
+bypasses files containing quotes. CMake's generated `.modmap` files quote module
+paths, so those compilations report the non-cacheable reason `@` and run the
+compiler normally. Some CMake-synthesized BMI commands do not use the launcher
+at all. Clang PCH generation can be cached; clang-cl's `/Yc` and `/Fp` PCH flags
+and forwarded module flags are
+[unsupported](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/msvc.rs)
+and bypass caching. Do not remove PCH, change module generation or weaken compiler
+settings to inflate cache hits. Dependency scanning and linking still execute.
+
+Every CI job records `sccache --show-adv-stats`, JSON statistics and the cache
+version in its logs artifact, including after a failed build when setup succeeded.
+The job summary includes non-cacheable reasons as well as hits, misses and cache
+errors. Inspect those counters before attributing a speedup to the cache; a
+successful build alone does not demonstrate reuse across workflow runs.
+
+To check local reuse, build and run CTest, record the statistics, run
+`cmake --build build/core --target clean`, then `sccache --zero-stats`, rebuild
+and run CTest again. An incremental build with no work does not exercise the
+cache. Use the same source/build paths and compiler; changed paths, compiler
+contents or flags can prevent hits. See the measured native result in
+[validation](../docs/validation.md#compiler-cache).
+
 ## Toolchain recipes and CI
 
 Keep `clang++` and `clang-scan-deps` from the same LLVM 23 installation on
