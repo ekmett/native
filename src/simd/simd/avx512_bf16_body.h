@@ -51,6 +51,12 @@ export namespace simd {
     template<class... T> requires std::constructible_from<vec,T...>
     simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
       : vec(std::forward<T>(values)...) {}
+    /// Adopt a native register without conversion or representation changes.
+    simd_inline vec(native_type value) noexcept : value_(value) {}
+    /// Project the native register for direct intrinsic interoperability.
+    simd_nodiscard simd_inline operator native_type() const noexcept { return value_; }
+    // Native interoperability must not add elementwise BF16 arithmetic.
+#include "simd/simd/bf16_reject_operators.h"
     /// Return all lane bits as a native register, without conversion or lane reordering.
     simd_nodiscard simd_inline native_type to_native() const noexcept { return value_; }
     /// Copy a native BF16 register into this vector, preserving every representation bit.
@@ -124,8 +130,8 @@ export namespace simd {
   /// Deduce BF16 element type, argument-count lanes, and the explicit BF16 profile.
   /// Arguments must all be BF16 values. Only 8, 16 and 32 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T, SIMD_ARCH_CONCEPT Arch> requires(sizeof...(T) > 0 && (std::same_as<T,bf16> && ...))
-  vec(Arch,T...) -> vec<bf16,sizeof...(T),Arch>;
+  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,bf16> && ...)
+  vec(Arch,bf16,T...) -> vec<bf16,1+sizeof...(T),Arch>;
 
   /// Native VDPBF16PS: for each output i, accumulate a[2*i+1]*b[2*i+1]
   /// first, then a[2*i]*b[2*i]. Each FP32 FMA rounds to nearest, ties to even;

@@ -55,6 +55,10 @@ export namespace simd {
     template<class... T> requires std::constructible_from<vec,T...>
     simd_inline vec(architecture, T &&... values) noexcept(std::is_nothrow_constructible_v<vec,T...>)
       : vec(std::forward<T>(values)...) {}
+    /// Adopt a native register without conversion or representation changes.
+    simd_inline vec(native_type value) noexcept : value_(value) {}
+    /// Project the native register for direct intrinsic interoperability.
+    simd_nodiscard simd_inline operator native_type() const noexcept { return value_; }
     /// Return all lane bits as a native register, without conversion or lane reordering.
     simd_nodiscard simd_inline native_type to_native() const noexcept { return value_; }
     /// Copy a native FP16 register into this vector, preserving every representation bit.
@@ -179,8 +183,8 @@ export namespace simd {
   /// Deduce FP16 element type, argument-count lanes, and the explicit FP16 profile.
   /// Arguments must all be FP16 values. Only 32 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T, SIMD_ARCH_CONCEPT Arch> requires(sizeof...(T) > 0 && (std::same_as<T,fp16> && ...))
-  vec(Arch,T...) -> vec<fp16,sizeof...(T),Arch>;
+  template<SIMD_ARCH_CONCEPT Arch, class... T> requires(std::same_as<T,fp16> && ...)
+  vec(Arch,fp16,T...) -> vec<fp16,1+sizeof...(T),Arch>;
 
   /// Compute a*b+c in each lane with one final half-precision rounding (VFMADD*PH).
   /// MXCSR rounding and exception controls apply, status flags may change, and
