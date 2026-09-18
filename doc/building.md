@@ -102,17 +102,36 @@ packages neither require sccache nor select a consumer's launcher. Configure
 without that argument for an uncached new tree, or set
 `-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear an existing tree's launcher.
 
-Cache coverage is partial. The pinned release understands explicit Clang named
-module flags, but its
+On Linux and macOS, CI places the small
+[module-map launcher](../.github/scripts/sccache_launcher.py) before sccache.
+CMake quotes paths in its `.modmap` response files, while sccache 0.16.0's
 [response-file reader](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/gcc.rs)
-bypasses files containing quotes. CMake's generated `.modmap` files quote module
-paths, so those compilations report the non-cacheable reason `@` and run the
-compiler normally. Some CMake-synthesized BMI commands do not use the launcher
-at all. Clang PCH generation can be cached; clang-cl's `/Yc` and `/Fp` PCH flags
-and forwarded module flags are
-[unsupported](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/msvc.rs)
-and bypass caching. Do not remove PCH, change module generation or weaken compiler
-settings to inflate cache hits. Dependency scanning and linking still execute.
+bypasses any quoted response file with reason `@`. The launcher recognizes only
+CMake's `-x c++-module`, quoted `-fmodule-output` and named `-fmodule-file` lines
+with simple nonempty ASCII values, expanding them to equivalent argv entries.
+It never changes CMake's files. This makes the pinned cache's existing module
+input hashing and object/BMI output storage available to those commands.
+
+Unknown flags, malformed or compound quotes, single quotes, escapes, whitespace
+inside values, nested/other response files and oversized inputs leave the whole
+invocation unchanged. Expanded argv has a conservative size limit, with an
+additional original-argument retry if `exec` reports `E2BIG`. Paths with spaces
+inside the map retain the original cache bypass. This is intentionally not a
+general response-file parser. Its focused semantic tests run in the POSIX CI
+lanes with `python3 -B .github/scripts/test_sccache_launcher.py`.
+
+To opt into the same launcher locally, replace the plain sccache configure
+argument with this CMake list (Python 3 and sccache must be available):
+
+```sh
+-DCMAKE_CXX_COMPILER_LAUNCHER="$(command -v python3);$PWD/.github/scripts/sccache_launcher.py"
+```
+
+Windows retains direct sccache; clang-cl's PCH and forwarded module flags remain
+[unsupported](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/msvc.rs).
+Some CMake-synthesized BMI commands do not use a compiler launcher at all.
+Dependency scanning and linking still execute, and cache misses still compile
+normally. PCH, module generation and compiler settings remain unchanged.
 
 Every CI job records `sccache --show-adv-stats`, JSON statistics and the cache
 version in its logs artifact, including after a failed build when setup succeeded.

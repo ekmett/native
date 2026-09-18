@@ -150,21 +150,27 @@ jobs:
             done
           fi
           echo "Native CPU package tests: $RUNNER_OS / $(uname -m) / $TEST_PROFILE. AVX-512 compilation is not proof of AVX-512 execution; profile tests report unsupported hardware as skipped." >> "$GITHUB_STEP_SUMMARY"
+      - name: Check compiler cache launcher
+        if: runner.os != 'Windows'
+        run: python3 -B .github/scripts/test_sccache_launcher.py
       - name: Configure modules
         shell: bash
         run: |
           compiler=clang++
+          launcher=sccache
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then
             compiler=clang-cl
             extra+=(-DCMAKE_LINKER_TYPE=LLD)
+          else
+            launcher="$(command -v python3);$GITHUB_WORKSPACE/.github/scripts/sccache_launcher.py"
           fi
           if [[ "${RUNNER_OS}" == Linux ]]; then
             extra+=(-DCMAKE_LINKER_TYPE=LLD)
           fi
           cmake -S . -B build/core -G Ninja \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER="$launcher" \
             -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
             -DSIMD_TEST_ISA="${{ matrix.profile }}" \
             '-DSIMD_PROFILES=${{ matrix.profiles }}' "${extra[@]}"

@@ -214,3 +214,45 @@ assets were verified to exist for Linux x86-64/ARM64, Windows x64/ARM64 and macO
 ARM64. Native Windows/Linux execution and reuse between hosted workflow runs
 remain unverified by this check; each CI lane retains its own cache statistics.
 No wall-clock speedup or complete module-cache coverage is claimed.
+
+### Conservative module-map expansion
+
+The follow-up launcher was compared against plain sccache with the same source,
+macOS ARM64 toolchain, NEON configuration, PCH, IPO and two compiler jobs. Each
+variant used its own fresh build tree, local cache and server; the warm pass
+cleaned its outputs and reset statistics while retaining that variant's cache.
+
+| Launcher | Build | Hits / requests | Misses | Bypasses | Build wall time |
+| --- | --- | --- | --- | --- | --- |
+| Plain sccache | Cold | 0 / 48 | 11 | 37 | 14.03 s |
+| Plain sccache | Clean warm | 11 / 48 | 0 | 37 | 10.88 s |
+| Module-map expansion | Cold | 0 / 48 | 48 | 0 | 15.63 s |
+| Module-map expansion | Clean warm | 48 / 48 | 0 | 0 | 4.98 s |
+
+All four builds passed 36/36 CTests. Expanded maps enabled caching for all eight
+module producer commands and all 39 ordinary C++ commands, alongside the one
+PCH request. Both cold and warm passes reported zero cache errors. These
+statistics still exclude CMake-generated BMI commands without a launcher,
+dependency scanning and linking. Times measure only `cmake --build`, excluding
+configuration, cleaning and CTest. They are single local observations, not a
+repeated benchmark or a claim about hosted CI performance. The cold normalized
+build took longer than the plain cold build.
+
+Seven focused launcher test methods cover accepted generated maps, preservation
+of argv and response-file contents, unknown/ambiguous syntax, all whitespace
+classes, quotes/escapes, nested response files, missing/non-ASCII files, size
+limits, Windows/clang-cl bypass, `E2BIG` fallback and propagation of compiler
+output and exit status. All 53 module maps from the earlier build also produced
+the same Clang 23 `-###` invocation with original response files and expanded
+arguments.
+
+An independent two-file Clang module fixture checked cache invalidation. The
+cold build missed twice and its unchanged warm rebuild hit twice. Changing a
+header used by the module and then changing its exported constant each forced
+both producer and unchanged importer to miss, and the executable observed the
+new values (1 to 2 to 3). A final unchanged rebuild hit twice and retained 3.
+Timestamp-only header/module changes also allowed cached module reuse with
+freshly compiled importers. All seven stages passed with zero cache errors and
+unchanged module-map SHA-256 hashes. This tests local cache correctness for
+those changes; hosted cache-service reuse and native Linux/Windows execution
+retain the limitations above.
