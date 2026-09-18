@@ -110,7 +110,7 @@ def pch_inputs(arguments):
     index = 1
     while index < len(arguments):
         arg = arguments[index]
-        if arg.startswith('@'):
+        if arg.startswith('@') or arg.startswith('-Xclang=@'):
             return None
         if arg == '-include-pch':
             forwarded = index > 1 and arguments[index - 1] == '-Xclang'

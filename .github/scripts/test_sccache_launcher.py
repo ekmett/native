@@ -133,7 +133,7 @@ class PchTests(unittest.TestCase):
                       ['-include-pch=' + str(self.pch)],
                       ['-Xclang=-include-pch', str(self.pch)],
                       ['-Xclang', '-include-pch', str(self.pch)],
-                      ['-include-pch', '-wrong'], ['@hidden.rsp'],
+                      ['-include-pch', '-wrong'], ['@hidden.rsp'], ['-Xclang=@hidden.rsp'],
                       ['-include-pth', str(self.pch)],
                       ['-include-pch', 'ambiguous' + os.pathsep + 'path']]:
             with self.subTest(flags=flags):
@@ -151,7 +151,7 @@ class PchTests(unittest.TestCase):
 
     @unittest.skipIf(os.name == 'nt', 'POSIX Clang launcher integration')
     def test_opaque_input_executes_original_compiler(self):
-        for flags in [['@unknown.rsp'], ['-include-pch', 'missing.pch']]:
+        for flags in [['@unknown.rsp'], ['-Xclang=@hidden.rsp'], ['-include-pch', 'missing.pch']]:
             arguments = [*self.arguments, *flags]
             with patch.object(launcher.os, 'execvp') as execute:
                 launcher.main(arguments)
