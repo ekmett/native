@@ -35,7 +35,21 @@
 #endif
 #define SIMD_HAS_NEON_FP16 SIMD_PROFILE_FP16
 
-#if SIMD_PROFILE == 512 && SIMD_PROFILE_BF16
+#ifndef SIMD_PROFILE_AVX512_FP16
+#define SIMD_PROFILE_AVX512_FP16 0
+#endif
+#if SIMD_PROFILE_AVX512_FP16 && (SIMD_PROFILE != 512 || !defined(__AVX512FP16__))
+#error The AVX512_FP16 profile requires compiler AVX512_FP16 support
+#endif
+#if SIMD_PROFILE_AVX512_FP16 && SIMD_PROFILE_BF16
+#error Select one architecture profile per module producer
+#endif
+#define SIMD_HAS_AVX512_FP16 SIMD_PROFILE_AVX512_FP16
+
+#if SIMD_PROFILE == 512 && SIMD_PROFILE_AVX512_FP16
+#define SIMD_ARCH ::simd::avx512_fp16
+#define SIMD_BACKEND avx512_fp16_backend
+#elif SIMD_PROFILE == 512 && SIMD_PROFILE_BF16
 #define SIMD_ARCH ::simd::avx512_bf16
 #define SIMD_BACKEND avx512_bf16_backend
 #elif SIMD_PROFILE == 512

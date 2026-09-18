@@ -21,7 +21,7 @@ target_include_directories(simd_neon_fp16_kernel PRIVATE "${CMAKE_CURRENT_SOURCE
 set_target_properties(simd_neon_fp16_kernel PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
 add_library(simd_neon_fp16_omnibus OBJECT omnibus.cc)
 target_link_libraries(simd_neon_fp16_omnibus PRIVATE simd::simd simd::minimal)
-simd_target_profile(simd_neon_fp16_omnibus NEON_FP16)
+simd_target_omnibus(simd_neon_fp16_omnibus)
 target_precompile_headers(simd_neon_fp16_omnibus PRIVATE <array> <concepts> <cstddef> <type_traits>)
 add_executable(simd_test_neon_fp16 main.cc $<TARGET_OBJECTS:simd_neon_fp16_kernel>)
 target_link_libraries(simd_test_neon_fp16 PRIVATE simd::minimal simd::neon_fp16)

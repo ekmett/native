@@ -33,7 +33,7 @@ ctest --test-dir build/consumer --output-on-failure
 Use distinct unused prefix paths, and `clang-cl` in a Windows MSVC SDK environment.
 Repeat with a separate producer using `SIMD_PROFILES=AVX2` to check the narrower
 package. On AArch64 use `SIMD_PROFILES=NEON`; x86 CPUID/wait are absent there.
-The fixture chooses the strongest installed profile by default. The override
+The fixture uses the installed profile union by default. The override
 `OMNIBUS_CONSUMER_PROFILE` exists for explicit compiler/BMI diagnostics; choosing
 a weaker profile than the package supports is not a successful-consumer mode.
 

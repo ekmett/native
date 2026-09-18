@@ -12,7 +12,9 @@ import simd.arm;
 int compaction_entry(int,char **);
 int main(int argc,char ** argv) {
 #if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
-#if SIMD_TEST_BF16
+#if SIMD_TEST_AVX512_FP16
+  constexpr auto profile = simd::x86_profile::avx512_fp16;
+#elif SIMD_TEST_BF16
   constexpr auto profile = simd::x86_profile::avx512_bf16;
 #else
   constexpr auto profile = SIMD_TEST_PROFILE == 512 ? simd::x86_profile::avx512 : simd::x86_profile::avx2;

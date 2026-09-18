@@ -35,9 +35,9 @@ Each provider owns its ISA options. Clang allows a stronger target to import
 the common baseline BMI, but rejects the reverse: an importer of an AVX-512
 BMI must enable AVX-512 itself. Therefore a combined omnibus importer selects
 AVX512; an AVX2-only package selects AVX2, and ARM selects NEON.
-When the optional `AVX512_BF16` profile is present, an omnibus consumer must
-select `simd_target_profile(example AVX512_BF16)` instead and admit
-`x86_profile::avx512_bf16` before execution. Granular `simd.avx2` and
+For optional profiles, `simd_target_omnibus(example)` enables the complete
+configured union. Admit each included extension before execution. A package
+with AVX512_BF16 alone can still use the existing single-profile helper. Granular `simd.avx2` and
 `simd.avx512` imports retain their original requirements.
 
 This requirement stays on the omnibus and profile sources. It does not rebuild
@@ -53,7 +53,11 @@ and pointer/scalar entry signatures. Check CPU and OS vector-state support befor
 calling them. Keep IPO disabled on the baseline dispatch object when preserving
 that boundary; the native implementation may still use ThinLTO.
 
-The compatibility re-export producer uses the strongest selected profile.
+The compatibility re-export producer uses the union of selected profiles.
+`simd_target_omnibus(target)` reads that union from installed target metadata and
+applies it to a consumer, including a consumer PCH. AVX512_BF16 and AVX512_FP16
+are independent; admit both when both are included. Granular profile selection
+continues to use `simd_target_profile(target profile)`.
 Its body contains only imports. Granular consumers and downstream libraries that
 import only `simd.scalar` keep their existing compilation requirements.
 
