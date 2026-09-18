@@ -13,10 +13,10 @@ namespace {
     7, (1u<<0)|(1u<<9)|(1u<<12)|(1u<<19)|(1u<<20)|(1u<<23)|
       (1u<<26)|(1u<<27)|(1u<<28)|(1u<<29),
     (1u<<23)|(1u<<25)|(1u<<26),
-    (1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31), 0xe6, true, 1, 1u<<5};
+    (1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31), 0xe6, true, 1, 1u<<5, 1u<<23};
   constexpr bool synthetic() {
     using enum simd::x86_profile;
-    for (auto profile : {avx2, avx512, avx512_bf16}) {
+    for (auto profile : {avx2, avx512, avx512_bf16, avx512_fp16}) {
       if (!simd::classify_x86_profile(full, profile).admitted()) return false;
       // Independent contract oracle: CPUID.1 ECX SSE3, SSSE3, FMA, SSE4.1,
       // SSE4.2, POPCNT, XSAVE, AVX (+F16C for AVX512); EDX MMX/SSE/SSE2.
@@ -60,6 +60,14 @@ namespace {
         if (result.missing_leaf7_1 != (profile == avx512_bf16)) return false;
         if (result.missing_leaf7_1_eax != (profile == avx512_bf16 ? (1u << 5) : 0u)) return false;
       }
+      for (unsigned bit = 0; bit != 32; ++bit) {
+        auto cpu = full; auto mask = std::uint32_t(1) << bit;
+        cpu.leaf7_edx &= ~mask;
+        auto result = simd::classify_x86_profile(cpu, profile);
+        auto expected = profile == avx512_fp16 ? (1u << 23) : 0u;
+        if (result.missing_leaf7_edx != (expected & mask)) return false;
+        if (result.admitted() == bool(expected & mask)) return false;
+      }
       for (unsigned bit = 0; bit != 64; ++bit) {
         auto cpu = full; auto mask = std::uint64_t(1) << bit;
         cpu.xcr0 &= ~mask;
@@ -73,6 +81,7 @@ namespace {
         if (result.admitted() || !result.missing_leaf7) return false;
         if (result.missing_leaf1 != (maximum == 0)) return false;
         if (result.missing_leaf7_ebx != expected_ebx) return false;
+        if (result.missing_leaf7_edx != (profile == avx512_fp16 ? 1u<<23 : 0u)) return false;
         if (maximum == 0 && (result.missing_leaf1_ecx != expected_ecx ||
             result.missing_leaf1_edx != expected_edx || !result.missing_osxsave)) return false;
       }
@@ -92,12 +101,14 @@ int main() {
   if (std::strcmp(simd::classify_x86_profile(cpu, simd::x86_profile::avx2).reason(), "OS has not enabled YMM state")) return 3;
   auto native = simd::observe_x86_capabilities();
   if (native.max_basic_leaf < 1 && (native.leaf1_ecx || native.leaf1_edx || native.xcr0_observed)) return 4;
-  if (native.max_basic_leaf < 7 && native.leaf7_ebx) return 5;
+  if (native.max_basic_leaf < 7 && (native.leaf7_ebx || native.leaf7_edx)) return 5;
   constexpr auto xsave = (1u<<26)|(1u<<27);
   if (native.xcr0_observed != (native.max_basic_leaf >= 1 && (native.leaf1_ecx & xsave) == xsave)) return 6;
   if ((native.max_basic_leaf < 7 || native.max_leaf7_subleaf < 1) && native.leaf7_1_eax) return 7;
   cpu = full; cpu.leaf7_1_eax = 0;
   if (std::strcmp(simd::classify_x86_profile(cpu, simd::x86_profile::avx512_bf16).reason(), "CPU lacks AVX512_BF16")) return 8;
-  for (auto profile : {simd::x86_profile::avx2, simd::x86_profile::avx512, simd::x86_profile::avx512_bf16})
+  cpu = full; cpu.leaf7_edx = 0;
+  if (std::strcmp(simd::classify_x86_profile(cpu, simd::x86_profile::avx512_fp16).reason(), "CPU lacks AVX512_FP16")) return 9;
+  for (auto profile : {simd::x86_profile::avx2, simd::x86_profile::avx512, simd::x86_profile::avx512_bf16, simd::x86_profile::avx512_fp16})
     std::puts(simd::classify_x86_profile(native, profile).reason());
 }

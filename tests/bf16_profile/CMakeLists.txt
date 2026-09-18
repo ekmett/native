@@ -21,7 +21,7 @@ target_include_directories(simd_bf16_kernel PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}
 set_target_properties(simd_bf16_kernel PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
 add_library(simd_bf16_omnibus OBJECT omnibus.cc)
 target_link_libraries(simd_bf16_omnibus PRIVATE simd::simd simd::minimal)
-simd_target_profile(simd_bf16_omnibus AVX512_BF16)
+simd_target_omnibus(simd_bf16_omnibus)
 target_precompile_headers(simd_bf16_omnibus PRIVATE <array> <concepts> <cstddef> <type_traits>)
 add_executable(simd_test_bf16 main.cc $<TARGET_OBJECTS:simd_bf16_kernel>)
 target_link_libraries(simd_test_bf16 PRIVATE simd::minimal simd::avx512_bf16)
