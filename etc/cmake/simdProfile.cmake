@@ -1,6 +1,24 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
+# Keep producer flags and installed BMI regeneration in one mapping.
+function(simd_profile_options profile output)
+  set(flags)
+  if(NOT profile STREQUAL "NEON")
+    list(APPEND flags -mavx2 -mfma -mbmi2)
+  endif()
+  if(profile MATCHES "^AVX512")
+    list(APPEND flags -mavx512f -mavx512dq -mavx512bw -mavx512vl)
+  endif()
+  if(profile STREQUAL "AVX512_BF16")
+    list(APPEND flags -mavx512bf16)
+  endif()
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    list(TRANSFORM flags PREPEND "/clang:")
+  endif()
+  set(${output} "${flags}" PARENT_SCOPE)
+endfunction()
+
 # Select the ISA of one producer/consumer target. Never propagate it to callers.
 # Linking simd::simd alone does not select an ISA or a runtime dispatch policy.
 function(simd_target_profile target profile)
@@ -8,7 +26,7 @@ function(simd_target_profile target profile)
     message(FATAL_ERROR "simd_target_profile requires an existing target: ${target}")
   endif()
   string(TOUPPER "${profile}" profile)
-  if(NOT profile MATCHES "^(AVX2|AVX512|NEON)$")
+  if(NOT profile MATCHES "^(AVX2|AVX512|AVX512_BF16|NEON)$")
     message(FATAL_ERROR "Unknown simd target profile: ${profile}")
   endif()
   if(profile STREQUAL "NEON")
@@ -26,19 +44,10 @@ function(simd_target_profile target profile)
     return()
   endif()
   set_property(TARGET "${target}" PROPERTY SIMD_TARGET_PROFILE "${profile}")
-  set(flags)
-  if(NOT profile STREQUAL "NEON")
-    list(APPEND flags -mavx2 -mfma -mbmi2)
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" AND NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    message(FATAL_ERROR "The Windows simd profiles require clang-cl.")
   endif()
-  if(profile STREQUAL "AVX512")
-    list(APPEND flags -mavx512f -mavx512dq -mavx512bw -mavx512vl)
-  endif()
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-      message(FATAL_ERROR "The Windows simd profiles require clang-cl.")
-    endif()
-    list(TRANSFORM flags PREPEND "/clang:")
-  endif()
+  simd_profile_options("${profile}" flags)
   # These are implementation options, not options for regenerating imported
   # dependencies. COMPILE_FLAGS also covers CMake's generated PCH source;
   # ordinary source properties alone would leave that PCH at the wrong ISA.

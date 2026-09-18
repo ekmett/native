@@ -96,6 +96,26 @@ if(SIMD_ENABLE_IPO)
 endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/simdProfile.cmake")
+if("AVX512_BF16" IN_LIST SIMD_PROFILES)
+  block()
+    simd_profile_options(AVX512_BF16 bf16_options)
+    string(JOIN " " bf16_flags ${bf16_options})
+    string(APPEND CMAKE_REQUIRED_FLAGS " ${bf16_flags}")
+    set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+    check_cxx_source_compiles([=[
+      #include <immintrin.h>
+      #ifndef __AVX512BF16__
+      #error BF16 target support missing
+      #endif
+      __m512 probe(__m512 c, __m512bh a, __m512bh b) {
+        return _mm512_dpbf16_ps(c, a, b);
+      }
+    ]=] SIMD_HAS_AVX512_BF16_INTRINSICS)
+    if(NOT SIMD_HAS_AVX512_BF16_INTRINSICS)
+      message(FATAL_ERROR "AVX512_BF16 requires compiler support for native BF16 dot products.")
+    endif()
+  endblock()
+endif()
 
 function(simd_host_settings target)
   target_compile_features(${target} PUBLIC cxx_std_26)

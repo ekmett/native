@@ -11,7 +11,7 @@
 namespace simd {
   namespace detail {
     template<class Arch> concept native_short_arch = std::same_as<Arch,avx2> ||
-      std::same_as<Arch,avx512> || std::same_as<Arch,neon>;
+      ::simd::detail::avx512_architecture<Arch> || std::same_as<Arch,neon>;
     template<class T> concept short_element = std::same_as<T,float> ||
       std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t> || std::same_as<T,mask32>;
     template<class T> using short_lane = std::conditional_t<simd_mask_element<T>,std::uint32_t,T>;
@@ -41,7 +41,7 @@ namespace simd {
     using bits_type=vec<std::uint32_t,N,Arch>;
     using vector_mask_type=vec<mask32,N,Arch>;
     using mask_type=std::conditional_t<simd_mask_element<T>,vec,
-      std::conditional_t<std::same_as<Arch,avx512>,predicate<N,Arch>,vector_mask_type>>;
+      std::conditional_t<::simd::detail::avx512_architecture<Arch>,predicate<N,Arch>,vector_mask_type>>;
     using mask=mask_type;
     using predicate_type=predicate<N,Arch>;
     template<class U> using rebind=vec<U,N,Arch>;
@@ -103,9 +103,9 @@ namespace simd {
     template<std::size_t Alignment=1>
     simd_nodiscard static simd_inline vec load_memory(T const * p) noexcept {
 #if defined(__x86_64__) || defined(_M_X64)
-      if constexpr(std::same_as<Arch,avx2> || std::same_as<Arch,avx512>) {
+      if constexpr(std::same_as<Arch,avx2> || ::simd::detail::avx512_architecture<Arch>) {
         if constexpr(N==2) return vec(unchecked{},std::bit_cast<native_type>(_mm_loadl_epi64(reinterpret_cast<__m128i const *>(p))));
-        else if constexpr(std::same_as<Arch,avx512>) {
+        else if constexpr(::simd::detail::avx512_architecture<Arch>) {
           if constexpr(std::same_as<T,float>) return vec(unchecked{},std::bit_cast<native_type>(_mm_maskz_loadu_ps(7,p)));
           else return vec(unchecked{},std::bit_cast<native_type>(_mm_maskz_loadu_epi32(7,p)));
         } else {
@@ -133,9 +133,9 @@ namespace simd {
     template<std::size_t Alignment=1>
     simd_inline void store_memory(T * p) const noexcept {
 #if defined(__x86_64__) || defined(_M_X64)
-      if constexpr(std::same_as<Arch,avx2> || std::same_as<Arch,avx512>) {
+      if constexpr(std::same_as<Arch,avx2> || ::simd::detail::avx512_architecture<Arch>) {
         if constexpr(N==2) _mm_storel_epi64(reinterpret_cast<__m128i *>(p),std::bit_cast<__m128i>(value));
-        else if constexpr(std::same_as<Arch,avx512>) {
+        else if constexpr(::simd::detail::avx512_architecture<Arch>) {
           if constexpr(std::same_as<T,float>) _mm_mask_storeu_ps(p,7,std::bit_cast<__m128>(value));
           else _mm_mask_storeu_epi32(p,7,std::bit_cast<__m128i>(value));
         } else {

@@ -10,7 +10,11 @@ import simd.cpuid;
 int compaction_entry(int,char **);
 int main(int argc,char ** argv) {
 #if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
+#if SIMD_TEST_BF16
+  constexpr auto profile = simd::x86_profile::avx512_bf16;
+#else
   constexpr auto profile = SIMD_TEST_PROFILE == 512 ? simd::x86_profile::avx512 : simd::x86_profile::avx2;
+#endif
   auto admission=simd::classify_x86_profile(simd::observe_x86_capabilities(),profile);
   if(!admission.admitted()) { std::puts(admission.reason());return 77; }
 #endif

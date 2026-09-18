@@ -44,9 +44,11 @@ block()
   string(TOUPPER "${CMAKE_TRY_COMPILE_CONFIGURATION}" minimal_config)
   string(SHA256 minimal_key
     "${CMAKE_CXX_FLAGS};${CMAKE_BUILD_TYPE};${CMAKE_TRY_COMPILE_CONFIGURATION};${CMAKE_CXX_FLAGS_${minimal_config}};${CMAKE_CXX_FLAGS_DEBUG};${minimal_flags}")
-  foreach(feature IN ITEMS AVX2 AVX512)
+  foreach(feature IN ITEMS AVX2 AVX512 AVX512_BF16)
     if(feature STREQUAL "AVX2")
       set(condition "defined(__AVX2__)")
+    elseif(feature STREQUAL "AVX512_BF16")
+      set(condition "defined(__AVX512BF16__)")
     else()
       set(condition "defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)")
     endif()
@@ -118,7 +120,9 @@ set_target_properties(simd PROPERTIES POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_
 target_sources(simd PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_BINARY_DIR}/modules"
   FILES "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm")
-if("AVX512" IN_LIST SIMD_PROFILES)
+if("AVX512_BF16" IN_LIST SIMD_PROFILES)
+  simd_target_profile(simd AVX512_BF16)
+elseif("AVX512" IN_LIST SIMD_PROFILES)
   simd_target_profile(simd AVX512)
 elseif("AVX2" IN_LIST SIMD_PROFILES)
   simd_target_profile(simd AVX2)

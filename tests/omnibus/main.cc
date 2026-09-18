@@ -13,7 +13,9 @@ extern "C" void granular_kernel(float const *,float *);
 int main() {
 #if !TEST_NEON
   constexpr auto profile =
-#if TEST_REQUIRED_AVX512
+#if TEST_REQUIRED_AVX512_BF16
+    simd::x86_profile::avx512_bf16;
+#elif TEST_REQUIRED_AVX512
     simd::x86_profile::avx512;
 #else
     simd::x86_profile::avx2;

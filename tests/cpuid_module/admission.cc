@@ -13,18 +13,18 @@ namespace {
     7, (1u<<0)|(1u<<9)|(1u<<12)|(1u<<19)|(1u<<20)|(1u<<23)|
       (1u<<26)|(1u<<27)|(1u<<28)|(1u<<29),
     (1u<<23)|(1u<<25)|(1u<<26),
-    (1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31), 0xe6, true};
+    (1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31), 0xe6, true, 1, 1u<<5};
   constexpr bool synthetic() {
     using enum simd::x86_profile;
-    for (auto profile : {avx2, avx512}) {
+    for (auto profile : {avx2, avx512, avx512_bf16}) {
       if (!simd::classify_x86_profile(full, profile).admitted()) return false;
       // Independent contract oracle: CPUID.1 ECX SSE3, SSSE3, FMA, SSE4.1,
       // SSE4.2, POPCNT, XSAVE, AVX (+F16C for AVX512); EDX MMX/SSE/SSE2.
       // CPUID.7 EBX AVX2/BMI2 (+AVX512 F/DQ/BW/VL). OSXSAVE is separate.
       constexpr std::uint32_t expected_edx = 0x06800000;
-      auto expected_ecx = profile == avx512 ? 0x34981201u : 0x14981201u;
-      auto expected_ebx = profile == avx512 ? 0xc0030120u : 0x00000120u;
-      auto expected_xcr0 = profile == avx512 ? 0xe6ull : 0x6ull;
+      auto expected_ecx = profile != avx2 ? 0x34981201u : 0x14981201u;
+      auto expected_ebx = profile != avx2 ? 0xc0030120u : 0x00000120u;
+      auto expected_xcr0 = profile != avx2 ? 0xe6ull : 0x6ull;
       auto empty = simd::classify_x86_profile({}, profile);
       if (empty.missing_leaf1_ecx != expected_ecx || empty.missing_leaf1_edx != expected_edx ||
           empty.missing_leaf7_ebx != expected_ebx || empty.missing_xcr0 != expected_xcr0) return false;
@@ -43,6 +43,22 @@ namespace {
         result = simd::classify_x86_profile(cpu, profile);
         if (result.missing_leaf7_ebx != (expected_ebx & mask)) return false;
         if (result.admitted() == bool(expected_ebx & mask)) return false;
+      }
+      for (unsigned bit = 0; bit != 32; ++bit) {
+        auto cpu = full; auto mask = std::uint32_t(1) << bit;
+        cpu.leaf7_1_eax &= ~mask;
+        auto result = simd::classify_x86_profile(cpu, profile);
+        auto expected = profile == avx512_bf16 ? (1u << 5) : 0u;
+        if (result.missing_leaf7_1_eax != (expected & mask)) return false;
+        if (result.admitted() == bool(expected & mask)) return false;
+      }
+      {
+        // Stale subleaf bits must never admit a missing subleaf or leaf.
+        auto cpu = full; cpu.max_leaf7_subleaf = 0;
+        auto result = simd::classify_x86_profile(cpu, profile);
+        if (result.admitted() != (profile != avx512_bf16)) return false;
+        if (result.missing_leaf7_1 != (profile == avx512_bf16)) return false;
+        if (result.missing_leaf7_1_eax != (profile == avx512_bf16 ? (1u << 5) : 0u)) return false;
       }
       for (unsigned bit = 0; bit != 64; ++bit) {
         auto cpu = full; auto mask = std::uint64_t(1) << bit;
@@ -79,6 +95,9 @@ int main() {
   if (native.max_basic_leaf < 7 && native.leaf7_ebx) return 5;
   constexpr auto xsave = (1u<<26)|(1u<<27);
   if (native.xcr0_observed != (native.max_basic_leaf >= 1 && (native.leaf1_ecx & xsave) == xsave)) return 6;
-  for (auto profile : {simd::x86_profile::avx2, simd::x86_profile::avx512})
+  if ((native.max_basic_leaf < 7 || native.max_leaf7_subleaf < 1) && native.leaf7_1_eax) return 7;
+  cpu = full; cpu.leaf7_1_eax = 0;
+  if (std::strcmp(simd::classify_x86_profile(cpu, simd::x86_profile::avx512_bf16).reason(), "CPU lacks AVX512_BF16")) return 8;
+  for (auto profile : {simd::x86_profile::avx2, simd::x86_profile::avx512, simd::x86_profile::avx512_bf16})
     std::puts(simd::classify_x86_profile(native, profile).reason());
 }

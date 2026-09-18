@@ -35,6 +35,10 @@ Each provider owns its ISA options. Clang allows a stronger target to import
 the common baseline BMI, but rejects the reverse: an importer of an AVX-512
 BMI must enable AVX-512 itself. Therefore a combined omnibus importer selects
 AVX512; an AVX2-only package selects AVX2, and ARM selects NEON.
+When the optional `AVX512_BF16` profile is present, an omnibus consumer must
+select `simd_target_profile(example AVX512_BF16)` instead and admit
+`x86_profile::avx512_bf16` before execution. Granular `simd.avx2` and
+`simd.avx512` imports retain their original requirements.
 
 This requirement stays on the omnibus and profile sources. It does not rebuild
 common modules with stronger ISA options. Prefer granular profile libraries
