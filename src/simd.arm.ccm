@@ -15,7 +15,13 @@ module;
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <windows.h>
+// Import only the SDK contract used here. The full umbrella also declares UI
+// APIs with anonymous parameter types that cannot be merged after a BMI import.
+// Standalone SDK headers require the architecture marker normally set by windows.h.
+#if defined(_M_ARM64) && !defined(_ARM64_)
+#define _ARM64_
+#endif
+#include <processthreadsapi.h>
 #endif
 
 export module simd.arm;
