@@ -64,7 +64,8 @@ runs:
         }
         $llvmArchive = Join-Path $tools 'llvm.tar.xz'
         Get-VerifiedArchive "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.1/$llvmName.tar.xz" $llvmArchive $llvmHash
-        tar -xf $llvmArchive -C $tools
+        # Git ships another tar that interprets drive-letter paths as remote hosts.
+        & (Join-Path $env:SystemRoot 'System32/tar.exe') -xf $llvmArchive -C $tools
         if ($LASTEXITCODE -ne 0) { throw 'LLVM extraction failed.' }
         $cmakeArchive = Join-Path $tools 'cmake.zip'
         Get-VerifiedArchive "https://github.com/Kitware/CMake/releases/download/v4.4.3/$cmakeName.zip" $cmakeArchive $cmakeHash
