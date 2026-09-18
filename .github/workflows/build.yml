@@ -11,8 +11,8 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.runner }}
+    name: ${{ matrix.platform.name }} / exceptions=${{ matrix.exceptions }}
+    runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 25
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -22,7 +22,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
+        exceptions: ['ON', 'OFF']
+        platform:
           - name: Linux LLVM 23 / AVX2
             runner: ubuntu-24.04
             profile: AVX2
@@ -78,7 +79,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          TEST_PROFILE: ${{ matrix.profile }}
+          TEST_PROFILE: ${{ matrix.platform.profile }}
         run: |
           New-Item -ItemType Directory -Force build | Out-Null
           & {
@@ -110,7 +111,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         env:
-          TEST_PROFILE: ${{ matrix.profile }}
+          TEST_PROFILE: ${{ matrix.platform.profile }}
         run: |
           mkdir -p build
           {
@@ -171,9 +172,9 @@ jobs:
           cmake -S . -B build/core -G Ninja \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER="$launcher" \
-            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
-            -DSIMD_TEST_ISA="${{ matrix.profile }}" \
-            '-DSIMD_PROFILES=${{ matrix.profiles }}' "${extra[@]}"
+            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
+            -DSIMD_TEST_ISA="${{ matrix.platform.profile }}" \
+            '-DSIMD_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
       - name: Build
         run: cmake --build build/core --parallel 2
       - name: Test
@@ -184,6 +185,24 @@ jobs:
             --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
       - name: Install
         run: cmake --install build/core --prefix build/install
+      - name: Test relocated package boundaries and modules
+        shell: bash
+        run: |
+          cmake -E rename build/install 'build/relocated package'
+          compiler=clang++
+          extra=()
+          if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
+          if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
+          for suite in public_headers omnibus; do
+            cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
+              -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
+              -Dsimd_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/simd" \
+              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+              "${extra[@]}"
+            cmake --build "build/$suite" --parallel 2
+            ctest --test-dir "build/$suite" --no-tests=error --output-on-failure \
+              --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
+          done
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
         shell: bash
@@ -202,13 +221,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: logs-${{ matrix.runner }}-${{ matrix.profile }}
+          name: logs-${{ matrix.platform.runner }}-${{ matrix.platform.profile }}-exceptions-${{ matrix.exceptions }}
           if-no-files-found: ignore
           path: |
             build/environment.log
             build/sccache-*
             build/tests.json
             build/tests.xml
+            build/*-tests.xml
+            build/public_headers/Testing/Temporary/
+            build/omnibus/Testing/Temporary/
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/

@@ -2,7 +2,7 @@
 
 These files are retained for source history and attribution. They are not built,
 installed, or a supported alternative to the C++26 modules. The active SIMD
-implementation is under `src/cxx/simd/simd/`; the original `simd.hpp` and
+implementation is under `src/simd/simd/`; the original `simd.hpp` and
 `simd_data.hpp` are retired. The old profiler and test driver remain excluded.
 
 `simd/assert.h` and `simd/concepts.h` are unused legacy helpers, excluded from

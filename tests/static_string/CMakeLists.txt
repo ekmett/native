@@ -9,10 +9,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   include("${simd_root}/etc/cmake/Compiler.cmake")
   add_library(static_string_module STATIC)
   simd_host_settings(static_string_module)
-  target_include_directories(static_string_module PRIVATE "${simd_root}/src/cxx" "${simd_root}/src/shared")
+  target_include_directories(static_string_module PRIVATE "${simd_root}/src")
   target_sources(static_string_module PUBLIC FILE_SET CXX_MODULES
-    BASE_DIRS "${simd_root}/src/cxx/modules"
-    FILES "${simd_root}/src/cxx/modules/simd.static_string.ccm")
+    BASE_DIRS "${simd_root}/src"
+    FILES "${simd_root}/src/simd.static_string.ccm")
   set(static_string_provider static_string_module)
 else()
   # Keep baseline module metadata independent of the native omnibus. CMake may

@@ -7,6 +7,8 @@ set(DOXYGEN_GENERATE_HTML YES)
 set(DOXYGEN_GENERATE_LATEX NO)
 set(DOXYGEN_GENERATE_XML YES)
 set(DOXYGEN_RECURSIVE YES)
+# The README is rendered from the staged Markdown copy below.
+set(DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/README.md")
 set(DOXYGEN_FILE_PATTERNS *.h *.ccm *.md)
 set(DOXYGEN_EXTENSION_MAPPING "ccm=C++")
 set(DOXYGEN_EXTRACT_ALL NO)
@@ -83,8 +85,7 @@ set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/docs")
 set(DOXYGEN_WARN_LOGFILE "${PROJECT_BINARY_DIR}/docs/warnings.log")
 set(DOXYGEN_PROJECT_BRIEF "Vectors, masks and wide register packs for C++26")
 doxygen_add_docs(simd_docs
-  "${PROJECT_SOURCE_DIR}/src/cxx"
-  "${PROJECT_SOURCE_DIR}/src/shared"
+  "${PROJECT_SOURCE_DIR}/src"
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
   COMMENT "Build simd API documentation and examples")

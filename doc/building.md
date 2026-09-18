@@ -60,9 +60,11 @@ CMake 4.4.3 dependency-BMI restriction and installed-consumer checks.
 ## Headers and downstream libraries
 
 An import does not export macros. For the named compiler modifiers, include
-`<simd/attributes.h>` and consume `simd::headers`. The same target carries textual
-implementation inputs needed to rebuild modules; they are not a second public
-SIMD header API.
+`<simd/attributes.h>` and consume `simd::headers`. Only `config.h` and
+`attributes.h` are exported textual headers. Native module
+implementation headers are installed privately under `lib/simd/include`; CMake
+uses them to regenerate consumer BMIs without adding them to the public include
+path.
 
 ```sh
 cmake -S . -B build/headers -G Ninja -DSIMD_BUILD_HOST=OFF
