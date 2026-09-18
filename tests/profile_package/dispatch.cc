@@ -21,5 +21,5 @@ int main() {
   if(kernel_avx2(in,a)!=8||kernel_avx512(in,z)!=16)return 1;
   for(int i=0;i<16;++i)if(a[i]!=2.f*in[i]+1.f||z[i]!=a[i])return 2;
   if(pair_avx2(in[0]) || pair_avx512(in[0])) return 4;
-  std::puts("Both installed profile modules: distinct types, FMA values exact, baseline dispatch admitted.");
+  std::puts("Both native profiles from the installed hub: distinct types, FMA values exact, baseline dispatch admitted.");
 }

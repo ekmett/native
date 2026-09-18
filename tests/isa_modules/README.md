@@ -1,4 +1,11 @@
-# Per-ISA module fixture
+# Historical per-ISA compiler fixture
+
+This standalone compiler probe retains the layout used before the single-hub
+migration. Its local `simd.avx2` and `simd.avx512` modules are synthetic test
+definitions, not modules provided by the installed package. It is outside the
+root build and native package CI. For the current package contract, use the
+[installed hub consumer](../omnibus/README.md) and the
+[source target-list guide](../../docs/omnibus.md).
 
 This standalone fixture uses small SIMD and wide implementations to exercise
 native operations, CTAD, ADL, module imports and archive linkage. It does not

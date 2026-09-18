@@ -47,6 +47,10 @@ List order is selection order. `with_isa` calls the callback once for the first
 admitted entry, or returns `false` without calling it if none qualifies. On
 AArch64 use the NEON presets and `observe_arm_capabilities()`.
 
+For an existing architecture type, [compile-time policy lookup](abi-lookup.md)
+selects an implementation entry and its ordinal without querying the CPU.
+`requires_abi` uses that ordinal to constrain disjoint operation overloads.
+
 The callback is ordinary code compiled where it was defined. Passing a tag
 does not change its compiler target. Keep the native body in the generated
 overload, or use `SIMD_TARGET_PUSH(name)` / `SIMD_TARGET_POP()` around functions

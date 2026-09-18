@@ -28,7 +28,7 @@ export module simd.arm;
 
 export namespace simd {
   /// \defgroup arm_capabilities ARM capabilities
-  /// AArch64 OS capability admission, independent of native profile modules.
+  /// AArch64 OS capability admission, independent of the native SIMD hub.
   /// Query before entering optional-profile code; no instruction probing occurs.
 
   /// \ingroup arm_capabilities

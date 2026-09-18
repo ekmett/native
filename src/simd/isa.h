@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <type_traits>
@@ -286,6 +287,45 @@ namespace simd {
       using architecture=A; static constexpr feature_set minimum=M;
     };
   }
+
+  /// Sentinel returned by abi_lookup when no policy entry matches.
+  inline constexpr std::size_t abi_npos=std::size_t(-1);
+  namespace detail {
+    template<class E,std::size_t I> struct abi_match {
+      using type=E;
+      using architecture=typename entry_traits<E>::architecture;
+      static_assert(::simd::architecture<architecture>,"ABI policies must be architecture tags or target_entry types");
+      static constexpr bool matched=true;
+      static constexpr std::size_t index=I;
+      static constexpr feature_set minimum=entry_traits<E>::minimum;
+      static_assert((minimum&~known_features)==0,"ABI policy minimum contains an unregistered ISA feature");
+      static constexpr feature_set required_features=feature_closure(architecture::features|minimum);
+    };
+    template<architecture A,std::size_t I,class... E> struct abi_lookup_impl {
+      using type=void;
+      using architecture=void;
+      static constexpr bool matched=false;
+      static constexpr std::size_t index=abi_npos;
+      static constexpr feature_set minimum=0;
+      static constexpr feature_set required_features=0;
+    };
+    template<architecture A,std::size_t I,class E,class... Rest>
+    struct abi_lookup_impl<A,I,E,Rest...> : std::conditional_t<
+      (A::features&abi_match<E,I>::required_features)==abi_match<E,I>::required_features,
+      abi_match<E,I>,abi_lookup_impl<A,I+1,Rest...>> {};
+  }
+  /// Select the first policy whose requested and inherited compiler features
+  /// are contained in A. No CPU query, compiler retargeting or type conversion
+  /// occurs. A match exposes its original entry as type and requested tag as
+  /// architecture; no match exposes void types and index == abi_npos.
+  template<architecture A,class List> struct abi_lookup;
+  template<architecture A,class... Entries>
+  struct abi_lookup<A,isa_list<Entries...>> : detail::abi_lookup_impl<A,0,Entries...> {};
+
+  /// Disjoint overload constraint for an ordinal in one ordered policy list.
+  /// The no-match sentinel never satisfies this concept.
+  template<class A,class List,std::size_t I> concept requires_abi=
+    architecture<A> && abi_lookup<A,List>::matched && (abi_lookup<A,List>::index==I);
 
   /// Ordered first-match admission. Returns false without invoking the callback
   /// when no entry is admitted. This does not compile or target-attribute code.
