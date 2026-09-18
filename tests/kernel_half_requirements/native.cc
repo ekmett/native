@@ -12,8 +12,6 @@ struct missing_architecture {};
 struct unrelated_architecture { using architecture=int; };
 struct malformed_architecture {
   using architecture=int;
-  using required_architecture=simd::avx2;
-  using required_architecture_owner=malformed_architecture;
   template<std::size_t> static malformed_architecture load_memory(float const *) { return {}; }
   template<std::size_t> void store_memory(float *) const {}
 };
@@ -37,9 +35,8 @@ using raw=simd::vec<float,lanes,advertised>;
 using half=simd::vec<simd::fp16,lanes*2,advertised>;
 using brain=simd::vec<simd::bf16,lanes*2,advertised>;
 static_assert(std::same_as<raw::architecture,advertised>);
-static_assert(std::same_as<raw::required_architecture,SIMD_TARGET_TYPE(RAW_TARGET)>);
-static_assert(std::same_as<half::required_architecture,SIMD_TARGET_TYPE(FP_TARGET)>);
-static_assert(std::same_as<brain::required_architecture,SIMD_TARGET_TYPE(BF_TARGET)>);
+static_assert(std::same_as<half::architecture,advertised>);
+static_assert(std::same_as<brain::architecture,advertised>);
 
 // Each function is compiled without the other advertised extension. Compiling
 // these actual bodies catches an always-inline callee with an excessive target.
@@ -54,7 +51,7 @@ __attribute__((noinline)) bool check_raw() {
   pack x{a,a},y{raw(2.f),raw(2.f)},z{raw(1.f),raw(1.f)};
   auto result=floor(sqrt(abs(fma(x,y,z))));
   auto masks=result==simd::broadcast<raw,2>(raw(3.f));
-  static_assert(std::same_as<typename raw::mask::required_architecture,SIMD_TARGET_TYPE(RAW_TARGET)>);
+  static_assert(std::same_as<typename raw::mask::architecture,advertised>);
   auto chosen=select(~masks,pack::broadcast(raw(0.f)),result);
   simd::wide<raw,0> empty{};
   simd::wide<raw::mask,0> empty_masks{};

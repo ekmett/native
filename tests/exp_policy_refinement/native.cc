@@ -49,7 +49,7 @@ namespace refinement_test {
   // default-constructor regression, covered by tests/wide_construction.
 #define EXP_EVALUATE(function,policies,i) \
   template<bool Reference,bool Flush,std::size_t L,std::size_t N,simd::architecture A> \
-    requires simd::requires_abi<A,policies,i> \
+    requires (simd::target<A,policies> == i) \
   __attribute__((noinline)) void function(std::uint32_t const * input,std::uint32_t * output) { \
     using V=simd::vec<float,L,A>; \
     auto values=[&]<std::size_t... K>(std::index_sequence<K...>) { \
@@ -70,9 +70,9 @@ namespace refinement_test {
     for(std::size_t k=0;k<N;++k) computed.registers[k].store_bits(output+k*L); \
   }
 
-#define EMIT_EXP_CALLER(i,name,raw,result) \
+#define EMIT_EXP_CALLER(i,name,raw) \
   SIMD_TARGET_PUSH(name) \
-  EXP_EVALUATE(evaluate,caller_policies,i) \
+  EXP_EVALUATE(evaluate,caller_targets,i) \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_narrow(float const * input,float * output) { \
     using V=simd::vec<float,8,SIMD_TARGET_TYPE(name)>; \
     auto value=simd::exp(simd::wide<V,2>{V::load(input),V::load(input+8)}); \
@@ -85,16 +85,16 @@ namespace refinement_test {
     value.registers[0].store(output);value.registers[1].store(output+lanes); \
   } \
   SIMD_TARGET_POP()
-  EXP_CALLER_CELLS(EMIT_EXP_CALLER)
+  EXP_CALLER_CASES(EMIT_EXP_CALLER)
 #undef EMIT_EXP_CALLER
 
   // These bodies retain all caller Arch bits but have no BF16/FP16 attribute.
   // Both production and legacy reference must inline under that actual scope.
-#define EMIT_RAW_EXP(i,name,raw,result) \
+#define EMIT_RAW_EXP(i,name) \
   SIMD_TARGET_PUSH(name) \
   EXP_EVALUATE(evaluate_raw,exp_policies,i) \
   SIMD_TARGET_POP()
-  SIMD_EXP_POLICY_CELLS(EMIT_RAW_EXP)
+  SIMD_EXP_TARGETS(EMIT_RAW_EXP)
 #undef EMIT_RAW_EXP
 #undef EXP_EVALUATE
 
@@ -147,20 +147,20 @@ int main() {
   auto cpu=simd::observe_x86_capabilities();
   auto controls=_mm_getcsr()&~0x3fu;
   unsigned executed=0,skipped=0;
-#define RUN_EXP_POLICY(i,name,raw,result) \
+#define RUN_EXP_CALLER(i,name,raw) \
   if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(name){},SIMD_TARGET_MINIMUM).admitted()) { \
     if(!refinement_test::compare_case<SIMD_TARGET_TYPE(name)>()) return 1; \
-    ++executed;std::printf("exp policy %u %s: executed\n",i,#name); \
-  } else { ++skipped;std::printf("exp policy %u %s: skipped (not admitted)\n",i,#name); }
-  EXP_CALLER_CELLS(RUN_EXP_POLICY)
-#undef RUN_EXP_POLICY
+    ++executed;std::printf("exp caller %u %s: executed\n",i,#name); \
+  } else { ++skipped;std::printf("exp caller %u %s: skipped (not admitted)\n",i,#name); }
+  EXP_CALLER_CASES(RUN_EXP_CALLER)
+#undef RUN_EXP_CALLER
   unsigned raw_executed=0,raw_skipped=0;
-#define RUN_RAW_CALLER(i,name,raw,result) \
-  if(simd::classify_isa(cpu,simd::abi_lookup<SIMD_TARGET_TYPE(name),refinement_test::raw_exp_policies>::type{},SIMD_TARGET_MINIMUM).admitted()) { \
+#define RUN_RAW_CALLER(i,name,raw) \
+  if(simd::classify_isa(cpu,simd::abi_lookup<SIMD_TARGET_TYPE(name),refinement_test::exp_policies>::type{},SIMD_TARGET_MINIMUM).admitted()) { \
     if(!refinement_test::compare_case<SIMD_TARGET_TYPE(name),true>()) return 5; \
     ++raw_executed;std::printf("raw scope for caller %u %s: executed\n",i,#name); \
   } else { ++raw_skipped;std::printf("raw scope for caller %u %s: skipped (not admitted)\n",i,#name); }
-  EXP_CALLER_CELLS(RUN_RAW_CALLER)
+  EXP_CALLER_CASES(RUN_RAW_CALLER)
 #undef RUN_RAW_CALLER
   std::printf("%u raw-scope caller cases executed, %u skipped\n",raw_executed,raw_skipped);
   using extra=simd::isa<simd::avx2::features|simd::feature::aes>;
@@ -169,6 +169,6 @@ int main() {
     std::puts("AVX2 caller with extra AES tag: original type retained, outputs exact");
   }
   if((_mm_getcsr()&~0x3fu)!=controls) return 3;
-  std::printf("%u policy cases executed, %u skipped; MXCSR controls unchanged: 0x%x\n",executed,skipped,controls);
+  std::printf("%u caller cases executed, %u skipped; MXCSR controls unchanged: 0x%x\n",executed,skipped,controls);
   return executed?0:77;
 }

@@ -1,83 +1,63 @@
-# Compile-time implementation policies
+# Targets
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-`abi_lookup<Arch, Policies>` selects the first entry in an `isa_list` whose
-required features are contained in `Arch::features`. It is available through
-`<simd/isa.h>` in C++20 and through `import simd;`. It performs no CPU query.
-Use `with_isa` separately when admitting code for execution on a particular CPU.
+`target<A, Choices...>` returns the zero-based index of the first choice whose
+features are a subset of `A`. Extra flags on `A` do not matter. Put more specific
+choices first; an earlier weak choice shadows a later strong one.
 
 ```cpp
-using base = simd::isa<simd::avx2::features | simd::feature::avx512f |
-                       simd::feature::avx512dq>;
-using with_vl = simd::isa<base::features | simd::feature::avx512vl>;
-using policies = simd::isa_list<with_vl, base, simd::avx2>;
-using choice = simd::abi_lookup<simd::avx512, policies>;
-static_assert(choice::matched && choice::index == 0);
-static_assert(std::same_as<choice::type, with_vl>);
+using namespace simd;
+
+template<class A>
+inline constexpr auto exp_target = target<A, avx512, avx2>;
+
+static_assert(exp_target<avx512_bf16> == 0);
+static_assert(exp_target<avx2> == 1);
+
+template<architecture A> requires(exp_target<A> == 1)
+void operation(A);
 ```
 
-`index` is a zero-based position in that particular list. A match exposes
-`type` (the original entry), `architecture` (its requested tag), `minimum`
-(its inherited compiler requirements), and `required_features` (the prerequisite
-closure of the requested and inherited features). Ordinary tag entries have a
-zero minimum. For example, `target_entry<avx2, avx512::features>` requires all
-AVX-512 preset features to match; an `avx2` caller alone is insufficient. The
-result still retains that exact `target_entry` and its requested `avx2` tag.
+An empty list or no match gives `target_npos`. An explicit final `scalar` choice
+matches any valid tag. Invalid tag types fail substitution. Feature prerequisites
+are normalized; list order is preserved.
 
-For an empty list or no match, `matched` is false, `index` is `abi_npos`, both
-type aliases are `void`, and both feature fields are zero. Check `matched`
-before treating the feature fields as a policy. No scalar fallback is added.
-An explicit `scalar` entry has zero requirements and matches every architecture,
-so put it last when that is the desired fallback.
+The helper is available through `<simd/isa.h>` in C++20 or `import simd;`.
+It selects an overload. Give each implementation its required Clang target
+attributes, and use `with_isa` for CPU admission before running it. The complete
+caller tag stays in argument and result types.
 
-Order also resolves overlapping and incomparable requirements. A tag containing
-both BW and VL can match either a BW entry or a VL entry; the earlier one wins.
-Put a combined entry before both if that intersection needs its own body.
-Feature prerequisites are normalized, but entries are neither sorted nor
-deduplicated.
-
-`requires_abi<Arch, Policies, I>` accepts precisely the tags selecting position
-`I`. It is false for no-match, even when `I == abi_npos`, so overload constraints
-for different positions are disjoint:
+A reusable `isa_list` works in place of the pack:
 
 ```cpp
-template<simd::architecture Arch, std::size_t L, std::size_t N>
-  requires simd::requires_abi<Arch, policies, 0>
-__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512vl")))
-simd::wide<simd::vec<float,L,Arch>,N>
-operation(simd::wide<simd::vec<float,L,Arch>,N> const & input);
+using choices = isa_list<avx512, avx2>;
+static_assert(target<avx512, choices> == 0);
+
+template<requires_target<0, choices> A>
+void operation(A);
 ```
 
-This declaration illustrates one policy overload; other positions need their
-own definitions and target attributes. Keep the original `Arch` in arguments,
-intermediates and results. Selecting a sufficient policy does not retag values,
-and different caller tags can still create different template instantiations.
-`requires_abi` selects an overload; it does not target its body. Every called
-helper must also be legal under that body's target requirements.
+`requires_target<A, I, Choices...>` is the same check as a constraint, with the
+index before the pack so it also works as a constrained type parameter. It is
+false for invalid types and for the no-match sentinel.
 
-Choose policies per operation and account for element type, register width and
-numerical policy separately. For a composed operation, refine the choices of
-all dependencies: the tuple of their selected positions identifies a combined
-case. Concatenating their lists does not compute that refinement.
+For selected-type introspection, `abi_lookup<A, choices>` exposes `index`,
+`matched`, the original entry as `type`, its `architecture`, and its
+`required_features`. No match produces void types and zero feature fields.
+A `target_entry<Tag, Minimum>` includes inherited compiler requirements in the
+subset test while preserving the original tag and entry. Malformed minimum
+bits are diagnosed.
 
-The public hub now uses an internal common refinement for x86
-`exp(wide<vec<float,L,Arch>,N>)`. Named raw-operation summaries share the
-current backend partitions; identical partitions are composed once with the
-result-constructor policy. Five disjoint attributed overloads retain the
-caller's complete `Arch` and call the unchanged array arithmetic. The internal
-composition helper is not a new public API. Other wide and raw kernels now use
-the shared policy machinery too, preserving their arithmetic and ADL protocols.
+The built-in FP32 exp kernel has five target choices because its raw callees
+share five declaration scopes. `exp_target<A>` selects that list directly.
+FP32, integer and mask values ignore unrelated half features; native FP16 and
+BF16 values require their own extension. Internal traits handle these builtin
+requirements. Custom types keep their declared architecture without any extra
+metadata protocol.
 
-`architecture` describes the capabilities carried by the value's type.
-`required_architecture` describes its selected implementation's requirements.
-Raw FP32, integer and mask implementations do not require half extensions just
-because their `Arch` advertises them. Native FP16 and BF16 values require their
-own extension, including construction and memory helpers, without requiring the
-other one. Unknown custom domains keep conservative requirements. A customization
-adapter cannot infer the requirements of arbitrary user ADL functions.
-
-The remaining BW/backend attribute requirements stay explicit; this is not a
-claim of five different exponential algorithms or a performance improvement.
-See the [focused refinement checks](../tests/exp_policy_refinement/README.md).
+Composed kernels whose callees have different lists need their common refinement,
+not concatenation. Those checks stay internal. See the
+[exp tests](../tests/exp_policy_refinement/README.md) for target, value and codegen
+coverage.

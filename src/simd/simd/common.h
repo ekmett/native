@@ -1,7 +1,7 @@
 #pragma once
 #include "simd/attributes.h"
 #include "simd/isa.h"
-#include "simd/kernel_policies.h"
+#include "simd/value_traits.h"
 #include <array>
 #include <span>
 #include <concepts>
@@ -114,10 +114,6 @@ namespace simd {
   using mask16=mask_lane<std::uint16_t>;
   using mask32=mask_lane<std::uint32_t>;
   using mask64=mask_lane<std::uint64_t>;
-  namespace detail {
-    template<class T> inline constexpr bool is_mask_lane=false;
-    template<class U> inline constexpr bool is_mask_lane<mask_lane<U>> = true;
-  }
   template<class T> concept simd_mask_element=detail::is_mask_lane<T>;
 
   // Custom elements supply their storage register and their own value semantics.
@@ -304,14 +300,3 @@ namespace simd {
  * \author Edward Kmett <ekmett@gmail.com>
  * \brief Declares SIMD element types and pointer access policies.
  */
-
-namespace simd::detail {
-  template<class A> concept memory_avx512_architecture=requires_abi<A,memory_kernel_policies,3>;
-  template<class A> concept memory_avx512_bf16_architecture=requires_abi<A,memory_kernel_policies,1>;
-  template<class A> concept memory_avx512_fp16_architecture=requires_abi<A,memory_kernel_policies,2>;
-  template<class A> concept memory_avx512_half_architecture=requires_abi<A,memory_kernel_policies,0>;
-  template<class A> concept memory_neon_architecture=requires_abi<A,memory_kernel_policies,11>;
-  template<class A> concept memory_neon_bf16_architecture=requires_abi<A,memory_kernel_policies,9>;
-  template<class A> concept memory_neon_fp16_architecture=requires_abi<A,memory_kernel_policies,10>;
-  template<class A> concept memory_neon_half_architecture=requires_abi<A,memory_kernel_policies,8>;
-}

@@ -25,36 +25,23 @@ global module fragment. `simd/isa.h` owns feature metadata; `simd/targets.h`
 supplies textual source-generation macros.
 Custom numerical elements use one common extension, independent of the ISA.
 
-The internal `kernel_policies.h` records the actual target scopes of raw
-operations, memory helpers and wide construction. Raw arithmetic, masks,
-rounding, scaling, integer/packing, compaction and array math share seven
-declaration scopes: five x86 cuts, NEON and scalar. Their definitions select a
-scope with `requires_abi`; existing element and shape constraints still decide
-whether an operation exists. Scalar raw vectors require the exact scalar tag.
+Target selection is a first-match feature check: `target<A, avx512, avx2>`
+returns the first list position whose requirements fit `A`. Operations compare
+that index directly. Shared lists describe raw operations, memory and wide
+storage; literal Clang attributes are checked against those requirements.
+Scalar raw vectors still require the exact scalar tag.
 
-Wide operators, math adapters, construction and mutation use the common
-refinement of raw calls and result storage: eleven x86 cells, four ARM cells
-and the generic path. The same cells also refine the thirteen memory scopes.
-Literal Clang targets are checked against the computed requirements. Input
-tags retain all their features; selecting a cell never retags a value or mask.
-Native values also expose `required_architecture`, which determines their
-implementation scope. Ordinary float, integer and mask values strip unrelated
-half capabilities from that requirement; native FP16 and BF16 values retain
-only their own extension. Partial and generic memory helpers follow these
-requirements too, including any custom rebound value used by a memory bridge.
-The accompanying `required_architecture_owner` names the concrete type. A custom
-domain must explicitly name itself to opt into narrower requirements; inheriting
-the metadata from a raw vector cannot silently narrow its own operations.
-Compact predicates publish their architecture just as vectors do, so packs of
-masks retain their target requirements. Arrays, nested packs and pairs contribute
-their element metadata to conversions and other mixed-input operations.
+Built-in values use internal traits to select their implementation scope.
+Ordinary float, integer and mask values ignore unrelated half features; native
+FP16 and BF16 values require their own extension. The complete caller tag stays
+in the value's type. Custom domains keep their declared architecture without
+having to supply additional metadata. Arrays, nested packs and pairs contribute
+their element requirements to mixed-input operations.
 
-These are compiler-scope requirements, including force-inline callee attributes;
-they are not a promise of a distinct instruction sequence for every cell.
-Generic `wide` keeps its existing ADL protocols, array-hook priority, result
-types and exception behavior. It cannot infer additional target requirements
-of arbitrary user callbacks or ADL implementations. Names such as `log` and
-`sincos` remain extension adapters where no raw vector overload is supplied.
+Generic `wide` preserves ADL, array-hook priority, result types and exception
+behavior. Requirements of arbitrary user callbacks and ADL functions remain
+the caller's responsibility. `log` and `sincos` remain extension adapters where
+no raw vector overload exists.
 
 `simd.static_string`, `simd.types`, `simd.memory`, `simd.cpuid`, `simd.wait` and
 `simd.numerics` define their APIs directly in their modules. System and intrinsic

@@ -7,7 +7,7 @@ import simd;
 
 namespace abi_lookup_test {
   template<simd::architecture A,std::size_t L,std::size_t N>
-    requires simd::requires_abi<A,policies,0>
+    requires (simd::target<A,policies> == 0)
   simd::wide<simd::vec<float,L,A>,N> preserve_shape(
     simd::wide<simd::vec<float,L,A>,N> const &);
   // Deduction retains the full caller tag in a vector pack, including extra

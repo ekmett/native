@@ -13,6 +13,11 @@ namespace abi_lookup_test {
   static_assert(abi_lookup<vl,policies>::index==1);
   static_assert(abi_lookup<base,policies>::index==2);
   static_assert(abi_lookup<avx2,policies>::index==3);
+  static_assert(target<bw,bw,vl,base,avx2> == 0);
+  static_assert(target<vl,bw,vl,base,avx2> == 1);
+  static_assert(target<base,bw,vl,base,avx2> == 2);
+  static_assert(target<avx2,bw,vl,base,avx2> == 3);
+  static_assert(target<avx2,policies> == target<avx2,bw,vl,base,avx2>);
   // BW and VL are incomparable: list order decides their intersection.
   static_assert(abi_lookup<both,policies>::index==0);
   static_assert(std::same_as<abi_lookup<both,policies>::type,bw>);
@@ -42,18 +47,36 @@ namespace abi_lookup_test {
   static_assert(!abi_lookup<avx512,isa_list<wrong_host>>::matched);
   static_assert(!abi_lookup<neon,isa_list<wrong_host>>::matched);
 
+  template<class A,class... P> concept has_abi=requires { target<A,P...>; };
+  template<class A,class P> concept has_lookup=requires { typename abi_lookup<A,P>::type; };
+  static_assert(!has_abi<int,avx2> && !has_abi<avx2,int>);
+  static_assert(!has_abi<avx2,isa_list<int>>);
+  static_assert(!has_abi<avx2,isa_list<isa_list<avx2>>>);
+  static_assert(!has_abi<avx2,isa_list<avx2>,avx512>);
+  static_assert(!has_abi<avx2 const,avx2> && !has_abi<avx2,avx2 const>);
+  static_assert(!has_lookup<int,policies> && !has_lookup<avx2,isa_list<int>>);
+  static_assert(target<scalar,policies> == target_npos);
+  static_assert(target<avx512> == target_npos && target<avx512,isa_list<>> == target_npos);
+  static_assert(target<avx512,neon> == target_npos);
+  static_assert(target<neon,avx2,scalar> == 1);
+  static_assert(target<both,vl,bw> == 0);
+  static_assert(target<extra,policies> == 0);
+  static_assert(target<avx512,avx2,avx512> == 0);
+  static_assert(target<avx2,inherited,avx2> == 1);
+  static_assert(target<enough,inherited,avx2> == 0);
+  static_assert(target<avx512,wrong_host> == target_npos);
   using missing=abi_lookup<scalar,policies>;
-  static_assert(!missing::matched && missing::index==abi_npos);
+  static_assert(!missing::matched && missing::index==target_npos);
   static_assert(std::same_as<missing::type,void>);
   static_assert(std::same_as<missing::architecture,void>);
-  static_assert(!requires_abi<scalar,policies,0>);
-  static_assert(!requires_abi<scalar,policies,abi_npos>);
+  static_assert(!requires_target<scalar,0,policies>);
+  static_assert(!requires_target<scalar,target_npos,policies>);
   static_assert(!abi_lookup<avx512,isa_list<>>::matched);
-  static_assert(abi_lookup<avx512,isa_list<>>::index==abi_npos);
-  static_assert(!requires_abi<avx512,isa_list<>,abi_npos>);
-  static_assert(!requires_abi<avx512,policies,99>);
-  static_assert(!requires_abi<int,policies,0>);
-  static_assert(!requires_abi<avx512,int,0>);
+  static_assert(abi_lookup<avx512,isa_list<>>::index==target_npos);
+  static_assert(!requires_target<avx512,target_npos,isa_list<>>);
+  static_assert(!requires_target<avx512,99,policies>);
+  static_assert(!requires_target<int,0,policies>);
+  static_assert(!requires_target<avx512,0,int>);
 
   // Scalar is an explicit zero-requirement fallback; it also matches stronger
   // tags, and placing it first intentionally shadows every later entry.
@@ -68,13 +91,26 @@ namespace abi_lookup_test {
   static_assert(std::same_as<abi_lookup<arm_both,isa_list<neon_fp16,neon_bf16>>::type,neon_fp16>);
 
   // The selected ordinal constrains overloads without changing caller identity.
-  template<architecture A> requires requires_abi<A,policies,0>
+  template<architecture A> requires (target<A,policies> == 0)
   constexpr A keep_tag(A tag) { return tag; }
-  template<architecture A> requires requires_abi<A,policies,1>
+  template<architecture A> requires (target<A,policies> == 1)
   constexpr A keep_tag(A tag) { return tag; }
   template<class A> concept has_keep_tag=architecture<A> && requires(A tag) { keep_tag(tag); };
   static_assert(std::same_as<decltype(keep_tag(extra{})),extra>);
   static_assert(std::same_as<decltype(keep_tag(vl{})),vl>);
   static_assert(has_keep_tag<both> && !has_keep_tag<base> && !has_keep_tag<scalar>);
-  static_assert(requires_abi<both,policies,0> && !requires_abi<both,policies,1>);
+  // Keep the architecture atomic constraint so this exactly repeated pattern
+  // is more constrained than its primary, as real predicate specializations are.
+  template<architecture A> struct partial { static constexpr auto index=target_npos; };
+  template<requires_target<0,policies> A> struct partial<A> { static constexpr auto index=0u; };
+  static_assert(partial<extra>::index==0 && partial<avx2>::index==target_npos);
+  template<requires_target<3,bw,vl,base,avx2> A>
+  constexpr A keep_fourth(A tag) { return tag; }
+  template<requires_target<0,policies> A>
+  constexpr A keep_first(A tag) { return tag; }
+  static_assert(std::same_as<decltype(keep_fourth(avx2{})),avx2>);
+  static_assert(std::same_as<decltype(keep_first(extra{})),extra>);
+  static_assert(!requires_target<int,0,avx2> && !requires_target<avx2,0,int>);
+  static_assert(!requires_target<scalar,target_npos,avx2>);
+  static_assert(requires_target<both,0,policies> && !requires_target<both,1,policies>);
 }

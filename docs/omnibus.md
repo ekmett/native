@@ -49,7 +49,8 @@ AArch64 use the NEON presets and `observe_arm_capabilities()`.
 
 For an existing architecture type, [compile-time policy lookup](abi-lookup.md)
 selects an implementation entry and its ordinal without querying the CPU.
-`requires_abi` uses that ordinal to constrain disjoint operation overloads.
+Use `requires (target<A, Policies...> == I)` for disjoint operation overloads;
+`requires_target<A,I,Policies...>` is the general shorthand for constrained type parameters.
 
 The callback is ordinary code compiled where it was defined. Passing a tag
 does not change its compiler target. Keep the native body in the generated

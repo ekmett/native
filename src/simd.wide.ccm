@@ -3,7 +3,7 @@
 module;
 #include "simd/attributes.h"
 #include "simd/isa.h"
-#include "simd/kernel_policies.h"
+#include "simd/value_traits.h"
 
 #include <array>
 #include <concepts>

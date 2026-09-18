@@ -1,6 +1,13 @@
 #define SIMD_ARCH_CONCEPT ::simd::detail::avx512_fp16_architecture
 #pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"))), apply_to=function)
 export namespace simd {
+  namespace detail {
+    template<SIMD_ARCH_CONCEPT A>
+    struct value_traits<vec<fp16,32,A>> {
+      using type=avx512_fp16;
+      static constexpr bool aggregate_default=false;
+    };
+  }
   /// \ingroup vectors
   /// One 512-bit register of FP16 representations. Loads, stores and bit bridges
   /// preserve every encoding. Native addition, subtraction, multiplication, division,
@@ -18,9 +25,6 @@ export namespace simd {
     using value_type = fp16;
     /// The distinct compile-time AVX512_FP16 instruction-profile tag.
     using architecture = Arch;
-    /// Requirements of this value implementation; additional tag features remain available.
-    using required_architecture = simd::avx512_fp16;
-    using required_architecture_owner = vec;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 512-bit FP16 register representation; native bridges copy bits.

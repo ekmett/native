@@ -3,4 +3,4 @@
 #include <simd/isa.h>
 using invalid=simd::target_entry<simd::avx2,1ull<<63>;
 using policies=simd::isa_list<invalid,simd::avx2>;
-constexpr auto chosen=simd::abi_lookup<simd::avx2,policies>::index;
+constexpr auto chosen=simd::target<simd::avx2,policies>;

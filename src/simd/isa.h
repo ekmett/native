@@ -288,8 +288,8 @@ namespace simd {
     };
   }
 
-  /// Sentinel returned by abi_lookup when no policy entry matches.
-  inline constexpr std::size_t abi_npos=std::size_t(-1);
+  /// Sentinel returned by target and abi_lookup when no policy entry matches.
+  inline constexpr std::size_t target_npos=std::size_t(-1);
   namespace detail {
     template<class E,std::size_t I> struct abi_match {
       using type=E;
@@ -301,11 +301,19 @@ namespace simd {
       static_assert((minimum&~known_features)==0,"ABI policy minimum contains an unregistered ISA feature");
       static constexpr feature_set required_features=feature_closure(architecture::features|minimum);
     };
+    template<class... E> struct target_policy_pack {
+      using list=isa_list<E...>;
+      static constexpr bool valid=(architecture<typename entry_traits<E>::architecture> && ...);
+    };
+    template<class... E> struct target_policy_pack<isa_list<E...>> {
+      using list=isa_list<E...>;
+      static constexpr bool valid=(architecture<typename entry_traits<E>::architecture> && ...);
+    };
     template<architecture A,std::size_t I,class... E> struct abi_lookup_impl {
       using type=void;
       using architecture=void;
       static constexpr bool matched=false;
-      static constexpr std::size_t index=abi_npos;
+      static constexpr std::size_t index=target_npos;
       static constexpr feature_set minimum=0;
       static constexpr feature_set required_features=0;
     };
@@ -317,15 +325,22 @@ namespace simd {
   /// Select the first policy whose requested and inherited compiler features
   /// are contained in A. No CPU query, compiler retargeting or type conversion
   /// occurs. A match exposes its original entry as type and requested tag as
-  /// architecture; no match exposes void types and index == abi_npos.
+  /// architecture; no match exposes void types and index == target_npos.
   template<architecture A,class List> struct abi_lookup;
   template<architecture A,class... Entries>
+    requires (architecture<typename detail::entry_traits<Entries>::architecture> && ...)
   struct abi_lookup<A,isa_list<Entries...>> : detail::abi_lookup_impl<A,0,Entries...> {};
 
-  /// Disjoint overload constraint for an ordinal in one ordered policy list.
-  /// The no-match sentinel never satisfies this concept.
-  template<class A,class List,std::size_t I> concept requires_abi=
-    architecture<A> && abi_lookup<A,List>::matched && (abi_lookup<A,List>::index==I);
+  /// Zero-based position of the first matching policy, or target_npos if none match.
+  /// Accepts architecture/target_entry types directly or one reusable isa_list.
+  /// This selects an implementation; it does not retarget code or query a CPU.
+  template<architecture A,class... Policies> requires detail::target_policy_pack<Policies...>::valid
+  inline constexpr std::size_t target=abi_lookup<A,typename detail::target_policy_pack<Policies...>::list>::index;
+
+  /// General shorthand for an ordinal constraint, including constrained type parameters.
+  /// The no-match sentinel never satisfies this concept. Invalid types fail substitution.
+  template<class A,std::size_t I,class... Policies> concept requires_target=
+    architecture<A> && requires { target<A,Policies...>; } && I!=target_npos && (target<A,Policies...> == I);
 
   /// Ordered first-match admission. Returns false without invoking the callback
   /// when no entry is admitted. This does not compile or target-attribute code.

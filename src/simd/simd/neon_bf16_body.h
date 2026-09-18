@@ -1,6 +1,13 @@
 #define SIMD_ARCH_CONCEPT ::simd::detail::neon_bf16_architecture
 #pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
 export namespace simd {
+  namespace detail {
+    template<SIMD_ARCH_CONCEPT A>
+    struct value_traits<vec<bf16,8,A>> {
+      using type=neon_bf16;
+      static constexpr bool aggregate_default=false;
+    };
+  }
   /// \ingroup vectors
   /// One 128-bit register of BF16 representations. Loads, stores and bit bridges
   /// preserve every encoding. This does not add elementwise BF16 arithmetic or
@@ -13,9 +20,6 @@ export namespace simd {
     using value_type = bf16;
     /// The distinct compile-time NEON_BF16 instruction-profile tag.
     using architecture = Arch;
-    /// Requirements of this value implementation; additional tag features remain available.
-    using required_architecture = simd::neon_bf16;
-    using required_architecture_owner = vec;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit BF16 register representation; native bridges copy bits.

@@ -1,6 +1,13 @@
 #define SIMD_ARCH_CONCEPT ::simd::detail::avx512_bf16_architecture
 #pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
 export namespace simd {
+  namespace detail {
+    template<std::size_t N,SIMD_ARCH_CONCEPT A> requires(N==8 || N==16 || N==32)
+    struct value_traits<vec<bf16,N,A>> {
+      using type=avx512_bf16;
+      static constexpr bool aggregate_default=false;
+    };
+  }
   /// \ingroup vectors
   /// One 128-, 256-, or 512-bit register of BF16 representations. Loads, stores and bit bridges
   /// preserve every encoding. This does not add elementwise BF16 arithmetic or
@@ -14,9 +21,6 @@ export namespace simd {
     using value_type = bf16;
     /// The distinct compile-time AVX512_BF16 instruction-profile tag.
     using architecture = Arch;
-    /// Requirements of this value implementation; additional tag features remain available.
-    using required_architecture = simd::avx512_bf16;
-    using required_architecture_owner = vec;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native register-width BF16 register representation; native bridges copy bits.

@@ -1,10 +1,34 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include "simd/kernel_policies.h"
+#include "simd/value_traits.h"
 
 namespace {
   using namespace simd;
   using namespace simd::detail;
+  struct custom_element {};
+  struct custom_value { using architecture=kernel_full_half; };
+  struct malformed_value { using architecture=int; };
+  template<class A,class Expected> consteval bool raw_value_requirements() {
+    return std::same_as<value_architecture_t<vec<float,1,A>>,Expected> &&
+      std::same_as<value_architecture_t<vec<float,16,A> const>,Expected> &&
+      std::same_as<value_architecture_t<vec<std::uint16_t,32,A>>,Expected> &&
+      std::same_as<value_architecture_t<vec<mask_lane<std::uint32_t>,16,A>>,Expected> &&
+      std::same_as<value_architecture_t<predicate<16,A>>,Expected> &&
+      std::same_as<value_architecture_t<vec<custom_element,16,A>>,A>;
+  }
+  static_assert(raw_value_requirements<kernel_full_half,avx512>());
+  static_assert(raw_value_requirements<kernel_bw_half,kernel_bw>());
+  static_assert(raw_value_requirements<kernel_neon_half,neon>());
+  static_assert(raw_value_requirements<avx2,avx2>());
+  static_assert(raw_value_requirements<scalar,scalar>());
+  static_assert(std::same_as<value_architecture_t<custom_value>,kernel_full_half>);
+  static_assert(std::same_as<value_architecture_t<int>,void> &&
+    std::same_as<value_architecture_t<malformed_value>,void>);
+  static_assert(value_traits<vec<float,1,kernel_full_half>>::aggregate_default);
+  static_assert(!value_traits<vec<float,2,kernel_full_half>>::aggregate_default &&
+    !value_traits<vec<std::uint32_t,1,kernel_full_half>>::aggregate_default &&
+    !value_traits<vec<custom_element,1,kernel_full_half>>::aggregate_default &&
+    !value_traits<custom_value>::aggregate_default);
   // Independent description of the original declaration boundaries. Checking
   // every subset catches priority mistakes hidden by the named presets.
   consteval unsigned original_scope(feature_set bits) {
@@ -20,17 +44,18 @@ namespace {
         ((bits&feature_set(feature::neon_fp16))?2:0);
     return 0;
   }
+  constexpr std::array<unsigned,16> original_scopes{17,9,13,5,15,7,11,3,4,2,1,23,21,22,20,0};
   template<architecture A> consteval bool check() {
     using choice=abi_lookup<A,wide_kernel_policies>;
     return wide_kernel_refinement::agrees<A>() && choice::matched &&
-      wide_kernel_scopes[choice::index]==original_scope(A::features) &&
-      kernel_scalar_architecture<A> == scalar_architecture<A> &&
-      kernel_avx2_architecture<A> == avx2_architecture<A> &&
-      kernel_base_architecture<A> == avx512_nobw_novl_architecture<A> &&
-      kernel_bw_architecture<A> == avx512_bw_novl_architecture<A> &&
-      kernel_vl_architecture<A> == avx512_nobw_vl_architecture<A> &&
-      kernel_avx512_architecture<A> == avx512_architecture<A> &&
-      kernel_neon_architecture<A> == neon_architecture<A>;
+      original_scopes[choice::index]==original_scope(A::features) &&
+      (target<A,raw_kernel_policies> == 6 && A::features == 0) == scalar_architecture<A> &&
+      (target<A,raw_kernel_policies> == 4) == avx2_architecture<A> &&
+      (target<A,raw_kernel_policies> == 3) == avx512_nobw_novl_architecture<A> &&
+      (target<A,raw_kernel_policies> == 1) == avx512_bw_novl_architecture<A> &&
+      (target<A,raw_kernel_policies> == 2) == avx512_nobw_vl_architecture<A> &&
+      (target<A,raw_kernel_policies> == 0) == avx512_architecture<A> &&
+      (target<A,raw_kernel_policies> == 5) == neon_architecture<A>;
   }
   template<std::size_t K> consteval bool x86_boundary() {
     constexpr auto bits=((K&1)?avx2::features:0) |
@@ -49,9 +74,8 @@ namespace {
   static_assert(x86_boundaries(std::make_index_sequence<256>{}));
   static_assert(check<scalar>() && check<neon>() && check<neon_bf16>() &&
     check<neon_fp16>() && check<kernel_neon_half>());
-  static_assert(!kernel_scalar_architecture<isa<feature::bmi1>>);
-  static_assert(requires_abi<isa<feature::bmi1>,wide_kernel_policies,15>);
-  static_assert(wide_scope_index<6>()==abi_npos);
-  static_assert(!requires_abi<avx2,wide_kernel_policies,abi_npos>);
+  static_assert(!std::same_as<isa<feature::bmi1>,scalar>);
+  static_assert(target<isa<feature::bmi1>,wide_kernel_policies> == 15);
+  static_assert(target<avx2,wide_kernel_policies> != target_npos);
 }
 int main() {}

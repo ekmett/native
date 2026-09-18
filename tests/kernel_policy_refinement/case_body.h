@@ -11,16 +11,10 @@ namespace CASE_NAMESPACE {
   }
   // A separate numerical domain over a native register. No implicit float/raw
   // conversion: generic forwarding must retain this type and its array hook.
-  // Inherited requirement aliases must not opt an unrelated custom domain in.
+  // Derived custom domains retain their full architecture requirements.
   template<class V> struct opaque : V {};
-  template<class V> struct opted : V {
-    using required_architecture=typename V::required_architecture;
-    using required_architecture_owner=opted;
-  };
   template<class V> struct value {
     using architecture=typename V::architecture;
-    using required_architecture_owner=value;
-    using required_architecture=typename V::required_architecture;
     V raw;
     value() noexcept :raw(0.f) {}
     explicit value(V v) noexcept :raw(v) {}
@@ -53,10 +47,12 @@ namespace CASE_NAMESPACE {
     if constexpr (L<=8) static_assert(!addable<W,simd::wide<simd::vec<float,L,OtherArch>,N>>);
 #endif
 #if !SIMD_TEST_IMPORT
-    static_assert(simd::detail::wide_features<std::pair<V &,int>>::value==V::required_architecture::features);
+    static_assert(simd::detail::wide_features<std::pair<V &,int>>::value==SIMD_TARGET_TYPE(CASE_SCOPE)::features);
     static_assert(simd::detail::wide_features<opaque<V>>::value==A::features);
-    static_assert(simd::detail::wide_features<opted<V>>::value==V::required_architecture::features);
-    static_assert(!simd::detail::wide_equivalent_default<opted<V>>);
+    static_assert(simd::detail::wide_features<value<V>>::value==A::features);
+    static_assert(simd::detail::wide_equivalent_default<V> == (L==1));
+    static_assert(!simd::detail::wide_equivalent_default<opaque<V>>);
+    static_assert(!simd::detail::wide_equivalent_default<value<V>>);
 #endif
     // Use wide's attributed empty construction: MSVC array<T,0> itself can own
     // a dummy T and an unattributed implicit constructor.
@@ -111,19 +107,24 @@ namespace CASE_NAMESPACE {
       if(!same(doubled.registers[0].registers[k],aa[k]+aa[k])) return false;
       if(!same(doubled.registers[1].registers[k],bb[k]+bb[k])) return false;
     }
-    using C=value<V>; using CW=simd::wide<C,N>;
-    CW custom{a}; // explicit element conversion, retaining full architecture
-    static_assert(std::same_as<typename decltype(custom.registers)::value_type,C>);
-    batch_calls=0;
-    auto plus=custom+custom;
-    auto positive=abs(custom);
-    if(batch_calls!=2) return false;
-    auto finite=isfinite(custom);
-    static_assert(std::same_as<decltype(finite),simd::wide<typename V::mask,N>>);
-    for(std::size_t k=0;k<N;++k)
-      if(!same(plus.registers[k].raw,aa[k]+aa[k]) ||
-         !same(positive.registers[k].raw,abs(aa[k])) ||
-         !same(select(finite.registers[k],V(1.f),V(0.f)),V(1.f))) return false;
+    // A custom domain supplies its own behavior and conservatively keeps A.
+    // Exercise it in every raw scope; extra half-tag cases above prove built-in
+    // narrowing without claiming requirements of an arbitrary custom wrapper.
+    if constexpr (std::same_as<A,SIMD_TARGET_TYPE(CASE_SCOPE)>) {
+      using C=value<V>; using CW=simd::wide<C,N>;
+      CW custom{a}; // explicit element conversion, retaining full architecture
+      static_assert(std::same_as<typename decltype(custom.registers)::value_type,C>);
+      batch_calls=0;
+      auto plus=custom+custom;
+      auto positive=abs(custom);
+      if(batch_calls!=2) return false;
+      auto finite=isfinite(custom);
+      static_assert(std::same_as<decltype(finite),simd::wide<typename V::mask,N>>);
+      for(std::size_t k=0;k<N;++k)
+        if(!same(plus.registers[k].raw,aa[k]+aa[k]) ||
+           !same(positive.registers[k].raw,abs(aa[k])) ||
+           !same(select(finite.registers[k],V(1.f),V(0.f)),V(1.f))) return false;
+    }
     return true;
   }
   bool check() {

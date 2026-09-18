@@ -38,7 +38,7 @@ namespace refinement_test {
   static_assert(mixed::agrees<avx2>() && mixed::agrees<neon>() && mixed::agrees<scalar>());
   using empty=refinement<isa_list<>,first>;
   static_assert(empty::cells.size==0 && empty::agrees<scalar>());
-  static_assert(!requires_abi<scalar,empty::policies,abi_npos>);
+  static_assert(target<scalar,empty::policies> == target_npos);
 
   template<std::size_t K> consteval bool check_exp_boundary() {
     constexpr feature_set bits=avx2::features |
@@ -51,17 +51,14 @@ namespace refinement_test {
       ((K&64)?feature_set(feature::aes):0);
     using A=isa<bits>;
     using selected=abi_lookup<A,exp_policies>;
-    return exp_refinement::agrees<A>() && caller_refinement::agrees<A>() &&
-      selected::index==abi_lookup<A,raw_exp_policies>::index &&
+    return exp_target<A> == selected::index &&
       (selected::type::features & (feature_set(feature::avx512_bf16)|
         feature_set(feature::avx512_fp16)))==0;
   }
   template<std::size_t... K> consteval bool exp_boundaries(std::index_sequence<K...>) {
     return (check_exp_boundary<K>() && ...);
   }
-  static_assert(exp_refinement::cells.size==5 && exp_refinement::capacity==25);
-  static_assert(std::same_as<exp_policies,raw_exp_policies>);
   static_assert(exp_boundaries(std::make_index_sequence<128>{}));
-  static_assert(exp_refinement::agrees<scalar>() && exp_refinement::agrees<neon>());
+  static_assert(exp_target<scalar> == target_npos && exp_target<neon> == target_npos);
 }
 int main() {}
