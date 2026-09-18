@@ -1,0 +1,968 @@
+{
+  "schema": 1,
+  "unit": "ns per block",
+  "cpu": "ARM Neoverse-N2",
+  "compiler": "Ubuntu clang 23.1.2",
+  "os": "Ubuntu 24.04 ARM hosted runner",
+  "source_commit": "c9dc7b1766441cd9840eec8c5493186d80799de7",
+  "checkout_commit": "dca4464561b195f2fe7810a649824466fc52dafd",
+  "github_run": 35305098483,
+  "github_job": 105475557603,
+  "exceptions": "OFF",
+  "blocks": 4096,
+  "repeats": 64,
+  "pairs": 7,
+  "pair_order": "native first for even pair indices, reference first for odd indices",
+  "reference": "Simple scalar-source loop compiled with the same profile flags; compiler vectorization is allowed.",
+  "log_sha256": "4f8af321d6a3575d31358befb036e885c7ae1a21cd4916d23b356fc0ca9cad5d",
+  "observations": [
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.61,
+      "reference_ns": 2.354,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.554,
+      "reference_ns": 2.368,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.583,
+      "reference_ns": 2.363,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.564,
+      "reference_ns": 2.355,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.556,
+      "reference_ns": 2.361,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.556,
+      "reference_ns": 2.355,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.599,
+      "reference_ns": 2.396,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.564,
+      "reference_ns": 2.361
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.563,
+      "reference_ns": 1.57,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.565,
+      "reference_ns": 1.585,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.547,
+      "reference_ns": 1.58,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.565,
+      "reference_ns": 1.572,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.556,
+      "reference_ns": 1.619,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.554,
+      "reference_ns": 1.572,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.554,
+      "reference_ns": 1.57,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.556,
+      "reference_ns": 1.572
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.554,
+      "reference_ns": 2.657,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.562,
+      "reference_ns": 2.67,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.555,
+      "reference_ns": 2.648,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.554,
+      "reference_ns": 2.657,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.553,
+      "reference_ns": 2.648,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.555,
+      "reference_ns": 2.658,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.553,
+      "reference_ns": 2.655,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.554,
+      "reference_ns": 2.657
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.555,
+      "reference_ns": 8.612,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.554,
+      "reference_ns": 7.953,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.558,
+      "reference_ns": 7.761,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.568,
+      "reference_ns": 7.611,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.555,
+      "reference_ns": 7.53,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.556,
+      "reference_ns": 7.517,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.565,
+      "reference_ns": 7.481,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.556,
+      "reference_ns": 7.611
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.647,
+      "reference_ns": 0.943,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.641,
+      "reference_ns": 0.943,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.642,
+      "reference_ns": 0.943,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.635,
+      "reference_ns": 0.949,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.642,
+      "reference_ns": 0.949,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.642,
+      "reference_ns": 0.943,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.642,
+      "reference_ns": 0.943,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 3.642,
+      "reference_ns": 0.943
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.641,
+      "reference_ns": 1.354,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.647,
+      "reference_ns": 1.361,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.641,
+      "reference_ns": 1.354,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.642,
+      "reference_ns": 1.354,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.643,
+      "reference_ns": 1.427,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.644,
+      "reference_ns": 1.354,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.652,
+      "reference_ns": 1.354,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 3.643,
+      "reference_ns": 1.354
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.643,
+      "reference_ns": 1.187,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.652,
+      "reference_ns": 1.178,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.649,
+      "reference_ns": 1.178,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.634,
+      "reference_ns": 1.186,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.641,
+      "reference_ns": 1.185,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.641,
+      "reference_ns": 1.178,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.641,
+      "reference_ns": 1.178,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 3.641,
+      "reference_ns": 1.178
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.641,
+      "reference_ns": 5.985,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.65,
+      "reference_ns": 4.484,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.645,
+      "reference_ns": 4.18,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.641,
+      "reference_ns": 4.124,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.642,
+      "reference_ns": 4.074,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.642,
+      "reference_ns": 4.02,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.642,
+      "reference_ns": 3.987,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "expand",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 3.642,
+      "reference_ns": 4.124
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.671,
+      "reference_ns": 0.767,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.671,
+      "reference_ns": 0.773,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.67,
+      "reference_ns": 0.771,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.669,
+      "reference_ns": 0.772,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.665,
+      "reference_ns": 0.797,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.679,
+      "reference_ns": 0.772,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.662,
+      "reference_ns": 0.785,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "empty",
+      "native_ns": 2.67,
+      "reference_ns": 0.772
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.921,
+      "reference_ns": 1.619,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.936,
+      "reference_ns": 1.588,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.923,
+      "reference_ns": 1.577,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.914,
+      "reference_ns": 1.57,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.942,
+      "reference_ns": 1.57,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.938,
+      "reference_ns": 1.57,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.938,
+      "reference_ns": 1.576,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "full",
+      "native_ns": 4.936,
+      "reference_ns": 1.576
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.957,
+      "reference_ns": 1.181,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.97,
+      "reference_ns": 1.182,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.951,
+      "reference_ns": 1.181,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.923,
+      "reference_ns": 1.188,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.956,
+      "reference_ns": 1.187,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.963,
+      "reference_ns": 1.18,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.993,
+      "reference_ns": 1.18,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "alternating",
+      "native_ns": 4.957,
+      "reference_ns": 1.181
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.319,
+      "reference_ns": 5.647,
+      "pair_index": 0
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.373,
+      "reference_ns": 4.494,
+      "pair_index": 1
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.334,
+      "reference_ns": 4.535,
+      "pair_index": 2
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.356,
+      "reference_ns": 4.22,
+      "pair_index": 3
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.363,
+      "reference_ns": 4.376,
+      "pair_index": 4
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.35,
+      "reference_ns": 4.142,
+      "pair_index": 5
+    },
+    {
+      "kind": "pair",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.497,
+      "reference_ns": 4.172,
+      "pair_index": 6
+    },
+    {
+      "kind": "median",
+      "profile_bits": 128,
+      "operation": "compress_store",
+      "lanes": 4,
+      "masks": "random",
+      "native_ns": 5.356,
+      "reference_ns": 4.376
+    }
+  ]
+}

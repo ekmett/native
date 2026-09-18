@@ -206,7 +206,7 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          suites=(public_headers omnibus)
+          suites=(public_headers omnibus api)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
             suites+=(cpuid_package)
           fi
