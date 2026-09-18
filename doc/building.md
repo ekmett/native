@@ -95,8 +95,8 @@ and linker consistent with that installation. `CMAKE_PREFIX_PATH` points to
 installed library packages, not to a producer's build directory.
 
 The CI workflow configures Ninja directly, builds with PCH and IPO, runs CTest,
-and checks installation. It selects AVX2 tests on Linux and macOS x86-64 runners and NEON
-on Linux and macOS ARM64 runners; the x86 archives also build the AVX-512 module. The
+and checks installation. It selects AVX2 tests on Linux, macOS and Windows x86-64 runners and NEON
+on Linux, macOS and Windows ARM64 runners; the x86 archives also build the AVX-512 module. The
 baseline profile tests check CPU and OS support before entering AVX-512 code.
 The workflow is a reproducible build recipe; platform execution claims are
 listed separately in [validation](../docs/validation.md).

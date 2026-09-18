@@ -13,6 +13,9 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -21,6 +24,14 @@ jobs:
             runner: ubuntu-24.04
             profile: AVX2
             profiles: AVX2;AVX512
+          - name: Windows x64 LLVM 23 / AVX2
+            runner: windows-2025
+            profile: AVX2
+            profiles: AVX2;AVX512
+          - name: Windows ARM64 LLVM 23 / NEON
+            runner: windows-11-arm
+            profile: NEON
+            profiles: NEON
           - name: Linux ARM64 LLVM 23 / NEON
             runner: ubuntu-24.04-arm
             profile: NEON
@@ -57,7 +68,42 @@ jobs:
         if: runner.os == 'macOS'
       - uses: ./.github/actions/setup/macos/build-tools
         if: runner.os == 'macOS'
+      - uses: ./.github/actions/setup/windows
+        if: runner.os == 'Windows'
+      - name: Record Windows hardware and admit the test architecture
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TEST_PROFILE: ${{ matrix.profile }}
+        run: |
+          New-Item -ItemType Directory -Force build | Out-Null
+          & {
+            git rev-parse HEAD
+            Get-CimInstance Win32_Processor | Format-List Name, Manufacturer, Architecture, NumberOfCores
+            Get-CimInstance Win32_OperatingSystem | Format-List Caption, Version, OSArchitecture
+            clang-cl --version
+            clang-scan-deps --version
+            cmake --version
+            ninja --version
+            "AVX2=$([System.Runtime.Intrinsics.X86.Avx2]::IsSupported)"
+            "FMA=$([System.Runtime.Intrinsics.X86.Fma]::IsSupported)"
+            "BMI2=$([System.Runtime.Intrinsics.X86.Bmi2]::IsSupported)"
+            "NEON=$([System.Runtime.Intrinsics.Arm.AdvSimd]::IsSupported)"
+          } | Tee-Object build/environment.log
+          if ($env:TEST_PROFILE -eq 'AVX2') {
+            if ($env:RUNNER_ARCH -ne 'X64' -or
+                -not [System.Runtime.Intrinsics.X86.Avx2]::IsSupported -or
+                -not [System.Runtime.Intrinsics.X86.Fma]::IsSupported -or
+                -not [System.Runtime.Intrinsics.X86.Bmi2]::IsSupported) {
+              throw 'AVX2 tests require native x64 with AVX2, FMA and BMI2.'
+            }
+          } elseif ($env:RUNNER_ARCH -ne 'ARM64' -or
+                    -not [System.Runtime.Intrinsics.Arm.AdvSimd]::IsSupported) {
+            throw 'NEON tests require native ARM64 with Advanced SIMD.'
+          }
+          "Native Windows CPU tests: $env:RUNNER_ARCH / $env:TEST_PROFILE. AVX-512 execution depends on the test's CPU and OS checks." >> $env:GITHUB_STEP_SUMMARY
       - name: Record hardware and admit the test architecture
+        if: runner.os != 'Windows'
         shell: bash
         env:
           TEST_PROFILE: ${{ matrix.profile }}
@@ -103,12 +149,17 @@ jobs:
       - name: Configure modules
         shell: bash
         run: |
+          compiler=clang++
           extra=()
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            compiler=clang-cl
+            extra+=(-DCMAKE_LINKER_TYPE=LLD)
+          fi
           if [[ "${RUNNER_OS}" == Linux ]]; then
             extra+=(-DCMAKE_LINKER_TYPE=LLD)
           fi
           cmake -S . -B build/core -G Ninja \
-            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
             -DSIMD_TEST_ISA="${{ matrix.profile }}" \
             '-DSIMD_PROFILES=${{ matrix.profiles }}' "${extra[@]}"
