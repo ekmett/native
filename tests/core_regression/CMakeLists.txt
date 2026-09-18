@@ -154,6 +154,9 @@ foreach(kind IN ITEMS header import)
   endif()
   add_test(NAME simd.integer_ops.${kind} COMMAND simd_test_integer_ops_${kind})
   set_tests_properties(simd.integer_ops.${kind} PROPERTIES LABELS "host;modules;integer;exact")
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_integer_ops_${kind})
+  endif()
 endforeach()
 
 # Packing has an independent scalar oracle and checks truncation/lane order.
@@ -165,6 +168,9 @@ foreach(kind IN ITEMS header import)
   endif()
   add_test(NAME simd.packing.${kind} COMMAND simd_test_packing_${kind})
   set_tests_properties(simd.packing.${kind} PROPERTIES LABELS "host;modules;integer;exact")
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_packing_${kind})
+  endif()
 endforeach()
 
 # Guard pages verify that short loads never touch the following mapping.
