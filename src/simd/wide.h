@@ -35,7 +35,8 @@ namespace simd {
     };
     template<class T> struct wide_features<T,std::void_t<typename T::architecture>> {
       static constexpr feature_set value = [] {
-        if constexpr (architecture<typename T::architecture>) return T::architecture::features;
+        if constexpr (architecture<typename T::architecture> && architecture<value_architecture_t<T>>)
+          return value_architecture_t<T>::features;
         else return feature_set{0};
       }();
     };

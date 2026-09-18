@@ -9,14 +9,12 @@
 #define SIMD_TARGET_exp_base SIMD_KERNEL_TARGET_2
 #define SIMD_TARGET_exp_bw SIMD_KERNEL_TARGET_3
 #define SIMD_TARGET_exp_vl SIMD_KERNEL_TARGET_4
-#define SIMD_TARGET_exp_bw_bf16 SIMD_KERNEL_TARGET_7
-#define SIMD_TARGET_exp_bw_fp16 SIMD_KERNEL_TARGET_11
-#define SIMD_TARGET_exp_bw_half SIMD_KERNEL_TARGET_15
-#define SIMD_TARGET_exp_full_half SIMD_KERNEL_TARGET_17
 
 namespace simd::detail {
   using raw_exp_policies=x86_kernel_policies;
-  using exp_result_policies=x86_storage_policies;
+  // A binary32 result uses raw float constructors regardless of extra half
+  // features in its retained Arch. Native half element policies are separate.
+  using exp_result_policies=x86_kernel_policies;
   // Named transitive summaries: all raw operations currently inherit the same
   // five backend declaration scopes. VL is a genuine mask/scaling boundary;
   // BW remains a backend attribute requirement for this binary32 graph.
@@ -30,23 +28,17 @@ namespace simd::detail {
   // Identical partitions are composed once, not once per polynomial operation.
   using exp_refinement=abi_refinement<exp_compare_select_policies,exp_result_policies>;
   using exp_policies=exp_refinement::policies;
-  static_assert(exp_refinement::capacity==55);
-  static_assert(exp_refinement::cells.size==11);
+  static_assert(exp_refinement::capacity==25);
+  static_assert(exp_refinement::cells.size==5);
 }
 
-// index, source target spelling, raw-exp choice, wide-constructor choice
+// index, source target spelling, raw-exp choice, binary32-result choice
 #define SIMD_EXP_POLICY_CELLS(X) \
-  X(0,exp_full_half,0,0) \
-  X(1,avx512_bf16,0,2) \
-  X(2,avx512_fp16,0,4) \
-  X(3,avx512,0,6) \
-  X(4,exp_bw_half,1,1) \
-  X(5,exp_bw_bf16,1,3) \
-  X(6,exp_bw_fp16,1,5) \
-  X(7,exp_bw,1,7) \
-  X(8,exp_vl,2,8) \
-  X(9,exp_base,3,9) \
-  X(10,avx2,4,10)
+  X(0,avx512,0,0) \
+  X(1,exp_bw,1,1) \
+  X(2,exp_vl,2,2) \
+  X(3,exp_base,3,3) \
+  X(4,avx2,4,4)
 
 #define CHECK_EXP_CELL(i,name,raw,result) \
   static_assert(SIMD_TARGET_TYPE(name)::features==simd::detail::exp_refinement::cells.records[i].requirements); \

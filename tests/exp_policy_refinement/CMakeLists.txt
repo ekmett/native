@@ -17,7 +17,7 @@ endif()
 add_test(NAME simd.exp_refinement.metadata COMMAND simd_test_exp_refinement_metadata)
 set_tests_properties(simd.exp_refinement.metadata PROPERTIES LABELS "host;exp_refinement")
 
-# First native prototype covers x86's current raw-exp and wide-result families.
+# Native checks retain eleven caller tags across five binary32 implementation policies.
 # Metadata above remains host-independent; no ARM code generation is claimed.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   add_executable(simd_test_exp_refinement_import import.cc)

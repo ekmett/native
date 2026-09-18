@@ -49,11 +49,18 @@ namespace refinement_test {
       ((K&16)?feature_set(feature::avx512_bf16):0) |
       ((K&32)?feature_set(feature::avx512_fp16):0) |
       ((K&64)?feature_set(feature::aes):0);
-    return exp_refinement::agrees<isa<bits>>();
+    using A=isa<bits>;
+    using selected=abi_lookup<A,exp_policies>;
+    return exp_refinement::agrees<A>() && caller_refinement::agrees<A>() &&
+      selected::index==abi_lookup<A,raw_exp_policies>::index &&
+      (selected::type::features & (feature_set(feature::avx512_bf16)|
+        feature_set(feature::avx512_fp16)))==0;
   }
   template<std::size_t... K> consteval bool exp_boundaries(std::index_sequence<K...>) {
     return (check_exp_boundary<K>() && ...);
   }
+  static_assert(exp_refinement::cells.size==5 && exp_refinement::capacity==25);
+  static_assert(std::same_as<exp_policies,raw_exp_policies>);
   static_assert(exp_boundaries(std::make_index_sequence<128>{}));
   static_assert(exp_refinement::agrees<scalar>() && exp_refinement::agrees<neon>());
 }

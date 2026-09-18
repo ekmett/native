@@ -18,6 +18,8 @@ export namespace simd {
     using value_type = fp16;
     /// The distinct compile-time NEON_FP16 instruction-profile tag.
     using architecture = Arch;
+    /// Requirements of this value implementation; additional tag features remain available.
+    using required_architecture = simd::neon_fp16;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit FP16 register representation; native bridges copy bits.

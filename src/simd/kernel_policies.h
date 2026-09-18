@@ -27,6 +27,20 @@
 // be required by its callee's target attribute. Keep those requirements until
 // that callee is split into narrower scopes.
 namespace simd::detail {
+  // Type identity records available features; this optional member records the
+  // requirements of the selected value implementation. Unknown custom domains
+  // retain their architecture's conservative requirements.
+  template<class T,class A,class=void> struct required_value_architecture {
+    using type=A;
+  };
+  template<class T,class A> requires architecture<typename T::required_architecture>
+  struct required_value_architecture<T,A,std::void_t<typename T::required_architecture>> {
+    using type=typename T::required_architecture;
+  };
+  template<class T,class=void> struct value_architecture { using type=void; };
+  template<class T> struct value_architecture<T,std::void_t<typename T::architecture>>
+    : required_value_architecture<T,typename T::architecture> {};
+  template<class T> using value_architecture_t=typename value_architecture<T>::type;
   using kernel_base=isa<avx2::features|feature::avx512f|feature::avx512dq>;
   using kernel_bw=isa<kernel_base::features|feature::avx512bw>;
   using kernel_vl=isa<kernel_base::features|feature::avx512vl>;

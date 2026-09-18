@@ -37,6 +37,11 @@ refinement of raw calls and result storage: eleven x86 cells, four ARM cells
 and the generic path. The same cells also refine the thirteen memory scopes.
 Literal Clang targets are checked against the computed requirements. Input
 tags retain all their features; selecting a cell never retags a value or mask.
+Native values also expose `required_architecture`, which determines their
+implementation scope. Ordinary float, integer and mask values strip unrelated
+half capabilities from that requirement; native FP16 and BF16 values retain
+only their own extension. Partial and generic memory helpers follow these
+requirements too, including any custom rebound value used by a memory bridge.
 Compact predicates publish their architecture just as vectors do, so packs of
 masks retain their target requirements. Arrays, nested packs and pairs contribute
 their element metadata to conversions and other mixed-input operations.

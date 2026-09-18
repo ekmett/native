@@ -273,6 +273,7 @@ namespace simd {
   /// invariant already. `to_bitset` places logical lane i in bit i.
   struct alignas(typename SIMD_BACKEND_NAMESPACE::mask_full_ops<sizeof(U),N>::native_type) vec<mask_lane<U>,N,Arch> : detail::swizzle_access<mask_lane<U>,N,Arch> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -366,6 +367,7 @@ namespace simd {
   template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::predicate_shape<N>
   struct predicate<N,Arch> {
     using architecture=Arch;
+    using required_architecture=SIMD_DEFAULT_ARCH;
     using ops=SIMD_BACKEND_NAMESPACE::mask_compact_ops<N>;
     using native_type=typename ops::native_type;
     static constexpr std::size_t lanes=N;
@@ -516,6 +518,7 @@ namespace simd {
   template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::mask_shape<1,N>
   struct vec<bool,N,Arch> : detail::swizzle_access<bool,N,Arch> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -1715,6 +1718,7 @@ namespace simd {
   }
   template <simd_integer_element T, SIMD_ARCH_CONCEPT Arch> struct vec<T, 1,Arch> : detail::swizzle_access<T,1,Arch> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -2155,6 +2159,7 @@ namespace simd {
     requires(N > 1 && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>)
   struct vec<T, N,Arch> : detail::swizzle_access<T,N,Arch> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -2909,6 +2914,7 @@ namespace simd {
   }
   template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 1,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,1,Arch>, 1>, detail::swizzle_access<float,1,Arch> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -3031,6 +3037,7 @@ namespace simd {
 #if SIMD_HAS_AVX512F && SIMD_HAS_AVX512DQ
   template <SIMD_ARCH_CONCEPT Arch> struct vec<float, 16,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,16,Arch>, 16> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -3161,6 +3168,7 @@ namespace simd {
 #if SIMD_HAS_ARM_NEON
   template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 4,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
     using architecture = Arch;
+    using required_architecture = SIMD_DEFAULT_ARCH;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>

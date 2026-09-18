@@ -135,6 +135,17 @@ namespace simd {
     typename simd_traits<T>::storage_type;
   };
   namespace detail {
+    template<class V,class U,class=void> struct memory_architecture : value_architecture<V> {};
+    template<class V,simd_custom_element U>
+      requires std::same_as<typename V::value_type,typename simd_traits<U>::storage_type> &&
+        architecture<value_architecture_t<V>> &&
+        architecture<value_architecture_t<typename V::template rebind<U>>>
+    struct memory_architecture<V,U,std::void_t<typename V::template rebind<U>>> {
+      using type=isa<value_architecture_t<V>::features|
+        value_architecture_t<typename V::template rebind<U>>::features>;
+    };
+    template<class V,class U> using memory_architecture_t=typename memory_architecture<V,U>::type;
+
     template <class... X> struct simd_deduced_element { using type = float; };
     template <class X, class... Rest> struct simd_deduced_element<X, Rest...> {
       using type = std::conditional_t<simd_custom_element<std::remove_cvref_t<X>>,

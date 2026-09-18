@@ -65,10 +65,19 @@ case. Concatenating their lists does not compute that refinement.
 The public hub now uses an internal common refinement for x86
 `exp(wide<vec<float,L,Arch>,N>)`. Named raw-operation summaries share the
 current backend partitions; identical partitions are composed once with the
-result-constructor policy. Eleven disjoint attributed overloads retain the
+result-constructor policy. Five disjoint attributed overloads retain the
 caller's complete `Arch` and call the unchanged array arithmetic. The internal
-composition helper is not a new public API. Generic scalar/custom/ARM wide
-paths and other wide operations retain their existing target families.
-BW/half constructor attribute requirements remain explicit; this is not a
-claim of eleven different exponential algorithms or a performance improvement.
+composition helper is not a new public API. Other wide and raw kernels now use
+the shared policy machinery too, preserving their arithmetic and ADL protocols.
+
+`architecture` describes the capabilities carried by the value's type.
+`required_architecture` describes its selected implementation's requirements.
+Raw FP32, integer and mask implementations do not require half extensions just
+because their `Arch` advertises them. Native FP16 and BF16 values require their
+own extension, including construction and memory helpers, without requiring the
+other one. Unknown custom domains keep conservative requirements. A customization
+adapter cannot infer the requirements of arbitrary user ADL functions.
+
+The remaining BW/backend attribute requirements stay explicit; this is not a
+claim of five different exponential algorithms or a performance improvement.
 See the [focused refinement checks](../tests/exp_policy_refinement/README.md).

@@ -4,6 +4,7 @@
 #if SIMD_HOST_X86
 export namespace simd {
   /// Evaluate the unchanged array exp graph under the common callee ABI policy.
+  /// Binary32 callees require only the raw backend, including result construction.
   /// The caller's complete architecture, lane count and pack extent are retained.
 #define SIMD_EMIT_WIDE_EXP(i,name,raw,result) \
   SIMD_TARGET_PUSH(name) \

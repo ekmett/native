@@ -13,6 +13,8 @@ export namespace simd {
     using value_type = bf16;
     /// The distinct compile-time NEON_BF16 instruction-profile tag.
     using architecture = Arch;
+    /// Requirements of this value implementation; additional tag features remain available.
+    using required_architecture = simd::neon_bf16;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit BF16 register representation; native bridges copy bits.
