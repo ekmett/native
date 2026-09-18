@@ -213,7 +213,8 @@ The workflow's YAML and Bash scripts were checked locally. Upstream release
 assets were verified to exist for Linux x86-64/ARM64, Windows x64/ARM64 and macOS
 ARM64. Native Windows/Linux execution and reuse between hosted workflow runs
 remain unverified by this check; each CI lane retains its own cache statistics.
-No wall-clock speedup or complete module-cache coverage is claimed.
+This initial check did not measure wall time or cache every module command;
+the follow-up below measures conservative module-map expansion.
 
 ### Conservative module-map expansion
 
@@ -236,7 +237,8 @@ statistics still exclude CMake-generated BMI commands without a launcher,
 dependency scanning and linking. Times measure only `cmake --build`, excluding
 configuration, cleaning and CTest. They are single local observations, not a
 repeated benchmark or a claim about hosted CI performance. The cold normalized
-build took longer than the plain cold build.
+build took longer than the plain cold build. Warm build time fell by 54.2%
+(10.88 s to 4.98 s), while cold time rose by 11.4% (14.03 s to 15.63 s).
 
 Seven focused launcher test methods cover accepted generated maps, preservation
 of argv and response-file contents, unknown/ambiguous syntax, all whitespace
@@ -256,3 +258,17 @@ freshly compiled importers. All seven stages passed with zero cache errors and
 unchanged module-map SHA-256 hashes. This tests local cache correctness for
 those changes; hosted cache-service reuse and native Linux/Windows execution
 retain the limitations above.
+
+### Integration with current main
+
+After integrating upstream `7b44537` (including source-layout changes and the
+new scalar `scalef` regression), commit `b366eea` repeated the expanded-map check
+with the same toolchain and two compiler jobs. A fresh cache produced 49 misses
+in 15.80 s; a clean warm rebuild produced 49 hits in 5.12 s, with no bypasses or
+cache errors. Both builds passed all 37 CTests. This is another single local
+cold/warm pair, not a new comparison against plain sccache.
+
+The current package was installed, moved to a path containing a space, and
+consumed without a compiler launcher or sccache on `PATH`. Its public-header
+boundary test and all three omnibus consumer tests passed. Workflow validation
+retained all five platforms and both exception settings (ten configurations).
