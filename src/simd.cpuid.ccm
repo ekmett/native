@@ -43,7 +43,11 @@ export namespace simd {
 
 
   /// Instruction profiles from simd_target_profile; not a tuning or dispatch policy.
-  enum class x86_profile : std::uint8_t { avx2, avx512, avx512_bf16 };
+  enum class x86_profile : std::uint8_t {
+    avx2, ///< AVX2/FMA/BMI2, compiler-implied CPU features, and XMM/YMM OS state.
+    avx512, ///< AVX2 requirements plus AVX512F/DQ/BW/VL, F16C, and ZMM/opmask OS state.
+    avx512_bf16 ///< Full AVX512 requirements plus CPUID.7.1 EAX bit 5 (AVX512_BF16).
+  };
 
   /// Observed registers. Unavailable leaves and unread XCR0 remain zero.
   /// This snapshot describes the executing logical CPU, not every CPU in a system.
@@ -52,7 +56,12 @@ export namespace simd {
     std::uint32_t leaf1_ecx = 0, leaf1_edx = 0, leaf7_ebx = 0;
     std::uint64_t xcr0 = 0;
     bool xcr0_observed = false;
-    std::uint32_t max_leaf7_subleaf = 0, leaf7_1_eax = 0;
+    /// Maximum supported structured-feature subleaf, from CPUID.7.0 EAX.
+    /// Zero when leaf 7 is unavailable; subleaf 1 must not be assumed in that case.
+    std::uint32_t max_leaf7_subleaf = 0;
+    /// CPUID.7.1 EAX feature bits; bit 5 reports AVX512_BF16.
+    /// Zero unless leaf 7 and subleaf 1 were reported as available.
+    std::uint32_t leaf7_1_eax = 0;
   };
 
   /// Capture CPUID and, only with XSAVE and OSXSAVE, XCR0. No ISA profile required.
@@ -65,7 +74,12 @@ export namespace simd {
     std::uint64_t missing_xcr0 = 0;
     bool invalid_profile = false, missing_leaf1 = false, missing_leaf7 = false;
     bool missing_osxsave = false, missing_xcr0_observation = false;
+    /// Required but absent CPUID.7.1 EAX bits. BF16 admission requires bit 5;
+    /// an unavailable subleaf makes that bit missing regardless of stored data.
+    /// Profiles not requiring subleaf 1 leave this mask zero.
     std::uint32_t missing_leaf7_1_eax = 0;
+    /// True when BF16 admission requires subleaf 1 but leaf 7 is unavailable or
+    /// CPUID.7.0 EAX reports a maximum subleaf below 1. False for other profiles.
     bool missing_leaf7_1 = false;
 
     /// True only when every CPU feature and required OS vector-state component is present.

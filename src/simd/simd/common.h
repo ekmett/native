@@ -167,7 +167,10 @@ namespace simd {
   /// \ingroup vectors
   /// AVX-512 F/DQ/BW/VL profile, also supporting smaller native shapes.
   struct avx512 {};
-  /// AVX-512 F/DQ/BW/VL plus BF16 pairwise dot products. No runtime detection.
+  /// \ingroup vectors
+  /// AVX-512 F/DQ/BW/VL plus BF16 pairwise dot products, with a distinct vector type.
+  /// Import simd.avx512_bf16 and compile with the AVX512_BF16 profile. This tag
+  /// neither selects compiler flags nor performs CPU/OS feature admission.
   struct avx512_bf16 {};
   namespace detail {
     template<class A> concept avx512_architecture = std::same_as<A,avx512> ||
