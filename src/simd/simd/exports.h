@@ -87,6 +87,7 @@ export namespace simd {
 
   using ::simd::wide;
   using ::simd::vec;
+  using ::simd::predicate;
   using ::simd::scalar;
   using ::simd::avx2;
   using ::simd::avx512;
@@ -130,10 +131,13 @@ export namespace simd {
   using ::simd::select;
   /// Make the corresponding simd overload set visible through this module.
   using ::simd::masked_add;
+  using ::simd::masked_add_zero;
   /// Make the corresponding simd overload set visible through this module.
   using ::simd::masked_sub;
+  using ::simd::masked_sub_zero;
   /// Make the corresponding simd overload set visible through this module.
   using ::simd::masked_mul;
+  using ::simd::masked_mul_zero;
   using ::simd::masked_scaleb;
   using ::simd::masked_scaleb_zero;
   using ::simd::scaleb;
@@ -175,7 +179,9 @@ export namespace simd {
 
 export namespace simd {
   using ::simd::deposit_bits;
-#if SIMD_HAS_AVX2 || SIMD_HAS_ARM_NEON
+#if (SIMD_HOST_X86 || SIMD_HOST_NEON) && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
   using ::simd::narrow_concat;
 #endif
 }
+
+#include <simd/isa_exports.h>

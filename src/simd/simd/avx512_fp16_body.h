@@ -1,14 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-module;
-#define SIMD_PROFILE 512
-#define SIMD_PROFILE_AVX512_FP16 1
-#include <simd/vec.h>
-#include <simd/integer.h>
-#include <simd/packing.h>
-#include <simd/simd/math/exp.h>
-#include <simd/simd/math/bits.h>
-// Intrinsics remain in the global module fragment, like the raw registers.
+#define SIMD_ARCH_CONCEPT ::simd::detail::avx512_fp16_architecture
+#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"))), apply_to=function)
 namespace simd::detail::avx512_fp16_backend {
   simd_inline __m512h add_half(__m512h a, __m512h b) noexcept { return _mm512_add_ph(a,b); }
   simd_inline __m512h sub_half(__m512h a, __m512h b) noexcept { return _mm512_sub_ph(a,b); }
@@ -26,11 +17,6 @@ namespace simd::detail::avx512_fp16_backend {
     return _mm512_mask_blend_ph(m,b,a);
   }
 }
-export module simd.avx512_fp16;
-export import simd.wide;
-export import simd.numerics;
-#include "simd/simd/exports.h"
-
 export namespace simd {
   /// \ingroup vectors
   /// One 512-bit register of FP16 representations. Loads, stores and bit bridges
@@ -41,15 +27,14 @@ export namespace simd {
   /// No operation changes MXCSR control bits. NaN payload/sign propagation follows
   /// the instruction, not a portable promise. Scalar fp16 conversions are unchanged.
   /// Only the 32-lane shape is provided.
-  /// Import simd.avx512_fp16 and compile its users for the AVX512_FP16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<> struct vec<fp16,32,avx512_fp16> {
+  template<SIMD_ARCH_CONCEPT Arch> struct vec<fp16,32,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = fp16;
     /// The distinct compile-time AVX512_FP16 instruction-profile tag.
-    using architecture = avx512_fp16;
+    using architecture = Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 512-bit FP16 register representation; native bridges copy bits.
@@ -211,15 +196,19 @@ export namespace simd {
   /// Deduce FP16 element type, argument-count lanes, and the explicit FP16 profile.
   /// Arguments must all be FP16 values. Only 32 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T> requires(sizeof...(T) > 0 && (std::same_as<T,fp16> && ...))
-  vec(avx512_fp16,T...) -> vec<fp16,sizeof...(T),avx512_fp16>;
+  template<class... T, SIMD_ARCH_CONCEPT Arch> requires(sizeof...(T) > 0 && (std::same_as<T,fp16> && ...))
+  vec(Arch,T...) -> vec<fp16,sizeof...(T),Arch>;
 
   /// Compute a*b+c in each lane with one final half-precision rounding (VFMADD*PH).
   /// MXCSR rounding and exception controls apply, status flags may change, and
   /// DAZ/FTZ are ignored. Control bits are preserved; NaNs follow the instruction.
-  simd_nodiscard simd_inline vec<fp16,32,avx512_fp16> fma(
-      vec<fp16,32,avx512_fp16> a,vec<fp16,32,avx512_fp16> b,vec<fp16,32,avx512_fp16> c) noexcept {
-    return vec<fp16,32,avx512_fp16>::from_native(
+  template<SIMD_ARCH_CONCEPT Arch>
+  simd_nodiscard simd_inline vec<fp16,32,Arch> fma(
+      vec<fp16,32,Arch> a,vec<fp16,32,Arch> b,vec<fp16,32,Arch> c) noexcept {
+    return vec<fp16,32,Arch>::from_native(
       detail::avx512_fp16_backend::fma_half(a.to_native(),b.to_native(),c.to_native()));
   }
 }
+
+#pragma clang attribute pop
+#undef SIMD_ARCH_CONCEPT

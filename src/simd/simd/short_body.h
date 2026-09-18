@@ -1,17 +1,9 @@
-#pragma once
-#include "simd/simd/common.h"
-#include <bit>
-#include <cstring>
 #if defined(__x86_64__) || defined(_M_X64)
-#include <immintrin.h>
 #elif defined(__aarch64__) || defined(_M_ARM64)
-#include <arm_neon.h>
 #endif
 
 namespace simd {
-  namespace detail {
-    template<class Arch> concept native_short_arch = std::same_as<Arch,avx2> ||
-      ::simd::detail::avx512_architecture<Arch> || ::simd::detail::neon_architecture<Arch>;
+  namespace detail::SIMD_BACKEND {
     template<class T> concept short_element = std::same_as<T,float> ||
       std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t> || std::same_as<T,mask32>;
     template<class T> using short_lane = std::conditional_t<simd_mask_element<T>,std::uint32_t,T>;
@@ -29,19 +21,19 @@ namespace simd {
   /// Loads and stores touch only logical lanes; mask reductions ignore padding.
   /// Division supplies harmless inactive operands before using the full register.
   /// \snippet api.cc swizzles
-  template<detail::short_element T,std::size_t N,detail::native_short_arch Arch>
+  template<SIMD_BACKEND_NAMESPACE::short_element T,std::size_t N,SIMD_ARCH_CONCEPT Arch>
     requires(N==2 || N==3) && requires { typename vec<T,4,Arch>::native_type; }
   struct vec<T,N,Arch> : detail::swizzle_access<T,N,Arch> {
     using value_type=T;
     using architecture=Arch;
     using storage_type=vec<T,4,Arch>;
-    using native_type=detail::short_native<detail::short_lane<T>>;
+    using native_type=SIMD_BACKEND_NAMESPACE::short_native<SIMD_BACKEND_NAMESPACE::short_lane<T>>;
     using register_type=vec;
     using unsigned_register_tag=void;
     using bits_type=vec<std::uint32_t,N,Arch>;
     using vector_mask_type=vec<mask32,N,Arch>;
     using mask_type=std::conditional_t<simd_mask_element<T>,vec,
-      std::conditional_t<::simd::detail::avx512_architecture<Arch>,predicate<N,Arch>,vector_mask_type>>;
+      std::conditional_t<bool(SIMD_HAS_AVX512VL),predicate<N,Arch>,vector_mask_type>>;
     using mask=mask_type;
     using predicate_type=predicate<N,Arch>;
     template<class U> using rebind=vec<U,N,Arch>;
@@ -58,8 +50,8 @@ namespace simd {
     /// Copy the stored value and return *this; no numerical conversion is performed.
     simd_inline constexpr vec & operator=(vec const &) = default;
     /// Broadcast the supplied value to each logical lane. Unused physical lanes are zero.
-    simd_inline constexpr vec(T x) noexcept : value{detail::short_word(x),detail::short_word(x),
-      N==3?detail::short_word(x):detail::short_lane<T>(0),0} {}
+    simd_inline constexpr vec(T x) noexcept : value{SIMD_BACKEND_NAMESPACE::short_word(x),SIMD_BACKEND_NAMESPACE::short_word(x),
+      N==3?SIMD_BACKEND_NAMESPACE::short_word(x):SIMD_BACKEND_NAMESPACE::short_lane<T>(0),0} {}
     /// Broadcast the supplied value to each logical lane. Unused physical lanes are zero.
     explicit simd_inline constexpr vec(bool x) noexcept requires simd_mask_element<T> : vec(T(x)) {}
     /// Adopt native lane storage and clear physical padding. Mask elements must already be canonical.
@@ -68,7 +60,7 @@ namespace simd {
     /// Construct logical lanes in argument order. Any element conversions determine the exception specification.
     template<class... X> requires(sizeof...(X)==N) && (std::convertible_to<X,T> && ...)
     simd_inline constexpr vec(X... x) noexcept((noexcept(static_cast<T>(x)) && ...))
-      : value{detail::short_word(static_cast<T>(x))...} {}
+      : value{SIMD_BACKEND_NAMESPACE::short_word(static_cast<T>(x))...} {}
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -103,9 +95,9 @@ namespace simd {
     template<std::size_t Alignment=1>
     simd_nodiscard static simd_inline vec load_memory(T const * p) noexcept {
 #if defined(__x86_64__) || defined(_M_X64)
-      if constexpr(std::same_as<Arch,avx2> || ::simd::detail::avx512_architecture<Arch>) {
+      if constexpr(bool(SIMD_HAS_AVX2)) {
         if constexpr(N==2) return vec(unchecked{},std::bit_cast<native_type>(_mm_loadl_epi64(reinterpret_cast<__m128i const *>(p))));
-        else if constexpr(::simd::detail::avx512_architecture<Arch>) {
+        else if constexpr(bool(SIMD_HAS_AVX512VL)) {
           if constexpr(std::same_as<T,float>) return vec(unchecked{},std::bit_cast<native_type>(_mm_maskz_loadu_ps(7,p)));
           else return vec(unchecked{},std::bit_cast<native_type>(_mm_maskz_loadu_epi32(7,p)));
         } else {
@@ -133,9 +125,9 @@ namespace simd {
     template<std::size_t Alignment=1>
     simd_inline void store_memory(T * p) const noexcept {
 #if defined(__x86_64__) || defined(_M_X64)
-      if constexpr(std::same_as<Arch,avx2> || ::simd::detail::avx512_architecture<Arch>) {
+      if constexpr(bool(SIMD_HAS_AVX2)) {
         if constexpr(N==2) _mm_storel_epi64(reinterpret_cast<__m128i *>(p),std::bit_cast<__m128i>(value));
-        else if constexpr(::simd::detail::avx512_architecture<Arch>) {
+        else if constexpr(bool(SIMD_HAS_AVX512VL)) {
           if constexpr(std::same_as<T,float>) _mm_mask_storeu_ps(p,7,std::bit_cast<__m128>(value));
           else _mm_mask_storeu_epi32(p,7,std::bit_cast<__m128i>(value));
         } else {
@@ -323,21 +315,21 @@ namespace simd {
   };
 
   /// Choose each bit from a where the corresponding mask bit is one, otherwise from b; arbitrary bit masks are permitted.
-  template<simd_integer_element T,std::size_t N,detail::native_short_arch Arch>
+  template<simd_integer_element T,std::size_t N,SIMD_ARCH_CONCEPT Arch>
     requires(N==2 || N==3) && (sizeof(T)==4)
   simd_nodiscard simd_inline vec<T,N,Arch> bit_select(vec<T,N,Arch> bits,vec<T,N,Arch> a,vec<T,N,Arch> b) noexcept { return (bits&a)|(~bits&b); }
   /// Add matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
-  template<simd_integer_element T,std::size_t N,detail::native_short_arch Arch,class M>
+  template<simd_integer_element T,std::size_t N,SIMD_ARCH_CONCEPT Arch,class M>
     requires(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename vec<T,N,Arch>::mask> || std::same_as<M,vec<mask32,N,Arch>>)
   simd_nodiscard simd_inline vec<T,N,Arch> masked_add(M m,vec<T,N,Arch> prior,vec<T,N,Arch> a,vec<T,N,Arch> b) noexcept { return select(m,a+b,prior); }
   /// Subtract matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
-  template<simd_integer_element T,std::size_t N,detail::native_short_arch Arch,class M>
+  template<simd_integer_element T,std::size_t N,SIMD_ARCH_CONCEPT Arch,class M>
     requires(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename vec<T,N,Arch>::mask> || std::same_as<M,vec<mask32,N,Arch>>)
   simd_nodiscard simd_inline vec<T,N,Arch> masked_sub(M m,vec<T,N,Arch> prior,vec<T,N,Arch> a,vec<T,N,Arch> b) noexcept { return select(m,a-b,prior); }
   /// Multiply matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
-  template<simd_integer_element T,std::size_t N,detail::native_short_arch Arch,class M>
+  template<simd_integer_element T,std::size_t N,SIMD_ARCH_CONCEPT Arch,class M>
     requires(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename vec<T,N,Arch>::mask> || std::same_as<M,vec<mask32,N,Arch>>)
   simd_nodiscard simd_inline vec<T,N,Arch> masked_mul(M m,vec<T,N,Arch> prior,vec<T,N,Arch> a,vec<T,N,Arch> b) noexcept { return select(m,a*b,prior); }

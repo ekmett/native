@@ -1,14 +1,5 @@
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-module;
-#define SIMD_PROFILE 128
-#define SIMD_PROFILE_FP16 1
-#include <simd/vec.h>
-#include <simd/integer.h>
-#include <simd/packing.h>
-#include <simd/simd/math/exp.h>
-#include <simd/simd/math/bits.h>
-// Intrinsics remain in the global module fragment, like the raw registers.
+#define SIMD_ARCH_CONCEPT ::simd::detail::neon_fp16_architecture
+#pragma clang attribute push(__attribute__((target("neon,fullfp16"))), apply_to=function)
 namespace simd::detail::neon_fp16_backend {
   simd_inline float16x8_t add_half(float16x8_t a, float16x8_t b) noexcept { return vaddq_f16(a,b); }
   simd_inline float16x8_t sub_half(float16x8_t a, float16x8_t b) noexcept { return vsubq_f16(a,b); }
@@ -24,11 +15,6 @@ namespace simd::detail::neon_fp16_backend {
     return vbslq_f16(vreinterpretq_u16_u8(m),a,b);
   }
 }
-export module simd.neon_fp16;
-export import simd.wide;
-export import simd.numerics;
-#include "simd/simd/exports.h"
-
 export namespace simd {
   /// \ingroup vectors
   /// One 128-bit register of FP16 representations. Loads, stores and bit bridges
@@ -39,15 +25,14 @@ export namespace simd {
   /// No operation changes FPCR. NaN payload/sign propagation is instruction- and
   /// FPCR-dependent, not a portable promise. Scalar fp16 conversions are unchanged.
   /// Only the 8-lane shape is provided.
-  /// Import simd.neon_fp16 and compile its users for the NEON_FP16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<> struct vec<fp16,8,neon_fp16> {
+  template<SIMD_ARCH_CONCEPT Arch> struct vec<fp16,8,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = fp16;
     /// The distinct compile-time NEON_FP16 instruction-profile tag.
-    using architecture = neon_fp16;
+    using architecture = Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit FP16 register representation; native bridges copy bits.
@@ -210,15 +195,19 @@ export namespace simd {
   /// Deduce FP16 element type, argument-count lanes, and the explicit FP16 profile.
   /// Arguments must all be FP16 values. Only 8 lanes have an implementation;
   /// deduction of another lane count does not make that shape available.
-  template<class... T> requires(sizeof...(T) > 0 && (std::same_as<T,fp16> && ...))
-  vec(neon_fp16,T...) -> vec<fp16,sizeof...(T),neon_fp16>;
+  template<class... T, SIMD_ARCH_CONCEPT Arch> requires(sizeof...(T) > 0 && (std::same_as<T,fp16> && ...))
+  vec(Arch,T...) -> vec<fp16,sizeof...(T),Arch>;
 
   /// Compute a*b+c in each lane with one final half-precision rounding (FMLA).
   /// The caller's FPCR rounding/FZ16/DN/exception controls apply, FPSR may change,
   /// and FPCR is preserved. NaN payload/sign follow the native instruction.
-  simd_nodiscard simd_inline vec<fp16,8,neon_fp16> fma(
-      vec<fp16,8,neon_fp16> a,vec<fp16,8,neon_fp16> b,vec<fp16,8,neon_fp16> c) noexcept {
-    return vec<fp16,8,neon_fp16>::from_native(
+  template<SIMD_ARCH_CONCEPT Arch>
+  simd_nodiscard simd_inline vec<fp16,8,Arch> fma(
+      vec<fp16,8,Arch> a,vec<fp16,8,Arch> b,vec<fp16,8,Arch> c) noexcept {
+    return vec<fp16,8,Arch>::from_native(
       detail::neon_fp16_backend::fma_half(a.to_native(),b.to_native(),c.to_native()));
   }
 }
+
+#pragma clang attribute pop
+#undef SIMD_ARCH_CONCEPT

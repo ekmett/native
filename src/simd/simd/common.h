@@ -1,5 +1,6 @@
 #pragma once
 #include "simd/attributes.h"
+#include "simd/isa.h"
 #include <array>
 #include <span>
 #include <concepts>
@@ -145,59 +146,8 @@ namespace simd {
   // Native registers are trivial values: default initialization leaves lanes
   // unspecified; broadcast, load, or value initialization supplies every lane.
   // Partial operations touch exactly n lanes (0 <= n <= lanes).
-  template<class V, std::size_t L> struct register_memory {
-    static constexpr std::size_t lanes = L;
-    simd_nodiscard static simd_inline simd_pure V load_partial(simd_noescape float const * p, std::size_t n, float fill = 0) noexcept {
-      alignas(64) std::array<float, L> a; a.fill(fill);
-      for (std::size_t i = 0; i < n; ++i) a[i] = p[i];
-      return V::load(a.data());
-    }
-    simd_inline void store_partial(simd_noescape float * p, std::size_t n) const noexcept {
-      alignas(64) std::array<float, L> a; static_cast<V const &>(*this).store(a.data());
-      for (std::size_t i = 0; i < n; ++i) p[i] = a[i];
-    }
-  };
+  template<class V, std::size_t L> struct register_memory;
   }
-  /// \ingroup vectors
-  /// Baseline scalar profile; only a one-lane raw vector is provided.
-  struct scalar {};
-  /// \ingroup vectors
-  /// AVX2, FMA and BMI2 profile. The tag performs no runtime detection.
-  struct avx2 {};
-  /// \ingroup vectors
-  /// AVX-512 F/DQ/BW/VL profile, also supporting smaller native shapes.
-  struct avx512 {};
-  /// \ingroup vectors
-  /// AVX-512 F/DQ/BW/VL plus BF16 pairwise dot products, with a distinct vector type.
-  /// Import simd.avx512_bf16 and compile with the AVX512_BF16 profile. This tag
-  /// neither selects compiler flags nor performs CPU/OS feature admission.
-  struct avx512_bf16 {};
-  /// \ingroup vectors
-  /// AVX-512 F/DQ/BW/VL plus native half arithmetic, with a distinct vector type.
-  /// Import simd.avx512_fp16 and compile for AVX512_FP16. This tag neither selects
-  /// compiler flags nor admits CPU/OS features; use simd.cpuid before entry.
-  struct avx512_fp16 {};
-  namespace detail {
-    template<class A> concept avx512_architecture = std::same_as<A,avx512> ||
-      std::same_as<A,avx512_bf16> || std::same_as<A,avx512_fp16>;
-  }
-  /// \ingroup vectors
-  /// AArch64 NEON profile. The tag does not change the caller's compiler flags.
-  struct neon {};
-  /// \ingroup vectors
-  /// AArch64 NEON plus native FP16 arithmetic, with a distinct vector type.
-  /// Import simd.neon_fp16 and compile for NEON_FP16. The tag neither selects
-  /// compiler flags nor admits runtime features; use simd.arm before entry.
-  struct neon_fp16 {};
-  /// AArch64 NEON plus native BF16 dot products. Import simd.neon_bf16 and
-  /// compile for NEON_BF16; the tag does not perform runtime ISA admission.
-  struct neon_bf16 {};
-  namespace detail {
-    template<class A> concept neon_architecture = std::same_as<A,neon> ||
-      std::same_as<A,neon_fp16> || std::same_as<A,neon_bf16>;
-  }
-  template<class A> concept architecture = std::same_as<A,scalar> || std::same_as<A,avx2> ||
-    detail::avx512_architecture<A> || detail::neon_architecture<A>;
   /** \ingroup vectors
    * \brief A value with `N` logical lanes of `T` for `Arch`.
    * `N` describes lanes, not a count of registers. Unsupported shapes remain
@@ -218,24 +168,7 @@ namespace simd {
   /// A compact predicate for a shape supported by the selected architecture.
   /// Bit `i` describes lane `i`; bits above the logical lane count are cleared.
   template<std::size_t N, architecture Arch> struct predicate;
-  namespace detail { template<class T,std::size_t N,class Arch> struct swizzle_access; }
-  template<simd_custom_element T, std::size_t N, architecture Arch>
-  struct simd_empty_bases vec<T,N,Arch> : simd_customization<T,
-      vec<typename simd_traits<T>::storage_type,N,Arch>,vec<T,N,Arch>>, detail::swizzle_access<T,N,Arch> {
-    using base = simd_customization<T,vec<typename simd_traits<T>::storage_type,N,Arch>,vec<T,N,Arch>>;
-    using base::base;
-    /// Default-construct the element customization; its initialization contract is retained.
-    simd_inline constexpr vec() = default;
-    using architecture = Arch;
-    using mask = typename vec<typename simd_traits<T>::storage_type,N,Arch>::mask;
-    using predicate_type = predicate<N,Arch>;
-    template<class U> using rebind = vec<U,N,Arch>;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<base,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-      noexcept(std::is_nothrow_constructible_v<base,X...>) : base(std::forward<X>(x)...) {}
-  };
+  namespace detail { template<class T,std::size_t N,class Arch> struct swizzle_access {}; }
   /// Deduce the element and lane count from an array, retaining the explicit architecture tag.
   template<architecture Arch, class T, std::size_t N> vec(Arch,std::array<T,N> const &) -> vec<T,N,Arch>;
   /// Deduce integral lanes using their common type and retain the explicit architecture tag.
@@ -344,94 +277,10 @@ namespace simd {
     // Streaming is currently an ordinary-access fallback on every backend.
     static constexpr bool non_temporal = false;
   };
-  /// \ingroup vector_memory
-  /// Load all `V::lanes` elements using the element's memory customization.
-  /// \pre `p` addresses that many readable elements and meets alignment `A`.
-  /// Exceptions propagate from the selected `V::load_memory<A>` operation.
-  template <class V, class U, std::size_t A=1, simd_access Access=simd_access::ordinary>
-    requires requires(U const * p) { V::template load_memory<A>(p); }
-  simd_nodiscard simd_inline V load_simd(U const * p, simd_memory<A,Access> = {})
-      noexcept(noexcept(V::template load_memory<A>(p))) {
-    return V::template load_memory<A>(p);
-  }
-  /// \ingroup vector_memory
-  /// Load custom elements through their typed memory operation, then project raw storage.
-  /// The customization owns any normalization; this is not an arbitrary pointer cast.
-  template <class V, simd_custom_element U, std::size_t A=1, simd_access Access=simd_access::ordinary>
-    requires std::same_as<typename V::value_type,typename simd_traits<U>::storage_type>
-  simd_nodiscard simd_inline V load_simd(U const * p, simd_memory<A,Access> = {})
-      noexcept(noexcept(V::template rebind<U>::template load_memory<A>(p).to_native())) {
-    return V::template rebind<U>::template load_memory<A>(p).to_native();
-  }
-  /// \ingroup vector_memory
-  /// Store all logical lanes using the element's memory customization.
-  /// \pre `p` addresses that many writable elements and meets alignment `A`.
-  template <class U, class V, std::size_t A=1, simd_access Access=simd_access::ordinary>
-    requires requires(V value,U * p) { value.template store_memory<A>(p); }
-  simd_inline void store_simd(U * p,V value,simd_memory<A,Access> = {})
-      noexcept(noexcept(value.template store_memory<A>(p))) {
-    value.template store_memory<A>(p);
-  }
-  /// \ingroup vector_memory
-  /// Convert raw storage to the custom element vector before its typed store.
-  /// Construction and storage both contribute to the exception specification.
-  template <simd_custom_element U, class V, std::size_t A=1, simd_access Access=simd_access::ordinary>
-    requires std::same_as<typename V::value_type,typename simd_traits<U>::storage_type>
-  simd_inline void store_simd(U * p,V value,simd_memory<A,Access> = {})
-      noexcept(noexcept(typename V::template rebind<U>(value).template store_memory<A>(p))) {
-    typename V::template rebind<U>(value).template store_memory<A>(p);
-  }
-  /// \ingroup vector_memory
-  /// Load an array or fixed-extent span whose extent equals the lane count.
-  template<class V,class U,std::size_t N> requires(N==V::lanes) &&
-    requires(U const * p) { ::simd::load_simd<V>(p); }
-  simd_nodiscard simd_inline V load_simd(std::array<U,N> const & values)
-      noexcept(noexcept(::simd::load_simd<V>(values.data()))) {
-    return ::simd::load_simd<V>(values.data());
-  }
-  /// \ingroup vector_memory
-  /// Load an array or fixed-extent span whose extent equals the lane count.
-  template<class V,class U,std::size_t N> requires(N==V::lanes) &&
-    requires(U * p) { ::simd::load_simd<V>(p); }
-  simd_nodiscard simd_inline V load_simd(std::span<U,N> values)
-      noexcept(noexcept(::simd::load_simd<V>(values.data()))) {
-    return ::simd::load_simd<V>(values.data());
-  }
-  /// \ingroup vector_memory
-  /// Load `count` elements and fill the remaining lanes with `fill`.
-  /// \pre `count <= V::lanes`; `p` may be null only when `count == 0`.
-  /// Uses an element temporary; construction, assignment and loading may throw.
-  /// The alignment hint does not extend the readable prefix.
-  template <class V, class U, std::size_t A=1, simd_access Access=simd_access::ordinary>
-    requires std::default_initializable<U> &&
-      std::constructible_from<U,typename V::value_type &> && std::is_copy_assignable_v<U> &&
-      requires(U const * p) { ::simd::load_simd<V>(p); }
-  simd_nodiscard simd_inline V load_simd_partial(U const * p,std::size_t count,
-      typename V::value_type fill={},simd_memory<A,Access> = {})
-      noexcept(std::is_nothrow_default_constructible_v<U> &&
-        std::is_nothrow_constructible_v<U,typename V::value_type &> &&
-        std::is_nothrow_copy_assignable_v<U> && noexcept(::simd::load_simd<V>(p))) {
-    std::array<U,V::lanes> temporary; temporary.fill(U(fill));
-    for(std::size_t i=0;i<count;++i) temporary[i]=p[i];
-    return ::simd::load_simd<V>(temporary.data());
-  }
-  /// \ingroup vector_memory
-  /// Store the first `count` logical lanes, leaving the following memory alone.
-  /// \pre `count <= V::lanes`; `p` may be null only when `count == 0`.
-  /// Element construction, assignment and storage determine the exception guarantee.
-  template <class U, class V, std::size_t A=1, simd_access Access=simd_access::ordinary>
-    requires std::default_initializable<U> && std::is_copy_assignable_v<U> &&
-      requires(U * p,V value) { ::simd::store_simd(p,value); }
-  simd_inline void store_simd_partial(U * p,V value,std::size_t count,simd_memory<A,Access> = {})
-      noexcept(std::is_nothrow_default_constructible_v<U> &&
-        std::is_nothrow_copy_assignable_v<U> && noexcept(::simd::store_simd(p,value))) {
-    std::array<U,V::lanes> temporary; ::simd::store_simd(temporary.data(),value);
-    for(std::size_t i=0;i<count;++i) p[i]=temporary[i];
-  }
 
 }
 
-#include "simd/simd/swizzle.h"
+
 
 /**
  * \file
@@ -443,3 +292,14 @@ namespace simd {
  * \author Edward Kmett <ekmett@gmail.com>
  * \brief Declares SIMD element types and pointer access policies.
  */
+
+namespace simd::detail {
+  template<class A> concept memory_avx512_architecture=avx512_architecture<A> && !has_feature<A,feature::avx512_bf16> && !has_feature<A,feature::avx512_fp16>;
+  template<class A> concept memory_avx512_bf16_architecture=avx512_bf16_architecture<A> && !has_feature<A,feature::avx512_fp16>;
+  template<class A> concept memory_avx512_fp16_architecture=avx512_fp16_architecture<A> && !has_feature<A,feature::avx512_bf16>;
+  template<class A> concept memory_avx512_half_architecture=avx512_half_architecture<A>;
+  template<class A> concept memory_neon_architecture=neon_architecture<A> && !has_feature<A,feature::neon_bf16> && !has_feature<A,feature::neon_fp16>;
+  template<class A> concept memory_neon_bf16_architecture=neon_bf16_architecture<A> && !has_feature<A,feature::neon_fp16>;
+  template<class A> concept memory_neon_fp16_architecture=neon_fp16_architecture<A> && !has_feature<A,feature::neon_bf16>;
+  template<class A> concept memory_neon_half_architecture=neon_half_architecture<A>;
+}
