@@ -6,8 +6,15 @@ module;
 #include <simd/packing.h>
 #include <simd/simd/math/exp.h>
 #include <simd/simd/math/bits.h>
+#if SIMD_HOST_X86
+#include "simd/simd/avx512_bf16_native.h"
+#include "simd/simd/avx512_fp16_native.h"
+#endif
+#if SIMD_HOST_NEON
+#include "simd/simd/neon_bf16_native.h"
+#include "simd/simd/neon_fp16_native.h"
+#endif
 export module simd;
-export import simd.scalar;
 export import simd.numerics;
 export import simd.wide;
 export import simd.static_string;
