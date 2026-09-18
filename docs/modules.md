@@ -223,3 +223,39 @@ answer different questions. Their recorded scope is described in
 [validation](validation.md). Raw approximate math retains each function's stated
 domain and operation graph; wrapping it in `wide` does not strengthen its accuracy
 or floating-point-environment contract.
+
+## Stable compaction and expansion
+
+The scalar, AVX2, AVX512 and NEON profiles support `float`, `int32_t` and
+`uint32_t` lanes with the same compaction contract:
+
+```cpp
+using V = simd::vec<uint32_t, 4, simd::avx2>;
+auto active = V::mask::from_bitset(0b1010);
+V values{10u, 20u, 30u, 40u};
+auto packed = simd::compress(active, values, 99u);
+// packed.value == {20, 40, 99, 99}; packed.count == 2
+auto restored = simd::expand(active, packed.value, V(77u));
+// restored == {77, 20, 77, 40}
+uint32_t output[2]{};
+auto written = simd::compress_store(output, 1, active, values);
+// written == 1, output[0] == 20; output[1] was not accessed
+```
+
+`compress` preserves increasing logical lane order and returns both the packed
+register and selected count. Its scalar fill defaults to zero and supplies
+every unused logical output lane. `expand` consumes the first selected-count
+lanes from its packed register, in order, and requires an explicit prior
+register for the unselected positions. Both rearrange object representations:
+floating-point signed zero, subnormal bits and NaN payloads are preserved without
+floating-point arithmetic. Short vectors exclude physical padding from masks
+and counts; their output padding is zero.
+
+`compress_store` writes the first `min(capacity, selected_count)` selected
+elements and returns the number **written**, which may be less than the count
+returned by `compress`. No later destination element is read or written. A null
+destination is allowed when capacity is zero or no logical lane is selected.
+For a nonzero write, the destination must provide that many writable elements
+of the vector's element type. No cross-register compaction or runtime backend
+selection is introduced; applications can assemble coherent batches using the
+returned counts.

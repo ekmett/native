@@ -78,6 +78,22 @@ void memory() {
 }
 //! [memory]
 
+//! [compaction]
+template<simd::architecture Arch>
+void compaction() {
+  using V = simd::vec<std::uint32_t, 4, Arch>;
+  auto active = V::mask::from_bitset(0b1010);
+  V input{10u, 20u, 30u, 40u};
+  auto packed = simd::compress(active, input, 99u);
+  check(packed.count == 2 && all(packed.value == V{20u, 40u, 99u, 99u}));
+  auto restored = simd::expand(active, packed.value, V(77u));
+  check(all(restored == V{77u, 20u, 77u, 40u}));
+  std::array<std::uint32_t, 2> output{0u, 123u};
+  auto written = simd::compress_store(output.data(), 1, active, input);
+  check(written == 1 && output[0] == 20u && output[1] == 123u);
+}
+//! [compaction]
+
 //! [swizzles]
 template<simd::architecture Arch>
 void swizzles() {
@@ -186,6 +202,7 @@ void capabilities() {
 }
 int main() {
   vector_construction<selected_arch>(); masks<selected_arch>(); memory<selected_arch>();
+  compaction<selected_arch>();
   swizzles<selected_arch>(); arithmetic<selected_arch>(); rounding<selected_arch>();
   exponential<selected_arch>(); bit_transport<selected_arch>(); wide_values<selected_arch>();
   common_utilities();

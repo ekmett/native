@@ -54,6 +54,17 @@ namespace simd {
     std::same_as<T,uint8_t> || std::same_as<T,uint16_t> ||
     std::same_as<T,uint32_t> || std::same_as<T,uint64_t>;
 
+  /// \ingroup vector_memory
+  /// Stable compaction's packed register and number of selected logical lanes.
+  template<class V> requires requires { typename V::value_type; } &&
+    (std::same_as<typename V::value_type,float> ||
+     std::same_as<typename V::value_type,std::int32_t> ||
+     std::same_as<typename V::value_type,std::uint32_t>)
+  struct compaction_result {
+    V value;
+    std::size_t count;
+  };
+
   /// \ingroup vectors
   /// Carry a compile-time lane index or instruction immediate as a value.
   template <std::size_t K> struct imm_t {

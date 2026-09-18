@@ -4,6 +4,7 @@
 #include "simd/simd/common.h"
 
 #include <array>
+#include <bit>
 #include <cstring>
 #include <concepts>
 #include <cstddef>
@@ -3769,3 +3770,190 @@ namespace simd {
 
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+
+
+namespace simd::detail::SIMD_BACKEND {
+  template<std::size_t N,class M>
+  simd_inline std::uint32_t compaction_mask_bits(M mask) noexcept {
+#if SIMD_HAS_AVX2
+    if constexpr (N > 1 && !M::compact) {
+      if constexpr (sizeof(M) == 32)
+        return std::uint32_t(_mm256_movemask_ps(std::bit_cast<__m256>(mask.to_native())));
+      else return std::uint32_t(_mm_movemask_ps(std::bit_cast<__m128>(mask.to_native()))) & ((1u << N) - 1);
+    } else
+#elif SIMD_HAS_ARM_NEON
+    if constexpr (N > 1) {
+      constexpr std::array<std::uint32_t,4> weights{1,2,4,8};
+      return vaddvq_u32(vandq_u32(std::bit_cast<uint32x4_t>(mask.to_native()),vld1q_u32(weights.data()))) & ((1u << N) - 1);
+    } else
+#endif
+    return std::uint32_t(mask.to_bitset()) & ((1u << N) - 1);
+  }
+
+  // Four-lane shuffles use byte indices on both SSSE3 and NEON. The eight-lane
+  // AVX2 permutation expands eight byte indices to dwords (2 KiB per table).
+  template<bool Expand, std::size_t Width> inline constexpr auto compaction_indices = [] {
+    constexpr auto bytes = Width == 4 ? 16 : 8;
+    std::array<std::array<std::uint8_t,bytes>,std::size_t(1) << Width> table{};
+    for (std::size_t mask = 0; mask != table.size(); ++mask) {
+      std::size_t packed = 0;
+      for (std::size_t lane = 0; lane != Width; ++lane) if (mask & (std::size_t(1) << lane)) {
+        auto destination = Expand ? lane : packed;
+        auto source = Expand ? packed : lane;
+        if constexpr (Width == 4)
+          for (std::size_t byte = 0; byte != 4; ++byte)
+            table[mask][4 * destination + byte] = std::uint8_t(4 * source + byte);
+        else table[mask][destination] = std::uint8_t(source);
+        ++packed;
+      }
+    }
+    return table;
+  }();
+
+  template<bool Expand, class V>
+  simd_inline V compact_register(std::uint32_t mask, V input, V prior) noexcept {
+    if constexpr (V::lanes == 1) return mask ? input : prior;
+    else {
+#if SIMD_HAS_AVX512F
+      if constexpr (sizeof(V) == 64) {
+        auto x = std::bit_cast<__m512i>(input), merge = std::bit_cast<__m512i>(prior);
+        if constexpr (Expand) return std::bit_cast<V>(_mm512_mask_expand_epi32(merge, __mmask16(mask), x));
+        else return std::bit_cast<V>(_mm512_mask_compress_epi32(merge, __mmask16(mask), x));
+      }
+#if SIMD_HAS_AVX512VL
+      else if constexpr (sizeof(V) == 32) {
+        auto x = std::bit_cast<__m256i>(input), merge = std::bit_cast<__m256i>(prior);
+        if constexpr (Expand) return std::bit_cast<V>(_mm256_mask_expand_epi32(merge, __mmask8(mask), x));
+        else return std::bit_cast<V>(_mm256_mask_compress_epi32(merge, __mmask8(mask), x));
+      } else {
+        auto x = std::bit_cast<__m128i>(input), merge = std::bit_cast<__m128i>(prior);
+        if constexpr (Expand) return std::bit_cast<V>(_mm_mask_expand_epi32(merge, __mmask8(mask), x));
+        else return std::bit_cast<V>(_mm_mask_compress_epi32(merge, __mmask8(mask), x));
+      }
+#else
+      else
+#endif
+#endif
+#if (!SIMD_HAS_AVX512F || !SIMD_HAS_AVX512VL) && (SIMD_HAS_AVX2 || SIMD_HAS_ARM_NEON)
+      {
+      V permuted;
+#if SIMD_HAS_AVX2
+      if constexpr (sizeof(V) == 32) {
+        auto const & row = compaction_indices<Expand,8>[mask];
+        auto indices = _mm256_cvtepu8_epi32(_mm_loadl_epi64(reinterpret_cast<__m128i const *>(row.data())));
+        permuted = std::bit_cast<V>(_mm256_permutevar8x32_epi32(std::bit_cast<__m256i>(input), indices));
+      } else {
+        auto const & row = compaction_indices<Expand,4>[mask];
+        auto indices = _mm_loadu_si128(reinterpret_cast<__m128i const *>(row.data()));
+        permuted = std::bit_cast<V>(_mm_shuffle_epi8(std::bit_cast<__m128i>(input), indices));
+      }
+#else
+      auto const & row = compaction_indices<Expand,4>[mask];
+      permuted = std::bit_cast<V>(vqtbl1q_u8(std::bit_cast<uint8x16_t>(input), vld1q_u8(row.data())));
+#endif
+      // Build the destination predicate in registers instead of round-tripping
+      // a packed mask through the generic byte-oriented mask representation.
+#if SIMD_HAS_AVX2
+      if constexpr (sizeof(V) == 32) {
+        __m256i live;
+        if constexpr (Expand) {
+          auto bits = _mm256_setr_epi32(1,2,4,8,16,32,64,128);
+          live = _mm256_cmpeq_epi32(_mm256_and_si256(_mm256_set1_epi32(int(mask)),bits),bits);
+        } else live = _mm256_cmpgt_epi32(_mm256_set1_epi32(std::popcount(mask)),_mm256_setr_epi32(0,1,2,3,4,5,6,7));
+        return std::bit_cast<V>(_mm256_blendv_epi8(std::bit_cast<__m256i>(prior),std::bit_cast<__m256i>(permuted),live));
+      } else {
+        __m128i live;
+        if constexpr (Expand) {
+          auto bits = _mm_setr_epi32(1,2,4,8);
+          live = _mm_cmpeq_epi32(_mm_and_si128(_mm_set1_epi32(int(mask)),bits),bits);
+        } else live = _mm_cmpgt_epi32(_mm_set1_epi32(std::popcount(mask)),_mm_setr_epi32(0,1,2,3));
+        return std::bit_cast<V>(_mm_blendv_epi8(std::bit_cast<__m128i>(prior),std::bit_cast<__m128i>(permuted),live));
+      }
+#else
+      uint32x4_t live;
+      if constexpr (Expand) {
+        constexpr std::array<std::uint32_t,4> weights{1,2,4,8};
+        live = vtstq_u32(vdupq_n_u32(mask),vld1q_u32(weights.data()));
+      } else {
+        constexpr std::array<std::uint32_t,4> lanes{0,1,2,3};
+        live = vcltq_u32(vld1q_u32(lanes.data()),vdupq_n_u32(std::uint32_t(std::popcount(mask))));
+      }
+      return std::bit_cast<V>(vbslq_u8(vreinterpretq_u8_u32(live),std::bit_cast<uint8x16_t>(permuted),std::bit_cast<uint8x16_t>(prior)));
+#endif
+      }
+#endif
+    }
+  }
+}
+
+namespace simd {
+  /// \ingroup vector_memory
+  /// Pack selected logical lanes in increasing order; fill all remaining lanes.
+  /// This rearranges bits, including NaN payloads and signed zeros. Short padding
+  /// never contributes to count or output and is zero in the result.
+  /// \snippet api.cc compaction
+  template<class T, std::size_t N> requires
+    (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
+    requires { typename vec<T,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline compaction_result<vec<T,N,SIMD_ARCH>> compress(
+      typename vec<T,N,SIMD_ARCH>::mask mask, vec<T,N,SIMD_ARCH> value, T fill = T{}) noexcept {
+    using V = vec<T,N,SIMD_ARCH>;
+    auto bits = detail::SIMD_BACKEND::compaction_mask_bits<N>(mask);
+    // Construct fill through integer object representation, without FP arithmetic.
+    using U = vec<std::uint32_t,N,SIMD_ARCH>;
+    V prior = std::bit_cast<V>(U(std::bit_cast<std::uint32_t>(fill)));
+    return {detail::SIMD_BACKEND::compact_register<false>(bits, value, prior), std::size_t(std::popcount(bits))};
+  }
+
+  /// \ingroup vector_memory
+  /// Consume packed's first popcount(mask) lanes in order at selected positions.
+  /// Unselected lanes retain prior bitwise. Short physical padding is zeroed.
+  template<class T, std::size_t N> requires
+    (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
+    requires { typename vec<T,N,SIMD_ARCH>::native_type; }
+  simd_nodiscard simd_inline vec<T,N,SIMD_ARCH> expand(
+      typename vec<T,N,SIMD_ARCH>::mask mask, vec<T,N,SIMD_ARCH> packed,
+      vec<T,N,SIMD_ARCH> prior) noexcept {
+    auto bits = detail::SIMD_BACKEND::compaction_mask_bits<N>(mask);
+    auto result = detail::SIMD_BACKEND::compact_register<true>(bits, packed, prior);
+    if constexpr (N == 2 || N == 3) return vec<T,N,SIMD_ARCH>::from_storage(result.to_storage());
+    else return result;
+  }
+
+  /// \ingroup vector_memory
+  /// Write the first min(capacity,popcount(mask)) selected lanes, in input order.
+  /// Return the number WRITTEN, not the total selected count. No element beyond
+  /// that prefix is accessed. Null is valid when capacity or the mask is zero.
+  template<class T, std::size_t N> requires
+    (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
+    requires { typename vec<T,N,SIMD_ARCH>::native_type; }
+  simd_inline std::size_t compress_store(T * destination, std::size_t capacity,
+      typename vec<T,N,SIMD_ARCH>::mask mask, vec<T,N,SIMD_ARCH> value) noexcept {
+    auto bits = detail::SIMD_BACKEND::compaction_mask_bits<N>(mask);
+    auto selected = std::size_t(std::popcount(bits));
+    auto written = capacity < selected ? capacity : selected;
+    if (!written) return 0;
+#if SIMD_HAS_AVX512F
+    if constexpr (N > 1 && (sizeof(value) == 64 || SIMD_HAS_AVX512VL)) {
+      // Compress in registers, then store only the bounded contiguous prefix.
+      // This also avoids trimming the source predicate when capacity is small.
+      auto prefix = (std::uint32_t(1) << written) - 1;
+      if constexpr (sizeof(value) == 64) {
+        auto packed = _mm512_maskz_compress_epi32(__mmask16(bits),std::bit_cast<__m512i>(value));
+        _mm512_mask_storeu_epi32(destination,__mmask16(prefix),packed);
+      } else if constexpr (sizeof(value) == 32) {
+        auto packed = _mm256_maskz_compress_epi32(__mmask8(bits),std::bit_cast<__m256i>(value));
+        _mm256_mask_storeu_epi32(destination,__mmask8(prefix),packed);
+      } else {
+        auto packed = _mm_maskz_compress_epi32(__mmask8(bits),std::bit_cast<__m128i>(value));
+        _mm_mask_storeu_epi32(destination,__mmask8(prefix),packed);
+      }
+      return written;
+    }
+#endif
+    std::array<T,N> packed;
+    compress(mask, value).value.store(packed.data());
+    std::memcpy(destination, packed.data(), written * sizeof(T));
+    return written;
+  }
+}
