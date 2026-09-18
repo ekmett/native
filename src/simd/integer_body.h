@@ -14,7 +14,9 @@ namespace simd {
   simd_nodiscard simd_inline simd_const auto reinterpret_bits(vec<From,N,Arch> value) noexcept
       -> vec<To,sizeof(From)*N/sizeof(To),Arch> {
     using result = vec<To,sizeof(From)*N/sizeof(To),Arch>;
-    return result::from_native(std::bit_cast<typename result::native_type>(value.to_native()));
+    // Keep native vectors in this target scope: the standard-library wrapper
+    // can otherwise impose its baseline vector return ABI on SysV hosts.
+    return result::from_native(__builtin_bit_cast(typename result::native_type,value.to_native()));
   }
 
   /// Sum adjacent unsigned lanes into lanes twice as wide. No sum can overflow.
