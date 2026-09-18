@@ -179,8 +179,17 @@ namespace simd {
   /// \ingroup vectors
   /// AArch64 NEON profile. The tag does not change the caller's compiler flags.
   struct neon {};
+  /// \ingroup vectors
+  /// AArch64 NEON plus native FP16 arithmetic, with a distinct vector type.
+  /// Import simd.neon_fp16 and compile for NEON_FP16. The tag neither selects
+  /// compiler flags nor admits runtime features; use simd.arm before entry.
+  struct neon_fp16 {};
+  namespace detail {
+    template<class A> concept neon_architecture = std::same_as<A,neon> ||
+      std::same_as<A,neon_fp16>;
+  }
   template<class A> concept architecture = std::same_as<A,scalar> || std::same_as<A,avx2> ||
-    detail::avx512_architecture<A> || std::same_as<A,neon>;
+    detail::avx512_architecture<A> || detail::neon_architecture<A>;
   /** \ingroup vectors
    * \brief A value with `N` logical lanes of `T` for `Arch`.
    * `N` describes lanes, not a count of registers. Unsupported shapes remain

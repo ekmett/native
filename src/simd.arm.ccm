@@ -1,0 +1,153 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <cstdint>
+#include <cstddef>
+#if defined(__APPLE__)
+#include <cerrno>
+#include <sys/sysctl.h>
+#elif defined(__linux__)
+#include <cerrno>
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#elif defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
+export module simd.arm;
+
+export namespace simd {
+  /// \defgroup arm_capabilities ARM capabilities
+  /// AArch64 OS capability admission, independent of native profile modules.
+  /// Query before entering optional-profile code; no instruction probing occurs.
+
+  /// \ingroup arm_capabilities
+  /// Instruction requirements supplied by simd_target_profile, without tuning policy.
+  enum class arm_profile : std::uint8_t {
+    neon, ///< Baseline AArch64 floating point and Advanced SIMD.
+    neon_fp16 ///< Baseline plus scalar and vector half-precision arithmetic.
+  };
+
+  /// \ingroup arm_capabilities
+  /// Normalized OS-advertised capabilities. False observation flags reject even
+  /// if a feature Boolean contains stale true data. Unknown platforms reject.
+  /// This records OS availability, not a CPU model or an independent ISA probe.
+  struct arm_capabilities {
+    /// True only after the OS baseline FP/Advanced SIMD query succeeds.
+    bool baseline_observed = false;
+    /// OS permits baseline floating-point instructions and their register state.
+    bool fp = false;
+    /// OS permits baseline Advanced SIMD instructions and their register state.
+    bool asimd = false;
+    /// True only after an OS half-arithmetic feature query succeeds.
+    bool fp16_observed = false;
+    /// OS advertises scalar half-precision arithmetic (FPHP/FEAT_FP16).
+    bool scalar_fp16 = false;
+    /// OS advertises Advanced SIMD half-precision arithmetic (ASIMDHP/FEAT_FP16).
+    bool vector_fp16 = false;
+  };
+
+  /// \ingroup arm_capabilities
+  /// Every missing requirement from pure profile classification; no OS query occurs.
+  struct arm_admission {
+    /// The requested enumeration value is not a known profile.
+    bool invalid_profile = false;
+    /// No successful baseline FP/Advanced SIMD observation is available.
+    bool missing_baseline_observation = false;
+    /// Required baseline floating-point support is absent or unobserved.
+    bool missing_fp = false;
+    /// Required baseline Advanced SIMD support is absent or unobserved.
+    bool missing_asimd = false;
+    /// Half arithmetic is required but no successful feature observation exists.
+    bool missing_fp16_observation = false;
+    /// Required scalar half arithmetic is absent or unobserved.
+    bool missing_scalar_fp16 = false;
+    /// Required vector half arithmetic is absent or unobserved.
+    bool missing_vector_fp16 = false;
+    /// True only when every required feature is successfully observed and present.
+    constexpr bool admitted() const noexcept {
+      return !invalid_profile && !missing_baseline_observation && !missing_fp &&
+        !missing_asimd && !missing_fp16_observation && !missing_scalar_fp16 && !missing_vector_fp16;
+    }
+    /// First rejection reason; individual fields retain all missing requirements.
+    constexpr char const * reason() const noexcept {
+      if(invalid_profile) return "unknown ARM profile";
+      if(missing_baseline_observation) return "ARM baseline features unobserved";
+      if(missing_fp) return "OS does not advertise ARM floating point";
+      if(missing_asimd) return "OS does not advertise Advanced SIMD";
+      if(missing_fp16_observation) return "ARM FP16 features unobserved";
+      if(missing_scalar_fp16) return "OS does not advertise scalar FP16 arithmetic";
+      if(missing_vector_fp16) return "OS does not advertise vector FP16 arithmetic";
+      return "admitted";
+    }
+  };
+
+  /// \ingroup arm_capabilities
+  /// Classify a supplied observation without querying the OS or executing optional
+  /// instructions. NEON_FP16 requires scalar and vector FP16, since +fullfp16
+  /// enables both. This does not admit any extra caller-configured minimum ISA.
+  constexpr arm_admission classify_arm_profile(arm_capabilities const & cpu, arm_profile profile) noexcept {
+    arm_admission result;
+    if(profile != arm_profile::neon && profile != arm_profile::neon_fp16) {
+      result.invalid_profile=true; return result;
+    }
+    result.missing_baseline_observation=!cpu.baseline_observed;
+    result.missing_fp=!cpu.baseline_observed || !cpu.fp;
+    result.missing_asimd=!cpu.baseline_observed || !cpu.asimd;
+    if(profile==arm_profile::neon_fp16) {
+      result.missing_fp16_observation=!cpu.fp16_observed;
+      result.missing_scalar_fp16=!cpu.fp16_observed || !cpu.scalar_fp16;
+      result.missing_vector_fp16=!cpu.fp16_observed || !cpu.vector_fp16;
+    }
+    return result;
+  }
+
+  /// \ingroup arm_capabilities
+  /// Query OS-advertised AArch64 features without executing optional instructions.
+  /// Linux uses AT_HWCAP; macOS uses feature sysctls (legacy FP16 only if the modern
+  /// key is unavailable, never after a false value); Windows uses processor-feature
+  /// queries. Failed/unavailable observations reject. Old Windows systems report
+  /// FP16 unavailable even when their hardware might implement it. FPCR is untouched.
+  arm_capabilities observe_arm_capabilities() noexcept;
+}
+
+namespace simd {
+  arm_capabilities observe_arm_capabilities() noexcept {
+    arm_capabilities result;
+#if defined(__APPLE__)
+    auto query=[](char const * key, bool & value) noexcept {
+      int data=0; std::size_t size=sizeof(data);
+      if(sysctlbyname(key,&data,&size,nullptr,0)!=0) return errno==ENOENT ? 0 : -1;
+      if(size!=sizeof(data)) return -1;
+      value=data!=0; return 1;
+    };
+    bool baseline=false, half=false;
+    result.baseline_observed=query("hw.optional.neon",baseline)==1;
+    result.fp=result.asimd=baseline;
+    auto status=query("hw.optional.arm.FEAT_FP16",half);
+    if(status==0) status=query("hw.optional.neon_fp16",half);
+    result.fp16_observed=status==1;
+    result.scalar_fp16=result.vector_fp16=half;
+#elif defined(__linux__)
+    errno=0;
+    auto hwcap=getauxval(AT_HWCAP);
+    if(hwcap==0 && errno!=0) return result;
+    result.baseline_observed=result.fp16_observed=true;
+    result.fp=(hwcap&HWCAP_FP)!=0;
+    result.asimd=(hwcap&HWCAP_ASIMD)!=0;
+    result.scalar_fp16=(hwcap&HWCAP_FPHP)!=0;
+    result.vector_fp16=(hwcap&HWCAP_ASIMDHP)!=0;
+#elif defined(_WIN32)
+    result.baseline_observed=result.fp16_observed=true;
+    result.fp=IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE)!=0;
+    result.asimd=IsProcessorFeaturePresent(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE)!=0;
+    // Documented SDK 26100 selector; older HALs return false for unknown features.
+    constexpr DWORD fp16_feature=67; // PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE
+    result.scalar_fp16=result.vector_fp16=IsProcessorFeaturePresent(fp16_feature)!=0;
+#endif
+    return result;
+  }
+}

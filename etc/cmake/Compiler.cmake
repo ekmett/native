@@ -117,6 +117,27 @@ if("AVX512_BF16" IN_LIST SIMD_PROFILES)
   endblock()
 endif()
 
+if("NEON_FP16" IN_LIST SIMD_PROFILES)
+  block()
+    simd_profile_options(NEON_FP16 fp16_options)
+    string(JOIN " " fp16_flags ${fp16_options})
+    string(APPEND CMAKE_REQUIRED_FLAGS " ${fp16_flags}")
+    set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+    check_cxx_source_compiles([=[
+      #include <arm_neon.h>
+      #if !defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC) || !defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC)
+      #error Native FP16 arithmetic support missing
+      #endif
+      float16x8_t probe(float16x8_t a, float16x8_t b, float16x8_t c) {
+        return vfmaq_f16(vaddq_f16(a, b), vmulq_f16(b, c), c);
+      }
+    ]=] SIMD_HAS_NEON_FP16_INTRINSICS)
+    if(NOT SIMD_HAS_NEON_FP16_INTRINSICS)
+      message(FATAL_ERROR "NEON_FP16 requires compiler support for native FP16 vector arithmetic.")
+    endif()
+  endblock()
+endif()
+
 function(simd_host_settings target)
   target_compile_features(${target} PUBLIC cxx_std_26)
   set_target_properties(${target} PROPERTIES CXX_EXTENSIONS OFF CXX_SCAN_FOR_MODULES OFF)

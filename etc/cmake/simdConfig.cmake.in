@@ -15,7 +15,7 @@ if(NOT simd_FIND_COMPONENTS OR "simd" IN_LIST simd_FIND_COMPONENTS)
     # CMake does not export source properties. Reapply the provider's ISA
     # in the package directory where its synthetic BMI targets are created.
     block()
-      foreach(profile IN ITEMS avx2 avx512 avx512_bf16)
+      foreach(profile IN ITEMS avx2 avx512 avx512_bf16 neon neon_fp16)
         if(NOT TARGET simd::${profile})
           continue()
         endif()
@@ -23,7 +23,7 @@ if(NOT simd_FIND_COMPONENTS OR "simd" IN_LIST simd_FIND_COMPONENTS)
         simd_profile_options("${upper}" options)
         get_target_property(module_sources simd::${profile} CXX_MODULE_SET_cxx_modules)
         set_source_files_properties(${module_sources} PROPERTIES COMPILE_OPTIONS "${options}")
-        # The last selected x86 profile is the omnibus's strongest profile.
+        # The last selected platform profile is the omnibus's strongest profile.
         get_target_property(omnibus_source simd::simd CXX_MODULE_SET_cxx_modules)
         set_source_files_properties(${omnibus_source} PROPERTIES COMPILE_OPTIONS "${options}")
       endforeach()

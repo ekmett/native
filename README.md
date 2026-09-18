@@ -50,6 +50,8 @@ custom element types and application dispatch.
 | `simd.avx512` | `vec<T,N,avx512>`, additionally AVX-512 F/DQ/BW/VL |
 | `simd.avx512_bf16` | Optional AVX-512 BF16 storage and pairwise FP32 dot accumulation |
 | `simd.neon` | `vec<T,N,neon>`, AArch64 NEON |
+| `simd.neon_fp16` | Optional native eight-lane FP16 storage and arithmetic |
+| `simd.arm` | Baseline AArch64 OS capability observation and profile admission |
 | `simd.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `simd.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
@@ -93,6 +95,13 @@ even when the code uses an AVX2 vector type. For an AVX2-only omnibus, build wit
 is `NEON`; use `simd::vec<float,4,simd::neon>` and select `NEON` on the consumer.
 [The omnibus guide](docs/omnibus.md) explains this BMI constraint and the granular
 imports available to baseline dispatchers.
+
+Add `NEON_FP16` to the ARM `SIMD_PROFILES` list to opt into native half arithmetic.
+Its `vec<fp16,8,neon_fp16>` follows the caller's FPCR and uses full-lane masks.
+Compile optional kernels with `simd_target_profile(target NEON_FP16)` and admit
+`arm_profile::neon_fp16` through `simd.arm` before entry. An omnibus importing this
+profile also requires NEON_FP16 consumer flags. See the [native FP16 guide](tests/neon_fp16/README.md)
+for arithmetic, OS admission and relocated package tests.
 
 Add `AVX512_BF16` to `SIMD_PROFILES` to opt into native BF16 pairwise dot
 products. Its distinct `avx512_bf16` tag adds `vec<bf16,32,avx512_bf16>` storage

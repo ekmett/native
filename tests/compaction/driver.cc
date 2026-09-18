@@ -3,6 +3,8 @@
 #include <cstdio>
 #if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
 import simd.cpuid;
+#elif SIMD_TEST_FP16
+import simd.arm;
 #endif
 #if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
@@ -16,6 +18,10 @@ int main(int argc,char ** argv) {
   constexpr auto profile = SIMD_TEST_PROFILE == 512 ? simd::x86_profile::avx512 : simd::x86_profile::avx2;
 #endif
   auto admission=simd::classify_x86_profile(simd::observe_x86_capabilities(),profile);
+  if(!admission.admitted()) { std::puts(admission.reason());return 77; }
+#endif
+#if SIMD_TEST_FP16
+  auto admission=simd::classify_arm_profile(simd::observe_arm_capabilities(),simd::arm_profile::neon_fp16);
   if(!admission.admitted()) { std::puts(admission.reason());return 77; }
 #endif
   return compaction_entry(argc,argv);

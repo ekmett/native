@@ -10,6 +10,8 @@ import simd;
 using Arch=simd::avx2;
 #elif TEST_AVX512
 using Arch=simd::avx512;
+#elif TEST_NEON_FP16
+using Arch=simd::neon_fp16;
 #else
 using Arch=simd::neon;
 #endif

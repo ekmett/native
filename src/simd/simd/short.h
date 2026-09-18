@@ -11,7 +11,7 @@
 namespace simd {
   namespace detail {
     template<class Arch> concept native_short_arch = std::same_as<Arch,avx2> ||
-      ::simd::detail::avx512_architecture<Arch> || std::same_as<Arch,neon>;
+      ::simd::detail::avx512_architecture<Arch> || ::simd::detail::neon_architecture<Arch>;
     template<class T> concept short_element = std::same_as<T,float> ||
       std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t> || std::same_as<T,mask32>;
     template<class T> using short_lane = std::conditional_t<simd_mask_element<T>,std::uint32_t,T>;
@@ -115,7 +115,7 @@ namespace simd {
         }
       }
 #elif defined(__aarch64__) || defined(_M_ARM64)
-      if constexpr(std::same_as<Arch,neon>) {
+      if constexpr(::simd::detail::neon_architecture<Arch>) {
         if constexpr(std::same_as<T,float>) {
           auto x=vcombine_f32(vld1_f32(p),vdup_n_f32(0.f));
           if constexpr(N==3) x=vld1q_lane_f32(p+2,x,2);
@@ -145,7 +145,7 @@ namespace simd {
         }
       }
 #elif defined(__aarch64__) || defined(_M_ARM64)
-      if constexpr(std::same_as<Arch,neon>) {
+      if constexpr(::simd::detail::neon_architecture<Arch>) {
         if constexpr(std::same_as<T,float>) {
           auto x=std::bit_cast<float32x4_t>(value);vst1_f32(p,vget_low_f32(x));
           if constexpr(N==3) vst1q_lane_f32(p+2,x,2);
