@@ -5,47 +5,19 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-#if defined(_MSC_VER)
-#include <intrin.h>
-#else
-#include <cpuid.h>
-#endif
+import simd.cpuid;
 
 #if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__)
 #error "The dispatcher must compile for the baseline ISA."
 #endif
 
 namespace {
-  void cpuid(unsigned leaf, unsigned subleaf, unsigned (&r)[4]) {
-#if defined(_MSC_VER)
-    int native[4]; __cpuidex(native, int(leaf), int(subleaf));
-    for (unsigned i = 0; i < 4; ++i) r[i] = unsigned(native[i]);
-#else
-    __cpuid_count(leaf, subleaf, r[0], r[1], r[2], r[3]);
-#endif
-  }
   unsigned supported() {
-    unsigned r[4]; cpuid(0, 0, r); auto max_leaf = r[0];
-    if (max_leaf < 7) return 0;
-    cpuid(1, 0, r);
-    constexpr unsigned vector_state = (1u << 26) | (1u << 27) | (1u << 28) | (1u << 12);
-    if ((r[2] & vector_state) != vector_state) return 0;
-#if defined(_MSC_VER)
-    auto xcr0 = _xgetbv(0);
-#else
-    unsigned lo, hi;
-    __asm__("xgetbv" : "=a"(lo), "=d"(hi) : "c"(0));
-    auto xcr0 = std::uint64_t(lo) | (std::uint64_t(hi) << 32);
-#endif
-    if ((xcr0 & 6u) != 6u) return 0;
-    cpuid(7, 0, r);
-    // The actual profile flags require AVX2, FMA and BMI2.
-    constexpr unsigned avx2 = (1u << 5) | (1u << 8);
-    unsigned result = (r[1] & avx2) == avx2 ? 1u : 0u;
-    constexpr unsigned avx512 = (1u << 16) | (1u << 17) | (1u << 30) | (1u << 31);
-    if (result && (r[1] & avx512) == avx512 && (xcr0 & 0xe6u) == 0xe6u)
-      result |= 2u;
-    return result;
+    auto cpu = simd::observe_x86_capabilities();
+    auto avx2 = simd::classify_x86_profile(cpu, simd::x86_profile::avx2);
+    auto avx512 = simd::classify_x86_profile(cpu, simd::x86_profile::avx512);
+    std::printf("AVX2: %s; AVX512: %s\n", avx2.reason(), avx512.reason());
+    return unsigned(avx2.admitted()) | (unsigned(avx512.admitted()) << 1);
   }
   using capture = std::array<std::uint32_t, profile_test::words>;
   bool compare(capture const & a, capture const & b, char const * description) {
