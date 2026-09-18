@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -47,8 +48,21 @@ class ParserTests(unittest.TestCase):
                 self.assertIsNone(launcher.parse_modmap(source))
 
 
-class LauncherTests(unittest.TestCase):
+class PosixLauncherTests(unittest.TestCase):
     def setUp(self):
+        # Exercise POSIX routing on any host without changing pathlib's platform.
+        platform = SimpleNamespace(**vars(os))
+        platform.name = 'posix'
+        if not hasattr(platform, 'sysconf'):
+            platform.sysconf = lambda name: 2 * 1024 * 1024
+        patcher = patch.object(launcher, 'os', platform)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+
+class LauncherTests(PosixLauncherTests):
+    def setUp(self):
+        super().setUp()
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
@@ -86,6 +100,37 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(launcher.normalize(self.arguments), self.arguments)
         self.assertFalse(launcher.argv_fits(['a' * (launcher.MAX_BYTES + 1)]))
 
+    def test_unknown_compilers_execute_original_argv_without_cache(self):
+        pch = self.root / 'with space.pch'
+        pch.write_bytes(b'PCH binary')
+        for compiler in ['c++', '/toolchain/c++', 'aarch64-linux-gnu-clang++',
+                         '/toolchain/x86_64-linux-gnu-clang++-23', 'clang-cl',
+                         'clang-cl.exe', 'g++', 'ccache', 'not-clang++']:
+            for flags in [[], ['-include-pch', str(pch)]]:
+                arguments = [compiler, *self.arguments[1:], *flags]
+                with self.subTest(compiler=compiler, flags=flags):
+                    with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': '/existing/file'}):
+                        with patch.object(launcher.os, 'execvp') as execute:
+                            launcher.main(arguments)
+                            execute.assert_called_once_with(compiler, arguments)
+                            self.assertEqual(os.environ['SCCACHE_EXTRAFILES'], '/existing/file')
+
+    def test_windows_keeps_direct_cache_routing_and_original_argv(self):
+        arguments = ['clang-cl.exe', *self.arguments[1:]]
+        with patch.object(launcher.os, 'name', 'nt'):
+            with patch.object(launcher.os, 'execvp') as execute:
+                launcher.main(arguments)
+                execute.assert_called_once_with('sccache', ['sccache', *arguments])
+
+    def test_unchanged_invocation_does_not_retry_e2big(self):
+        for compiler in ['clang++', 'c++']:
+            arguments = [compiler, '-c', 'source with space.cc']
+            with self.subTest(compiler=compiler):
+                with patch.object(launcher.os, 'execvp', side_effect=OSError(errno.E2BIG, 'long')) as execute:
+                    with self.assertRaises(OSError):
+                        launcher.main(arguments)
+                    self.assertEqual(execute.call_count, 1)
+
     def test_exec_retries_original_only_for_argument_size(self):
         with patch.object(launcher.os, 'execvp', side_effect=[OSError(errno.E2BIG, 'long'), None]) as execute:
             launcher.main(self.arguments)
@@ -97,6 +142,29 @@ class LauncherTests(unittest.TestCase):
                 with self.assertRaises(OSError):
                     launcher.main(self.arguments)
                 self.assertEqual(execute.call_count, 1)
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX executable fixture')
+    def test_real_alias_bypasses_cache_and_preserves_argv_and_environment(self):
+        compiler = self.root / 'c++'
+        compiler.write_text('#!' + sys.executable + '\nimport json, os, sys\n'
+                            'print(json.dumps([sys.argv[1:], os.environ.get("SCCACHE_EXTRAFILES")]))\n'
+                            'print("alias diagnostic", file=sys.stderr)\nsys.exit(19)\n')
+        compiler.chmod(0o755)
+        cache = self.root / 'sccache'
+        cache.write_text('#!' + sys.executable + '\nimport sys\n'
+                         'print("unexpected cache invocation", file=sys.stderr)\nsys.exit(99)\n')
+        cache.chmod(0o755)
+        pch = self.root / 'with space.pch'
+        pch.write_bytes(b'PCH binary')
+        arguments = [str(compiler), *self.arguments[1:], '-include-pch', str(pch)]
+        environment = {**os.environ,
+                       'PATH': str(self.root) + os.pathsep + os.environ['PATH'],
+                       'SCCACHE_EXTRAFILES': '/existing/file'}
+        result = subprocess.run([sys.executable, launcher.__file__, *arguments],
+                                env=environment, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 19)
+        self.assertEqual(result.stderr, 'alias diagnostic\n')
+        self.assertEqual(json.loads(result.stdout), [arguments[1:], '/existing/file'])
 
     @unittest.skipIf(os.name == 'nt', 'POSIX exec and GNU-style Clang only')
     def test_real_launcher_forwards_exit_output_and_arguments(self):
@@ -113,8 +181,9 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout), launcher.normalize(self.arguments))
 
 
-class PchTests(unittest.TestCase):
+class PchTests(PosixLauncherTests):
     def setUp(self):
+        super().setUp()
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
         self.pch = Path(self.directory.name) / 'with space.pch'
@@ -139,17 +208,33 @@ class PchTests(unittest.TestCase):
             with self.subTest(flags=flags):
                 self.assertIsNone(launcher.pch_inputs([*self.arguments, *flags]))
 
-    @unittest.skipIf(os.name == 'nt', 'POSIX Clang launcher integration')
     def test_main_preserves_extras_and_hashes_binary(self):
-        arguments = [*self.arguments, '-Xclang', '-include-pch', '-Xclang', str(self.pch)]
+        for compiler in ['clang', 'clang++', 'clang-23', 'clang++-23', '/toolchain/clang++']:
+            for previous in ['', '/existing/file']:
+                arguments = [compiler, *self.arguments[1:], '-Xclang', '-include-pch',
+                             '-Xclang', str(self.pch)]
+                with self.subTest(compiler=compiler, previous=previous):
+                    with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': previous}):
+                        with patch.object(launcher.os, 'execvp') as execute:
+                            launcher.main(arguments)
+                            expected = ([previous] if previous else []) + [str(self.pch.absolute())]
+                            self.assertEqual(os.environ['SCCACHE_EXTRAFILES'], os.pathsep.join(expected))
+                            execute.assert_called_once_with('sccache', ['sccache', *arguments])
+
+    def test_e2big_keeps_original_response_and_pch_arguments(self):
+        modmap = self.pch.with_suffix('.modmap')
+        modmap.write_text('-fmodule-file="simd=src/simd.pcm"\n')
+        arguments = [*self.arguments, '-include-pch', str(self.pch), '@' + str(modmap)]
+        expected = ['sccache', *arguments[:-1], '-fmodule-file=simd=src/simd.pcm']
         with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': '/existing/file'}):
-            with patch.object(launcher.os, 'execvp') as execute:
+            with patch.object(launcher.os, 'execvp', side_effect=[OSError(errno.E2BIG, 'long'), None]) as execute:
                 launcher.main(arguments)
+                self.assertEqual(execute.call_args_list[0].args, ('sccache', expected))
+                self.assertEqual(execute.call_args_list[1].args, (arguments[0], arguments))
+                self.assertEqual(execute.call_count, 2)
                 self.assertEqual(os.environ['SCCACHE_EXTRAFILES'],
                                  '/existing/file' + os.pathsep + str(self.pch.absolute()))
-                execute.assert_called_once_with('sccache', ['sccache', *arguments])
 
-    @unittest.skipIf(os.name == 'nt', 'POSIX Clang launcher integration')
     def test_opaque_input_executes_original_compiler(self):
         for flags in [['@unknown.rsp'], ['-Xclang=@hidden.rsp'], ['-include-pch', 'missing.pch']]:
             arguments = [*self.arguments, *flags]

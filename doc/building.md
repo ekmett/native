@@ -128,6 +128,11 @@ original compiler arguments directly without caching. Expanded argv has a
 conservative size limit; an `E2BIG` retry also runs the original compiler
 directly. This is intentionally not a general response-file parser.
 
+Only POSIX compiler names `clang` and `clang++`, optionally followed by a
+numeric version suffix, enter this cache path. Other names, including
+`c++` and target-prefixed Clang aliases, execute the original compiler
+arguments directly without caching so they cannot bypass PCH input hashing.
+
 Explicit `-include-pch` binary inputs, including CMake's `-Xclang` spelling,
 are appended to `SCCACHE_EXTRAFILES`, preserving existing entries. The pinned
 sccache release otherwise treats this flag only as a preprocessing argument;
