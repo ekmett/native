@@ -272,3 +272,35 @@ The current package was installed, moved to a path containing a space, and
 consumed without a compiler launcher or sccache on `PATH`. Its public-header
 boundary test and all three omnibus consumer tests passed. Workflow validation
 retained all five platforms and both exception settings (ten configurations).
+
+
+### PCH-dependent module invalidation
+
+The earlier unchanged-input cache checks did not establish PCH binary
+invalidation. SIMD CI run `35300325585`, job `105461412565`, subsequently
+restored a module recording a 19,198,904-byte PCH alongside a newly generated
+19,198,912-byte PCH; Clang correctly rejected the combination. The earlier
+two-file module fixture did not exercise this PCH dependency.
+
+sccache 0.16.0 hashes explicit module inputs, but treats `-include-pch` only
+as a preprocessing argument. The launcher now appends explicit PCH binary
+inputs to `SCCACHE_EXTRAFILES`, retaining existing entries. Unknown response
+or PCH syntax runs the original compiler directly. No compiler validation is
+disabled; modules, PCH and IPO remain enabled.
+
+The hosted `test_sccache_pch.py` fixture checks cold and warm module builds,
+a rebuilt PCH whose bytes change while preprocessing stays equivalent,
+unchanged reuse afterward, and identical PCH bytes with a changed timestamp.
+Each stage compiles a fresh uncached importer so Clang validates the restored
+module against the actual PCH. The fixture uses its own local disk cache,
+empty configuration, and a short Unix-domain socket in a temporary directory.
+Its child environment excludes inherited sccache settings; the normal producer
+server and GitHub cache configuration remain untouched. The fixture retains
+its entries and counters across stages, asserts hit/miss deltas and zero cache
+read/write errors, and stops only its own server in a finally block. ThinLTO
+remains enabled. This is a required
+regression check, not a claim that the new hosted runs have already passed.
+It rebuilds the PCH directly and tests the PCH-consuming module cache key;
+cached PCH producer invalidation is unchanged and is not qualified by this
+fixture. The five fixture requests are isolated from the producer job's
+aggregate cache statistics; per-stage fixture statistics remain in artifacts.

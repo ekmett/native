@@ -153,7 +153,9 @@ jobs:
           echo "Native CPU package tests: $RUNNER_OS / $(uname -m) / $TEST_PROFILE. AVX-512 compilation is not proof of AVX-512 execution; profile tests report unsupported hardware as skipped." >> "$GITHUB_STEP_SUMMARY"
       - name: Check compiler cache launcher
         if: runner.os != 'Windows'
-        run: python3 -B .github/scripts/test_sccache_launcher.py
+        run: |
+          python3 -B .github/scripts/test_sccache_launcher.py
+          python3 -B .github/scripts/test_sccache_pch.py "$(command -v clang++)" "$GITHUB_WORKSPACE/build/sccache-pch-probe"
       - name: Configure modules
         shell: bash
         run: |
