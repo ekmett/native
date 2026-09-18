@@ -45,9 +45,8 @@ namespace custom_exp {
 namespace refinement_test {
   // The original Arch is deliberately independent of the policy's minimal tag.
   // Calling the unchanged array kernel preserves every polynomial/scaling step.
-  // Explicit empty-array construction also avoids the separate MSVC STL issue
-  // where default construction of wide<vec<float,1,avx512>,0> needs AVX512 in
-  // std::array's implicit constructor, even inside a correctly targeted caller.
+  // Explicit empty arrays keep this comparison independent of the separate
+  // default-constructor regression, covered by tests/wide_construction.
 #define EMIT_EXP_POLICY(i,name,raw,result) \
   SIMD_TARGET_PUSH(name) \
   template<bool Reference,bool Flush,std::size_t L,std::size_t N,simd::architecture A> \

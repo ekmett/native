@@ -20,6 +20,13 @@ set_tests_properties(simd.exp_refinement.metadata PROPERTIES LABELS "host;exp_re
 # First native prototype covers x86's current raw-exp and wide-result families.
 # Metadata above remains host-independent; no ARM code generation is claimed.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+  add_executable(simd_test_exp_refinement_import import.cc)
+  target_link_libraries(simd_test_exp_refinement_import PRIVATE simd::simd)
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_exp_refinement_import)
+  endif()
+  add_test(NAME simd.exp_refinement.import COMMAND simd_test_exp_refinement_import)
+  set_tests_properties(simd.exp_refinement.import PROPERTIES SKIP_RETURN_CODE 77 LABELS "host;exp_refinement")
   find_package(Python3 REQUIRED COMPONENTS Interpreter)
   get_filename_component(exp_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
   find_program(exp_objdump NAMES llvm-objdump HINTS "${exp_compiler_dir}" REQUIRED)

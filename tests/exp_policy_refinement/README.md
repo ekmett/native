@@ -78,17 +78,22 @@ comparison does not accidentally call the new overload twice.
 It also exercises an original caller tag with extra AES features. Floating-point
 control bits must remain unchanged. Unsupported case counts are printed.
 
-Empty inputs use explicit `wide<V,0>{std::array<V,0>{{}}}` construction. With
-Clang 23.1.1 and MSVC STL 14.44.35207, the existing public default construction
-`wide<vec<float,1,avx512>,0> value;` fails even inside `SIMD_TARGET_PUSH(avx512)`:
-the STL empty-array storage invokes the targeted `vec` constructor from an
-unattributed implicit array constructor. Existing array exp, public wide exp,
-and the prototype wrapper compile for this empty shape. That separate constructor
-limitation remains open; the fixture retains the complete zero-extent exp tests
-without raising the translation-unit target or changing production constructors.
+Empty inputs use explicit `wide<V,0>{std::array<V,0>{{}}}` construction to keep
+this comparison independent of the default-constructor regression. The companion
+fix `f6283f2` (integrated as `954377a`) covers the former Clang/MSVC STL
+empty-storage attribution failure in `tests/wide_construction`. This exp-source
+checkpoint does not change constructors or require their separate fix; its
+explicit empty-array setup also works on the original constructor baseline.
 
 The same native object supplies 22 code-generation entries, comparing eight-lane
 and native-width forms. The checker requires packed FMA, native SCALEF exactly
 at the existing F/VL cut points, expected register widths and no outlined helper
 calls in uninstrumented builds. It does not claim fewer concrete instantiations.
 The native fixture currently targets x86; ARM participates in metadata checks.
+
+The separate import-only fixture uses only public `simd/targets.h`, standard
+headers and `import simd`; it includes no private refinement/policy definitions.
+It verifies both exported names choose the concrete overload and evaluates it.
+This migration specializes the public hub module. Internal textual vec/wide
+consumers keep the existing generic route; no header-only native public API is
+introduced.
