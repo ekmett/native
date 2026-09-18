@@ -91,7 +91,7 @@ class LauncherTests(unittest.TestCase):
             launcher.main(self.arguments)
             self.assertEqual(execute.call_count, 2)
             self.assertEqual(execute.call_args_list[1].args,
-                             ('sccache', ['sccache', *self.arguments]))
+                             (self.arguments[0], self.arguments))
         for error in [errno.ENOENT, errno.EACCES]:
             with patch.object(launcher.os, 'execvp', side_effect=OSError(error, 'error')) as execute:
                 with self.assertRaises(OSError):
@@ -111,6 +111,51 @@ class LauncherTests(unittest.TestCase):
         self.assertEqual(result.returncode, 19)
         self.assertEqual(result.stderr, 'compiler diagnostic\n')
         self.assertEqual(json.loads(result.stdout), launcher.normalize(self.arguments))
+
+
+class PchTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.pch = Path(self.directory.name) / 'with space.pch'
+        self.pch.write_bytes(b'first binary')
+        self.arguments = ['clang++', '-c', 'module.ccm']
+
+    def test_explicit_and_forwarded_inputs(self):
+        for flags in [['-include-pch', str(self.pch)],
+                      ['-Xclang', '-include-pch', '-Xclang', str(self.pch)]]:
+            self.assertEqual(launcher.pch_inputs([*self.arguments, *flags]),
+                             [str(self.pch.absolute())])
+        self.assertEqual(launcher.pch_inputs(self.arguments), [])
+
+    def test_ambiguous_missing_and_opaque_inputs_bypass(self):
+        for flags in [['-include-pch'], ['-include-pch', 'missing.pch'],
+                      ['-include-pch=' + str(self.pch)],
+                      ['-Xclang=-include-pch', str(self.pch)],
+                      ['-Xclang', '-include-pch', str(self.pch)],
+                      ['-include-pch', '-wrong'], ['@hidden.rsp'], ['-Xclang=@hidden.rsp'],
+                      ['-include-pth', str(self.pch)],
+                      ['-include-pch', 'ambiguous' + os.pathsep + 'path']]:
+            with self.subTest(flags=flags):
+                self.assertIsNone(launcher.pch_inputs([*self.arguments, *flags]))
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX Clang launcher integration')
+    def test_main_preserves_extras_and_hashes_binary(self):
+        arguments = [*self.arguments, '-Xclang', '-include-pch', '-Xclang', str(self.pch)]
+        with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': '/existing/file'}):
+            with patch.object(launcher.os, 'execvp') as execute:
+                launcher.main(arguments)
+                self.assertEqual(os.environ['SCCACHE_EXTRAFILES'],
+                                 '/existing/file' + os.pathsep + str(self.pch.absolute()))
+                execute.assert_called_once_with('sccache', ['sccache', *arguments])
+
+    @unittest.skipIf(os.name == 'nt', 'POSIX Clang launcher integration')
+    def test_opaque_input_executes_original_compiler(self):
+        for flags in [['@unknown.rsp'], ['-Xclang=@hidden.rsp'], ['-include-pch', 'missing.pch']]:
+            arguments = [*self.arguments, *flags]
+            with patch.object(launcher.os, 'execvp') as execute:
+                launcher.main(arguments)
+                execute.assert_called_once_with('clang++', arguments)
 
 
 if __name__ == '__main__':
