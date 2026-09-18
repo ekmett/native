@@ -799,13 +799,13 @@ constexpr bool cmp(T a, T b) noexcept {
 
 namespace simd {
   /// \copydoc cmp_unord(T,T)
-  template bool cmp_unord(float, float) noexcept;
+  template bool cmp_unord(float, float);
   /// \copydoc cmp_unord(T,T)
-  template bool cmp_unord(double, double) noexcept;
+  template bool cmp_unord(double, double);
   /// \copydoc cmp_ord(T,T)
-  template bool cmp_ord(float, float) noexcept;
+  template bool cmp_ord(float, float);
   /// \copydoc cmp_ord(T,T)
-  template bool cmp_ord(double, double) noexcept;
+  template bool cmp_ord(double, double);
   /// \copydoc scalef(T,T)
   template float scalef(float, float) noexcept;
   /// \copydoc scalef(T,T)
