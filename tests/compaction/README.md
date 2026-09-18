@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
+<!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
 # Compaction validation and measurements
 
 The public contract and example are in [the module guide](../../docs/modules.md).
