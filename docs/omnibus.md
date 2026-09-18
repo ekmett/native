@@ -21,7 +21,7 @@ find_package(simd CONFIG REQUIRED COMPONENTS simd)
 add_executable(example example.cc)
 target_link_libraries(example PRIVATE simd::simd)
 # This package was built with SIMD_PROFILES=AVX2;AVX512.
-simd_target_profile(example AVX512)
+simd_target_omnibus(example)
 ```
 
 ## Match the configured profiles
@@ -33,12 +33,13 @@ native profile modules appear in the import list.
 
 Each provider owns its ISA options. Clang allows a stronger target to import
 the common baseline BMI, but rejects the reverse: an importer of an AVX-512
-BMI must enable AVX-512 itself. Therefore a combined omnibus importer selects
-AVX512; an AVX2-only package selects AVX2, and ARM selects NEON.
-For optional profiles, `simd_target_omnibus(example)` enables the complete
-configured union. Admit each included extension before execution. A package
-with AVX512_BF16 alone can still use the existing single-profile helper. Granular `simd.avx2` and
-`simd.avx512` imports retain their original requirements.
+BMI must enable AVX-512 itself. `simd_target_omnibus(target)` reads the package's
+exported `SIMD_OMNIBUS_PROFILES` metadata and applies the union of those features.
+This includes both `NEON_FP16` and `NEON_BF16` when configured together; neither
+extension implies the other. Admit every required optional profile before entry.
+For example, an omnibus containing `NEON_BF16` requires
+`arm_profile::neon_bf16` even when a particular kernel uses ordinary float lanes.
+Granular imports retain their individual compilation/admission requirements.
 
 This requirement stays on the omnibus and profile sources. It does not rebuild
 common modules with stronger ISA options. Prefer granular profile libraries

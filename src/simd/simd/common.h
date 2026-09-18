@@ -189,9 +189,12 @@ namespace simd {
   /// Import simd.neon_fp16 and compile for NEON_FP16. The tag neither selects
   /// compiler flags nor admits runtime features; use simd.arm before entry.
   struct neon_fp16 {};
+  /// AArch64 NEON plus native BF16 dot products. Import simd.neon_bf16 and
+  /// compile for NEON_BF16; the tag does not perform runtime ISA admission.
+  struct neon_bf16 {};
   namespace detail {
     template<class A> concept neon_architecture = std::same_as<A,neon> ||
-      std::same_as<A,neon_fp16>;
+      std::same_as<A,neon_fp16> || std::same_as<A,neon_bf16>;
   }
   template<class A> concept architecture = std::same_as<A,scalar> || std::same_as<A,avx2> ||
     detail::avx512_architecture<A> || detail::neon_architecture<A>;
