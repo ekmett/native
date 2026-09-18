@@ -60,7 +60,7 @@ runs:
         New-Item -ItemType Directory -Force -Path $tools | Out-Null
         function Get-VerifiedArchive($url, $file, $expected) {
           Write-Host "Downloading $url"
-          Invoke-WebRequest -Uri $url -OutFile $file
+          Invoke-WebRequest -Uri $url -OutFile $file -MaximumRetryCount 3 -RetryIntervalSec 5
           $actual = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
           if ($actual -ne $expected) { throw "SHA256 mismatch for $file`: $actual" }
           Write-Host "Verified SHA256 $actual"
