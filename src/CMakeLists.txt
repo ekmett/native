@@ -12,6 +12,11 @@ function(simd_module_target target export_name)
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${export_name}
     POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_MODULES ON)
   target_link_libraries(${target} PUBLIC simd_headers)
+  # Installed consumers rebuild BMIs with these private implementation inputs.
+  # CMake records private include directories in imported module metadata.
+  target_include_directories(${target} PRIVATE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/simd/include>")
 endfunction()
 
 simd_module_target(simd_common common)
@@ -21,15 +26,15 @@ target_compile_definitions(simd_common PRIVATE
   SIMD_HAS_NATIVE_FP16=$<BOOL:${SIMD_HAS_NATIVE_FP16}>
   SIMD_HAS_NATIVE_BF16=$<BOOL:${SIMD_HAS_NATIVE_BF16}>)
 target_sources(simd_common PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-  BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cxx/modules"
-  FILES cxx/modules/simd.scalar.ccm cxx/modules/simd.wide.ccm cxx/modules/simd.static_string.ccm
-    cxx/modules/simd.memory.ccm cxx/modules/simd.types.ccm cxx/modules/simd.numerics.ccm)
+  BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+  FILES simd.scalar.ccm simd.wide.ccm simd.static_string.ccm
+    simd.memory.ccm simd.types.ccm simd.numerics.ccm)
 
 # Baseline x86 utilities are independent of every SIMD profile.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   target_sources(simd_common PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cxx/modules"
-    FILES cxx/modules/simd.cpuid.ccm cxx/modules/simd.wait.ccm)
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES simd.cpuid.ccm simd.wait.ccm)
 endif()
 
 set(simd_module_targets simd_common)
@@ -48,7 +53,7 @@ foreach(profile IN LISTS SIMD_PROFILES)
   target_compile_definitions(simd_${name} PRIVATE
     SIMD_PROFILE=${bits})
   target_sources(simd_${name} PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/cxx/modules" FILES cxx/modules/simd.${name}.ccm)
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.${name}.ccm)
   target_link_libraries(simd_${name} PUBLIC simd_common)
   if(SIMD_ENABLE_PCH)
     target_precompile_headers(simd_${name} PRIVATE <simd/vec.h> <simd/simd/math/exp.h>)
@@ -66,7 +71,7 @@ foreach(profile IN LISTS SIMD_PROFILES)
   string(TOLOWER "${profile}" name)
   string(APPEND simd_omnibus_imports "export import simd.${name};\n")
 endforeach()
-configure_file(cxx/modules/simd.ccm.in "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm" @ONLY)
+configure_file(simd.ccm.in "${CMAKE_CURRENT_BINARY_DIR}/modules/simd.ccm" @ONLY)
 add_library(simd STATIC)
 add_library(simd::simd ALIAS simd)
 simd_host_settings(simd)
@@ -97,3 +102,9 @@ install(EXPORT simdHostTargets NAMESPACE simd:: CXX_MODULES_DIRECTORY cxx-module
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
 export(EXPORT simdHostTargets NAMESPACE simd:: CXX_MODULES_DIRECTORY cxx-modules
   FILE "${PROJECT_BINARY_DIR}/simdHostTargets.cmake")
+
+# Preserve implementation inputs for consumer BMI regeneration without making
+# them public headers or exposing their directory through simd::headers.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/simd/"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/include/simd"
+  FILES_MATCHING PATTERN "*.h" PATTERN "attributes.h" EXCLUDE PATTERN "config.h" EXCLUDE)

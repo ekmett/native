@@ -40,7 +40,7 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-# Macro definitions and module implementation inputs are ordinary headers.
+# Only macro configuration and attributes are public textual headers.
 # Downstream libraries can consume them without enabling the host module build.
 add_library(simd_headers INTERFACE)
 add_library(simd::headers ALIAS simd_headers)
@@ -49,19 +49,15 @@ set_target_properties(simd_headers PROPERTIES EXPORT_NAME headers)
 # requirement with the headers as well as modules, including relocated consumers.
 target_compile_options(simd_headers INTERFACE
   "$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<NOT:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>>>:-fms-extensions>")
-file(GLOB_RECURSE SIMD_SHARED_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/shared/simd/*.h")
-file(GLOB_RECURSE SIMD_CXX_HEADERS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/cxx/simd/*.h")
 target_sources(simd_headers INTERFACE
-  FILE_SET shared_headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/shared" FILES ${SIMD_SHARED_HEADERS}
-  FILE_SET cxx_headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/cxx" FILES ${SIMD_CXX_HEADERS})
+  FILE_SET headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src"
+  FILES src/simd/config.h src/simd/attributes.h)
 target_include_directories(simd_headers INTERFACE
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/shared>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/cxx>"
-  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/shared>"
-  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cxx>")
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
+  "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
 install(TARGETS simd_headers EXPORT simdHeaderTargets
-  FILE_SET shared_headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/shared"
-  FILE_SET cxx_headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/cxx")
+  FILE_SET headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
+
 install(EXPORT simdHeaderTargets NAMESPACE simd:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
 export(EXPORT simdHeaderTargets NAMESPACE simd:: FILE "${CMAKE_CURRENT_BINARY_DIR}/simdHeaderTargets.cmake")
 

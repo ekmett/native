@@ -26,7 +26,7 @@ It de-duplicates IDs across namespace/class/struct/group pages, excludes friend
 class declarations, ignores stale XML and private/detail entities,
 and fails for missing descriptions or an empty result. A documented overload-set
 alias is counted separately when Doxygen emits a distinct ID. For a focused
-native-header review, use `--source-prefix src/cxx/simd/`; omit that option for the
+native-header review, use `--source-prefix src/simd/`; omit that option for the
 whole public source surface. Run the check for each documentation profile used to
 expose conditional declarations; a clean warning log alone is not coverage.
 

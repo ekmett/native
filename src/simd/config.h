@@ -1,5 +1,7 @@
 #pragma once
 
+#ifdef __cplusplus
+// Host profiles own namespace selection and CPU feature admission.
 // A module producer fixes its backend independently of consumer ISA flags.
 #ifdef SIMD_PROFILE
 #define SIMD_EXPLICIT_PROFILE 1
@@ -74,6 +76,15 @@
 #define SIMD_HAS_ARM_NEON 1
 #else
 #define SIMD_HAS_ARM_NEON 0
+#endif
+
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#else
+// Shader compilation has no host ISA profile or CPU feature requirements.
+#ifndef SIMD_NAMESPACE
+#define SIMD_NAMESPACE simd
+#endif
 #endif
 
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
