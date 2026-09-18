@@ -17,7 +17,7 @@ def member(identifier, name, description='', kind='function', prot='public', arg
     return f'''<memberdef id="{identifier}" kind="{kind}" prot="{prot}">
       <name>{name.split('::')[-1]}</name><qualifiedname>{name}</qualifiedname>
       {arguments}<briefdescription><para>{description}</para></briefdescription>
-      <location file="src/cxx/simd/example.h" line="10"/>
+      <location file="src/simd/example.h" line="10"/>
     </memberdef>'''
 
 

@@ -2,16 +2,16 @@
 
 C++ consumers import `simd` or individual named modules. The omnibus is generated
 from the package's configured profiles and contains only re-exports. Headers
-under `cxx/simd` are implementation inputs for rebuilding consumer BMIs. Register and intrinsic definitions live in
+under `simd/` are implementation inputs for rebuilding consumer BMIs. Register and intrinsic definitions live in
 the global module fragment. Array math kernels use `std::array<V,N>` and C++26
 structured-binding packs; they do not depend on `wide`.
 
 | Path | Responsibility |
 | --- | --- |
-| `cxx/modules/` | C++26 module interfaces and common utilities |
-| `cxx/simd/vec.h` | Raw float, integer, boolean and mask SIMD, with a custom-element extension |
-| `cxx/simd/simd/` | Array math, shared element/memory policies and explicit exports |
-| `shared/simd/attributes.h` | Named compiler attributes, usable by downstream libraries |
+| `*.ccm` | C++26 module interfaces and common utilities |
+| `simd/vec.h` | Raw float, integer, boolean and mask SIMD, with a custom-element extension |
+| `simd/simd/` | Array math, shared element/memory policies and explicit exports |
+| `simd/attributes.h` | Named compiler attributes, usable by downstream libraries |
 
 The implementation umbrella is named `vec.h` so it does not shadow Apple's
 SDK `<simd/simd.h>`; the SDK keeps ownership of that include path.
