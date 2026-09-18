@@ -6,11 +6,11 @@ import simd;
 #include "cases.h"
 
 namespace abi_lookup_test {
-  template<simd::architecture A,std::size_t L,std::size_t N>
-    requires (simd::target<A,policies> == 0)
+  template<simd::isa A,std::size_t L,std::size_t N>
+    requires (exp_target<A> == 0)
   simd::wide<simd::vec<float,L,A>,N> preserve_shape(
     simd::wide<simd::vec<float,L,A>,N> const &);
-  // Deduction retains the full caller tag in a vector pack, including extra
+  // Deduction retains the full caller ISA in a vector pack, including extra
   // features ignored by this operation's selected policy.
 #if defined(__x86_64__) || defined(_M_X64)
   using pack=simd::wide<simd::vec<float,4,extra>,3>;

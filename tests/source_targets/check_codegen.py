@@ -20,6 +20,11 @@ def function_bodies(text):
     return [(int(functions[i],16),functions[i+1],functions[i+2])
         for i in range(1,len(functions),3)]
 
+def source_kernel(name):
+    # LLVM's Microsoft demangler does not yet decode structural array NTTPs.
+    # Match the exact raw template name, excluding helper functions and thunks.
+    return bool(re.search(r'\bsource_kernel[<(]',name) or name.startswith('??$source_kernel@'))
+
 kernels=[]
 objects=re.split(r'(?m)^.+:\s+file format ([^\n]+)$',r.stdout)
 for i in range(1,len(objects),2):
@@ -34,15 +39,16 @@ for i in range(1,len(objects),2):
         for j in range(1,len(sections),2):
             for address,name,body in function_bodies(sections[j+1]):
                 bodies[sections[j],address]=body
-        symbols=re.findall(r'(?m)^([0-9a-f]+)\s+g\s+F\s+(\S+)\s+(source_kernel\([^\n]+)$',sections[0])
+        symbols=re.findall(r'(?m)^([0-9a-f]+)\s+g\s+F\s+(\S+)\s+([^\n]+)$',sections[0])
         for address,section,name in symbols:
+            if not source_kernel(name): continue
             body=bodies.get((section,int(address,16)))
             if body is None or not re.search(r'(?m)^\s*[0-9a-f]+:',body):
                 raise SystemExit('Source variant has no disassembled body: '+name)
             kernels.append((name,body))
     else:
         kernels.extend((name,body) for address,name,body in function_bodies(contents)
-            if 'source_kernel(' in name)
+            if source_kernel(name))
 if len(kernels)!=3: raise SystemExit(f'Expected precisely three source variants, found {len(kernels)}')
 for name,body in kernels:
     if not re.search(r'\bvaddps\b|\bfadd(?:\s+v\d+\.4s|\.4s\s+v\d+)',body):

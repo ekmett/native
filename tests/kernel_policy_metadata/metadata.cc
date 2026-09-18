@@ -71,8 +71,10 @@ namespace {
       ((K&128)?isa(feature::aes):scalar));
     return check<A>();
   }
+  // Evaluate each boundary once, with its own constexpr step budget.
+  template<std::size_t I> constexpr bool x86_checked=x86_boundary<I>();
   template<std::size_t... I> consteval bool x86_boundaries(std::index_sequence<I...>) {
-    return (x86_boundary<I>() && ...);
+    return (x86_checked<I> && ...);
   }
   static_assert(x86_boundaries(std::make_index_sequence<256>{}));
   static_assert(check<scalar>() && check<neon>() && check<neon_bf16>() &&

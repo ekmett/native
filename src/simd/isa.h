@@ -40,6 +40,7 @@ namespace simd {
       auto & word=flags[i/64];
       word=(word&~mask)|(value?mask:0);
     }
+    constexpr bool has(feature f) const noexcept { return get(f); }
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
