@@ -1,0 +1,7 @@
+{
+  "cases": 2048,
+  "results": 18432,
+  "self_checks": 326497,
+  "sha256": "1ac34eebb2c70d0c7657899753f238b64867df528ee240f88fc0fee516fa416a",
+  "scope": "AH=FIZ=0; default NaN exact; no exception flags; independent exact rational math"
+}

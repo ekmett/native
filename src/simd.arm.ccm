@@ -28,7 +28,8 @@ export namespace simd {
   /// Instruction requirements supplied by simd_target_profile, without tuning policy.
   enum class arm_profile : std::uint8_t {
     neon, ///< Baseline AArch64 floating point and Advanced SIMD.
-    neon_fp16 ///< Baseline plus scalar and vector half-precision arithmetic.
+    neon_fp16, ///< Baseline plus scalar and vector half-precision arithmetic.
+    neon_bf16 ///< Baseline plus native BF16 dot products (FEAT_BF16).
   };
 
   /// \ingroup arm_capabilities
@@ -48,6 +49,15 @@ export namespace simd {
     bool scalar_fp16 = false;
     /// OS advertises Advanced SIMD half-precision arithmetic (ASIMDHP/FEAT_FP16).
     bool vector_fp16 = false;
+    /// True only after an OS BF16 feature query succeeds.
+    bool bf16_observed = false;
+    /// OS advertises non-streaming Advanced SIMD BF16 instructions (FEAT_BF16).
+    bool bf16 = false;
+    /// True only after an OS enhanced BF16 feature query succeeds.
+    bool ebf16_observed = false;
+    /// OS advertises enhanced BF16 behavior, usable when the caller sets FPCR.EBF.
+    /// Informational: NEON_BF16 admission does not require this extension.
+    bool ebf16 = false;
   };
 
   /// \ingroup arm_capabilities
@@ -67,10 +77,14 @@ export namespace simd {
     bool missing_scalar_fp16 = false;
     /// Required vector half arithmetic is absent or unobserved.
     bool missing_vector_fp16 = false;
+    /// BF16 is required but no successful feature observation exists.
+    bool missing_bf16_observation = false;
+    /// Required BF16 instructions are absent or unobserved.
+    bool missing_bf16 = false;
     /// True only when every required feature is successfully observed and present.
     constexpr bool admitted() const noexcept {
       return !invalid_profile && !missing_baseline_observation && !missing_fp &&
-        !missing_asimd && !missing_fp16_observation && !missing_scalar_fp16 && !missing_vector_fp16;
+        !missing_asimd && !missing_fp16_observation && !missing_scalar_fp16 && !missing_vector_fp16 && !missing_bf16_observation && !missing_bf16;
     }
     /// First rejection reason; individual fields retain all missing requirements.
     constexpr char const * reason() const noexcept {
@@ -81,6 +95,8 @@ export namespace simd {
       if(missing_fp16_observation) return "ARM FP16 features unobserved";
       if(missing_scalar_fp16) return "OS does not advertise scalar FP16 arithmetic";
       if(missing_vector_fp16) return "OS does not advertise vector FP16 arithmetic";
+      if(missing_bf16_observation) return "ARM BF16 features unobserved";
+      if(missing_bf16) return "OS does not advertise BF16 instructions";
       return "admitted";
     }
   };
@@ -91,7 +107,7 @@ export namespace simd {
   /// enables both. This does not admit any extra caller-configured minimum ISA.
   constexpr arm_admission classify_arm_profile(arm_capabilities const & cpu, arm_profile profile) noexcept {
     arm_admission result;
-    if(profile != arm_profile::neon && profile != arm_profile::neon_fp16) {
+    if(profile != arm_profile::neon && profile != arm_profile::neon_fp16 && profile != arm_profile::neon_bf16) {
       result.invalid_profile=true; return result;
     }
     result.missing_baseline_observation=!cpu.baseline_observed;
@@ -102,12 +118,16 @@ export namespace simd {
       result.missing_scalar_fp16=!cpu.fp16_observed || !cpu.scalar_fp16;
       result.missing_vector_fp16=!cpu.fp16_observed || !cpu.vector_fp16;
     }
+    if(profile==arm_profile::neon_bf16) {
+      result.missing_bf16_observation=!cpu.bf16_observed;
+      result.missing_bf16=!cpu.bf16_observed || !cpu.bf16;
+    }
     return result;
   }
 
   /// \ingroup arm_capabilities
   /// Query OS-advertised AArch64 features without executing optional instructions.
-  /// Linux uses AT_HWCAP; macOS uses feature sysctls (legacy FP16 only if the modern
+  /// Linux uses AT_HWCAP/AT_HWCAP2; macOS uses feature sysctls (legacy FP16 only if the modern
   /// key is unavailable, never after a false value); Windows uses processor-feature
   /// queries. Failed/unavailable observations reject. Old Windows systems report
   /// FP16 unavailable even when their hardware might implement it. FPCR is untouched.
@@ -131,6 +151,8 @@ namespace simd {
     if(status==0) status=query("hw.optional.neon_fp16",half);
     result.fp16_observed=status==1;
     result.scalar_fp16=result.vector_fp16=half;
+    result.bf16_observed=query("hw.optional.arm.FEAT_BF16",result.bf16)==1;
+    result.ebf16_observed=query("hw.optional.arm.FEAT_EBF16",result.ebf16)==1;
 #elif defined(__linux__)
     errno=0;
     auto hwcap=getauxval(AT_HWCAP);
@@ -140,6 +162,18 @@ namespace simd {
     result.asimd=(hwcap&HWCAP_ASIMD)!=0;
     result.scalar_fp16=(hwcap&HWCAP_FPHP)!=0;
     result.vector_fp16=(hwcap&HWCAP_ASIMDHP)!=0;
+    errno=0;
+    auto hwcap2=getauxval(AT_HWCAP2);
+    if(hwcap2!=0 || errno==0) {
+#ifdef HWCAP2_BF16
+      result.bf16_observed=true;
+      result.bf16=(hwcap2&HWCAP2_BF16)!=0;
+#endif
+#ifdef HWCAP2_EBF16
+      result.ebf16_observed=true;
+      result.ebf16=(hwcap2&HWCAP2_EBF16)!=0;
+#endif
+    }
 #elif defined(_WIN32)
     result.baseline_observed=result.fp16_observed=true;
     result.fp=IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE)!=0;
@@ -147,6 +181,11 @@ namespace simd {
     // Documented SDK 26100 selector; older HALs return false for unknown features.
     constexpr DWORD fp16_feature=67; // PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE
     result.scalar_fp16=result.vector_fp16=IsProcessorFeaturePresent(fp16_feature)!=0;
+    constexpr DWORD bf16_feature=68; // PF_ARM_V86_BF16_INSTRUCTIONS_AVAILABLE
+    constexpr DWORD ebf16_feature=69; // PF_ARM_V86_EBF16_INSTRUCTIONS_AVAILABLE
+    result.bf16_observed=result.ebf16_observed=true;
+    result.bf16=IsProcessorFeaturePresent(bf16_feature)!=0;
+    result.ebf16=IsProcessorFeaturePresent(ebf16_feature)!=0;
 #endif
     return result;
   }
