@@ -286,6 +286,13 @@ namespace simd {
     }();
     inline constexpr isa known_features=arm_features&x86_features;
     inline constexpr isa invalid_features=feature::invalid_features;
+    // A shared value keeps repeated source constraints equivalent across
+    // declarations; an immediately invoked macro lambda would not.
+    template<isa A> inline constexpr isa source_isa=[]() consteval {
+      static_assert(A<=known_features,"source target contains an unregistered ISA feature");
+      static_assert(A<=x86_features || A<=arm_features,"source target combines x86 and ARM features");
+      return A;
+    }();
   }
 
   /// Explicit compiler-implied closure, shared by presets and admission.

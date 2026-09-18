@@ -16,6 +16,12 @@ namespace simd {
 }
 static_assert(source_isa_adl(simd::avx2)==simd::avx2);
 
+template<simd::isa A> requires(A==SIMD_TARGET_ISA(avx2))
+constexpr int repeated();
+template<simd::isa A> requires(A==SIMD_TARGET_ISA(avx2))
+constexpr int repeated() { return 7; }
+static_assert(repeated<simd::avx2>()==7);
+
 namespace {
   struct x86_snapshot {
     std::uint32_t max_basic_leaf=7,leaf1_ecx=~0u,leaf1_edx=~0u,leaf7_ebx=~0u;

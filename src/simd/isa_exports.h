@@ -33,6 +33,7 @@ export namespace simd {
 }
 // Source-target macro validation also runs in importing translation units.
 export namespace simd::detail {
+  using ::simd::detail::source_isa;
   using ::simd::detail::known_features;
   using ::simd::detail::x86_features;
   using ::simd::detail::arm_features;

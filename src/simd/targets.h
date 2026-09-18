@@ -30,12 +30,8 @@
 #define SIMD_DETAIL_TARGET_STRING(...) SIMD_DETAIL_TARGET_STRING_I(__VA_ARGS__)
 #define SIMD_DETAIL_TARGET_PRAGMA(...) _Pragma(SIMD_DETAIL_TARGET_STRING(__VA_ARGS__))
 #define SIMD_TARGET_STRING(name) SIMD_DETAIL_TARGET_CAT(SIMD_TARGET_,name)
-#define SIMD_TARGET_ISA(name) ([]() consteval { \
-  constexpr auto value=::simd::target_features(SIMD_TARGET_STRING(name)); \
-  static_assert(value<=::simd::detail::known_features,"source target contains an unregistered ISA feature"); \
-  static_assert(value<=::simd::detail::x86_features || value<=::simd::detail::arm_features,"source target combines x86 and ARM features"); \
-  return value; \
-}())
+#define SIMD_TARGET_ISA(name) \
+  (::simd::detail::source_isa<::simd::target_features(SIMD_TARGET_STRING(name))>)
 
 // The named pragma stack prevents accidentally popping an unrelated user's
 // clang attribute stack. This does not generate preprocessor #include lines.

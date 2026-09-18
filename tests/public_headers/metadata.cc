@@ -6,6 +6,12 @@
 static_assert(SIMD_TARGET_ISA(avx2) == simd::avx2);
 static_assert(SIMD_TARGET_ISA(neon) == simd::neon);
 
+template<simd::isa A> requires(A == SIMD_TARGET_ISA(avx2))
+constexpr int repeated();
+template<simd::isa A> requires(A == SIMD_TARGET_ISA(avx2))
+constexpr int repeated() { return 7; }
+static_assert(repeated<simd::avx2>() == 7);
+
 #define METADATA_TARGETS(X, ...) X(scalar, __VA_ARGS__)
 #define METADATA_BODY(name, arch) \
   template<simd::isa A> requires(A == arch) \
