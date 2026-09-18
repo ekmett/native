@@ -140,6 +140,6 @@ Edward Kmett can also be reached as `ekmett` on Libera Chat and `@kmett` on Twit
 `simd::minimal` owns the common ABI. Project setup chooses
 `SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
 ARM. `simd::common` remains an alias. Linking minimal carries its configured
-requirements to consumers; stronger profile code lives in separate libraries.
+requirements to consumers; stronger functions carry their own target attributes.
 Admission checks may select a stronger implementation, but the process must
 already satisfy its configured minimum.

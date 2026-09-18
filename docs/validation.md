@@ -4,6 +4,11 @@ The tests cover value semantics, memory boundaries, module identity and installe
 package consumption. Counts below belong to the configurations stated beside
 them; sanitizer, assembly and downstream results retain their separate scope.
 
+These are checkpoint records. Entries preceding the single-hub migration retain
+their original per-ISA module layout and dependency pins; they do not describe
+the current package structure. The [build guide](../doc/building.md) and
+[target-list guide](omnibus.md) describe the shared baseline hub.
+
 The short-vector and named-swizzle checkpoint was exercised on Windows x86-64
 and an Apple M3 with upstream Clang 23.1.1, CMake 4.4.3 and Ninja. These are CPU
 and compiler checks; they do not establish GPU behavior or throughput.
