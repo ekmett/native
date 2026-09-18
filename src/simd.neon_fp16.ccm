@@ -13,6 +13,8 @@ namespace simd::detail::neon_fp16_backend {
   simd_inline float16x8_t add_half(float16x8_t a, float16x8_t b) noexcept { return vaddq_f16(a,b); }
   simd_inline float16x8_t sub_half(float16x8_t a, float16x8_t b) noexcept { return vsubq_f16(a,b); }
   simd_inline float16x8_t mul_half(float16x8_t a, float16x8_t b) noexcept { return vmulq_f16(a,b); }
+  simd_inline float16x8_t div_half(float16x8_t a, float16x8_t b) noexcept { return vdivq_f16(a,b); }
+  simd_inline float16x8_t sqrt_half(float16x8_t a) noexcept { return vsqrtq_f16(a); }
   simd_inline float16x8_t neg_half(float16x8_t a) noexcept { return vnegq_f16(a); }
   simd_inline float16x8_t fma_half(float16x8_t a, float16x8_t b, float16x8_t c) noexcept { return vfmaq_f16(c,a,b); }
   simd_inline uint8x16_t eq_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vceqq_f16(a,b)); }
@@ -30,13 +32,13 @@ export import simd.numerics;
 export namespace simd {
   /// \ingroup vectors
   /// One 128-bit register of FP16 representations. Loads, stores and bit bridges
-  /// preserve every encoding. Native addition, subtraction, multiplication and
-  /// fused multiply-add round directly to half precision under the caller's FPCR.
+  /// preserve every encoding. Native addition, subtraction, multiplication, division,
+  /// square root and fused multiply-add round directly to half precision under the caller's FPCR.
   /// FZ16 controls half subnormal inputs/results; rounding, DN and exception
   /// controls retain their architectural meaning. Operations may update FPSR.
   /// No operation changes FPCR. NaN payload/sign propagation is instruction- and
   /// FPCR-dependent, not a portable promise. Scalar fp16 conversions are unchanged.
-  /// Only the 8-lane shape is provided; division and square root are absent.
+  /// Only the 8-lane shape is provided.
   /// Import simd.neon_fp16 and compile its users for the NEON_FP16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
@@ -162,6 +164,18 @@ export namespace simd {
     /// Multiply corresponding half lanes, rounding directly under the caller's FPCR.
     simd_nodiscard friend simd_inline vec operator*(vec a,vec b) noexcept {
       return from_native(detail::neon_fp16_backend::mul_half(a.value_,b.value_));
+    }
+    /// Divide corresponding half lanes with native half-precision rounding.
+    /// The caller's FPCR and native exception behavior apply.
+    simd_nodiscard friend simd_inline vec operator/(vec a,vec b) noexcept {
+      return from_native(detail::neon_fp16_backend::div_half(a.value_,b.value_));
+    }
+    /// Compute each half lane's square root with native half-precision rounding.
+    /// Signed zero is preserved; negative nonzero operands after native input
+    /// flushing produce a quiet NaN.
+    /// The caller's FPCR and native exception behavior apply.
+    simd_nodiscard friend simd_inline vec sqrt(vec a) noexcept {
+      return from_native(detail::neon_fp16_backend::sqrt_half(a.value_));
     }
     /// Apply native FNEG to each half lane; no scalar half-to-float conversion occurs.
     simd_nodiscard friend simd_inline vec operator-(vec a) noexcept {

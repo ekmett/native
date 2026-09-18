@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include "reference_cases.h"
+#include "sqrt_reference.h"
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
@@ -17,6 +18,8 @@ extern "C" bool fp16_storage();
 extern "C" void fp16_add(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_sub(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_mul(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
+extern "C" void fp16_div(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
+extern "C" void fp16_sqrt(std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_fma(std::uint16_t const *,std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_neg(std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_compare(std::uint16_t const *,std::uint16_t const *,std::uint64_t *) noexcept;
@@ -84,11 +87,12 @@ namespace {
   bool nan(std::uint16_t bits) {return (bits&0x7c00)==0x7c00 && (bits&0x03ff)!=0;}
   bool contract() {
     environment saved;
-    std::array<std::uint16_t,8> a,b,c,out[4];
+    std::array<std::uint16_t,8> a,b,c,out[6];
     static_assert(neon_fp16_reference::case_count%8==0);
-    for(unsigned config=0;config!=8;++config) for(unsigned dn=0;dn!=2;++dn) {
-      // Qualify standard half mode: AH/AHP clear, traps masked, all rounding/FZ16/DN combinations.
-      auto control=(std::uint64_t(config/2)<<22) | (std::uint64_t(config%2)<<19) | (std::uint64_t(dn)<<25);
+    for(unsigned config=0;config!=8;++config) for(unsigned dn=0;dn!=2;++dn) for(unsigned fz=0;fz!=2;++fz) {
+      // Qualify standard half mode: AH/AHP/FIZ clear, traps masked. FZ is
+      // independent of FZ16 and must not change these native half operations.
+      auto control=(std::uint64_t(config/2)<<22) | (std::uint64_t(config%2)<<19) | (std::uint64_t(dn)<<25) | (std::uint64_t(fz)<<24);
       set_fpcr(control);
       if(get_fpcr()!=control) {std::puts("FPCR state unavailable");return false;}
       for(std::size_t first=0;first!=neon_fp16_reference::case_count;first+=8) {
@@ -97,8 +101,9 @@ namespace {
         }
         fp16_add(a.data(),b.data(),out[0].data());fp16_sub(a.data(),b.data(),out[1].data());
         fp16_mul(a.data(),b.data(),out[2].data());fp16_fma(a.data(),b.data(),c.data(),out[3].data());
+        fp16_div(a.data(),b.data(),out[4].data());fp16_sqrt(a.data(),out[5].data());
         if(get_fpcr()!=control) {std::puts("Arithmetic changed FPCR");return false;}
-        for(unsigned i=0;i!=8;++i) for(unsigned op=0;op!=4;++op) {
+        for(unsigned i=0;i!=8;++i) for(unsigned op=0;op!=6;++op) {
           auto expected=neon_fp16_reference::cases[first+i].expected[config][op];
           bool correct=nan(expected) ? nan(out[op][i]) && (out[op][i]&0x0200) && (!dn || out[op][i]==0x7e00) : out[op][i]==expected;
           if(!correct) {
@@ -107,11 +112,37 @@ namespace {
           }
         }
       }
+      for(unsigned first=0;first!=65536;first+=8) {
+        for(unsigned i=0;i!=8;++i) a[i]=std::uint16_t(first+i);
+        fp16_sqrt(a.data(),out[0].data());
+        for(unsigned i=0;i!=8;++i) {
+          auto expected=neon_fp16_reference::sqrt_expected(a[i],config);
+          bool correct=nan(expected) ? nan(out[0][i]) && (out[0][i]&0x0200) && (!dn || out[0][i]==0x7e00) : out[0][i]==expected;
+          if(!correct) {
+            std::printf("sqrt %04x config %u DN %u FZ %u: %04x expected %04x\n",a[i],config,dn,fz,out[0][i],expected);
+            return false;
+          }
+        }
+      }
+      if(get_fpcr()!=control) {std::puts("Square root changed FPCR");return false;}
     }
     set_fpcr(0);set_fpsr(0);
     a.fill(0x7c01);b.fill(0x3c00);
     fp16_add(a.data(),b.data(),out[0].data());
     if(!(get_fpsr()&1)) {std::puts("Signaling NaN did not update FPSR.IOC");return false;}
+    a.fill(0x3c00);b.fill(0);set_fpsr(0);
+    fp16_div(a.data(),b.data(),out[0].data());
+    if(get_fpsr()!=2) {std::puts("Division by zero did not set only FPSR.DZC");return false;}
+    a.fill(0);set_fpsr(0);fp16_div(a.data(),b.data(),out[0].data());
+    if(get_fpsr()!=1) {std::puts("Zero divided by zero did not set only FPSR.IOC");return false;}
+    a.fill(0xbc00);set_fpsr(0);fp16_sqrt(a.data(),out[0].data());
+    if(get_fpsr()!=1) {std::puts("Negative square root did not set only FPSR.IOC");return false;}
+    a.fill(0x4400);set_fpsr(0);fp16_sqrt(a.data(),out[0].data());
+    if(get_fpsr()!=0) {std::puts("Exact square root raised an exception");return false;}
+    a.fill(0x4000);set_fpsr(0);fp16_sqrt(a.data(),out[0].data());
+    if(get_fpsr()!=16) {std::puts("Inexact square root did not set only FPSR.IXC");return false;}
+    a.fill(0x3c00);b.fill(0x4200);set_fpsr(0);fp16_div(a.data(),b.data(),out[0].data());
+    if(get_fpsr()!=16) {std::puts("Inexact division did not set only FPSR.IXC");return false;}
     return true;
   }
   bool masks() {
@@ -153,5 +184,5 @@ int main(int argc,char **argv) {
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;
   if(!masks()) {std::puts("FP16 mask/selection failure");return 6;}
-  std::puts("FP16: 65536 storage encodings, guarded tails, 131072 arithmetic results across 16 FPCR states, 512 masks");
+  std::printf("FP16: 65536 storage encodings, guarded tails, %zu arithmetic results, 2097152 exhaustive sqrt results across 32 FPCR states, 512 masks\n",neon_fp16_reference::case_count*6*32);
 }

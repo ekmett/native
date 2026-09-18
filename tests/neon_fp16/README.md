@@ -25,7 +25,7 @@ minimum feature options can still override that source's profile. Registration
 uses the compiling target's options, so one file can serve different profiles.
 
 `vec<fp16,8,neon_fp16>` provides exact representation storage, addition,
-subtraction, multiplication, unary negation, comparisons, selection, and
+subtraction, multiplication, division, `sqrt(x)` (found by ADL), unary negation, comparisons, selection, and
 `fma(a,b,c)`. FMA computes a*b+c with one half rounding. Arithmetic follows the
 calling thread's FPCR, including rounding and FZ16 (half input/output subnormal
 flushing), and may update FPSR. It never changes FPCR. NaN payload/sign and
@@ -34,7 +34,7 @@ is not promised. Existing scalar `fp16` conversions retain their independent
 round-to-nearest, ties-to-even, gradual-underflow contract. Storage and selection
 preserve all representations, including signaling NaNs, without arithmetic.
 Comparison masks have eight full zero/all-one 16-bit lanes. Only this half shape
-is implemented; division and square root remain future work. Native ARM BF16 storage/dot
+is implemented; native numeric conversions remain future work. Native ARM BF16 storage/dot
 products have a separate [NEON_BF16 profile](../neon_bf16/README.md).
 
 Before entering a translation unit compiled for NEON_FP16, a minimum-profile
@@ -52,16 +52,23 @@ application-configured minimum remains the application's startup requirement.
 
 The fixture runs synthetic admission checks, exhaustive 65,536-encoding storage
 roundtrips, protected-page tails (including null zero-length operations), exact
-half arithmetic against a generated rational oracle in 16 FPCR states, full-mask
+half arithmetic against a generated rational/integer oracle in 32 FPCR states, full-mask
 comparisons/selections, native code-generation checks and old/new type isolation.
 The driver is compiled at the package minimum and returns skip 77 before native
 entry on an unsupported CPU/OS. Runtime tests save and restore FPCR/FPSR and clear
-AH/AHP while qualifying standard half arithmetic. NaNs compare by class with
+AH/AHP/FIZ while qualifying standard half arithmetic. FZ16 controls half subnormals;
+the independent FZ setting is also varied and does not alter these half operations.
+NaNs compare by class with
 quieting required; DN additionally requires the default half NaN encoding.
 
 Regenerate the committed deterministic corpus with
 `python3 -B tests/neon_fp16/generate_reference.py --output /tmp/neon-reference`.
-Compare the generated header/manifest against this directory. The generator also
+Compare both generated headers and the manifest against this directory. Division
+uses exact rational quotients; square root uses integer roots and midpoint-square
+comparisons. Every encoding is exercised for square root (2,097,152 outputs),
+in addition to 442,368 mixed arithmetic outputs from 2,304 cases. Exact status
+witnesses cover division by zero, invalid division/negative square root, exact
+square root and inexact division/square root. The generator also
 runs exhaustive exact format and midpoint checks. It does not use host floating
 point to determine arithmetic results.
 

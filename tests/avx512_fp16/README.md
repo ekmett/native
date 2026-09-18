@@ -3,10 +3,10 @@
 Opt in with `SIMD_PROFILES=AVX2;AVX512;AVX512_FP16`. The separate
 `simd::avx512_fp16` archive and `import simd.avx512_fp16;` provide
 `vec<fp16,32,avx512_fp16>`: one 512-bit register, unsigned bit bridges, exact
-representation loads/stores, bounded partial memory, native add/sub/mul/FMA,
+representation loads/stores, bounded partial memory, native add/sub/mul/div/FMA and `sqrt(x)` (found by ADL),
 ordered comparisons, bitwise sign negation and representation-preserving select.
 Its mask is `predicate<32,avx512_fp16>`. Only the 32-lane half shape is provided;
-division, square root and numeric conversion operations are absent.
+numeric conversion operations remain absent.
 
 Compile the optional kernel with `simd_target_profile(kernel AVX512_FP16)`.
 Keep the pointer/scalar entry and dispatcher in separate targets; admit
@@ -38,7 +38,7 @@ their complement. Selection and sign-bit negation do not perform arithmetic.
 These rules follow Intel's [AVX512-FP16 Architecture Specification,
 347407-001US](https://cdrdv2-public.intel.com/678970/intel-avx512-fp16.pdf), chapter 2
 (feature detection), chapter 4 (denormals and rounding), and the instruction
-entries for VADDPH, VSUBPH, VMULPH, VFMADD*PH and VCMPPH.
+entries for VADDPH, VSUBPH, VMULPH, VDIVPH, VSQRTPH, VFMADD*PH and VCMPPH.
 Existing scalar conversions, default profiles and downstream FTZ arithmetic are
 unchanged; this is not an RTZ-policy implementation.
 
@@ -46,14 +46,18 @@ unchanged; this is not an RTZ-policy implementation.
 
 The native fixture checks every 16-bit storage encoding, null zero-length tails
 and every tail length 0 through 32 against inaccessible guard pages. The
-independent [rational oracle](https://github.com/ekmett/simd/blob/9da7b4b944e80c172381cb198fee7b057d55c335/tests/neon_fp16/generate_reference.py) supplies 2,048
+independent [rational/integer oracle](https://github.com/ekmett/simd/blob/main/tests/neon_fp16/generate_reference.py) supplies 2,304
 cases: special values, signed boundary witnesses, stratified finite values, FMA
 cancellation and deterministic random representations. This fixture uses only
 the oracle's gradual-underflow rows, remapping RNE/RUP/RDN/RTZ to MXCSR's order.
-It checks 131,072 arithmetic outputs over all 16 RC/DAZ/FTZ states, compares NaNs
-by quiet classification, verifies invalid status for signaling NaN, and tests
+It checks 221,184 mixed arithmetic outputs and every square-root encoding
+(1,048,576 outputs) over all 16 RC/DAZ/FTZ states, compares NaNs
+by quiet classification, verifies invalid/divide-by-zero/precision status
+for the relevant operations, and tests
 4,108 selection masks. The existing oracle's exact rational self-check covers
-all finite encodings and all adjacent finite midpoint boundaries.
+all finite encodings and all adjacent finite midpoint boundaries. Division uses
+exact rational quotients; square root uses integer roots and midpoint-square
+comparisons, with no host floating-point square root.
 
 `simd.avx512_fp16.admission` runs the baseline synthetic-negative matrix even
 without FP16 hardware. `none` enters no optional kernel. `codegen` requires one

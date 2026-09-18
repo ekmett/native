@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-foreach(operation IN ITEMS add sub mul fma neg)
+foreach(operation IN ITEMS add sub mul div sqrt fma neg)
   # Mach-O uses leading underscores; other supported object formats do not.
   execute_process(COMMAND "${OBJDUMP}" -d --no-show-raw-insn
     "--disassemble-symbols=fp16_${operation},_fp16_${operation}" "${OBJECT}"
@@ -19,4 +19,4 @@ foreach(operation IN ITEMS add sub mul fma neg)
     message(FATAL_ERROR "Expected one native ${instruction} .8h without conversion/call: ${assembly}")
   endif()
 endforeach()
-message(STATUS "Native half add/sub/mul/fma/neg without widening or calls")
+message(STATUS "Native half add/sub/mul/div/sqrt/fma/neg without widening or calls")

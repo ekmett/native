@@ -17,6 +17,8 @@ static_assert(sizeof(simd::fp16) == 2 && B::mask::compact);
 static_assert(std::same_as<decltype(simd::vec(simd::avx512_fp16{},std::array<simd::fp16,32>{})),B>);
 static_assert(std::same_as<decltype(simd::fma(B{},B{},B{})),B>);
 static_assert(noexcept(simd::fma(B{},B{},B{})));
+static_assert(std::same_as<decltype(B{}/B{}),B> && noexcept(B{}/B{}));
+static_assert(std::same_as<decltype(sqrt(B{})),B> && noexcept(sqrt(B{})));
 template<class V> concept addable = requires(V a) { a+a; };
 static_assert(addable<B>);
 
@@ -83,6 +85,12 @@ extern "C" simd_noinline void fp16_sub(std::uint16_t const *a,std::uint16_t cons
 }
 extern "C" simd_noinline void fp16_mul(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
   (B::load_bits(a)*B::load_bits(b)).store_bits(out);
+}
+extern "C" simd_noinline void fp16_div(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
+  (B::load_bits(a)/B::load_bits(b)).store_bits(out);
+}
+extern "C" simd_noinline void fp16_sqrt(std::uint16_t const *a,std::uint16_t *out) noexcept {
+  sqrt(B::load_bits(a)).store_bits(out);
 }
 extern "C" simd_noinline void fp16_fma(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t const *c,std::uint16_t *out) noexcept {
   simd::fma(B::load_bits(a),B::load_bits(b),B::load_bits(c)).store_bits(out);

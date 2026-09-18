@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 set(retained_assembly)
-foreach(operation IN ITEMS add sub mul fma neg compare select)
+foreach(operation IN ITEMS add sub mul div sqrt fma neg compare select)
   execute_process(COMMAND "${OBJDUMP}" -d --no-show-raw-insn
     "--disassemble-symbols=fp16_${operation},_fp16_${operation}" "${OBJECT}"
     RESULT_VARIABLE status OUTPUT_VARIABLE assembly ERROR_VARIABLE errors)
@@ -9,10 +9,10 @@ foreach(operation IN ITEMS add sub mul fma neg compare select)
     message(FATAL_ERROR "objdump failed: ${errors}")
   endif()
   string(APPEND retained_assembly "${assembly}\n")
-  if(assembly MATCHES "[ \t](call[q]?|vcvt[a-z0-9]*|v(add|sub|mul|fmadd[0-9]*)(ps|pd))[ \t]")
+  if(assembly MATCHES "[ \t](call[q]?|vcvt[a-z0-9]*|v(add|sub|mul|div|sqrt|fmadd[0-9]*)(ps|pd))[ \t]")
     message(FATAL_ERROR "Unexpected call, widening, or non-half arithmetic: ${assembly}")
   endif()
-  if(operation MATCHES "^(add|sub|mul|fma)$")
+  if(operation MATCHES "^(add|sub|mul|div|sqrt|fma)$")
     if(operation STREQUAL "fma")
       set(instruction "vfmadd[123]+ph")
     else()

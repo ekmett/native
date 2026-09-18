@@ -16,4 +16,4 @@ static_assert(!complete<simd::vec<simd::fp16,8,simd::neon>>);
 static_assert(!complete<simd::vec<simd::fp16,4,simd::neon_fp16>>);
 static_assert(!complete<simd::vec<simd::bf16,8,simd::neon_fp16>>);
 template<class T> concept divisible=requires(T a) { a/a; };
-static_assert(!divisible<simd::vec<simd::fp16,8,simd::neon_fp16>>);
+static_assert(divisible<simd::vec<simd::fp16,8,simd::neon_fp16>>);

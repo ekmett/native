@@ -6,3 +6,5 @@ using H=simd::vec<simd::fp16,8,simd::neon_fp16>;
 static_assert(sizeof(H)==16);
 static_assert(std::same_as<decltype(simd::fma(H{},H{},H{})),H>);
 static_assert(std::same_as<decltype(H{}<H{}),H::mask>);
+static_assert(std::same_as<decltype(H{}/H{}),H> && noexcept(H{}/H{}));
+static_assert(std::same_as<decltype(sqrt(H{})),H> && noexcept(sqrt(H{})));
