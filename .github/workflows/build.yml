@@ -12,12 +12,21 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: Linux LLVM 23 / AVX2
             runner: ubuntu-24.04
+            profile: AVX2
+            profiles: AVX2;AVX512
+          - name: Linux ARM64 LLVM 23 / NEON
+            runner: ubuntu-24.04-arm
+            profile: NEON
+            profiles: NEON
+          - name: macOS Intel LLVM 23 / AVX2
+            runner: macos-15-intel
             profile: AVX2
             profiles: AVX2;AVX512
           - name: macOS LLVM 23 / NEON
@@ -48,6 +57,49 @@ jobs:
         if: runner.os == 'macOS'
       - uses: ./.github/actions/setup/macos/build-tools
         if: runner.os == 'macOS'
+      - name: Record hardware and admit the test architecture
+        shell: bash
+        env:
+          TEST_PROFILE: ${{ matrix.profile }}
+        run: |
+          mkdir -p build
+          {
+            git rev-parse HEAD
+            uname -a
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              lscpu
+              cat /proc/cpuinfo
+            else
+              sysctl hw.model hw.machine hw.ncpu
+              sysctl -a | grep -E '^machdep.cpu.|^hw.optional.' || true
+            fi
+            clang++ --version
+            clang-scan-deps --version
+            cmake --version
+            ninja --version
+          } | tee build/environment.log
+          if [[ "$TEST_PROFILE" == NEON ]]; then
+            case "$(uname -m)" in
+              arm64|aarch64) ;;
+              *) echo '::error::NEON tests require a native ARM64 runner.'; exit 1 ;;
+            esac
+          else
+            [[ "$(uname -m)" == x86_64 ]] || {
+              echo '::error::AVX2 tests require a native x86-64 runner.'; exit 1;
+            }
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              flags=$(cat /proc/cpuinfo)
+            else
+              flags=$(sysctl -n machdep.cpu.features machdep.cpu.leaf7_features)
+            fi
+            for feature in avx2 fma bmi2; do
+              grep -qiw "$feature" <<< "$flags" || {
+                echo "::error::This test profile requires $feature on the runner."
+                exit 1
+              }
+            done
+          fi
+          echo "Native CPU package tests: $RUNNER_OS / $(uname -m) / $TEST_PROFILE. AVX-512 compilation is not proof of AVX-512 execution; profile tests report unsupported hardware as skipped." >> "$GITHUB_STEP_SUMMARY"
       - name: Configure modules
         shell: bash
         run: |
@@ -65,24 +117,21 @@ jobs:
       - name: Test
         shell: bash
         run: |
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            for feature in avx2 fma bmi2; do
-              grep -qw "${feature}" /proc/cpuinfo || {
-                echo "::error::This test profile requires ${feature} on the runner."
-                exit 1
-              }
-            done
-          fi
-          ctest --test-dir build/core --output-on-failure
+          ctest --test-dir build/core --show-only=json-v1 > build/tests.json
+          ctest --test-dir build/core --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
       - name: Install
         run: cmake --install build/core --prefix build/install
       - name: Retain configure and test logs
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: logs-${{ matrix.profile }}
+          name: logs-${{ matrix.runner }}-${{ matrix.profile }}
           if-no-files-found: ignore
           path: |
+            build/environment.log
+            build/tests.json
+            build/tests.xml
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/
