@@ -31,26 +31,14 @@ The common scalar, wide, numerics, types, memory and static-string modules are
 always re-exported. x86 packages also re-export CPUID and wait. Only the selected
 native profile modules appear in the import list.
 
-With Clang 23.1.1 and CMake 4.4.3, an omnibus importer must compile for the
-strongest profile included in that list:
+Each provider owns its ISA options. Clang allows a stronger target to import
+the common baseline BMI, but rejects the reverse: an importer of an AVX-512
+BMI must enable AVX-512 itself. Therefore a combined omnibus importer selects
+AVX512; an AVX2-only package selects AVX2, and ARM selects NEON.
 
-| Package profiles | Importing target profile |
-| --- | --- |
-| `AVX2;AVX512` or `AVX512` | `AVX512` |
-| `AVX2` | `AVX2` |
-| `NEON` | `NEON` |
-
-CMake exports each provider's `IMPORTED_CXX_MODULES_COMPILE_OPTIONS`, but its
-synthesized dependency BMIs in this configuration use the importing target's
-ISA options. A baseline or AVX2-only compilation of the combined omnibus fails
-the existing AVX-512 feature guard. Select the profile explicitly; the package
-does not add native ISA flags to every target that links its archive.
-
-An AVX2-only application can build or select a package with
-`-DSIMD_PROFILES=AVX2`. An application using a combined package can instead retain
-`import simd.avx2;` in an AVX2 translation unit. Importing the combined omnibus
-permits both vector families, with their distinct types and mask representations,
-but that translation unit's generated code requires the selected AVX-512 ISA.
+This requirement stays on the omnibus and profile sources. It does not rebuild
+common modules with stronger ISA options. Prefer granular profile libraries
+when only one implementation is needed.
 
 ## Keep dispatch at baseline
 
@@ -61,12 +49,23 @@ and pointer/scalar entry signatures. Check CPU and OS vector-state support befor
 calling them. Keep IPO disabled on the baseline dispatch object when preserving
 that boundary; the native implementation may still use ThinLTO.
 
-The re-export producer itself uses the strongest selected profile privately.
+The compatibility re-export producer uses the strongest selected profile.
 Its body contains only imports. Granular consumers and downstream libraries that
 import only `simd.scalar` keep their existing compilation requirements.
 
 The [installed-consumer fixture](../tests/omnibus/README.md) exercises relocation,
-PCH/ThinLTO, both vector families, granular imports and baseline flag isolation.
+consumer PCH/ThinLTO, both vector families, granular imports and isolation of
+stronger profile flags from the configured minimum.
 A separate Apple M3 run passes all three NEON-only omnibus consumer tests,
 plus the 30 core tests and one granular relocated consumer. See the
 [source-specific validation record](validation.md).
+
+
+## Package baseline
+
+`simd::minimal` owns the common ABI. Project setup chooses
+`SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
+ARM. `simd::common` remains an alias. Linking minimal carries its configured
+requirements to consumers; stronger profile code lives in separate libraries.
+Admission checks may select a stronger implementation, but the process must
+already satisfy its configured minimum.

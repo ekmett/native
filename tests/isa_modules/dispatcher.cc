@@ -5,8 +5,8 @@
 #include <cstring>
 #include <cstdint>
 import simd.cpuid;
-#if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(__FMA__) || defined(__BMI2__)
-#error Baseline dispatcher inherited ISA flags
+#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#error Common consumer must not inherit AVX-512 ISA flags
 #endif
 extern "C" int backend_avx2(float const*,float const*,float*);
 extern "C" int backend_avx512(float const*,float const*,float*);

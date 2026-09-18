@@ -37,10 +37,26 @@ function(simd_target_profile target profile)
     if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
       message(FATAL_ERROR "The Windows simd profiles require clang-cl.")
     endif()
-    foreach(flag IN LISTS flags)
-      target_compile_options("${target}" PRIVATE "/clang:${flag}")
-    endforeach()
-  else()
-    target_compile_options("${target}" PRIVATE ${flags})
+    list(TRANSFORM flags PREPEND "/clang:")
   endif()
+  # These are implementation options, not options for regenerating imported
+  # dependencies. COMPILE_FLAGS also covers CMake's generated PCH source;
+  # ordinary source properties alone would leave that PCH at the wrong ISA.
+  # Clang's BMI and PCH compatibility validation remains enabled.
+  string(JOIN " " implementation_flags ${flags})
+  set_property(TARGET "${target}" APPEND_STRING PROPERTY COMPILE_FLAGS " ${implementation_flags}")
+  set_property(TARGET "${target}" PROPERTY SIMD_SOURCE_ISA_OPTIONS "${flags}")
+  cmake_language(EVAL CODE "cmake_language(DEFER CALL simd_source_profile [[${target}]])")
+endfunction()
+
+function(simd_source_profile target)
+  get_target_property(module_sets "${target}" CXX_MODULE_SETS)
+  get_target_property(options "${target}" SIMD_SOURCE_ISA_OPTIONS)
+  foreach(module_set IN LISTS module_sets)
+    get_target_property(module_sources "${target}" CXX_MODULE_SET_${module_set})
+    # Synthetic providers do not inherit COMPILE_FLAGS. A module source owns
+    # its ISA irrespective of the target importing it.
+    set_property(SOURCE ${module_sources} TARGET_DIRECTORY "${target}" APPEND PROPERTY
+      COMPILE_OPTIONS ${options})
+  endforeach()
 endfunction()

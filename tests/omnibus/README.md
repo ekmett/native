@@ -8,14 +8,16 @@ one importing translation unit. Profile selection is explicit; see
 [the omnibus guide](../../docs/omnibus.md).
 
 `archive_only.cc` has no imports. `baseline.cc` uses only granular common modules.
-Both reject AVX/FMA compile flags. Each native executable has a separate baseline
-main that admits CPU features and OS vector state before calling native code.
-Unsupported hosts return the CTest skip code 77; skips are not execution passes.
+Both reject AVX-512 flags unless the configured minimum explicitly enables
+them. Defaults are AVX2/FMA/BMI2 on x86 and NEON on ARM. Each native executable has a separate common-
+baseline main that checks additional CPU features and OS vector state before
+calling a stronger profile. Hosts must already meet the package baseline;
+unsupported stronger profiles return CTest skip code 77, not an execution pass.
 
 ```sh
 cmake -S . -B build/producer -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
   -DSIMD_BUILD_TESTS=OFF -DSIMD_ENABLE_EXCEPTIONS=ON \
-  -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
+  -DSIMD_ENABLE_IPO=ON \
   '-DSIMD_PROFILES=AVX2;AVX512' -DCMAKE_BUILD_TYPE=Release
 cmake --build build/producer --parallel 2
 cmake --install build/producer --prefix '/tmp/simd original'

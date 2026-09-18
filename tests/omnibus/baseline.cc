@@ -7,8 +7,8 @@
 import simd.scalar;
 import simd.numerics;
 import simd.wide;
-#if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(__FMA__)
-#error The baseline omnibus consumer inherited native ISA options
+#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#error Common consumer must not inherit AVX-512 ISA flags
 #endif
 static_assert(sizeof(simd::vec<float,1,simd::scalar>)==sizeof(float));
 static_assert(std::same_as<decltype(simd::wide{1,2}),simd::wide<int,2>>);

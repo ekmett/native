@@ -182,14 +182,22 @@ add_library(kernel_avx2 OBJECT kernel_avx2.cc)
 target_link_libraries(kernel_avx2 PRIVATE simd::common simd::avx2)
 simd_target_profile(kernel_avx2 AVX2)
 add_executable(application dispatch.cc $<TARGET_OBJECTS:kernel_avx2>)
-target_link_libraries(application PRIVATE simd::simd simd::common)
+target_link_libraries(application PRIVATE simd::avx2 simd::common)
 ```
 
 Add an AVX-512 object target with its own profile when needed. The baseline
 translation unit checks the full CPU and OS-enabled vector-state requirements
 before invoking an admitted entry. Pointer/scalar entry signatures keep the
-boundary independent of register ABI. SIMD profile flags are PRIVATE to each
-producer/consumer target; linking the aggregate archive does not enable them.
+boundary independent of register ABI. AVX-512 profile flags remain private to the selected producer/consumer
+target; minimal usage requirements establish the configured project minimum.
+The common baseline and each configured ISA profile have separate static
+archives. `simd::minimal` (also named `simd::common`) supplies common modules
+and runtime definitions;
+`simd::avx2`, `simd::avx512` and `simd::neon` supply their respective profile
+definitions and depend on common. The compatibility target `simd::simd`
+provides the omnibus and links the configured archives transitively. When
+extracting kernel objects with `TARGET_OBJECTS`, explicitly link their profile
+archives on the final executable, as above.
 
 A translation unit that imports both x86 modules uses AVX-512 compiler flags
 and explicitly links both providers. For an ordinary baseline dispatch boundary
@@ -203,9 +211,10 @@ as `simd_inline`, `simd_lifetimebound` or `simd_noescape`. The independent
 `simd::headers` target makes these available to host and shader libraries.
 Use the attributes only where their actual contracts hold.
 
-PCHs are private to individual producers and must match their profile, ISA,
-compiler/STL, exception mode and preprocessing state. An application's PCH is
-built separately; it can include standard headers and the attribute header.
+The single-module profile providers do not use PCHs. A consumer may build its
+own PCH with standard headers and the attribute header, including with IPO.
+It must match the consumer's ISA, compiler/STL, exception mode and preprocessing
+state.
 
 A downstream library needs both the native archive and the correct module
 provider metadata. A numerical addon places its public `CXX_MODULES` file set directly on its archive target. An additional
@@ -259,3 +268,13 @@ For a nonzero write, the destination must provide that many writable elements
 of the vector's element type. No cross-register compaction or runtime backend
 selection is introduced; applications can assemble coherent batches using the
 returned counts.
+
+
+## Package baseline
+
+`simd::minimal` owns the common ABI. Project setup chooses
+`SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
+ARM. `simd::common` remains an alias. Linking minimal carries its configured
+requirements to consumers; stronger profile code lives in separate libraries.
+Admission checks may select a stronger implementation, but the process must
+already satisfy its configured minimum.

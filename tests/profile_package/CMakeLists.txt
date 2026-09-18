@@ -20,9 +20,13 @@ add_library(dispatch_object OBJECT dispatch.cc)
 target_link_libraries(dispatch_object PRIVATE simd::common)
 set_property(TARGET dispatch_object PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
 add_executable(dispatch $<TARGET_OBJECTS:dispatch_object> $<TARGET_OBJECTS:kernel_avx2> $<TARGET_OBJECTS:kernel_avx512> $<TARGET_OBJECTS:identity> $<TARGET_OBJECTS:static_string_object>)
-target_link_libraries(dispatch PRIVATE simd::simd)
+target_link_libraries(dispatch PRIVATE simd::avx2 simd::avx512 simd::common)
 set_property(TARGET dispatch PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 add_test(NAME imported_profiles COMMAND dispatch)
 set_tests_properties(imported_profiles PROPERTIES SKIP_RETURN_CODE 77)
 
 target_include_directories(dispatch_object PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../core_regression")
+
+add_test(NAME shared_baseline_bmi COMMAND "${CMAKE_COMMAND}"
+  "-DBUILD_DIR=${CMAKE_CURRENT_BINARY_DIR}"
+  -P "${CMAKE_CURRENT_SOURCE_DIR}/check_bmi.cmake")

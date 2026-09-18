@@ -22,8 +22,11 @@ at width 16. Cases include poisoned physical padding, signed zero and NaN
 payloads (including signaling NaNs), fill and merge behavior, scalar reference
 relationships, floating-point control-state preservation, every bounded output
 capacity, null zero-access cases, and writes ending immediately before a guard
-page. Test bodies receive profile flags; baseline drivers perform admission
-before entering the body. The hosted Linux ARM job passed 39/39 core tests, including 37,021 checks
+page. Test bodies receive profile flags; common-baseline drivers perform
+admission before entering the body. Every executable requires the configured
+minimum before startup: by default AVX2/FMA/BMI2 on x86 or NEON on ARM. Driver
+guards permit AVX-512 only when minimal feature probes report it as configured;
+the guards do not provide a launcher for hardware below the minimum. The hosted Linux ARM job passed 39/39 core tests, including 37,021 checks
 in each NEON header/import compaction executable, plus the relocated public
 header and omnibus fixtures. Its native lowering and measurements are below.
 

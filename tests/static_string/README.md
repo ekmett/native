@@ -3,7 +3,8 @@
 `import simd.static_string;` provides the existing `simd::basic_static_string`,
 standard character-width aliases, `static_c_string`, `_ss` and `_scs` literals.
 Definitions belong to this module; there is no textual implementation facade.
-The module is registered on `simd::common` and included in the `simd` archive.
+The module and its compiled definitions belong to the configured-minimum
+`simd::minimal` archive; `simd::common` is a compatibility alias. Linking that target supplies both metadata and runtime definitions.
 
 The standard structural string-literal template maps every literal into the
 same `reify<CharT, characters...>::value` storage used by the retained

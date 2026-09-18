@@ -2,7 +2,8 @@
 
 This standalone consumer finds the installed package and builds importing
 objects against the common provider and each explicit raw profile. The baseline
-dispatcher links the archive without ISA imports or IPO. Type checks require
+dispatcher links the ABI archives without ISA imports or IPO and uses the
+configured common minimum (AVX2/FMA/BMI2 by default). Type checks require
 distinct profile identities, shared wide storage and the AVX2 mask topology
 even in a broader AVX512 importing translation unit.
 
@@ -22,7 +23,9 @@ Run through the host resource gate. The dispatcher admits CPU/OS capabilities
 before checking raw FMA outputs, wide exp and cross-translation-unit static
 strings. The mixed-profile runtime requires both AVX2 and AVX-512; unsupported hosts
 skip with status 77. The dispatcher uses the platform CPUID/XGETBV spellings on
-Windows and Linux while retaining baseline compiler flags. Linux AVX2 execution
+Windows and Linux while retaining the configured minimal compiler flags.
+That minimum is a prerequisite for starting the executable; admission does
+not make it safe on weaker CPUs. Linux AVX2 execution
 is covered separately by the root tests and the AVX2-only
 [omnibus consumer](../omnibus/README.md). This is a package smoke test,
 not exhaustive accuracy, codegen or performance qualification.

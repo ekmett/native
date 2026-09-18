@@ -2,8 +2,8 @@
 #include <cstdint>
 import simd.cpuid;
 #include <cstdio>
-#if defined(__AVX2__) || defined(__AVX512F__) || defined(__FMA__)
-#error Baseline dispatcher inherited ISA flags
+#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#error Common consumer must not inherit AVX-512 ISA flags
 #endif
 extern "C" int kernel_avx2(float const*,float*);
 extern "C" int kernel_avx512(float const*,float*);
