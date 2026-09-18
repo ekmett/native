@@ -365,6 +365,7 @@ namespace simd {
 
   template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::predicate_shape<N>
   struct predicate<N,Arch> {
+    using architecture=Arch;
     using ops=SIMD_BACKEND_NAMESPACE::mask_compact_ops<N>;
     using native_type=typename ops::native_type;
     static constexpr std::size_t lanes=N;

@@ -2,24 +2,21 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include <simd/targets.h>
-#include "simd/abi_refinement.h"
+#include "simd/kernel_policies.h"
 
 // Source names retain literal compiler targets. The C++ refinement below checks
 // every emitted record against its computed union and callee-choice signature.
-#define SIMD_TARGET_exp_base "avx2,fma,bmi2,avx512f,avx512dq"
-#define SIMD_TARGET_exp_bw "avx2,fma,bmi2,avx512f,avx512dq,avx512bw"
-#define SIMD_TARGET_exp_vl "avx2,fma,bmi2,avx512f,avx512dq,avx512vl"
-#define SIMD_TARGET_exp_bw_bf16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16"
-#define SIMD_TARGET_exp_bw_fp16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512fp16"
-#define SIMD_TARGET_exp_bw_half "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16"
-#define SIMD_TARGET_exp_full_half "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"
+#define SIMD_TARGET_exp_base SIMD_KERNEL_TARGET_2
+#define SIMD_TARGET_exp_bw SIMD_KERNEL_TARGET_3
+#define SIMD_TARGET_exp_vl SIMD_KERNEL_TARGET_4
+#define SIMD_TARGET_exp_bw_bf16 SIMD_KERNEL_TARGET_7
+#define SIMD_TARGET_exp_bw_fp16 SIMD_KERNEL_TARGET_11
+#define SIMD_TARGET_exp_bw_half SIMD_KERNEL_TARGET_15
+#define SIMD_TARGET_exp_full_half SIMD_KERNEL_TARGET_17
 
 namespace simd::detail {
-  using raw_exp_policies=simd::isa_list<simd::avx512,SIMD_TARGET_TYPE(exp_bw),
-    SIMD_TARGET_TYPE(exp_vl),SIMD_TARGET_TYPE(exp_base),simd::avx2>;
-  using exp_result_policies=simd::isa_list<SIMD_TARGET_TYPE(exp_full_half),SIMD_TARGET_TYPE(exp_bw_half),
-    simd::avx512_bf16,SIMD_TARGET_TYPE(exp_bw_bf16),simd::avx512_fp16,SIMD_TARGET_TYPE(exp_bw_fp16),
-    simd::avx512,SIMD_TARGET_TYPE(exp_bw),SIMD_TARGET_TYPE(exp_vl),SIMD_TARGET_TYPE(exp_base),simd::avx2>;
+  using raw_exp_policies=x86_kernel_policies;
+  using exp_result_policies=x86_storage_policies;
   // Named transitive summaries: all raw operations currently inherit the same
   // five backend declaration scopes. VL is a genuine mask/scaling boundary;
   // BW remains a backend attribute requirement for this binary32 graph.
