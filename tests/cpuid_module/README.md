@@ -1,7 +1,8 @@
 # CPUID and wait modules
 
 The x86-only `simd.cpuid` and `simd.wait` module definitions belong to
-`simd::common`, which receives no SIMD profile flags. All intrinsic and system
+`simd::minimal` (also named `simd::common`), whose default x86 minimum is
+AVX2/FMA/BMI2 and is configurable at project setup. All intrinsic and system
 headers are in the global module fragment; the public types, templates and
 function definitions are below the module declaration. There is no remaining
 CPUID or wait implementation header.
@@ -37,18 +38,19 @@ ctest --test-dir build/cpuid-check --output-on-failure
 
 Repeat in a separate build directory with exceptions ON to exercise actual
 exception propagation. The fixture disables PCH and IPO. It does not execute
-optional wait instructions or measure wait latency.
+optional wait instructions or measure wait latency. `common-archive.txt`
+records the common archive path for disassembly; `wait-codegen-object.txt`
+records the separate optional-instruction probe object.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
 ## Baseline profile admission
 
-Import `simd.cpuid` and consume `simd::common` for baseline module metadata.
-Installed runtime callers also link `simd::simd`, which owns the compiled
-observer and raw CPUID definitions; linking the archive does not import its
-omnibus module or inherit profile flags. Pure constexpr classification needs
-only the baseline module. No ISA module import or profile selection is needed. `observe_x86_capabilities()`
+Import `simd.cpuid` and link `simd::common` for baseline module metadata and
+the common archive's compiled observer and raw CPUID definitions. This is the
+same target in build-tree and installed consumers. No aggregate target, ISA
+module import or profile selection is needed. `observe_x86_capabilities()`
 checks leaf ranges and only reads XCR0 after both XSAVE and OSXSAVE are present.
 `classify_x86_profile(snapshot, x86_profile::avx2)` (or `avx512`) is constexpr,
 performs no hardware queries, and returns missing CPUID/XCR0 masks plus a stable
@@ -64,10 +66,11 @@ for affinity or a suitable common capability set on heterogeneous systems.
 
 `admission.cc` independently removes every required CPU/state bit, checks
 unavailable-leaf snapshots, unread state, invalid profiles, and CPU/OS reasons.
-It is a baseline-only module consumer with compile-time ISA-leak guards, linked
-only to the build-tree `simd::common` object provider; both the standalone
-fixture and ordinary x86 CTest suite run it. The `tests/cpuid_package` fixture
-reuses the same caller against an installed/relocated package, linking
-`simd::common` metadata and `simd::simd` runtime definitions without selecting a
-profile. Its compilation guards and exported compile commands check that this
-baseline consumer inherits no AVX/FMA/BMI2/POPCNT flags. No test enters a native SIMD kernel based on a synthetic snapshot.
+It is a configured-minimum module consumer with compile-time ISA guards, linked
+only to the build-tree `simd::common` archive; both the standalone fixture and
+ordinary x86 CTest suite run it. The `tests/cpuid_package` fixture reuses the
+same caller against an installed/relocated package and links only
+`simd::common`, proving its runtime definitions are independently usable. Its compilation guards and exported compile commands check that this
+common consumer inherits no AVX-512 flags unless `SIMD_MINIMAL_HAS_AVX512`
+reports them in the configured minimum. The executable already requires that
+minimum; an admission query cannot make it safe on weaker hardware. No test enters a native SIMD kernel based on a synthetic snapshot.

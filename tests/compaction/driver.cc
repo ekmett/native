@@ -4,8 +4,8 @@
 #if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
 import simd.cpuid;
 #endif
-#if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(__FMA__) || defined(__BMI2__)
-#error The compaction admission driver must remain baseline
+#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#error Common consumer must not inherit AVX-512 ISA flags
 #endif
 int compaction_entry(int,char **);
 int main(int argc,char ** argv) {

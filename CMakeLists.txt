@@ -4,11 +4,13 @@
 
 cmake_minimum_required(VERSION 4.4)
 project(simd VERSION 0.0.1 LANGUAGES NONE)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(SIMD_BUILD_HOST "Build the C++26 SIMD/module library" ON)
 option(SIMD_BUILD_TESTS "Build focused new-core tests" ${PROJECT_IS_TOP_LEVEL})
 option(SIMD_BUILD_DOCS "Build API documentation (requires Doxygen)" OFF)
-option(SIMD_ENABLE_PCH "Precompile common host headers" OFF)
+# Retained as a compatibility setting; single-module providers build BMIs directly.
+option(SIMD_ENABLE_PCH "Compatibility setting (module providers do not use PCH)" OFF)
 option(SIMD_ENABLE_EXCEPTIONS "Enable C++ exceptions in the new core and its consumers" OFF)
 option(SIMD_ENABLE_IPO "Enable supported host interprocedural optimization" OFF)
 option(SIMD_ENABLE_ASAN "Instrument host targets with AddressSanitizer" OFF)

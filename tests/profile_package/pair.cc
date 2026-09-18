@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+import simd.static_string;
+using namespace simd;
+static_assert("abi"_ss.size() == 3);
 #if PROFILE_AVX2
 import simd.avx2;
 using V=simd::vec<float,8,simd::avx2>;

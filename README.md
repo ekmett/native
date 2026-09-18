@@ -68,7 +68,7 @@ structured-binding packs and the Clang property extension used by swizzles.
 
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON
+  -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_IPO=ON
 cmake --build build/core --parallel 2
 ctest --test-dir build/core --output-on-failure
 cmake --install build/core --prefix /path/to/simd
@@ -93,8 +93,9 @@ is `NEON`; use `simd::vec<float,4,simd::neon>` and select `NEON` on the consumer
 [The omnibus guide](docs/omnibus.md) explains this BMI constraint and the granular
 imports available to baseline dispatchers.
 
-The archive supplies compiled objects and omnibus module metadata. Common and
-profile targets remain available for granular imports. CMake rebuilds consumer
+Each ABI has its own static archive. `simd::simd` supplies omnibus module
+metadata and links the configured archives; minimal and profile targets remain
+available for granular imports. CMake rebuilds consumer
 BMIs from installed sources. `simd_target_profile` applies ISA flags only to its
 target.
 An application checks CPU and OS vector-state support before calling a native
@@ -120,3 +121,13 @@ individual source notices for retained upstream terms.
 
 Contributions and bug reports are welcome through [GitHub](https://github.com/ekmett/simd).
 Edward Kmett can also be reached as `ekmett` on Libera Chat and `@kmett` on Twitter/X.
+
+
+## Package baseline
+
+`simd::minimal` owns the common ABI. Project setup chooses
+`SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
+ARM. `simd::common` remains an alias. Linking minimal carries its configured
+requirements to consumers; stronger profile code lives in separate libraries.
+Admission checks may select a stronger implementation, but the process must
+already satisfy its configured minimum.

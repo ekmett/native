@@ -6,7 +6,7 @@ the system compiler. Configuration compiles the required language features.
 
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON
+  -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_IPO=ON
 cmake --build build/core --parallel 2
 ctest --test-dir build/core --output-on-failure
 cmake --install build/core --prefix /path/to/simd
@@ -14,7 +14,10 @@ cmake --install build/core --prefix /path/to/simd
 
 `SIMD_PROFILES` names the ISA modules to build. The default is `AVX2;AVX512` on
 x86 and `NEON` on arm64. `SIMD_TEST_ISA` chooses the test implementation; it does
-not choose a runtime backend. Keep ISA flags off global CMake variables.
+not choose a runtime backend. The default package minimum is AVX2/FMA/BMI2 on x86
+and NEON on ARM; project setup can change `SIMD_MINIMAL_COMPILE_OPTIONS`. Keep ISA flags off global CMake variables. Each single-module
+profile compiles directly to a BMI without a PCH; `SIMD_ENABLE_PCH` is retained
+only for compatibility with older build commands.
 `SIMD_ENABLE_EXCEPTIONS` defaults to OFF; consumer and producer runtime/STL modes
 must agree. `SIMD_ENABLE_ASAN` supports focused host-memory checks.
 
@@ -41,21 +44,24 @@ using V = simd::vec<float, 8, simd::avx2>;
 using M = V::mask;
 ```
 
-`simd::simd` supplies compiled objects and the omnibus module metadata.
-`simd::common` and individual profile targets remain available for granular
-imports. CMake rebuilds compatible BMIs from installed source.
-Installed PCMs would bind the package to one compiler configuration, so the
-package distributes module source instead. A baseline dispatcher links
-the archive and common modules without ISA compile flags, then invokes separately
-compiled native entries after CPUID/OS vector-state checks.
+`simd::minimal` owns the baseline archive and common modules. Project setup
+selects `SIMD_MINIMAL_COMPILE_OPTIONS` (a CMake list in native compiler spelling);
+the defaults are AVX2/FMA/BMI2 on x86 and the platform NEON baseline on ARM.
+`simd::common` is a compatibility alias to `simd::minimal`, with no second BMI. Each profile
+(`simd::avx2`, `simd::avx512`, `simd::neon`) owns its own archive and module,
+and depends on common. `simd::simd` provides the omnibus and transitively links
+the configured archives. Granular consumers can link only their provider.
 
-For the default x86 package, the omnibus imports both native profiles, so its
-consumer explicitly selects `AVX512`. An AVX2-only omnibus requires a package
-built with `-DSIMD_PROFILES=AVX2`; its consumer selects `AVX2`. AArch64 packages
-default to `NEON`, and their consumers select `NEON`. A combined x86 package also
-supports a narrower translation unit using `import simd.avx2;` with the AVX2
-provider and flags. See [the omnibus guide](../docs/omnibus.md) for the observed
-CMake 4.4.3 dependency-BMI restriction and installed-consumer checks.
+The installed package distributes module sources, not compiler-specific PCMs.
+CMake builds a local BMI for each compatible compiler configuration. Profile
+source options keep AVX-512 implementation flags off the common provider;
+AVX2 and AVX-512 consumers share its baseline BMI. Use `simd_target_profile`
+to select the consumer's code-generation profile. Exception/STL modes must
+still match; this does not disable compiler module validation.
+
+The profile helper keeps implementation ISA flags local to the target, including
+its generated PCH if a consumer uses one. Module sources retain their provider's
+ISA when CMake regenerates a BMI; imported dependencies retain the minimal ABI.
 
 ## Headers and downstream libraries
 
@@ -78,9 +84,10 @@ compiler. FTZ's shader wrapper and mathematical contract belong to its own
 
 ## PCH and LTO
 
-PCHs belong to individual producers. Namespace, ISA, compiler/STL, exception
-settings and macros must match the consuming translation unit. The library
-build never exports its PCH to an application.
+The single-module profile providers compile directly without PCHs. Consumer-
+owned PCHs remain supported with IPO; their namespace, ISA, compiler/STL,
+exception settings and macros must match the consuming translation unit.
+The package does not export a PCH.
 
 A consumer may build its own PCH with the standard headers and
 `<simd/attributes.h>`. Use ordinary native objects at the baseline dispatch
@@ -99,7 +106,8 @@ separate `actions/cache` step.
 
 For an opt-in local disk cache, install sccache separately, put it on `PATH`, and
 add `-DCMAKE_CXX_COMPILER_LAUNCHER=sccache` to the producer configure command.
-Keep PCH and IPO enabled. This launcher is a build-tree setting; installed
+IPO remains supported; the single-module providers do not use PCHs. This
+launcher is a build-tree setting; installed
 packages neither require sccache nor select a consumer's launcher. Configure
 without that argument for an uncached new tree, or set
 `-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear an existing tree's launcher.
@@ -142,7 +150,8 @@ Windows retains direct sccache; clang-cl's PCH and forwarded module flags remain
 [unsupported](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/msvc.rs).
 Some CMake-synthesized BMI commands do not use a compiler launcher at all.
 Dependency scanning and linking still execute, and cache misses still compile
-normally. PCH, module generation and compiler settings remain unchanged.
+normally. The launcher does not change module generation or compiler settings;
+its PCH handling applies when a consumer or cache regression fixture uses one.
 
 Every CI job records `sccache --show-adv-stats`, JSON statistics and the cache
 version in its logs artifact, including after a failed build when setup succeeded.
@@ -165,7 +174,8 @@ are available. Keep the compiler resource directory, standard-library headers
 and linker consistent with that installation. `CMAKE_PREFIX_PATH` points to
 installed library packages, not to a producer's build directory.
 
-The CI workflow configures Ninja directly, builds with PCH and IPO, runs CTest,
+The CI workflow configures Ninja directly, builds the providers with IPO and
+without PCHs, exercises consumer-owned PCHs in relocated fixtures, runs CTest,
 and checks installation. It selects AVX2 tests on Linux and Windows x86-64 runners and NEON
 on Linux, macOS and Windows ARM64 runners; the x86 archives also build the AVX-512 module. The
 baseline profile tests check CPU and OS support before entering AVX-512 code.
@@ -222,3 +232,8 @@ python doc/test_module_anchors.py
 python doc/test_links.py
 python doc/check_links.py build/docs/docs/html
 ```
+
+The minimal target exports `SIMD_MINIMAL_HAS_AVX2` and
+`SIMD_MINIMAL_HAS_AVX512` as 0/1 compile definitions from feature probes using
+the selected options. Admission tests can distinguish the intentional project
+minimum from accidental propagation of a stronger profile.

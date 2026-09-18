@@ -5,8 +5,8 @@
 #if !TEST_NEON
 import simd.cpuid;
 #endif
-#if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(__FMA__)
-#error The baseline dispatcher inherited native ISA options
+#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#error Common consumer must not inherit AVX-512 ISA flags
 #endif
 extern "C" int omnibus_kernel(float const *,float *);
 extern "C" void granular_kernel(float const *,float *);

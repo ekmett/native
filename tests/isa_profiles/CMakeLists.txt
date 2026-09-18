@@ -56,3 +56,11 @@ endforeach()
 target_include_directories(simd_test_profiles PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../core_regression")
 add_test(NAME simd.profiles.capture COMMAND simd_test_profiles all "${CMAKE_CURRENT_BINARY_DIR}/profiles.bin")
 set_tests_properties(simd.profiles.capture PROPERTIES SKIP_RETURN_CODE 77 LABELS "host;modules;profiles;exact" TIMEOUT 180)
+
+if(CMAKE_GENERATOR STREQUAL "Ninja")
+  add_test(NAME simd.profiles.shared_bmi COMMAND "${CMAKE_COMMAND}"
+    "-DBUILD_DIR=${PROJECT_BINARY_DIR}/src"
+    "-DNINJA_FILE=${PROJECT_BINARY_DIR}/build.ninja"
+    -P "${PROJECT_SOURCE_DIR}/tests/profile_package/check_bmi.cmake")
+  set_tests_properties(simd.profiles.shared_bmi PROPERTIES LABELS "host;modules;profiles")
+endif()
