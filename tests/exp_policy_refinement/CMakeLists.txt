@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+cmake_minimum_required(VERSION 4.4)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(simd_exp_policy_refinement LANGUAGES CXX)
+  find_package(simd CONFIG REQUIRED COMPONENTS simd headers)
+  enable_testing()
+endif()
+add_executable(simd_test_exp_refinement_metadata metadata.cc)
+target_link_libraries(simd_test_exp_refinement_metadata PRIVATE simd::headers)
+target_compile_features(simd_test_exp_refinement_metadata PRIVATE cxx_std_20)
+set_target_properties(simd_test_exp_refinement_metadata PROPERTIES CXX_STANDARD 20)
+if(COMMAND simd_link_clang_cl_asan)
+  simd_link_clang_cl_asan(simd_test_exp_refinement_metadata)
+endif()
+add_test(NAME simd.exp_refinement.metadata COMMAND simd_test_exp_refinement_metadata)
+set_tests_properties(simd.exp_refinement.metadata PROPERTIES LABELS "host;exp_refinement")
+
+# First native prototype covers x86's current raw-exp and wide-result families.
+# Metadata above remains host-independent; no ARM code generation is claimed.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  get_filename_component(exp_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+  find_program(exp_objdump NAMES llvm-objdump HINTS "${exp_compiler_dir}" REQUIRED)
+  add_library(simd_exp_refinement_native OBJECT native.cc)
+  target_link_libraries(simd_exp_refinement_native PRIVATE simd::simd)
+  set_target_properties(simd_exp_refinement_native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_executable(simd_test_exp_refinement_native $<TARGET_OBJECTS:simd_exp_refinement_native>)
+  target_link_libraries(simd_test_exp_refinement_native PRIVATE simd::simd)
+  set_target_properties(simd_test_exp_refinement_native PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_exp_refinement_native)
+  endif()
+  add_test(NAME simd.exp_refinement.native COMMAND simd_test_exp_refinement_native)
+  set_tests_properties(simd.exp_refinement.native PROPERTIES SKIP_RETURN_CODE 77 LABELS "host;exp_refinement" TIMEOUT 120)
+  add_test(NAME simd.exp_refinement.codegen COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py" --objdump "${exp_objdump}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/exp-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:simd_exp_refinement_native> COMMAND_EXPAND_LISTS)
+  set_tests_properties(simd.exp_refinement.codegen PROPERTIES LABELS "host;exp_refinement" TIMEOUT 120)
+endif()
