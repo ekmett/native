@@ -2,6 +2,7 @@ name: C++26 modules
 
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -12,6 +13,10 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -20,6 +25,18 @@ jobs:
             runner: ubuntu-24.04
             profile: AVX2
             profiles: AVX2;AVX512
+          - name: Windows x64 LLVM 23 / AVX2
+            runner: windows-2025
+            profile: AVX2
+            profiles: AVX2;AVX512
+          - name: Windows ARM64 LLVM 23 / NEON
+            runner: windows-11-arm
+            profile: NEON
+            profiles: NEON
+          - name: Linux ARM64 LLVM 23 / NEON
+            runner: ubuntu-24.04-arm
+            profile: NEON
+            profiles: NEON
           - name: macOS LLVM 23 / NEON
             runner: macos-15
             profile: NEON
@@ -48,15 +65,98 @@ jobs:
         if: runner.os == 'macOS'
       - uses: ./.github/actions/setup/macos/build-tools
         if: runner.os == 'macOS'
+      - uses: ./.github/actions/setup/windows
+        if: runner.os == 'Windows'
+      - name: Record Windows hardware and admit the test architecture
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TEST_PROFILE: ${{ matrix.profile }}
+        run: |
+          New-Item -ItemType Directory -Force build | Out-Null
+          & {
+            git rev-parse HEAD
+            Get-CimInstance Win32_Processor | Format-List Name, Manufacturer, Architecture, NumberOfCores
+            Get-CimInstance Win32_OperatingSystem | Format-List Caption, Version, OSArchitecture
+            clang-cl --version
+            clang-scan-deps --version
+            cmake --version
+            ninja --version
+            "AVX2=$([System.Runtime.Intrinsics.X86.Avx2]::IsSupported)"
+            "FMA=$([System.Runtime.Intrinsics.X86.Fma]::IsSupported)"
+            "BMI2=$([System.Runtime.Intrinsics.X86.Bmi2]::IsSupported)"
+            "NEON=$([System.Runtime.Intrinsics.Arm.AdvSimd]::IsSupported)"
+          } | Tee-Object build/environment.log
+          if ($env:TEST_PROFILE -eq 'AVX2') {
+            if ($env:RUNNER_ARCH -ne 'X64' -or
+                -not [System.Runtime.Intrinsics.X86.Avx2]::IsSupported -or
+                -not [System.Runtime.Intrinsics.X86.Fma]::IsSupported -or
+                -not [System.Runtime.Intrinsics.X86.Bmi2]::IsSupported) {
+              throw 'AVX2 tests require native x64 with AVX2, FMA and BMI2.'
+            }
+          } elseif ($env:RUNNER_ARCH -ne 'ARM64' -or
+                    -not [System.Runtime.Intrinsics.Arm.AdvSimd]::IsSupported) {
+            throw 'NEON tests require native ARM64 with Advanced SIMD.'
+          }
+          "Native Windows CPU tests: $env:RUNNER_ARCH / $env:TEST_PROFILE. AVX-512 execution depends on the test's CPU and OS checks." >> $env:GITHUB_STEP_SUMMARY
+      - name: Record hardware and admit the test architecture
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TEST_PROFILE: ${{ matrix.profile }}
+        run: |
+          mkdir -p build
+          {
+            git rev-parse HEAD
+            uname -a
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              lscpu
+              cat /proc/cpuinfo
+            else
+              sysctl hw.model hw.machine hw.ncpu
+              sysctl -a | grep -E '^machdep.cpu.|^hw.optional.' || true
+            fi
+            clang++ --version
+            clang-scan-deps --version
+            cmake --version
+            ninja --version
+          } | tee build/environment.log
+          if [[ "$TEST_PROFILE" == NEON ]]; then
+            case "$(uname -m)" in
+              arm64|aarch64) ;;
+              *) echo '::error::NEON tests require a native ARM64 runner.'; exit 1 ;;
+            esac
+          else
+            [[ "$(uname -m)" == x86_64 ]] || {
+              echo '::error::AVX2 tests require a native x86-64 runner.'; exit 1;
+            }
+            if [[ "$RUNNER_OS" == Linux ]]; then
+              flags=$(cat /proc/cpuinfo)
+            else
+              flags=$(sysctl -n machdep.cpu.features machdep.cpu.leaf7_features)
+            fi
+            for feature in avx2 fma bmi2; do
+              grep -qiw "$feature" <<< "$flags" || {
+                echo "::error::This test profile requires $feature on the runner."
+                exit 1
+              }
+            done
+          fi
+          echo "Native CPU package tests: $RUNNER_OS / $(uname -m) / $TEST_PROFILE. AVX-512 compilation is not proof of AVX-512 execution; profile tests report unsupported hardware as skipped." >> "$GITHUB_STEP_SUMMARY"
       - name: Configure modules
         shell: bash
         run: |
+          compiler=clang++
           extra=()
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            compiler=clang-cl
+            extra+=(-DCMAKE_LINKER_TYPE=LLD)
+          fi
           if [[ "${RUNNER_OS}" == Linux ]]; then
             extra+=(-DCMAKE_LINKER_TYPE=LLD)
           fi
           cmake -S . -B build/core -G Ninja \
-            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
             -DSIMD_TEST_ISA="${{ matrix.profile }}" \
             '-DSIMD_PROFILES=${{ matrix.profiles }}' "${extra[@]}"
@@ -65,24 +165,21 @@ jobs:
       - name: Test
         shell: bash
         run: |
-          if [[ "${RUNNER_OS}" == Linux ]]; then
-            for feature in avx2 fma bmi2; do
-              grep -qw "${feature}" /proc/cpuinfo || {
-                echo "::error::This test profile requires ${feature} on the runner."
-                exit 1
-              }
-            done
-          fi
-          ctest --test-dir build/core --output-on-failure
+          ctest --test-dir build/core --show-only=json-v1 > build/tests.json
+          ctest --test-dir build/core --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
       - name: Install
         run: cmake --install build/core --prefix build/install
       - name: Retain configure and test logs
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: logs-${{ matrix.profile }}
+          name: logs-${{ matrix.runner }}-${{ matrix.profile }}
           if-no-files-found: ignore
           path: |
+            build/environment.log
+            build/tests.json
+            build/tests.xml
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/

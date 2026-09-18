@@ -1,0 +1,90 @@
+# SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+name: Install Windows LLVM module toolchain
+description: Set up native LLVM 23.1.1, MSVC SDK environment, CMake 4.4.3 and Ninja 1.13.2.
+runs:
+  using: composite
+  steps:
+    - name: Select native MSVC SDK environment
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $arch = switch ($env:RUNNER_ARCH) {
+          'X64' { 'x64' }
+          'ARM64' { 'arm64' }
+          default { throw "Unsupported Windows runner architecture: $env:RUNNER_ARCH" }
+        }
+        $before = @{}
+        Get-ChildItem Env: | ForEach-Object { $before[$_.Name] = $_.Value }
+        $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer/vswhere.exe'
+        $vs = & $vswhere -latest -products '*' -property installationPath
+        if ($LASTEXITCODE -ne 0 -or -not $vs) { throw 'Visual Studio installation not found.' }
+        Import-Module (Join-Path $vs 'Common7/Tools/Microsoft.VisualStudio.DevShell.dll')
+        Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments "-arch=$arch -host_arch=$arch"
+        if ($env:VSCMD_ARG_TGT_ARCH -ne $arch -or -not $env:INCLUDE -or -not $env:LIB) {
+          throw "MSVC SDK environment did not initialize for $arch."
+        }
+        Get-ChildItem Env: | Where-Object {
+          $_.Name -ne 'Path' -and $before[$_.Name] -ne $_.Value
+        } | ForEach-Object {
+          if ($_.Value -match "[\r\n]") { throw "Unexpected multiline environment variable: $($_.Name)" }
+          "$($_.Name)=$($_.Value)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+        }
+        $env:Path -split ';' | Where-Object { $_ } |
+          Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        Write-Host "Visual Studio: $vs; native target: $arch"
+        Write-Host "VCToolsVersion=$env:VCToolsVersion; WindowsSDKVersion=$env:WindowsSDKVersion"
+    - name: Install checksum-pinned native build tools
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        if ($env:RUNNER_ARCH -eq 'ARM64') {
+          $llvmName = 'clang+llvm-23.1.1-aarch64-pc-windows-msvc'
+          $llvmHash = 'c8cd61f6624accf0d0f9f4519ddcc97745c6a865205bb43f364b6aaf9c50a31e'
+          $cmakeName = 'cmake-4.4.3-windows-arm64'
+          $cmakeHash = '7b410ddd00e24c7250eec7452da2348a4a70437aa87e9cda0a20d6a85662fcff'
+          $ninjaName = 'ninja-winarm64'
+          $ninjaHash = 'e52f0bdef9dfb1003229dbd6508a508c4073fd017247002adc66e5e806cb0391'
+        } else {
+          $llvmName = 'clang+llvm-23.1.1-x86_64-pc-windows-msvc'
+          $llvmHash = 'c54ac8146b420fe72e11e6fdd56498d6818011ad23267196b6ab37b5ac9264c3'
+          $cmakeName = 'cmake-4.4.3-windows-x86_64'
+          $cmakeHash = '4d52ebab7193a698651639ed80d8d04fd903358843572cf44c7fd234cb7c26ab'
+          $ninjaName = 'ninja-win'
+          $ninjaHash = '07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78dc65'
+        }
+        $tools = Join-Path $env:RUNNER_TEMP 'simd-windows-tools'
+        New-Item -ItemType Directory -Force -Path $tools | Out-Null
+        function Get-VerifiedArchive($url, $file, $expected) {
+          Write-Host "Downloading $url"
+          Invoke-WebRequest -Uri $url -OutFile $file
+          $actual = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actual -ne $expected) { throw "SHA256 mismatch for $file`: $actual" }
+          Write-Host "Verified SHA256 $actual"
+        }
+        $llvmArchive = Join-Path $tools 'llvm.tar.xz'
+        Get-VerifiedArchive "https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.1/$llvmName.tar.xz" $llvmArchive $llvmHash
+        tar -xf $llvmArchive -C $tools
+        if ($LASTEXITCODE -ne 0) { throw 'LLVM extraction failed.' }
+        $cmakeArchive = Join-Path $tools 'cmake.zip'
+        Get-VerifiedArchive "https://github.com/Kitware/CMake/releases/download/v4.4.3/$cmakeName.zip" $cmakeArchive $cmakeHash
+        Expand-Archive -LiteralPath $cmakeArchive -DestinationPath $tools -Force
+        $ninjaArchive = Join-Path $tools 'ninja.zip'
+        Get-VerifiedArchive "https://github.com/ninja-build/ninja/releases/download/v1.13.2/$ninjaName.zip" $ninjaArchive $ninjaHash
+        $ninjaBin = Join-Path $tools 'ninja'
+        Expand-Archive -LiteralPath $ninjaArchive -DestinationPath $ninjaBin -Force
+        $llvmBin = Join-Path $tools "$llvmName/bin"
+        $cmakeBin = Join-Path $tools "$cmakeName/bin"
+        foreach ($program in @('clang-cl.exe', 'clang-scan-deps.exe', 'lld-link.exe', 'llvm-lib.exe')) {
+          if (-not (Test-Path -LiteralPath (Join-Path $llvmBin $program))) { throw "Missing LLVM tool: $program" }
+        }
+        @($llvmBin, $cmakeBin, $ninjaBin) |
+          Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        foreach ($program in @('clang-cl.exe', 'clang-scan-deps.exe', 'lld-link.exe')) {
+          & (Join-Path $llvmBin $program) --version
+          if ($LASTEXITCODE -ne 0) { throw "Tool qualification failed: $program" }
+        }
+        & (Join-Path $cmakeBin 'cmake.exe') --version
+        if ($LASTEXITCODE -ne 0) { throw 'CMake qualification failed.' }
+        & (Join-Path $ninjaBin 'ninja.exe') --version
+        if ($LASTEXITCODE -ne 0) { throw 'Ninja qualification failed.' }
