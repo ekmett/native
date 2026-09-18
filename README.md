@@ -111,8 +111,9 @@ For `import simd;`, use `simd_target_omnibus(target)` to enable the installed
 package's exact feature union, and admit every included optional profile.
 
 Add `AVX512_BF16` to `SIMD_PROFILES` to opt into native BF16 pairwise dot
-products. Its distinct `avx512_bf16` tag adds `vec<bf16,32,avx512_bf16>` storage
-and `dot2(a,b,accumulator)` with an FP32 accumulator/result of 16 lanes. Compile
+products. Its distinct `avx512_bf16` tag adds `vec<bf16,N,avx512_bf16>` storage
+for N = 8, 16, or 32 and `dot2(a,b,accumulator)` with an FP32 accumulator/result
+of N/2 lanes. Compile
 that consumer with `simd_target_profile(target AVX512_BF16)` and admit
 `x86_profile::avx512_bf16` before entering it. The configured omnibus then also
 requires that compilation profile. Default profiles and scalar half conversions
