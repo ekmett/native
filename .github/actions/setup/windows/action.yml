@@ -92,7 +92,7 @@ runs:
         if ($LASTEXITCODE -ne 0) { throw 'CMake qualification failed.' }
         & (Join-Path $ninjaBin 'ninja.exe') --version
         if ($LASTEXITCODE -ne 0) { throw 'Ninja qualification failed.' }
-        $bash = (Get-Command bash.exe -CommandType Application).Source
+        $bash = (Get-Command bash.exe -CommandType Application | Select-Object -First 1).Source
         Write-Host "Bash: $bash"
         & $bash --noprofile --norc -c 'test -n "$BASH_VERSION"'
         if ($LASTEXITCODE -ne 0) { throw 'Git Bash qualification failed.' }
