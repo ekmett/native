@@ -1,10 +1,12 @@
 // Intrinsic calls are owned by the global module fragment.
 #pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"))), apply_to=function)
 namespace simd::detail::avx512_fp16_backend {
-  simd_inline __m512h add_half(__m512h a, __m512h b) noexcept { return _mm512_add_ph(a,b); }
-  simd_inline __m512h sub_half(__m512h a, __m512h b) noexcept { return _mm512_sub_ph(a,b); }
-  simd_inline __m512h mul_half(__m512h a, __m512h b) noexcept { return _mm512_mul_ph(a,b); }
-  simd_inline __m512h div_half(__m512h a, __m512h b) noexcept { return _mm512_div_ph(a,b); }
+  // Explicit native builtins avoid TU-level excess-precision widening when the
+  // provider is compiled below AVX512-FP16. MXCSR still supplies rounding.
+  simd_inline __m512h add_half(__m512h a, __m512h b) noexcept { return _mm512_add_round_ph(a,b,_MM_FROUND_CUR_DIRECTION); }
+  simd_inline __m512h sub_half(__m512h a, __m512h b) noexcept { return _mm512_sub_round_ph(a,b,_MM_FROUND_CUR_DIRECTION); }
+  simd_inline __m512h mul_half(__m512h a, __m512h b) noexcept { return _mm512_mul_round_ph(a,b,_MM_FROUND_CUR_DIRECTION); }
+  simd_inline __m512h div_half(__m512h a, __m512h b) noexcept { return _mm512_div_round_ph(a,b,_MM_FROUND_CUR_DIRECTION); }
   simd_inline __m512h sqrt_half(__m512h a) noexcept { return _mm512_sqrt_ph(a); }
   simd_inline __m512h neg_half(__m512h a) noexcept {
     return _mm512_castsi512_ph(_mm512_xor_si512(_mm512_castph_si512(a),_mm512_set1_epi16(short(0x8000))));
