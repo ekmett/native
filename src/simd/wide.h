@@ -425,4 +425,3 @@ namespace std {
   template<size_t I, class T, size_t N>
   struct tuple_element<I, simd::wide<T, N>> : tuple_element<I, array<T, N>> {};
 }
-
