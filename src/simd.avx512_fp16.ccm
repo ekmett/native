@@ -13,6 +13,8 @@ namespace simd::detail::avx512_fp16_backend {
   simd_inline __m512h add_half(__m512h a, __m512h b) noexcept { return _mm512_add_ph(a,b); }
   simd_inline __m512h sub_half(__m512h a, __m512h b) noexcept { return _mm512_sub_ph(a,b); }
   simd_inline __m512h mul_half(__m512h a, __m512h b) noexcept { return _mm512_mul_ph(a,b); }
+  simd_inline __m512h div_half(__m512h a, __m512h b) noexcept { return _mm512_div_ph(a,b); }
+  simd_inline __m512h sqrt_half(__m512h a) noexcept { return _mm512_sqrt_ph(a); }
   simd_inline __m512h neg_half(__m512h a) noexcept {
     return _mm512_castsi512_ph(_mm512_xor_si512(_mm512_castph_si512(a),_mm512_set1_epi16(short(0x8000))));
   }
@@ -32,13 +34,13 @@ export import simd.numerics;
 export namespace simd {
   /// \ingroup vectors
   /// One 512-bit register of FP16 representations. Loads, stores and bit bridges
-  /// preserve every encoding. Native addition, subtraction, multiplication and
-  /// fused multiply-add round directly to half precision under the caller's MXCSR rounding control.
+  /// preserve every encoding. Native addition, subtraction, multiplication, division,
+  /// square root and fused multiply-add round directly to half precision under the caller's MXCSR rounding control.
   /// Half operands/results use gradual underflow regardless of MXCSR.DAZ/FTZ.
   /// MXCSR rounding and exception controls apply; status flags may change.
   /// No operation changes MXCSR control bits. NaN payload/sign propagation follows
   /// the instruction, not a portable promise. Scalar fp16 conversions are unchanged.
-  /// Only the 32-lane shape is provided; division and square root are absent.
+  /// Only the 32-lane shape is provided.
   /// Import simd.avx512_fp16 and compile its users for the AVX512_FP16 profile.
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
@@ -164,6 +166,17 @@ export namespace simd {
     /// Multiply corresponding half lanes, rounding directly under the caller's MXCSR rounding control.
     simd_nodiscard friend simd_inline vec operator*(vec a,vec b) noexcept {
       return from_native(detail::avx512_fp16_backend::mul_half(a.value_,b.value_));
+    }
+    /// Divide corresponding half lanes with native half-precision rounding.
+    /// The caller's MXCSR rounding control and native exception behavior apply.
+    simd_nodiscard friend simd_inline vec operator/(vec a,vec b) noexcept {
+      return from_native(detail::avx512_fp16_backend::div_half(a.value_,b.value_));
+    }
+    /// Compute each half lane's square root with native half-precision rounding.
+    /// Signed zero is preserved; negative nonzero operands produce a quiet NaN.
+    /// The caller's MXCSR rounding control and native exception behavior apply.
+    simd_nodiscard friend simd_inline vec sqrt(vec a) noexcept {
+      return from_native(detail::avx512_fp16_backend::sqrt_half(a.value_));
     }
     /// Toggle every sign bit, preserving all payload bits without arithmetic exceptions.
     simd_nodiscard friend simd_inline vec operator-(vec a) noexcept {

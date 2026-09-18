@@ -12,3 +12,5 @@ static_assert(std::same_as<decltype(simd::dot2(B{},B{},simd::vec<float,16,simd::
 #endif
 static_assert(std::same_as<decltype(simd::fma(H{},H{},H{})),H>);
 static_assert(std::same_as<decltype(H{}<H{}),H::mask>);
+static_assert(std::same_as<decltype(H{}/H{}),H> && noexcept(H{}/H{}));
+static_assert(std::same_as<decltype(sqrt(H{})),H> && noexcept(sqrt(H{})));

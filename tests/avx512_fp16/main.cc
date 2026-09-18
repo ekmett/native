@@ -7,6 +7,7 @@
 #include <xmmintrin.h>
 // Shared independent rational oracle: use only its gradual-underflow rows.
 #include "../neon_fp16/reference_cases.h"
+#include "../neon_fp16/sqrt_reference.h"
 import simd.cpuid;
 import simd.scalar;
 #if !SIMD_MINIMAL_HAS_AVX512_FP16 && defined(__AVX512FP16__)
@@ -19,6 +20,8 @@ extern "C" bool fp16_storage();
 extern "C" void fp16_add(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_sub(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_mul(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
+extern "C" void fp16_div(std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
+extern "C" void fp16_sqrt(std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_fma(std::uint16_t const *,std::uint16_t const *,std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_neg(std::uint16_t const *,std::uint16_t *) noexcept;
 extern "C" void fp16_compare(std::uint16_t const *,std::uint16_t const *,std::uint64_t *) noexcept;
@@ -31,7 +34,7 @@ namespace {
   bool nan(std::uint16_t bits) {return (bits&0x7c00)==0x7c00 && (bits&0x03ff)!=0;}
   bool contract() {
     environment saved;
-    std::array<std::uint16_t,32> a,b,c,out[4];
+    std::array<std::uint16_t,32> a,b,c,out[6];
     static_assert(neon_fp16_reference::case_count%32==0);
     // MXCSR order is RNE/RDN/RUP/RTZ; the independent table uses RNE/RUP/RDN/RTZ.
     constexpr unsigned reference_config[4]={0,4,2,6};
@@ -44,8 +47,9 @@ namespace {
         }
         fp16_add(a.data(),b.data(),out[0].data());fp16_sub(a.data(),b.data(),out[1].data());
         fp16_mul(a.data(),b.data(),out[2].data());fp16_fma(a.data(),b.data(),c.data(),out[3].data());
+        fp16_div(a.data(),b.data(),out[4].data());fp16_sqrt(a.data(),out[5].data());
         if((_mm_getcsr()&~63u)!=control) {std::puts("Arithmetic changed MXCSR control bits");return false;}
-        for(unsigned i=0;i!=32;++i) for(unsigned op=0;op!=4;++op) {
+        for(unsigned i=0;i!=32;++i) for(unsigned op=0;op!=6;++op) {
           auto expected=neon_fp16_reference::cases[first+i].expected[reference_config[rounding]][op];
           bool correct=nan(expected) ? nan(out[op][i]) && (out[op][i]&0x0200) : out[op][i]==expected;
           if(!correct) {
@@ -54,11 +58,37 @@ namespace {
           }
         }
       }
+      for(unsigned first=0;first!=65536;first+=32) {
+        for(unsigned i=0;i!=32;++i) a[i]=std::uint16_t(first+i);
+        fp16_sqrt(a.data(),out[0].data());
+        for(unsigned i=0;i!=32;++i) {
+          auto expected=neon_fp16_reference::sqrt_expected(a[i],reference_config[rounding]);
+          bool correct=nan(expected) ? nan(out[0][i]) && (out[0][i]&0x0200) : out[0][i]==expected;
+          if(!correct) {
+            std::printf("sqrt %04x RC %u DAZ/FTZ %u: %04x expected %04x\n",a[i],rounding,denormal,out[0][i],expected);
+            return false;
+          }
+        }
+      }
+      if((_mm_getcsr()&~63u)!=control) {std::puts("Square root changed MXCSR control bits");return false;}
     }
     _mm_setcsr(0x1f80);
     a.fill(0x7c01);b.fill(0x3c00);
     fp16_add(a.data(),b.data(),out[0].data());
     if(!(_mm_getcsr()&1)) {std::puts("Signaling NaN did not update MXCSR invalid status");return false;}
+    a.fill(0x3c00);b.fill(0);_mm_setcsr(0x1f80);
+    fp16_div(a.data(),b.data(),out[0].data());
+    if(_mm_getcsr()!=0x1f84) {std::puts("Division by zero did not set only MXCSR divide-by-zero status");return false;}
+    a.fill(0);_mm_setcsr(0x1f80);fp16_div(a.data(),b.data(),out[0].data());
+    if(_mm_getcsr()!=0x1f81) {std::puts("Zero divided by zero did not set only MXCSR invalid status");return false;}
+    a.fill(0xbc00);_mm_setcsr(0x1f80);fp16_sqrt(a.data(),out[0].data());
+    if(_mm_getcsr()!=0x1f81) {std::puts("Negative square root did not set only MXCSR invalid status");return false;}
+    a.fill(0x4400);_mm_setcsr(0x1f80);fp16_sqrt(a.data(),out[0].data());
+    if(_mm_getcsr()!=0x1f80) {std::puts("Exact square root raised an exception");return false;}
+    a.fill(0x4000);_mm_setcsr(0x1f80);fp16_sqrt(a.data(),out[0].data());
+    if(_mm_getcsr()!=0x1fa0) {std::puts("Inexact square root did not set only MXCSR precision status");return false;}
+    a.fill(0x3c00);b.fill(0x4200);_mm_setcsr(0x1f80);fp16_div(a.data(),b.data(),out[0].data());
+    if(_mm_getcsr()!=0x1fa0) {std::puts("Inexact division did not set only MXCSR precision status");return false;}
     return true;
   }
   bool masks() {
@@ -108,5 +138,5 @@ int main(int argc,char **argv) {
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;
   if(!masks()) {std::puts("FP16 mask/selection failure");return 6;}
-  std::puts("FP16: 65536 storage encodings, guarded tails, 131072 arithmetic results across 16 MXCSR states, 4108 masks");
+  std::printf("FP16: 65536 storage encodings, guarded tails, %zu arithmetic results, 1048576 exhaustive sqrt results across 16 MXCSR states, 4108 masks\n",neon_fp16_reference::case_count*6*16);
 }

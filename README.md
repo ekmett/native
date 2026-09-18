@@ -99,6 +99,7 @@ imports available to baseline dispatchers.
 
 Add `NEON_FP16` to the ARM `SIMD_PROFILES` list to opt into native half arithmetic.
 Its `vec<fp16,8,neon_fp16>` follows the caller's FPCR and uses full-lane masks.
+Native arithmetic includes division and `sqrt(x)` through argument-dependent lookup.
 Compile optional kernels with `simd_target_profile(target NEON_FP16)` and admit
 `arm_profile::neon_fp16` through `simd.arm` before entry. An omnibus importing this
 profile also requires NEON_FP16 consumer flags. See the [native FP16 guide](tests/neon_fp16/README.md)
@@ -112,7 +113,8 @@ see the [BF16 guide](tests/neon_bf16/README.md). FP16 and BF16 are independent
 optional features; default profiles and scalar conversions remain unchanged.
 
 Add `AVX512_FP16` to `SIMD_PROFILES` for native half arithmetic with
-`vec<fp16,32,avx512_fp16>`. It follows MXCSR rounding and uses gradual half
+`vec<fp16,32,avx512_fp16>`, including division and `sqrt(x)` through
+argument-dependent lookup. It follows MXCSR rounding and uses gradual half
 underflow regardless of DAZ/FTZ. Compile granular kernels for `AVX512_FP16` and
 admit `x86_profile::avx512_fp16` before entry. See the [native AVX-512 half guide](tests/avx512_fp16/README.md).
 For `import simd;`, use `simd_target_omnibus(target)` to enable the installed
