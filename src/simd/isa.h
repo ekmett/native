@@ -19,9 +19,10 @@ namespace simd {
     pclmul, cx16, avx512cd, avx512ifma, lzcnt, movbe,
     sahf, arm_aes, arm_sha2, arm_sha3, arm_crc, arm_lse,
     arm_rdm, arm_fp16fml, arm_dotprod, arm_complxnum, arm_jsconv, arm_rcpc,
-    arm_pauth, invalid_features
+    arm_pauth,
+    invalid_features // Reserved admission failure marker, never a registered instruction.
   };
-  inline constexpr std::size_t feature_count=std::size_t(feature::arm_pauth)+1;
+  inline constexpr std::size_t feature_count=std::size_t(feature::invalid_features)+1;
 
   /// A structural instruction-feature set. Construction never adds prerequisites.
   struct isa {
@@ -175,9 +176,6 @@ namespace simd {
     constexpr bool get_arm_pauth() const noexcept { return get(feature::arm_pauth); }
     constexpr void set_arm_pauth(bool value) noexcept { set(feature::arm_pauth,value); }
     __declspec(property(get=get_arm_pauth,put=set_arm_pauth)) bool arm_pauth;
-    constexpr bool get_invalid_features() const noexcept { return get(feature::invalid_features); }
-    constexpr void set_invalid_features(bool value) noexcept { set(feature::invalid_features,value); }
-    __declspec(property(get=get_invalid_features,put=set_invalid_features)) bool invalid_features;
   };
 
   template<class T> concept arch=std::same_as<T,feature> || std::same_as<T,isa>;
@@ -200,7 +198,7 @@ namespace simd {
 
   /// First matching requirement, with every later choice checked for shadowing.
   template<arch auto A,arch auto... Choices>
-  inline constexpr int target=[] consteval {
+  inline constexpr int target=[]() consteval {
     constexpr std::array<isa,sizeof...(Choices)> choices{isa(Choices)...};
     static_assert([&] {
       for(std::size_t i=0;i<choices.size();++i)
@@ -286,11 +284,7 @@ namespace simd {
       return result;
     }();
     inline constexpr isa known_features=arm_features&x86_features;
-    inline constexpr isa invalid_features=[] {
-      isa result;
-      result.flags.back()=std::uint64_t{1}<<63;
-      return result;
-    }();
+    inline constexpr isa invalid_features=feature::invalid_features;
   }
 
   /// Explicit compiler-implied closure, shared by presets and admission.
@@ -456,7 +450,8 @@ namespace simd {
       abi_match<E,I>::required_features<=A,
       abi_match<E,I>,abi_lookup_impl<A,I+1,Rest...>> {};
   }
-  /// Internal value-list selection retaining compiler-minimum metadata.
+  /// Internal value-list selection retaining compiler-implied requirements.
+  /// Unlike target's exact set selection, this includes prerequisite closure.
   template<isa A,class List> struct abi_lookup;
   template<isa A,auto... Entries>
   struct abi_lookup<A,isa_list<Entries...>> : detail::abi_lookup_impl<A,0,Entries...> {};
