@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <simd/targets.h>
 #include <array>
+#include <bit>
 #include <cstdio>
 #include <utility>
 #if SIMD_TEST_IMPORT
@@ -49,9 +50,20 @@ import simd.arm;
       return copied.registers.empty() && moved.registers.empty(); \
     }; \
     using V=simd::vec<float,1,A>; \
+    auto positive=[]<std::size_t N>() { \
+      simd::wide<V,N> defaulted; \
+      simd::wide<V,N> valued{}; \
+      V original_default; \
+      V original_value{}; \
+      for(std::size_t i=0;i<N;++i) \
+        if(std::bit_cast<unsigned>(defaulted.registers[i].value)!=std::bit_cast<unsigned>(original_default.value) || \
+           std::bit_cast<unsigned>(valued.registers[i].value)!=std::bit_cast<unsigned>(original_value.value)) return false; \
+      return true; \
+    }; \
     simd::wide<V,0> input; \
     auto result=simd::exp(input); \
-    return result.registers.empty() && empty.template operator()<V>() && \
+    return positive.template operator()<1>() && positive.template operator()<3>() && \
+      result.registers.empty() && empty.template operator()<V>() && \
       empty.template operator()<simd::vec<float,2,A>>() && \
       empty.template operator()<simd::vec<float,3,A>>() && \
       empty.template operator()<simd::vec<float,4,A>>() && \

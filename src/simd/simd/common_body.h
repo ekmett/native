@@ -29,6 +29,7 @@ namespace detail {
     // This wrapper retains the conservative customization scope. An inherited
     // narrower member cannot remove the wrapper constructor's own requirements.
     using required_architecture = Arch;
+    using required_architecture_owner = vec;
     using mask = typename vec<typename simd_traits<T>::storage_type,N,Arch>::mask;
     using predicate_type = predicate<N,Arch>;
     template<class U> using rebind = vec<U,N,Arch>;

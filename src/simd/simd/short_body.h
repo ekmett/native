@@ -27,6 +27,7 @@ namespace simd {
     using value_type=T;
     using architecture=Arch;
     using required_architecture=SIMD_DEFAULT_ARCH;
+    using required_architecture_owner = vec;
     using storage_type=vec<T,4,Arch>;
     using native_type=SIMD_BACKEND_NAMESPACE::short_native<SIMD_BACKEND_NAMESPACE::short_lane<T>>;
     using register_type=vec;

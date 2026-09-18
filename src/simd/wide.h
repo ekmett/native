@@ -58,12 +58,18 @@ namespace simd {
       return requires_abi<isa<selected>,wide_kernel_policies,wide_scope_index<Scope>()>;
     }
     template<unsigned Scope,class... T> concept wide_family_is=wide_kernel_matches<Scope,T...>();
-    // MSVC's empty array can own a dummy T with a nontrivial constructor.
+    template<class T,class=void> inline constexpr bool wide_equivalent_default=false;
+    template<class T> inline constexpr bool wide_equivalent_default<T,
+      std::void_t<typename T::default_value_initialization_owner>> =
+      std::same_as<std::remove_cv_t<T>,typename T::default_value_initialization_owner>;
+    // MSVC's array can own a T with an attributed nontrivial constructor,
+    // including a dummy element at N == 0.
     // Aggregate-initialize that storage in T's target scope, bypassing the
     // library's unattributed implicit array constructor. Leave trivial/deleted
-    // defaults and every nonempty pack on the original defaulted path.
-    template<class T,std::size_t N> inline constexpr bool wide_empty_default =
-      N == 0 && std::is_default_constructible_v<T> &&
+    // defaults on the original defaulted path. Nonempty packs opt in only when
+    // their concrete element guarantees equivalent default/value initialization.
+    template<class T,std::size_t N> inline constexpr bool wide_target_default =
+      (N == 0 || wide_equivalent_default<T>) && std::is_default_constructible_v<T> &&
       !std::is_trivially_default_constructible_v<T> &&
       std::is_default_constructible_v<std::array<T,N>> &&
       !std::is_trivially_default_constructible_v<std::array<T,N>>;
@@ -87,7 +93,7 @@ namespace simd {
     alignas(T) std::array<T, N> registers;
 
     /// Default-initialize the underlying array. Use `wide{}` for value initialization.
-    constexpr wide() requires (!detail::wide_empty_default<T,N>) = default;
+    constexpr wide() requires (!detail::wide_target_default<T,N>) = default;
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T & get() & noexcept simd_lifetimebound { return registers[I]; }

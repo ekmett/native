@@ -42,6 +42,9 @@ implementation scope. Ordinary float, integer and mask values strip unrelated
 half capabilities from that requirement; native FP16 and BF16 values retain
 only their own extension. Partial and generic memory helpers follow these
 requirements too, including any custom rebound value used by a memory bridge.
+The accompanying `required_architecture_owner` names the concrete type. A custom
+domain must explicitly name itself to opt into narrower requirements; inheriting
+the metadata from a raw vector cannot silently narrow its own operations.
 Compact predicates publish their architecture just as vectors do, so packs of
 masks retain their target requirements. Arrays, nested packs and pairs contribute
 their element metadata to conversions and other mixed-input operations.

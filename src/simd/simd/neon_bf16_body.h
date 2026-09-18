@@ -15,6 +15,7 @@ export namespace simd {
     using architecture = Arch;
     /// Requirements of this value implementation; additional tag features remain available.
     using required_architecture = simd::neon_bf16;
+    using required_architecture_owner = vec;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = vec;
     /// Native 128-bit BF16 register representation; native bridges copy bits.

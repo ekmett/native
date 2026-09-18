@@ -5,6 +5,7 @@ namespace simd {
   template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 4,Arch> : detail::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
     using architecture = Arch;
     using required_architecture = SIMD_DEFAULT_ARCH;
+    using required_architecture_owner = vec;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>
@@ -154,6 +155,7 @@ namespace simd {
   template <SIMD_ARCH_CONCEPT Arch> struct vec<float, 8,Arch> : detail::register_memory<vec<float,8,Arch>, 8> {
     using architecture = Arch;
     using required_architecture = SIMD_DEFAULT_ARCH;
+    using required_architecture_owner = vec;
     /// Select this architecture and forward arguments to the corresponding constructor.
     /// Exception behavior is exactly that of the forwarded construction.
     template<class... X> requires std::constructible_from<vec,X...>

@@ -10,8 +10,16 @@ template<class V> concept can_load=requires(float const * p) { simd::load_simd<V
 template<class V> concept can_store=requires(float * p,V value) { simd::store_simd(p,value); };
 struct missing_architecture {};
 struct unrelated_architecture { using architecture=int; };
+struct malformed_architecture {
+  using architecture=int;
+  using required_architecture=simd::avx2;
+  using required_architecture_owner=malformed_architecture;
+  template<std::size_t> static malformed_architecture load_memory(float const *) { return {}; }
+  template<std::size_t> void store_memory(float *) const {}
+};
 static_assert(!can_load<int> && !can_load<missing_architecture> && !can_load<unrelated_architecture>);
 static_assert(!can_store<int> && !can_store<missing_architecture> && !can_store<unrelated_architecture>);
+static_assert(!can_load<malformed_architecture> && !can_store<malformed_architecture>);
 
 #if defined(__x86_64__) || defined(_M_X64)
 #define RAW_TARGET avx512
@@ -41,6 +49,8 @@ __attribute__((noinline)) bool check_raw() {
   std::array<float,lanes+1> input{},output{};
   input.fill(4.f);
   auto a=simd::load_simd<raw>(input.data());
+  auto qualified=simd::load_simd<raw const>(input.data());
+  (void)qualified;
   pack x{a,a},y{raw(2.f),raw(2.f)},z{raw(1.f),raw(1.f)};
   auto result=floor(sqrt(abs(fma(x,y,z))));
   auto masks=result==simd::broadcast<raw,2>(raw(3.f));

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Intentionally repeatable under one target family.
   public:
-    /// Retain the empty array's initialization in the element's target scope.
+    /// Retain opted-in array initialization in the element's target scope.
     SIMD_WIDE_TARGET simd_inline constexpr wide()
       noexcept(std::is_nothrow_default_constructible_v<std::array<T,N>>)
-      requires detail::wide_family_is<SIMD_WIDE_FAMILY,T> && detail::wide_empty_default<T,N>
+      requires detail::wide_family_is<SIMD_WIDE_FAMILY,T> && detail::wide_target_default<T,N>
       : registers{} {}
     /// Take an array of exactly the pack extent.
     SIMD_WIDE_TARGET simd_inline constexpr wide(std::array<T, N> values)

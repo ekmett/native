@@ -33,8 +33,11 @@ namespace simd::detail {
   template<class T,class A,class=void> struct required_value_architecture {
     using type=A;
   };
-  template<class T,class A> requires architecture<typename T::required_architecture>
-  struct required_value_architecture<T,A,std::void_t<typename T::required_architecture>> {
+  template<class T,class A> requires architecture<A> &&
+    architecture<typename T::required_architecture> &&
+    std::same_as<std::remove_cv_t<T>,typename T::required_architecture_owner>
+  struct required_value_architecture<T,A,std::void_t<typename T::required_architecture,
+      typename T::required_architecture_owner>> {
     using type=typename T::required_architecture;
   };
   template<class T,class=void> struct value_architecture { using type=void; };
