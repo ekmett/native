@@ -6,7 +6,8 @@
 This is deliberately not a general response-file parser. Unknown response or
 PCH syntax runs the original compiler invocation without caching. Explicit PCH
 binary inputs are hashed through SCCACHE_EXTRAFILES. CMake's files are never
-rewritten. Windows/clang-cl retain their original arguments.
+rewritten. Unsupported POSIX compiler names bypass caching directly; Windows
+retains its original arguments and direct sccache routing.
 """
 import errno
 import os
@@ -137,9 +138,14 @@ def main(arguments):
     if not arguments:
         print('usage: sccache_launcher.py COMPILER [ARGUMENT ...]', file=sys.stderr)
         return 2
+    # An alias may still resolve to Clang, but its PCH syntax has not been
+    # checked. Never send it through the cache without dependency hashing.
+    if os.name != 'nt' and not COMPILER.fullmatch(Path(arguments[0]).name):
+        os.execvp(arguments[0], arguments)
+        return 0
     original = ['sccache', *arguments]
     normalized = normalize(arguments)
-    if (os.name != 'nt' and COMPILER.fullmatch(Path(arguments[0]).name)):
+    if os.name != 'nt':
         inputs = pch_inputs(normalized)
         if inputs is None:
             os.execvp(arguments[0], arguments)
