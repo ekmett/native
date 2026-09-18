@@ -20,6 +20,10 @@ The generic container, operators, forwarding and tuple protocol belong to
 `simd.wide`. ADL selects an element's array kernel without a dependency on SIMD.
 `simd.scalar` supplies a baseline scalar register implementation and the common
 SIMD extension declarations. ISA modules expose `vec<T,N,Arch>` specializations for their architecture tags.
+The optional `simd.avx512_bf16` module imports `simd.numerics` and owns its
+BF16 vector specialization after that import; scalar half definitions stay in
+their original common module. Its native intrinsic bridge remains in the global
+module fragment.
 Custom numerical elements use one common extension, independent of the ISA.
 
 `simd.static_string`, `simd.types`, `simd.memory`, `simd.cpuid`, `simd.wait` and

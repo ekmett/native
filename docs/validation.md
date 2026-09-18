@@ -304,3 +304,51 @@ It rebuilds the PCH directly and tests the PCH-consuming module cache key;
 cached PCH producer invalidation is unchanged and is not qualified by this
 fixture. The five fixture requests are isolated from the producer job's
 aggregate cache statistics; per-stage fixture statistics remain in artifacts.
+
+
+## Opt-in AVX512 BF16 checkpoint - 2026-09-18
+
+Windows x86-64 with clang-cl 23.1.1 exercised the optional
+`AVX2;AVX512;AVX512_BF16` package. Runtime CPUID/XCR0 admission succeeded:
+the native BF16 tests executed rather than reporting unsupported hardware.
+Compilation used two jobs and CTest ran serially.
+
+| Configuration | Result |
+| --- | --- |
+| Unchanged default profiles, exceptions off | 49/49 tests passed |
+| All three x86 profiles, exceptions on | 54/54 tests passed, including BF16 header/module compaction |
+| Installed BF16 granular/omnibus consumers with a PCH, exceptions on | 4/4 tests passed |
+| Opt-in focused producer, exceptions off, PCH and ThinLTO | 4/4 tests passed |
+| Same exceptions-off package physically relocated to a path with spaces | 4/4 BF16 consumer tests passed |
+| AddressSanitizer, exceptions on, baseline admission plus BF16 storage/instruction tests | 3/3 tests passed |
+| Installed scalar half storage, omnibus, and existing profile fixtures | 1/1, 4/4, and 2/2 tests passed |
+
+BF16 storage coverage exhausts all 65,536 representations and checks protected
+page boundaries for every partial length from zero to 32, including null at
+zero. The instruction check compares 4,112 lanes across 32 MXCSR states,
+covering specified accumulation order, nearest-even ties, input/output
+denormals, signed zeros, overflow, NaN priority and signaling NaNs. It requires
+unchanged MXCSR controls and exception flags. Ordinary object inspection finds
+one `vdpbf16ps` with no helper calls; sanitizer builds deliberately omit that
+assembly check. Installed-package checks retain one BMI per common module and
+the new profile, and baseline compiler guards reject optional ISA flag leakage.
+
+The existing Windows and Linux x64 CI jobs now run separate opt-in producers
+and relocated-package fixtures in both exception settings, covering clang-cl
+and the GNU-style Clang frontend. The original five-platform
+matrix and default package profiles remain unchanged. The new PowerShell
+commands were syntax-checked and executed locally with exceptions off; the
+Linux Bash commands were syntax-checked only. Hosted CI execution and native
+Linux results are not yet evidence from this checkpoint. Unsupported hosted CPUs
+may skip only the admitted native execution path (status 77).
+
+This checkpoint supplies one 32-lane BF16 storage shape and pairwise dot
+accumulation into 16 FP32 lanes. It does not qualify other CPU implementations,
+add FP16 arithmetic or ARM half profiles, change scalar half conversions, or
+close the broader native-half issue.
+
+The new CPUID subleaf fields are appended to preserve existing positional
+aggregate initializers, but they grow the public `x86_capabilities` and
+`x86_admission` records and change their binary layouts. Consumers passing or
+storing these records across compiled boundaries must rebuild together. This
+is not an ABI-neutral change to those two records.

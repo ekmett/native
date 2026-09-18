@@ -48,6 +48,7 @@ custom element types and application dispatch.
 | `simd` | Common utilities and every configured native profile |
 | `simd.avx2` | `vec<T,N,avx2>`, AVX2/FMA/BMI2 operations |
 | `simd.avx512` | `vec<T,N,avx512>`, additionally AVX-512 F/DQ/BW/VL |
+| `simd.avx512_bf16` | Optional AVX-512 BF16 storage and pairwise FP32 dot accumulation |
 | `simd.neon` | `vec<T,N,neon>`, AArch64 NEON |
 | `simd.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
@@ -92,6 +93,15 @@ even when the code uses an AVX2 vector type. For an AVX2-only omnibus, build wit
 is `NEON`; use `simd::vec<float,4,simd::neon>` and select `NEON` on the consumer.
 [The omnibus guide](docs/omnibus.md) explains this BMI constraint and the granular
 imports available to baseline dispatchers.
+
+Add `AVX512_BF16` to `SIMD_PROFILES` to opt into native BF16 pairwise dot
+products. Its distinct `avx512_bf16` tag adds `vec<bf16,32,avx512_bf16>` storage
+and `dot2(a,b,accumulator)` with an FP32 accumulator/result of 16 lanes. Compile
+that consumer with `simd_target_profile(target AVX512_BF16)` and admit
+`x86_profile::avx512_bf16` before entering it. The configured omnibus then also
+requires that compilation profile. Default profiles and scalar half conversions
+are unchanged. [The focused fixture](tests/bf16_profile/README.md) documents the
+instruction contract and remaining half-format work.
 
 Each ABI has its own static archive. `simd::simd` supplies omnibus module
 metadata and links the configured archives; minimal and profile targets remain

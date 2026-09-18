@@ -90,6 +90,7 @@ export namespace simd {
   using ::simd::scalar;
   using ::simd::avx2;
   using ::simd::avx512;
+  using ::simd::avx512_bf16;
   using ::simd::neon;
   using ::simd::architecture;
   using std::int8_t;

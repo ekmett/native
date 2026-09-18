@@ -168,10 +168,19 @@ namespace simd {
   /// AVX-512 F/DQ/BW/VL profile, also supporting smaller native shapes.
   struct avx512 {};
   /// \ingroup vectors
+  /// AVX-512 F/DQ/BW/VL plus BF16 pairwise dot products, with a distinct vector type.
+  /// Import simd.avx512_bf16 and compile with the AVX512_BF16 profile. This tag
+  /// neither selects compiler flags nor performs CPU/OS feature admission.
+  struct avx512_bf16 {};
+  namespace detail {
+    template<class A> concept avx512_architecture = std::same_as<A,avx512> ||
+      std::same_as<A,avx512_bf16>;
+  }
+  /// \ingroup vectors
   /// AArch64 NEON profile. The tag does not change the caller's compiler flags.
   struct neon {};
   template<class A> concept architecture = std::same_as<A,scalar> || std::same_as<A,avx2> ||
-    std::same_as<A,avx512> || std::same_as<A,neon>;
+    detail::avx512_architecture<A> || std::same_as<A,neon>;
   /** \ingroup vectors
    * \brief A value with `N` logical lanes of `T` for `Arch`.
    * `N` describes lanes, not a count of registers. Unsupported shapes remain

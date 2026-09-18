@@ -18,7 +18,20 @@
 #endif
 #endif
 
-#if SIMD_PROFILE == 512
+// Optional extensions are part of the producer profile, never inferred from
+// an importing translation unit's extra compiler features.
+#ifndef SIMD_PROFILE_BF16
+#define SIMD_PROFILE_BF16 0
+#endif
+#if SIMD_PROFILE_BF16 && (SIMD_PROFILE != 512 || !defined(__AVX512BF16__))
+#error The AVX512_BF16 profile requires AVX512 and compiler BF16 support
+#endif
+#define SIMD_HAS_AVX512_BF16 SIMD_PROFILE_BF16
+
+#if SIMD_PROFILE == 512 && SIMD_PROFILE_BF16
+#define SIMD_ARCH ::simd::avx512_bf16
+#define SIMD_BACKEND avx512_bf16_backend
+#elif SIMD_PROFILE == 512
 #define SIMD_ARCH ::simd::avx512
 #define SIMD_BACKEND avx512_backend
 #elif SIMD_PROFILE == 256

@@ -8,7 +8,7 @@ option(HALF_STORAGE_IPO "Enable consumer IPO" OFF)
 add_executable(half_storage half_storage.cc omnibus.cc)
 target_link_libraries(half_storage PRIVATE simd::simd simd::common)
 # The omnibus includes all configured native profiles, even for scalar use.
-foreach(profile AVX512 AVX2 NEON)
+foreach(profile AVX512_BF16 AVX512 AVX2 NEON)
   string(TOLOWER "${profile}" lower)
   if(TARGET simd::${lower})
     simd_target_profile(half_storage ${profile})

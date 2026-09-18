@@ -220,6 +220,62 @@ jobs:
             ctest --test-dir "build/$suite" --no-tests=error --output-on-failure \
               --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
           done
+      - name: Compile and test opt-in BF16 package (clang-cl)
+        if: runner.os == 'Windows' && matrix.platform.profile == 'AVX2'
+        shell: pwsh
+        env:
+          BF16_EXCEPTIONS: ${{ matrix.exceptions }}
+        run: |
+          cmake -S . -B build/bf16-ci -G Ninja `
+            -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD `
+            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON `
+            "-DSIMD_ENABLE_EXCEPTIONS=$env:BF16_EXCEPTIONS" `
+            '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16'
+          if ($LASTEXITCODE) { throw 'BF16 configuration failed.' }
+          cmake --build build/bf16-ci --target simd simd_test_admission simd_test_bf16 --parallel 2
+          if ($LASTEXITCODE) { throw 'BF16 compilation failed.' }
+          ctest --test-dir build/bf16-ci -R '^simd[.](cpuid[.]admission|bf16[.])' `
+            --no-tests=error --output-on-failure -j1 --output-junit "$env:GITHUB_WORKSPACE/build/bf16-tests.xml"
+          if ($LASTEXITCODE) { throw 'BF16 tests failed.' }
+          cmake --install build/bf16-ci --prefix build/bf16-install
+          if ($LASTEXITCODE) { throw 'BF16 installation failed.' }
+          cmake -E rename build/bf16-install 'build/bf16 relocated package'
+          if ($LASTEXITCODE) { throw 'BF16 relocation failed.' }
+          cmake -S tests/bf16_profile -B build/bf16-package -G Ninja `
+            -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD `
+            "-Dsimd_DIR=$env:GITHUB_WORKSPACE/build/bf16 relocated package/lib/cmake/simd" `
+            -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+          if ($LASTEXITCODE) { throw 'BF16 consumer configuration failed.' }
+          cmake --build build/bf16-package --parallel 2
+          if ($LASTEXITCODE) { throw 'BF16 consumer compilation failed.' }
+          ctest --test-dir build/bf16-package --no-tests=error --output-on-failure -j1 `
+            --output-junit "$env:GITHUB_WORKSPACE/build/bf16-package-tests.xml"
+          if ($LASTEXITCODE) { throw 'BF16 consumer tests failed.' }
+          'Opt-in BF16 storage and dot2 compiled and packaged; native execution requires the complete CPUID/XCR0 admission test (skip 77 otherwise).' >> $env:GITHUB_STEP_SUMMARY
+      - name: Compile and test opt-in BF16 package (clang++)
+        if: runner.os == 'Linux' && matrix.platform.profile == 'AVX2'
+        shell: bash
+        env:
+          BF16_EXCEPTIONS: ${{ matrix.exceptions }}
+        run: |
+          cmake -S . -B build/bf16-ci -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
+            -DSIMD_BUILD_TESTS=ON -DSIMD_ENABLE_PCH=ON -DSIMD_ENABLE_IPO=ON \
+            -DSIMD_ENABLE_EXCEPTIONS="$BF16_EXCEPTIONS" \
+            '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16'
+          cmake --build build/bf16-ci --target simd simd_test_admission simd_test_bf16 --parallel 2
+          ctest --test-dir build/bf16-ci -R '^simd[.](cpuid[.]admission|bf16[.])' \
+            --no-tests=error --output-on-failure -j1 --output-junit "$GITHUB_WORKSPACE/build/bf16-tests.xml"
+          cmake --install build/bf16-ci --prefix build/bf16-install
+          cmake -E rename build/bf16-install 'build/bf16 relocated package'
+          cmake -S tests/bf16_profile -B build/bf16-package -G Ninja \
+            -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DCMAKE_LINKER_TYPE=LLD \
+            -Dsimd_DIR="$GITHUB_WORKSPACE/build/bf16 relocated package/lib/cmake/simd" \
+            -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+          cmake --build build/bf16-package --parallel 2
+          ctest --test-dir build/bf16-package --no-tests=error --output-on-failure -j1 \
+            --output-junit "$GITHUB_WORKSPACE/build/bf16-package-tests.xml"
+          echo 'Opt-in BF16 storage and dot2 compiled and packaged; native execution requires the complete CPUID/XCR0 admission test (skip 77 otherwise).' >> "$GITHUB_STEP_SUMMARY"
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
         shell: bash
@@ -252,6 +308,11 @@ jobs:
             build/omnibus/Testing/Temporary/
             build/cpuid_package/Testing/Temporary/
             build/cpuid_package/compile_commands.json
+            build/bf16-ci/CMakeCache.txt
+            build/bf16-ci/CMakeFiles/CMakeConfigureLog.yaml
+            build/bf16-ci/Testing/Temporary/
+            build/bf16-package/Testing/Temporary/
+            build/bf16-package/compile_commands.json
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/
