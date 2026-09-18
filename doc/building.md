@@ -105,7 +105,7 @@ without that argument for an uncached new tree, or set
 `-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear an existing tree's launcher.
 
 On Linux and macOS, CI places the small
-[module-map launcher](../.github/scripts/sccache_launcher.py) before sccache.
+[module-map launcher](https://github.com/ekmett/simd/blob/main/.github/scripts/sccache_launcher.py) before sccache.
 CMake quotes paths in its `.modmap` response files, while sccache 0.16.0's
 [response-file reader](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/gcc.rs)
 bypasses any quoted response file with reason `@`. The launcher recognizes only
@@ -146,7 +146,7 @@ To check local reuse, build and run CTest, record the statistics, run
 and run CTest again. An incremental build with no work does not exercise the
 cache. Use the same source/build paths and compiler; changed paths, compiler
 contents or flags can prevent hits. See the measured native result in
-[validation](../docs/validation.md#compiler-cache).
+[validation](https://github.com/ekmett/simd/blob/main/docs/validation.md#compiler-cache).
 
 ## Toolchain recipes and CI
 

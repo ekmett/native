@@ -30,8 +30,11 @@ runs:
           if ($_.Value -match "[\r\n]") { throw "Unexpected multiline environment variable: $($_.Name)" }
           "$($_.Name)=$($_.Value)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
         }
-        $env:Path -split ';' | Where-Object { $_ } |
-          Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+        # The runner prepends GITHUB_PATH entries in reverse file order.
+        # Preserve SDK/tool precedence instead of promoting the WindowsApps WSL stub.
+        $sdkPathEntries = @($env:Path -split ';' | Where-Object { $_ })
+        [array]::Reverse($sdkPathEntries)
+        $sdkPathEntries | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
         Write-Host "Visual Studio: $vs; native target: $arch"
         Write-Host "VCToolsVersion=$env:VCToolsVersion; WindowsSDKVersion=$env:WindowsSDKVersion"
     - name: Install checksum-pinned native build tools
@@ -89,3 +92,7 @@ runs:
         if ($LASTEXITCODE -ne 0) { throw 'CMake qualification failed.' }
         & (Join-Path $ninjaBin 'ninja.exe') --version
         if ($LASTEXITCODE -ne 0) { throw 'Ninja qualification failed.' }
+        $bash = (Get-Command bash.exe -CommandType Application).Source
+        Write-Host "Bash: $bash"
+        & $bash --noprofile --norc -c 'test -n "$BASH_VERSION"'
+        if ($LASTEXITCODE -ne 0) { throw 'Git Bash qualification failed.' }
