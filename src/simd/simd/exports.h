@@ -25,6 +25,10 @@ export namespace simd {
   using ::simd::load_simd_partial;
   using ::simd::store_simd;
   using ::simd::store_simd_partial;
+  using ::simd::compaction_result;
+  using ::simd::compress;
+  using ::simd::expand;
+  using ::simd::compress_store;
 }
 
 export namespace simd {

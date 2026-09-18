@@ -185,6 +185,17 @@ jobs:
           ctest --test-dir build/core --show-only=json-v1 > build/tests.json
           ctest --test-dir build/core --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
+      - name: Retain native NEON compaction observations
+        if: matrix.platform.profile == 'NEON'
+        shell: bash
+        run: |
+          executable=build/core/tests/compaction/simd_compaction_neon_import
+          if [[ "$RUNNER_OS" == Windows ]]; then executable+=.exe; fi
+          "$executable" --bench | tee build/compaction-neon-benchmark.log
+          object=$(find build/core/tests/compaction -type f -path '*simd_compaction_neon_import_body.dir*' \( -name main.cc.o -o -name main.cc.obj \) -print -quit)
+          test -n "$object"
+          llvm-objdump -d --disassemble-symbols=compaction_codegen,expansion_codegen,compaction_store_codegen,_compaction_codegen,_expansion_codegen,_compaction_store_codegen "$object" > build/compaction-neon-codegen.log
+          echo 'NEON compaction observations compare interleaved native and reference kernels on this hosted runner; these are not stable performance guarantees.' >> "$GITHUB_STEP_SUMMARY"
       - name: Install
         run: cmake --install build/core --prefix build/install
       - name: Test relocated package boundaries and modules
@@ -195,7 +206,7 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          suites=(public_headers omnibus)
+          suites=(public_headers omnibus api)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
             suites+=(cpuid_package)
           fi
@@ -231,6 +242,8 @@ jobs:
           if-no-files-found: ignore
           path: |
             build/environment.log
+            build/compaction-neon-benchmark.log
+            build/compaction-neon-codegen.log
             build/sccache-*
             build/tests.json
             build/tests.xml
