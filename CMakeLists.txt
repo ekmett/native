@@ -96,6 +96,7 @@ if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
   add_subdirectory(tests/compaction)
   add_subdirectory(tests/source_targets)
   add_subdirectory(tests/abi_lookup)
+  add_subdirectory(tests/wide_construction)
 endif()
 
 configure_file(etc/cmake/simdProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/simdProfile.cmake" COPYONLY)
