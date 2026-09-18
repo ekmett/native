@@ -11,6 +11,11 @@ import simd_target_metadata;
 import simd;
 #endif
 
+namespace simd {
+  constexpr feature_set source_tag_adl(architecture auto tag) { return decltype(tag)::features; }
+}
+static_assert(source_tag_adl(simd::avx2{})==simd::avx2::features);
+
 namespace {
   struct x86_snapshot {
     std::uint32_t max_basic_leaf=7,leaf1_ecx=~0u,leaf1_edx=~0u,leaf7_ebx=~0u;
@@ -35,7 +40,13 @@ namespace {
   static_assert(simd::has_feature<simd::isa<simd::feature::avx512f>,simd::feature::f16c>);
   static_assert(simd::has_feature<simd::isa<simd::feature::avx512f>,simd::feature::fma>);
   static_assert(std::same_as<SIMD_TARGET_TYPE(avx2),simd::avx2>);
+  static_assert(std::same_as<SIMD_TARGET_TYPE(scalar),simd::scalar>);
+  static_assert(std::same_as<SIMD_TARGET_TYPE(avx512),simd::avx512>);
+  static_assert(std::same_as<SIMD_TARGET_TYPE(avx512_bf16),simd::avx512_bf16>);
+  static_assert(std::same_as<SIMD_TARGET_TYPE(avx512_fp16),simd::avx512_fp16>);
+  static_assert(std::same_as<SIMD_TARGET_TYPE(neon),simd::neon>);
   static_assert(std::same_as<SIMD_TARGET_TYPE(neon_fp16),simd::neon_fp16>);
+  static_assert(std::same_as<SIMD_TARGET_TYPE(neon_bf16),simd::neon_bf16>);
   static_assert(simd::target_features("avx2,no-fma")&(1ull<<63));
   static_assert(simd::target_features("arch=skylake")&(1ull<<63));
   static_assert(simd::target_features("avx2,")&(1ull<<63));

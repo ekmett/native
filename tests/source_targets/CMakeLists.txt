@@ -13,7 +13,7 @@ find_program(source_targets_objdump NAMES llvm-objdump HINTS "${source_targets_c
 # No per-variant compiler options, profile helpers, generated source, or extra BMI.
 add_executable(simd_test_source_metadata metadata.cc)
 target_link_libraries(simd_test_source_metadata PRIVATE simd::simd)
-add_library(simd_source_variants OBJECT macros.cc)
+add_library(simd_source_variants OBJECT macros.cc scalar.cc)
 target_link_libraries(simd_source_variants PRIVATE simd::simd)
 add_executable(simd_test_source_variants $<TARGET_OBJECTS:simd_source_variants>)
 target_link_libraries(simd_test_source_variants PRIVATE simd::simd)

@@ -42,6 +42,7 @@ run('arm-windows-object',[*flags,'--target=aarch64-pc-windows-msvc','-c',
     out/'simd.arm.pcm','-o',out/'arm.obj'])
 run('macros-ir',[*consumer,'-S','-emit-llvm',source/'macros.cc','-o',out/'macros.ll'])
 run('macros-assembly',[*consumer,'-S',source/'macros.cc','-o',out/'macros.s'])
+run('scalar-and-empty-list',[*consumer,'-c',source/'scalar.cc','-o',out/'scalar.obj'])
 rejected=run('invalid',[*consumer,'-c',source/'invalid.cc','-o',out/'invalid.obj'],False)
 assert 'unknown SIMD ISA feature' in rejected.stderr
 ir=(out/'macros.ll').read_text()

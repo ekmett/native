@@ -114,18 +114,21 @@ namespace simd {
     return bits;
   }
 
+  /// Canonical tag storage lives in simd so tag-only calls retain public ADL.
+  /// Prefer isa<...>, which computes the prerequisite closure before naming it.
+  template<feature_set Bits> struct isa_tag {
+    static_assert((Bits&~detail::known_features)==0,"unknown SIMD ISA feature");
+    static_assert(!(Bits&detail::arm_features) || !(Bits&detail::x86_features),"cannot combine x86 and ARM ISA features");
+    static_assert(feature_closure(Bits)==Bits,"use simd::isa to normalize feature prerequisites");
+    static constexpr feature_set features=Bits;
+  };
   namespace detail {
-    template<feature_set Bits> struct isa_tag {
-      static_assert((Bits&~known_features)==0,"unknown SIMD ISA feature");
-      static_assert(!(Bits&arm_features) || !(Bits&x86_features),"cannot combine x86 and ARM ISA features");
-      static constexpr feature_set features=Bits;
-    };
     template<class> inline constexpr bool is_isa=false;
     template<feature_set Bits> inline constexpr bool is_isa<isa_tag<Bits>> = true;
   }
 
   /// Feature order and redundant prerequisites do not create different types.
-  template<auto Bits> using isa=detail::isa_tag<feature_closure(feature_set(Bits))>;
+  template<auto Bits> using isa=isa_tag<feature_closure(feature_set(Bits))>;
   template<class A> concept architecture=detail::is_isa<A>;
   template<class A, feature F> concept has_feature=architecture<A> && ((A::features&feature_set(F))!=0);
   template<class A, feature_set Bits> concept has_features=architecture<A> && ((A::features&Bits)==Bits);
@@ -294,6 +297,8 @@ namespace simd {
       using traits=detail::entry_traits<E>;
       using A=typename traits::architecture;
       static_assert(architecture<A>);
+      static_assert((traits::minimum&~detail::known_features)==0,
+        "source minimum contains an unregistered ISA feature");
       if(!selected && classify_isa(cpu,A{},minimum|traits::minimum).admitted()) {
         selected=true;
         std::forward<F>(callback)(A{});

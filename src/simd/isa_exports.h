@@ -6,6 +6,7 @@ export namespace simd {
   using ::simd::feature_set;
   using ::simd::feature;
   using ::simd::feature_closure;
+  using ::simd::isa_tag;
   using ::simd::isa;
   using ::simd::architecture;
   using ::simd::has_feature;
