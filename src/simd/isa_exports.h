@@ -24,6 +24,9 @@ export namespace simd {
   using ::simd::classify_isa;
   using ::simd::target_entry;
   using ::simd::isa_list;
+  using ::simd::abi_npos;
+  using ::simd::abi_lookup;
+  using ::simd::requires_abi;
   using ::simd::with_isa;
   using ::simd::operator|;
   using ::simd::operator+;
