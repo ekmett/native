@@ -48,6 +48,8 @@ namespace {
   static_assert(std::same_as<SIMD_TARGET_TYPE(neon_fp16),simd::neon_fp16>);
   static_assert(std::same_as<SIMD_TARGET_TYPE(neon_bf16),simd::neon_bf16>);
   static_assert(simd::target_features("avx2,no-fma")&(1ull<<63));
+  static_assert(simd::target_features("default")&(1ull<<63));
+  static_assert(simd::target_features("")==0);
   static_assert(simd::target_features("arch=skylake")&(1ull<<63));
   static_assert(simd::target_features("avx2,")&(1ull<<63));
   static_assert(simd::target_features("avx2,f16c")==simd::isa<simd::feature::avx2|simd::feature::f16c>::features);

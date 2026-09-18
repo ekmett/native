@@ -161,7 +161,7 @@ namespace simd {
   /// Parse a registered literal target feature list. CPU names, negative
   /// features and unknown features fail closed rather than guessing admission.
   constexpr feature_set target_features(std::string_view text) noexcept {
-    if(text.empty() || text=="default") return 0;
+    if(text.empty()) return 0;
 #if defined(__aarch64__) || defined(_M_ARM64)
     bool arm_target=true;
 #else

@@ -13,8 +13,8 @@
 // The same literal drives compiler attributes, canonical tags and admission.
 // Only positive feature names in simd's registry are accepted; CPU names and
 // arbitrary C++ aliases cannot be reverse-engineered into compiler attributes.
-// Clang reserves target("default") for function multiversioning. An empty
-// target preserves the ordinary caller baseline without emitting a resolver.
+// The empty literal gives scalar metadata; its scope below deliberately applies
+// no target attribute. Clang reserves "default" for function multiversioning.
 #define SIMD_TARGET_scalar ""
 #define SIMD_TARGET_avx2 "avx2,fma,bmi2"
 #define SIMD_TARGET_avx512 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl"
@@ -34,8 +34,18 @@
 
 // The named pragma stack prevents accidentally popping an unrelated user's
 // clang attribute stack. This does not generate preprocessor #include lines.
-#define SIMD_TARGET_PUSH(name) \
+#define SIMD_DETAIL_TARGET_SECOND(a,b,...) b
+#define SIMD_DETAIL_TARGET_PROBE() unused,1
+#define SIMD_DETAIL_TARGET_SCALAR_scalar SIMD_DETAIL_TARGET_PROBE()
+#define SIMD_DETAIL_TARGET_IS_SCALAR_I(...) SIMD_DETAIL_TARGET_SECOND(__VA_ARGS__,0)
+#define SIMD_DETAIL_TARGET_IS_SCALAR(name) \
+  SIMD_DETAIL_TARGET_IS_SCALAR_I(SIMD_DETAIL_TARGET_CAT(SIMD_DETAIL_TARGET_SCALAR_,name))
+#define SIMD_DETAIL_TARGET_PUSH_0(name) \
   SIMD_DETAIL_TARGET_PRAGMA(clang attribute simd_source_target.push(__attribute__((target(SIMD_TARGET_STRING(name)))), apply_to=function))
+#define SIMD_DETAIL_TARGET_PUSH_1(name) \
+  SIMD_DETAIL_TARGET_PRAGMA(clang attribute simd_source_target.push)
+#define SIMD_TARGET_PUSH(name) \
+  SIMD_DETAIL_TARGET_CAT(SIMD_DETAIL_TARGET_PUSH_,SIMD_DETAIL_TARGET_IS_SCALAR(name))(name)
 #define SIMD_TARGET_POP() SIMD_DETAIL_TARGET_PRAGMA(clang attribute simd_source_target.pop)
 
 // A list uses X(name, ...), forwarding its extra arguments to X:

@@ -24,7 +24,7 @@ def run(name,args,success=True):
         raise RuntimeError(name+'\n'+result.stdout+result.stderr)
     return result
 
-flags=[a.compiler,'-std=c++26','-O2','-I'+str(root/'src')]
+flags=[a.compiler,'-std=c++26','-O2','-Werror=ignored-attributes','-I'+str(root/'src')]
 pcm=out/'simd_target_metadata.pcm'
 run('provider',[*flags,'--precompile',source/'metadata.ccm','-o',pcm])
 run('provider-object',[*flags,'-c',pcm,'-o',out/'metadata.obj'])
