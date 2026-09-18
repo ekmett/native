@@ -100,16 +100,16 @@ namespace {
       static_assert(std::same_as<decltype(constructed),V const>);
       static_assert(!readable_z<V> && !readable_xyz<V>);
       expect(constructed,std::array{T(1),T(2)},"constexpr two-lane constructor values");
-      expect(simd::vec(test_arch{},T(1),T(2)),std::array{T(1),T(2)},"tagged two-lane deduction values");
+      expect(test_vec<T,2>(T(1),T(2)),std::array{T(1),T(2)},"explicit two-lane values");
     } else {
       constexpr V constructed{T(1),T(2),T(3)};
       static_assert(std::same_as<decltype(constructed),V const>);
       static_assert(readable_z<V> && readable_xyz<V>);
       expect(constructed,std::array{T(1),T(2),T(3)},"constexpr three-lane constructor values");
-      expect(simd::vec(test_arch{},T(1),T(2),T(3)),std::array{T(1),T(2),T(3)},"tagged three-lane deduction values");
+      expect(test_vec<T,3>(T(1),T(2),T(3)),std::array{T(1),T(2),T(3)},"explicit three-lane values");
     }
     static_assert(!readable_w<V>);
-    static_assert(std::same_as<decltype(simd::vec(test_arch{},std::array<T,N>{})),V>);
+    static_assert(std::same_as<decltype(V(std::array<T,N>{})),V>);
     expect(V{},std::array<T,N>{},"short value initialization zeros logical lanes");
     auto value=V(std::array<T,N>{});
     require((value==V(T(0))).to_bitset()==((std::uint64_t(1)<<N)-1),"short comparison mask shape");

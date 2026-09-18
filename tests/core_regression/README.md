@@ -1,13 +1,13 @@
 # Core regression tests
 
-These tests cover raw SIMD arithmetic, scalar/vector/wide consistency, CTAD,
-masks and bit bridges, modular integers, guarded aligned and unaligned memory,
-partial tails, scaling boundaries, special values and wide exponential results.
+These tests cover raw SIMD arithmetic, scalar/vector/wide consistency, explicit
+construction, masks and bit bridges, modular integers, guarded aligned and
+unaligned memory, partial tails, scaling boundaries, special values and wide exponential results.
 `reference.h` supplies an independent staged split-scale exponential oracle.
 Failure paths print a diagnostic and abort, including with exceptions disabled.
 
-The public shape is `simd::vec<T,N,Arch>` with an explicit architecture tag.
-Deduction tests call `simd::vec(Arch{}, lanes...)` and the tagged array constructor;
+The public shape is `simd::vec<T,N,Arch>` with an explicit ISA value.
+Constructor tests supply lanes or arrays to the explicitly named vector type;
 comparison results must be exactly `V::mask`.
 
 Build from the repository root as described in [the test guide](../README.md).
@@ -19,8 +19,8 @@ This selection describes the raw instruction rather than repairing its result.
 
 The swizzle fixtures run through both headers and imports. Two- and three-lane
 32-bit vectors have padded native storage, while guarded memory tests require
-exact logical lane access. They check constexpr constructors, architecture-tagged
-deduction, owning snapshots, same-name and overlapping scatter, rejection of
+exact logical lane access. They check constexpr constructors, explicit ISA
+selection, owning snapshots, same-name and overlapping scatter, rejection of
 const/rvalue/repeated writes, and the absence of properties for padding lanes.
 Static checks preserve existing vector layouts and reject unequal logical shapes.
 Short arithmetic compares the active lanes of four-lane operations, with an

@@ -20,7 +20,7 @@ constexpr std::size_t lanes=4;
 #elif !TEST_FP16 && (SIMD_MINIMAL_HAS_AVX512_BF16 || SIMD_MINIMAL_HAS_NEON_BF16)
 #error SIMD_TARGET_NEGATIVE_UNAVAILABLE
 #endif
-using advertised=simd::isa<SIMD_TARGET_TYPE(FP_TARGET)::features|SIMD_TARGET_TYPE(BF_TARGET)::features>;
+constexpr auto advertised=SIMD_TARGET_ISA(FP_TARGET)&SIMD_TARGET_ISA(BF_TARGET);
 SIMD_TARGET_PUSH(RAW_TARGET)
 #if TEST_FP16
 void missing_half_target(std::uint16_t const * input,std::uint16_t * output) {

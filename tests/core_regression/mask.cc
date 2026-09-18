@@ -154,13 +154,13 @@ int main() {
   static_assert(sizeof(mask8)==1&&sizeof(mask16)==2&&sizeof(mask32)==4&&sizeof(mask64)==8);
   static_assert(!std::is_convertible_v<mask32,std::uint32_t> && !std::is_convertible_v<mask32,bool>);
   static_assert(!plusable<mask32>);
-  static_assert(std::same_as<decltype(simd::vec(test_arch{},true)),test_vec<bool,1>>);
+  static_assert(std::same_as<decltype(test_vec<bool,1>(true)),test_vec<bool,1>>);
   static_assert(!can_mask_cast<mask8,test_vec<mask64,2>>);
-  static_assert(std::same_as<decltype(simd::vec(test_arch{},std::array<bool,1>{})),test_vec<bool,1>>);
+  static_assert(std::same_as<decltype(test_vec<bool,1>(std::array<bool,1>{})),test_vec<bool,1>>);
   full<mask8,1>();full<mask16,1>();full<mask32,1>();full<mask64,1>();booleans<1>();floating<1>();
 #if defined(__AVX2__) || defined(__ARM_NEON)
   full<mask8,16>();full<mask16,8>();full<mask32,4>();full<mask64,2>();booleans<16>();floating<4>();
-  auto m=simd::vec(test_arch{},mask32(true),mask32(false),mask32(true),mask32(false));static_assert(std::same_as<decltype(m),test_vec<mask32,4>>);
+  auto m=test_vec<mask32,4>(mask32(true),mask32(false),mask32(true),mask32(false));static_assert(std::same_as<decltype(m),test_vec<mask32,4>>);
 #endif
 #if defined(__AVX2__)
   require(mask_cast<mask64>(test_vec<mask32,4>::from_bitset(5)).to_bitset()==5,"explicit cross-width mask expansion");

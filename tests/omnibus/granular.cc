@@ -3,19 +3,19 @@
 #include <array>
 #if TEST_AVX2
 import simd;
-using Arch=simd::avx2;
+constexpr auto Arch = simd::avx2;
 #elif TEST_AVX512
 import simd;
-using Arch=simd::avx512;
+constexpr auto Arch = simd::avx512;
 #elif TEST_NEON_BF16
 import simd;
-using Arch=simd::neon_bf16;
+constexpr auto Arch = simd::neon_bf16;
 #elif TEST_NEON_FP16
 import simd;
-using Arch=simd::neon_fp16;
+constexpr auto Arch = simd::neon_fp16;
 #else
 import simd;
-using Arch=simd::neon;
+constexpr auto Arch = simd::neon;
 #endif
 extern "C" void granular_kernel(float const *input,float *output) {
   using V=simd::vec<float,4,Arch>;

@@ -11,7 +11,7 @@
 #include "support/profile.h"
 import simd.wide;
 
-static_assert(std::same_as<decltype(simd::vec{test_arch{},1.0f}), test_vec<float, 1>>);
+static_assert(std::same_as<decltype(test_vec<float,1>{1.0f}), test_vec<float, 1>>);
 static_assert(sizeof(test_vec<float,1>) == sizeof(float));
 static_assert(std::is_trivially_copyable_v<test_vec<float,1>>);
 

@@ -206,7 +206,7 @@ int main() {
 #elif defined(__aarch64__) || defined(_M_ARM64)
   auto cpu=simd::observe_arm_capabilities();
 #endif
-#define RUN(name,scope) if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(scope){},SIMD_TARGET_MINIMUM).admitted()) { \
+#define RUN(name,scope) if(simd::classify_isa(cpu,SIMD_TARGET_ISA(scope),SIMD_TARGET_MINIMUM).admitted()) { \
   if(!case_##name::check()) {std::printf("FAIL %s\n",#name);return 2;} \
   ++passed;std::printf("PASS %s\n",#name); \
 } else {++skipped;std::printf("SKIP %s: CPU/OS admission\n",#name);}

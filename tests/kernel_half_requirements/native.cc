@@ -18,6 +18,12 @@ struct malformed_architecture {
 static_assert(!can_load<int> && !can_load<missing_architecture> && !can_load<unrelated_architecture>);
 static_assert(!can_store<int> && !can_store<missing_architecture> && !can_store<unrelated_architecture>);
 static_assert(!can_load<malformed_architecture> && !can_store<malformed_architecture>);
+struct malformed_constant {
+  static constexpr int architecture=0;
+  template<std::size_t> static malformed_constant load_memory(float const *) { return {}; }
+  template<std::size_t> void store_memory(float *) const {}
+};
+static_assert(!can_load<malformed_constant> && !can_store<malformed_constant>);
 
 #if defined(__x86_64__) || defined(_M_X64)
 #define RAW_TARGET avx512
@@ -30,13 +36,13 @@ constexpr std::size_t lanes=16;
 #define BF_TARGET neon_bf16
 constexpr std::size_t lanes=4;
 #endif
-using advertised=simd::isa<SIMD_TARGET_TYPE(FP_TARGET)::features|SIMD_TARGET_TYPE(BF_TARGET)::features>;
+constexpr auto advertised=SIMD_TARGET_ISA(FP_TARGET)&SIMD_TARGET_ISA(BF_TARGET);
 using raw=simd::vec<float,lanes,advertised>;
 using half=simd::vec<simd::fp16,lanes*2,advertised>;
 using brain=simd::vec<simd::bf16,lanes*2,advertised>;
-static_assert(std::same_as<raw::architecture,advertised>);
-static_assert(std::same_as<half::architecture,advertised>);
-static_assert(std::same_as<brain::architecture,advertised>);
+static_assert(raw::architecture==advertised);
+static_assert(half::architecture==advertised);
+static_assert(brain::architecture==advertised);
 
 // Each function is compiled without the other advertised extension. Compiling
 // these actual bodies catches an always-inline callee with an excessive target.
@@ -51,7 +57,7 @@ __attribute__((noinline)) bool check_raw() {
   pack x{a,a},y{raw(2.f),raw(2.f)},z{raw(1.f),raw(1.f)};
   auto result=floor(sqrt(abs(fma(x,y,z))));
   auto masks=result==simd::broadcast<raw,2>(raw(3.f));
-  static_assert(std::same_as<typename raw::mask::architecture,advertised>);
+  static_assert(raw::mask::architecture==advertised);
   auto chosen=select(~masks,pack::broadcast(raw(0.f)),result);
   simd::wide<raw,0> empty{};
   simd::wide<raw::mask,0> empty_masks{};
@@ -114,7 +120,7 @@ int main() {
 #endif
   int executed=0;
 #define RUN(target,body) \
-  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(target){},SIMD_TARGET_MINIMUM).admitted()) { \
+  if(simd::classify_isa(cpu,SIMD_TARGET_ISA(target),SIMD_TARGET_MINIMUM).admitted()) { \
     ++executed;if(!body()) return 1;std::puts(#body ": pass"); \
   } else std::puts(#body ": CPU/OS skip");
   RUN(RAW_TARGET,check_raw)

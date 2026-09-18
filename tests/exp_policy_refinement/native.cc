@@ -9,7 +9,7 @@
 #include <immintrin.h>
 import simd;
 
-static_assert((SIMD_TARGET_MINIMUM&~simd::avx2::features)==0,
+static_assert(SIMD_TARGET_MINIMUM<=simd::avx2,
   "This exp refinement check requires a translation-unit minimum no stronger than AVX2/FMA/BMI2");
 #if __has_feature(address_sanitizer)
 extern "C" int exp_refinement_asan_instrumented() { return 1; }
@@ -48,8 +48,8 @@ namespace refinement_test {
   // Explicit empty arrays keep this comparison independent of the separate
   // default-constructor regression, covered by tests/wide_construction.
 #define EXP_EVALUATE(function,policies,i) \
-  template<bool Reference,bool Flush,std::size_t L,std::size_t N,simd::architecture A> \
-    requires (simd::target<A,policies> == i) \
+  template<bool Reference,bool Flush,std::size_t L,std::size_t N,simd::isa A> \
+    requires (simd::abi_lookup<A,policies>::index == i) \
   __attribute__((noinline)) void function(std::uint32_t const * input,std::uint32_t * output) { \
     using V=simd::vec<float,L,A>; \
     auto values=[&]<std::size_t... K>(std::index_sequence<K...>) { \
@@ -74,13 +74,13 @@ namespace refinement_test {
   SIMD_TARGET_PUSH(name) \
   EXP_EVALUATE(evaluate,caller_targets,i) \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_narrow(float const * input,float * output) { \
-    using V=simd::vec<float,8,SIMD_TARGET_TYPE(name)>; \
+    using V=simd::vec<float,8,SIMD_TARGET_ISA(name)>; \
     auto value=simd::exp(simd::wide<V,2>{V::load(input),V::load(input+8)}); \
     value.registers[0].store(output);value.registers[1].store(output+8); \
   } \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_native(float const * input,float * output) { \
-    constexpr std::size_t lanes=simd::has_features<SIMD_TARGET_TYPE(name),SIMD_TARGET_TYPE(exp_base)::features>?16:8; \
-    using V=simd::vec<float,lanes,SIMD_TARGET_TYPE(name)>; \
+    constexpr std::size_t lanes=SIMD_TARGET_ISA(name).has(SIMD_TARGET_ISA(exp_base))?16:8; \
+    using V=simd::vec<float,lanes,SIMD_TARGET_ISA(name)>; \
     auto value=simd::exp(simd::wide<V,2>{V::load(input),V::load(input+lanes)}); \
     value.registers[0].store(output);value.registers[1].store(output+lanes); \
   } \
@@ -103,7 +103,7 @@ namespace refinement_test {
     0x3f800000u,0xbf800000u,0x7f800000u,0xff800000u,0x7fc00000u,0x7f800001u,
     0xffc12345u,0xffffffffu,0xc2aeac4fu,0xc2aeac50u,0xc2aeac51u,
     0xc2d00000u,0xc2d00001u,0xc2cfffffu,0x42b17217u,0x42b17218u,0x42b17219u,0x7f7fffffu};
-  template<simd::architecture A,std::size_t L,std::size_t N,bool Flush,bool Raw>
+  template<simd::isa A,std::size_t L,std::size_t N,bool Flush,bool Raw>
   bool compare_shape() {
     std::array<std::uint32_t,L*N> input{},reference{},candidate{};
     for(std::size_t seed=0;seed<48;++seed) {
@@ -128,15 +128,15 @@ namespace refinement_test {
     }
     return true;
   }
-  template<simd::architecture A,std::size_t L,bool Raw> bool compare_width() {
+  template<simd::isa A,std::size_t L,bool Raw> bool compare_width() {
     return compare_shape<A,L,0,false,Raw>() && compare_shape<A,L,1,false,Raw>() &&
       compare_shape<A,L,3,false,Raw>() && compare_shape<A,L,0,true,Raw>() &&
       compare_shape<A,L,1,true,Raw>() && compare_shape<A,L,3,true,Raw>();
   }
-  template<simd::architecture A,bool Raw=false> bool compare_case() {
+  template<simd::isa A,bool Raw=false> bool compare_case() {
     bool equal=compare_width<A,1,Raw>() && compare_width<A,2,Raw>() &&
       compare_width<A,3,Raw>() && compare_width<A,4,Raw>() && compare_width<A,8,Raw>();
-    if constexpr(simd::has_features<A,SIMD_TARGET_TYPE(exp_base)::features>)
+    if constexpr(A.has(SIMD_TARGET_ISA(exp_base)))
       equal=equal && compare_width<A,16,Raw>();
     return equal;
   }
@@ -148,23 +148,23 @@ int main() {
   auto controls=_mm_getcsr()&~0x3fu;
   unsigned executed=0,skipped=0;
 #define RUN_EXP_CALLER(i,name,raw) \
-  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(name){},SIMD_TARGET_MINIMUM).admitted()) { \
-    if(!refinement_test::compare_case<SIMD_TARGET_TYPE(name)>()) return 1; \
+  if(simd::classify_isa(cpu,SIMD_TARGET_ISA(name),SIMD_TARGET_MINIMUM).admitted()) { \
+    if(!refinement_test::compare_case<SIMD_TARGET_ISA(name)>()) return 1; \
     ++executed;std::printf("exp caller %u %s: executed\n",i,#name); \
   } else { ++skipped;std::printf("exp caller %u %s: skipped (not admitted)\n",i,#name); }
   EXP_CALLER_CASES(RUN_EXP_CALLER)
 #undef RUN_EXP_CALLER
   unsigned raw_executed=0,raw_skipped=0;
 #define RUN_RAW_CALLER(i,name,raw) \
-  if(simd::classify_isa(cpu,simd::abi_lookup<SIMD_TARGET_TYPE(name),refinement_test::exp_policies>::type{},SIMD_TARGET_MINIMUM).admitted()) { \
-    if(!refinement_test::compare_case<SIMD_TARGET_TYPE(name),true>()) return 5; \
+  if(simd::classify_isa(cpu,simd::abi_lookup<SIMD_TARGET_ISA(name),refinement_test::exp_policies>::architecture,SIMD_TARGET_MINIMUM).admitted()) { \
+    if(!refinement_test::compare_case<SIMD_TARGET_ISA(name),true>()) return 5; \
     ++raw_executed;std::printf("raw scope for caller %u %s: executed\n",i,#name); \
   } else { ++raw_skipped;std::printf("raw scope for caller %u %s: skipped (not admitted)\n",i,#name); }
   EXP_CALLER_CASES(RUN_RAW_CALLER)
 #undef RUN_RAW_CALLER
   std::printf("%u raw-scope caller cases executed, %u skipped\n",raw_executed,raw_skipped);
-  using extra=simd::isa<simd::avx2::features|simd::feature::aes>;
-  if(simd::classify_isa(cpu,extra{},SIMD_TARGET_MINIMUM).admitted()) {
+  constexpr auto extra=simd::feature_closure(simd::avx2&simd::feature::aes);
+  if(simd::classify_isa(cpu,extra,SIMD_TARGET_MINIMUM).admitted()) {
     if(!refinement_test::compare_case<extra>() || !refinement_test::compare_case<extra,true>()) return 2;
     std::puts("AVX2 caller with extra AES tag: original type retained, outputs exact");
   }

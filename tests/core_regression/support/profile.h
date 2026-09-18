@@ -29,21 +29,21 @@ import simd;
 #include <simd/simd/math/bits.h>
 #endif
 #if SIMD_TEST_PROFILE == 512 && SIMD_TEST_AVX512_FP16
-using test_arch = simd::avx512_fp16;
+constexpr auto test_arch = simd::avx512_fp16;
 #elif SIMD_TEST_PROFILE == 512 && SIMD_TEST_BF16
-using test_arch = simd::avx512_bf16;
+constexpr auto test_arch = simd::avx512_bf16;
 #elif SIMD_TEST_PROFILE == 512
-using test_arch = simd::avx512;
+constexpr auto test_arch = simd::avx512;
 #elif SIMD_TEST_PROFILE == 256
-using test_arch = simd::avx2;
+constexpr auto test_arch = simd::avx2;
 #elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_BF16
-using test_arch = simd::neon_bf16;
+constexpr auto test_arch = simd::neon_bf16;
 #elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_FP16
-using test_arch = simd::neon_fp16;
+constexpr auto test_arch = simd::neon_fp16;
 #elif SIMD_TEST_PROFILE == 128
-using test_arch = simd::neon;
+constexpr auto test_arch = simd::neon;
 #else
-using test_arch = simd::scalar;
+constexpr auto test_arch = simd::scalar;
 #endif
 namespace test_simd = simd;
 #if !SIMD_TEST_IMPORT

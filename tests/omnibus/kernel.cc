@@ -7,18 +7,18 @@
 #include <utility>
 import simd;
 #if TEST_AVX2
-using Arch=simd::avx2;
+constexpr auto Arch = simd::avx2;
 #elif TEST_AVX512
-using Arch=simd::avx512;
+constexpr auto Arch = simd::avx512;
 #elif TEST_NEON_BF16
-using Arch=simd::neon_bf16;
+constexpr auto Arch = simd::neon_bf16;
 #elif TEST_NEON_FP16
-using Arch=simd::neon_fp16;
+constexpr auto Arch = simd::neon_fp16;
 #else
-using Arch=simd::neon;
+constexpr auto Arch = simd::neon;
 #endif
 using V=simd::vec<float,4,Arch>;
-static_assert(std::same_as<decltype(simd::vec(Arch{},1.f,2.f,3.f,4.f)),V>);
+static_assert(std::same_as<decltype(simd::vec<float,4,Arch>(1.f,2.f,3.f,4.f)),V>);
 static_assert(std::same_as<decltype(V{}<V{}),V::mask>);
 static_assert(sizeof(V)==16);
 #if TEST_AVX512 && TEST_BOTH_X86

@@ -4,9 +4,9 @@ Each AVX2 and AVX512 bridge compiles with private profile flags and imports the
 shared hub. The baseline x86-64 dispatcher checks
 CPUID and OS vector state, then enters an admitted bridge through a C function.
 The `none` control enters neither profile. Type checks verify distinct profile
-types and architecture tags with shared `simd::wide` storage. Generic consumers
-use `template<class Arch>` and `simd::vec<T,N,Arch>`; direct CTAD keeps the tag
-explicit. Comparisons return `V::mask`, full vectors for AVX2 and compact
+types and architecture values with shared `simd::wide` storage. Generic consumers
+use `template<simd::isa Arch>` and `simd::vec<T,N,Arch>`; constructor calls name
+the vector type explicitly. Copy deduction preserves its existing ISA value. Comparisons return `V::mask`, full vectors for AVX2 and compact
 predicates for the supported AVX512 shapes.
 
 Each current capture contains eight operation-major columns of 96 words: add,

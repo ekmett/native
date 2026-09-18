@@ -12,10 +12,10 @@ import simd;
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-using test_architecture = simd::neon;
+constexpr auto test_architecture = simd::neon;
 __attribute__((target("neon"),noinline))
 #else
-using test_architecture = simd::avx2;
+constexpr auto test_architecture = simd::avx2;
 __attribute__((target("avx2,fma,bmi2"),noinline))
 #endif
 bool vector_operation(float value) {

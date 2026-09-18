@@ -21,11 +21,11 @@ import simd.arm;
 #endif
 
 namespace integer_test {
-  template<class T,std::size_t N,class A> concept has_shape=requires { typename simd::vec<T,N,A>::native_type; };
-  template<class To,class From,std::size_t N,class A> concept can_pack=requires(simd::vec<From,N,A> a) {
+  template<class T,std::size_t N,simd::isa A> concept has_shape=requires { typename simd::vec<T,N,A>::native_type; };
+  template<class To,class From,std::size_t N,simd::isa A> concept can_pack=requires(simd::vec<From,N,A> a) {
     simd::narrow_concat<To>(a,a);
   };
-  template<class To,class From,std::size_t N,class A> concept can_reinterpret=requires(simd::vec<From,N,A> a) {
+  template<class To,class From,std::size_t N,simd::isa A> concept can_reinterpret=requires(simd::vec<From,N,A> a) {
     simd::reinterpret_bits<To>(a);
   };
   static_assert(!has_shape<std::uint32_t,0,simd::scalar>);
@@ -66,11 +66,11 @@ SIMD_TARGET_PUSH(avx512)
 SIMD_TARGET_POP()
 #undef INTEGER_CASE_NAME
 
-static_assert(integer_test::can_pack<std::uint32_t,std::uint64_t,8,SIMD_TARGET_TYPE(fdq)>);
-static_assert(!integer_test::can_pack<std::uint16_t,std::uint32_t,16,SIMD_TARGET_TYPE(fdq)>);
-static_assert(!integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,SIMD_TARGET_TYPE(fdq)>);
-static_assert(!integer_test::can_reinterpret<std::uint16_t,std::uint64_t,8,SIMD_TARGET_TYPE(fdq_vl)>);
-static_assert(integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,SIMD_TARGET_TYPE(fdq_bw)>);
+static_assert(integer_test::can_pack<std::uint32_t,std::uint64_t,8,SIMD_TARGET_ISA(fdq)>);
+static_assert(!integer_test::can_pack<std::uint16_t,std::uint32_t,16,SIMD_TARGET_ISA(fdq)>);
+static_assert(!integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,SIMD_TARGET_ISA(fdq)>);
+static_assert(!integer_test::can_reinterpret<std::uint16_t,std::uint64_t,8,SIMD_TARGET_ISA(fdq_vl)>);
+static_assert(integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,SIMD_TARGET_ISA(fdq_bw)>);
 static_assert(!integer_test::can_reinterpret<std::uint64_t,std::uint32_t,2,simd::avx2>);
 static_assert(!integer_test::can_reinterpret<std::uint32_t,std::uint64_t,1,simd::avx2>);
 static_assert(integer_test::can_reinterpret<std::int32_t,std::uint32_t,2,simd::avx2>);
@@ -78,13 +78,13 @@ static_assert(integer_test::can_reinterpret<std::int32_t,std::uint32_t,2,simd::a
 #define INTEGER_CODEGEN(name) \
   SIMD_TARGET_PUSH(name) \
   extern "C" __attribute__((noinline)) void integer_codegen_##name##_u32(std::uint32_t const * p,std::uint32_t * q) { \
-    simd::popcount(simd::vec<std::uint32_t,16,SIMD_TARGET_TYPE(name)>::loadu(p)).storeu(q); \
+    simd::popcount(simd::vec<std::uint32_t,16,SIMD_TARGET_ISA(name)>::loadu(p)).storeu(q); \
   } \
   extern "C" __attribute__((noinline)) void integer_codegen_##name##_u64(std::uint64_t const * p,std::uint64_t * q) { \
-    simd::popcount(simd::vec<std::uint64_t,8,SIMD_TARGET_TYPE(name)>::loadu(p)).storeu(q); \
+    simd::popcount(simd::vec<std::uint64_t,8,SIMD_TARGET_ISA(name)>::loadu(p)).storeu(q); \
   } \
   extern "C" __attribute__((noinline)) void integer_codegen_##name##_pack(std::uint64_t const * a,std::uint64_t const * b,std::uint32_t * q) { \
-    using V=simd::vec<std::uint64_t,8,SIMD_TARGET_TYPE(name)>; \
+    using V=simd::vec<std::uint64_t,8,SIMD_TARGET_ISA(name)>; \
     simd::narrow_concat<std::uint32_t>(V::loadu(a),V::loadu(b)).storeu(q); \
   } \
   SIMD_TARGET_POP()
@@ -115,7 +115,7 @@ int main() {
 #endif
   unsigned executed=1,skipped=0;
 #define RUN_CASE(name) \
-  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(name){},SIMD_TARGET_MINIMUM).admitted()) { \
+  if(simd::classify_isa(cpu,SIMD_TARGET_ISA(name),SIMD_TARGET_MINIMUM).admitted()) { \
     if(!integer_test::name::run()) { std::puts("integer/packing " #name ": FAILED"); return 2; } \
     ++executed;std::puts("integer/packing " #name ": executed"); \
   } else { ++skipped;std::puts("integer/packing " #name ": skipped (not admitted)"); }

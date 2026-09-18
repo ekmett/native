@@ -40,7 +40,7 @@ import simd.arm;
 #define DEFINE_CASE(name,width) \
   SIMD_TARGET_PUSH(name) \
   __attribute__((noinline)) bool construct_##name() { \
-    using A=SIMD_TARGET_TYPE(name); \
+    constexpr auto A = SIMD_TARGET_ISA(name); \
     auto empty=[]<class T>() { \
       static_assert(same_traits<T,0>() && same_traits<T,1>() && same_traits<T,3>()); \
       simd::wide<T,0> defaulted; \
@@ -84,7 +84,7 @@ int native_construction() {
 #endif
   unsigned executed=0,skipped=0;
 #define RUN_CASE(name,width) \
-  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(name){},SIMD_TARGET_MINIMUM).admitted()) { \
+  if(simd::classify_isa(cpu,SIMD_TARGET_ISA(name),SIMD_TARGET_MINIMUM).admitted()) { \
     if(!construct_##name()) return 3; \
     ++executed; \
   } else ++skipped;

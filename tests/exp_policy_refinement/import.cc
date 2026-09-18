@@ -31,7 +31,7 @@ SIMD_TARGET_POP()
 #define EMIT_HALF_TAG_IMPORT(name) \
   SIMD_TARGET_PUSH(name) \
   bool check_half_tag_##name() { \
-    using A=simd::isa<SIMD_TARGET_TYPE(name)::features|simd::feature::avx512_bf16|simd::feature::avx512_fp16>; \
+    constexpr auto A=simd::feature_closure(SIMD_TARGET_ISA(name)&simd::feature::avx512bf16&simd::feature::avx512fp16); \
     using V=simd::vec<float,8,A>; \
     using W=simd::wide<V,2>; \
     using F=W (*)(W const &); \
@@ -56,11 +56,11 @@ EMIT_HALF_TAG_IMPORT(avx512)
 
 int main() {
   auto cpu=simd::observe_x86_capabilities();
-  if(!simd::classify_isa(cpu,simd::avx2{},SIMD_TARGET_MINIMUM).admitted()) return 77;
+  if(!simd::classify_isa(cpu,simd::avx2,SIMD_TARGET_MINIMUM).admitted()) return 77;
   if(!check_import()) return 1;
-  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(import_bw){},SIMD_TARGET_MINIMUM).admitted() &&
+  if(simd::classify_isa(cpu,SIMD_TARGET_ISA(import_bw),SIMD_TARGET_MINIMUM).admitted() &&
       !check_half_tag_import_bw()) return 2;
-  if(simd::classify_isa(cpu,simd::avx512{},SIMD_TARGET_MINIMUM).admitted() &&
+  if(simd::classify_isa(cpu,simd::avx512,SIMD_TARGET_MINIMUM).admitted() &&
       !check_half_tag_avx512()) return 3;
   return 0;
 }

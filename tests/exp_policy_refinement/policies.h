@@ -27,13 +27,13 @@ namespace refinement_test {
   using exp_policies=simd::detail::x86_kernel_policies;
   using simd::detail::exp_target;
   // Only the test entry points are repeated for each caller tag.
-#define CALLER_TARGET(i,name,raw) + simd::isa_list<SIMD_TARGET_TYPE(name)>{}
+#define CALLER_TARGET(i,name,raw) + simd::isa_list<SIMD_TARGET_ISA(name)>{}
   using caller_targets=decltype(simd::isa_list<>{} EXP_CALLER_CASES(CALLER_TARGET));
 #undef CALLER_TARGET
 }
 
 #define CHECK_EXP_CALLER(i,name,raw) \
-  static_assert((simd::target<SIMD_TARGET_TYPE(name),refinement_test::caller_targets> == i)); \
-  static_assert((simd::detail::exp_target<SIMD_TARGET_TYPE(name)> == raw));
+  static_assert((simd::abi_lookup<SIMD_TARGET_ISA(name),refinement_test::caller_targets>::index == i)); \
+  static_assert((simd::detail::exp_target<SIMD_TARGET_ISA(name)> == raw));
 EXP_CALLER_CASES(CHECK_EXP_CALLER)
 #undef CHECK_EXP_CALLER

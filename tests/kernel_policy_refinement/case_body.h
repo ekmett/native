@@ -14,7 +14,7 @@ namespace CASE_NAMESPACE {
   // Derived custom domains retain their full architecture requirements.
   template<class V> struct opaque : V {};
   template<class V> struct value {
-    using architecture=typename V::architecture;
+    static constexpr simd::isa architecture=V::architecture;
     V raw;
     value() noexcept :raw(0.f) {}
     explicit value(V v) noexcept :raw(v) {}
@@ -36,20 +36,20 @@ namespace CASE_NAMESPACE {
     return a;
   }
   template<std::size_t L,std::size_t N> bool run() {
-    using A=SIMD_TARGET_TYPE(CASE_TARGET);
+    constexpr auto A = SIMD_TARGET_ISA(CASE_TARGET);
     using V=simd::vec<float,L,A>;
     using W=simd::wide<V,N>;
     static_assert(!addable<W,simd::wide<V,N+1>>);
     using OtherWidth=simd::vec<float,L==1?2:1,A>;
     static_assert(!addable<W,simd::wide<OtherWidth,N>>);
 #if defined(__x86_64__) || defined(_M_X64)
-    using OtherArch=std::conditional_t<std::same_as<A,simd::avx2>,simd::avx512,simd::avx2>;
+    constexpr auto OtherArch=A==simd::avx2?simd::avx512:simd::avx2;
     if constexpr (L<=8) static_assert(!addable<W,simd::wide<simd::vec<float,L,OtherArch>,N>>);
 #endif
 #if !SIMD_TEST_IMPORT
-    static_assert(simd::detail::wide_features<std::pair<V &,int>>::value==SIMD_TARGET_TYPE(CASE_SCOPE)::features);
-    static_assert(simd::detail::wide_features<opaque<V>>::value==A::features);
-    static_assert(simd::detail::wide_features<value<V>>::value==A::features);
+    static_assert(simd::detail::wide_features<std::pair<V &,int>>::value==SIMD_TARGET_ISA(CASE_SCOPE));
+    static_assert(simd::detail::wide_features<opaque<V>>::value==A);
+    static_assert(simd::detail::wide_features<value<V>>::value==A);
     static_assert(simd::detail::wide_equivalent_default<V> == (L==1));
     static_assert(!simd::detail::wide_equivalent_default<opaque<V>>);
     static_assert(!simd::detail::wide_equivalent_default<value<V>>);
@@ -92,7 +92,7 @@ namespace CASE_NAMESPACE {
     auto combined=(masks & classified) | (masks ^ masks);
     auto chosen=select(combined,a,b);
     static_assert(std::same_as<decltype(chosen),W>);
-    static_assert(std::same_as<typename decltype(masks.registers)::value_type::architecture,A>);
+    static_assert(decltype(masks.registers)::value_type::architecture==A);
     for(std::size_t k=0;k<N;++k) {
       auto m=aa[k]<bb[k];
       if(!same(chosen.registers[k],select(m,aa[k],bb[k]))) return false;
@@ -110,7 +110,7 @@ namespace CASE_NAMESPACE {
     // A custom domain supplies its own behavior and conservatively keeps A.
     // Exercise it in every raw scope; extra half-tag cases above prove built-in
     // narrowing without claiming requirements of an arbitrary custom wrapper.
-    if constexpr (std::same_as<A,SIMD_TARGET_TYPE(CASE_SCOPE)>) {
+    if constexpr (A==SIMD_TARGET_ISA(CASE_SCOPE)) {
       using C=value<V>; using CW=simd::wide<C,N>;
       CW custom{a}; // explicit element conversion, retaining full architecture
       static_assert(std::same_as<typename decltype(custom.registers)::value_type,C>);

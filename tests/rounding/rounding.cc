@@ -26,13 +26,13 @@ import simd;
 #endif
 
 #if SIMD_ROUNDING_PROFILE == 256
-using arch = simd::avx2;
+constexpr auto arch = simd::avx2;
 #elif SIMD_ROUNDING_PROFILE == 512
-using arch = simd::avx512;
+constexpr auto arch = simd::avx512;
 #elif SIMD_ROUNDING_PROFILE == 128
-using arch = simd::neon;
+constexpr auto arch = simd::neon;
 #else
-using arch = simd::scalar;
+constexpr auto arch = simd::scalar;
 #endif
 template<std::size_t N> using V = simd::vec<float,N,arch>;
 enum class direction { down, up, zero };

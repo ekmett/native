@@ -16,7 +16,7 @@ using B = simd::vec<simd::fp16,8,simd::neon_fp16>;
 static_assert(simd::test::native_bridge<B>);
 static_assert(sizeof(B) == 16 && alignof(B) == 16 && std::is_trivially_copyable_v<B>);
 static_assert(sizeof(simd::fp16) == 2 && !B::mask::compact);
-static_assert(std::same_as<decltype(simd::vec(simd::neon_fp16{},std::array<simd::fp16,8>{})),B>);
+static_assert(std::same_as<decltype(simd::vec<simd::fp16,8,simd::neon_fp16>(std::array<simd::fp16,8>{})),B>);
 static_assert(std::same_as<decltype(simd::fma(B{},B{},B{})),B>);
 static_assert(noexcept(simd::fma(B{},B{},B{})));
 static_assert(std::same_as<decltype(B{}/B{}),B> && noexcept(B{}/B{}));
@@ -25,7 +25,7 @@ template<class V> concept addable = requires(V a) { a+a; };
 static_assert(addable<B>);
 
 template<std::size_t... I> auto lane_construction(std::index_sequence<I...>) {
-  return simd::vec(simd::neon_fp16{},simd::fp16::from_bits(std::uint16_t(I))...);
+  return simd::vec<simd::fp16,sizeof...(I),simd::neon_fp16>(simd::fp16::from_bits(std::uint16_t(I))...);
 }
 static_assert(std::same_as<decltype(lane_construction(std::make_index_sequence<8>{})),B>);
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Repeated under each source target scope; no vector crosses a target boundary.
 namespace integer_test::INTEGER_CASE_NAME {
-  using arch = SIMD_TARGET_TYPE(INTEGER_CASE_NAME);
+  constexpr auto arch = SIMD_TARGET_ISA(INTEGER_CASE_NAME);
   template<class T, std::size_t N> bool integer_shape() {
     using V = simd::vec<T,N,arch>;
     static_assert(std::same_as<decltype(simd::popcount(std::declval<V>())),V>);
@@ -108,7 +108,7 @@ namespace integer_test::INTEGER_CASE_NAME {
       unsigned source=0;
       for(unsigned bit=0;bit<64;++bit)
         if((mask>>bit)&1) expected|=((value>>source++)&1)<<bit;
-      if(simd::deposit_bits(arch{},value,mask)!=expected) return false;
+      if(simd::deposit_bits<arch>(value,mask)!=expected) return false;
     }
     return true;
   }
