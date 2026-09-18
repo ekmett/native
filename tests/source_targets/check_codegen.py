@@ -24,7 +24,12 @@ if re.search(r'\b(?:zmm|ymm)\d+',assembly):
         raise SystemExit('Both native AVX2 and AVX512 packed additions are required.')
 elif not re.search(r'\bfadd\s+v\d+\.4s',assembly):
     raise SystemExit('Native NEON four-lane addition is required.')
-for name,body in kernels:
-    if re.search(r'\b(?:callq?|bl)\s',body):
-        raise SystemExit('Source variant unexpectedly contains a helper call: '+name)
-print('Exactly three selected variants contain native vector additions without helper calls.')
+instrumented=any('source_targets_asan_instrumented' in functions[i+1]
+    for i in range(1,len(functions),3))
+if instrumented:
+    print('ASan object: native instructions and variant count checked; instrumentation calls permitted.')
+else:
+    for name,body in kernels:
+        if re.search(r'\b(?:callq?|bl)\s',body):
+            raise SystemExit('Source variant unexpectedly contains a helper call: '+name)
+    print('Exactly three selected variants contain native vector additions without helper calls.')

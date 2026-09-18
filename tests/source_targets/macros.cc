@@ -1,9 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <simd/targets.h>
+#include <cstdio>
+#if defined(__aarch64__) || defined(_M_ARM64)
+#include <arm_neon.h>
+#else
+#include <immintrin.h>
+#endif
 #ifdef SIMD_TARGETS_METADATA_ONLY
 import simd_target_metadata;
 #else
+import simd.scalar;
 import simd;
 #endif
 
@@ -15,39 +22,76 @@ import simd;
 #define SELECTED_TARGETS(X,...) X(avx512,__VA_ARGS__) X(avx2,__VA_ARGS__) X(custom,__VA_ARGS__)
 #endif
 
-// The metadata-only developer probe also checks the compiler's raw-vector escape.
-// The installed test uses the real hub's wrappers and two-register wide addition.
+// Both arguments and result cross the implicit native-register bridge. This
+// helper belongs to the generated body and receives exactly its target scope.
+#if defined(__aarch64__) || defined(_M_ARM64)
+#define NATIVE_DOUBLE(value) return vaddq_f32(value,value);
+#else
+#define NATIVE_DOUBLE(value) \
+  if constexpr(sizeof(V)==64) return _mm512_add_ps(value,value); \
+  else return _mm256_add_ps(value,value);
+#endif
+
+// The metadata probe uses raw registers. The installed test additionally keeps
+// real hub wrappers and two-register wide arithmetic around the native bridge.
 #ifdef SIMD_TARGETS_METADATA_ONLY
-#define DOUBLE_STEP(tag,lanes) \
+#define DOUBLE_STEP(name,tag,lanes) \
   using native=float __attribute__((ext_vector_type(lanes))); \
   for(unsigned i=0;i<32;i+=lanes) { \
     native value;__builtin_memcpy(&value,input+i,sizeof(value)); \
-    value+=value;__builtin_memcpy(output+i,&value,sizeof(value)); \
+    value+=value;value=name##_native(tag{},value); \
+    __builtin_memcpy(output+i,&value,sizeof(value)); \
   }
 #else
-#define DOUBLE_STEP(tag,lanes) \
+#define DOUBLE_STEP(name,tag,lanes) \
   using V=simd::vec<float,lanes,tag>; \
   for(unsigned i=0;i<32;i+=2*lanes) { \
     simd::wide<V,2> value{V::load(input+i),V::load(input+i+lanes)}; \
     value=value+value; \
-    value.registers[0].store(output+i);value.registers[1].store(output+i+lanes); \
+    V first=name##_native(tag{},value.registers[0]); \
+    V second=name##_native(tag{},value.registers[1]); \
+    first.store(output+i);second.store(output+i+lanes); \
   }
 #endif
 #define DOUBLE_BODY(name,tag) \
+  template<class V> __attribute__((always_inline)) inline V name##_native(tag,V value) { \
+    NATIVE_DOUBLE(value) \
+  } \
   __attribute__((noinline)) void name(tag,float * output,float const * input) { \
     constexpr unsigned lanes=simd::has_feature<tag,simd::feature::avx512f>?16: \
       simd::has_feature<tag,simd::feature::neon>?4:8; \
-    DOUBLE_STEP(tag,lanes) \
+    DOUBLE_STEP(name,tag,lanes) \
   }
 SIMD_TARGET_VARIANTS(source_kernel,SELECTED_TARGETS,DOUBLE_BODY)
 #undef DOUBLE_BODY
 #undef DOUBLE_STEP
+#undef NATIVE_DOUBLE
 
 // The target scope must end at the body, leaving later declarations ordinary.
 extern "C" __attribute__((noinline)) float source_after_scope(float x) { return x+x; }
 
+#if __has_feature(address_sanitizer)
+// Read from this exact object's disassembly, including externally added ASan
+// flags. Instrumented variants still check symbols and native instructions.
+extern "C" int source_targets_asan_instrumented() { return 1; }
+#endif
+
 #ifndef SIMD_TARGETS_METADATA_ONLY
+int scalar_result(int);
+
+// Ordinary baseline code in the same TU as every attributed native variant.
+bool scalar_path() {
+  using V=simd::vec<float,1,simd::scalar>;
+  simd::wide<V,2> value{V(3.f),V(-4.f)};
+  value=value+value;
+  float output[2]{};
+  value.registers[0].store(output);
+  value.registers[1].store(output+1);
+  return output[0]==6.f && output[1]==-8.f && scalar_result(4)==5;
+}
+
 int main() {
+  if(!scalar_path()) return 1;
 #if defined(__aarch64__) || defined(_M_ARM64)
   auto cpu=simd::observe_arm_capabilities();
 #else
@@ -55,11 +99,40 @@ int main() {
 #endif
   float input[32],output[32]{};
   for(unsigned i=0;i<32;++i) input[i]=float(i)-17;
+  auto correct=[&] {
+    for(unsigned i=0;i<32;++i) if(output[i]!=input[i]*4) return false;
+    return true;
+  };
+  auto clear=[&] { for(float & value:output) value=0; };
+  unsigned expected=0,executed=0,skipped=0,index=0;
+#define RUN_EACH(name,...) \
+  ++index; \
+  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(name){},SIMD_TARGET_MINIMUM).admitted()) { \
+    if(!expected) expected=index; \
+    clear();source_kernel(SIMD_TARGET_TYPE(name){},output,input); \
+    if(!correct()) return 2; \
+    ++executed;std::printf("source target %s: executed\n",#name); \
+  } else { \
+    ++skipped;std::printf("source target %s: skipped (not admitted)\n",#name); \
+  }
+  SELECTED_TARGETS(RUN_EACH)
+#undef RUN_EACH
+  unsigned calls=0;
+  simd::feature_set selected_features=0;
+  clear();
   auto selected=simd::with_isa(SIMD_TARGET_LIST(SELECTED_TARGETS),cpu,[&](auto tag) {
+    ++calls;selected_features=decltype(tag)::features;
     source_kernel(tag,output,input);
   });
-  if(!selected) return 77;
-  for(unsigned i=0;i<32;++i) if(output[i]!=input[i]*2) return 1;
+  if(selected!=(executed!=0) || calls!=unsigned(selected)) return 3;
+  if(!selected) return 77; // Scalar ran; this host admits no selected native body.
+  if(!correct()) return 4;
+  index=0;
+#define CHECK_ORDER(name,...) \
+  if(++index==expected && selected_features!=SIMD_TARGET_TYPE(name)::features) return 5;
+  SELECTED_TARGETS(CHECK_ORDER)
+#undef CHECK_ORDER
+  std::printf("scalar path passed; %u variants executed, %u skipped; ordered dispatch passed\n",executed,skipped);
   return 0;
 }
 #endif

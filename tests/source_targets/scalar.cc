@@ -4,6 +4,7 @@
 import simd_target_metadata;
 #else
 import simd;
+import simd.scalar;
 #endif
 #include <simd/targets.h>
 #define SCALAR_TARGETS(X,...) X(scalar,__VA_ARGS__)

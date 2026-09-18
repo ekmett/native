@@ -6,6 +6,7 @@ import json
 import pathlib
 import re
 import subprocess
+import sys
 
 p=argparse.ArgumentParser()
 p.add_argument('--compiler',required=True)
@@ -42,7 +43,17 @@ run('arm-windows-object',[*flags,'--target=aarch64-pc-windows-msvc','-c',
     out/'simd.arm.pcm','-o',out/'arm.obj'])
 run('macros-ir',[*consumer,'-S','-emit-llvm',source/'macros.cc','-o',out/'macros.ll'])
 run('macros-assembly',[*consumer,'-S',source/'macros.cc','-o',out/'macros.s'])
+run('macros-object',[*consumer,'-c',source/'macros.cc','-o',out/'macros.obj'])
 run('scalar-and-empty-list',[*consumer,'-c',source/'scalar.cc','-o',out/'scalar.obj'])
+objdump=pathlib.Path(a.compiler).with_name('llvm-objdump.exe')
+run('object-codegen',[sys.executable,source/'check_codegen.py','--objdump',objdump,
+    '--output',out/'macros.disassembly',out/'macros.obj',out/'scalar.obj'])
+asan_pcm=out/'simd_target_metadata_asan.pcm'
+run('asan-provider',[*flags,'-fsanitize=address','--precompile',source/'metadata.ccm','-o',asan_pcm])
+run('asan-object',[*flags,'-fsanitize=address','-DSIMD_TARGETS_METADATA_ONLY',
+    '-fmodule-file=simd_target_metadata='+str(asan_pcm),'-c',source/'macros.cc','-o',out/'macros-asan.obj'])
+run('asan-object-codegen',[sys.executable,source/'check_codegen.py','--objdump',objdump,
+    '--output',out/'macros-asan.disassembly',out/'macros-asan.obj'])
 rejected=run('invalid',[*consumer,'-c',source/'invalid.cc','-o',out/'invalid.obj'],False)
 assert 'unknown SIMD ISA feature' in rejected.stderr
 ir=(out/'macros.ll').read_text()
@@ -62,4 +73,4 @@ assert re.search(r'vaddps[^\n]*zmm',assembly)
 (out/'receipt.json').write_text(json.dumps({'commands':records,'source_kernel_definitions':definitions,
     'selected_target_attributes':kernel_attributes,'after_scope_attributes':after_attributes,
     'passed':True},indent=2),encoding='utf-8')
-print('Metadata module, synthetic admission, three exact source variants, native-width assembly and negative registry passed.')
+print('Metadata module, synthetic admission, three exact source variants, ordinary/ASan object codegen and negative registry passed.')
