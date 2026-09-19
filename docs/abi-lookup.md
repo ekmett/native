@@ -134,10 +134,31 @@ void double16(float * out, float const * in);
 
 These are constrained function overloads. The deleted primary rejects ISAs
 with no implementation. The ISA metadata is available on every host, but
-`import simd` exposes native vectors for the compilation target. `requires`
-does not hide incompatible intrinsic headers, nondependent native types, or
-foreign Clang target attributes. Guard their includes and definitions, or put
-the implementations in source files selected for that platform.
+`import simd` exposes native vectors for the compilation target. Guard native
+headers and target-attribute scopes by CPU family. Constraints cannot hide a
+foreign header or defer Clang's processing of a target attribute.
+
+You can instead leave the NEON overload in shared source by making its body
+dependent. With NEON as the ARM project minimum, this definition needs no
+additional target scope:
+
+```cpp
+template<isa A>
+  requires(A.has(feature::neon) && requires { sizeof(vec<float, 4, A>); })
+void double16(float * out, float const * in) {
+  using V = vec<float, 4, A>;
+  for (unsigned i = 0; i < 16; i += 4) {
+    auto x = V::load(in + i);
+    (x + x).store(out + i);
+  }
+}
+```
+
+The `sizeof` requirement checks that this build provides the vector type. On
+x86 it rejects the NEON overload without instantiating its body. Keeping `A`
+in the vector type makes lookup dependent; replacing it with the concrete
+`neon` value requires that native type while parsing the definition. A failed
+constraint removes a candidate; an error inside an instantiated body does not.
 
 The NEON case is an ARM implementation of the same interface, not another
 variant emitted into an x86 binary. Since the x86 overloads are absent from
@@ -152,8 +173,8 @@ not the other function overloads.
 
 Declare every overload before defining a dispatcher template that calls
 `double16<A>`. With these pointer arguments, argument-dependent lookup cannot
-discover an overload declared later. The native definitions need the matching
-Clang target scopes and belong in builds for their host architecture; see the
+discover an overload declared later. Native code beyond the project minimum
+needs matching Clang target scopes in builds for its CPU family; see the
 [direct kernel example](omnibus.md).
 
 Use `has` in these constraints. Adding `!!` to `A.neon` does not remove the
