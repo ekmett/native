@@ -95,6 +95,12 @@ int main() {
   cpu = full; cpu.xcr0 &= ~(1u << 2);
   if (std::strcmp(simd::classify_isa(cpu, simd::avx2).reason(), "YMM state unavailable")) return 3;
   auto native = simd::observe_x86_capabilities();
+  auto identity=simd::cpuid(0,0);
+  std::int32_t vendor_words[]{identity.ebx,identity.edx,identity.ecx};
+  if(native.vendor_id[12]!=0 || std::memcmp(native.vendor_id.data(),vendor_words,12)) return 10;
+  auto expected_vendor=std::strcmp(native.vendor_id.data(),"GenuineIntel")==0 ? simd::cpu_vendor::intel :
+    std::strcmp(native.vendor_id.data(),"AuthenticAMD")==0 ? simd::cpu_vendor::amd : simd::cpu_vendor::unknown;
+  if(native.vendor!=expected_vendor) return 11;
   if (native.max_basic_leaf < 1 && (native.leaf1_ecx || native.leaf1_edx || native.xcr0_observed)) return 4;
   if (native.max_basic_leaf < 7 && (native.leaf7_ebx || native.leaf7_edx)) return 5;
   constexpr auto xsave = (1u<<26)|(1u<<27);

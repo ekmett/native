@@ -62,6 +62,10 @@ export namespace simd {
     /// Extended CPUID range and leaf 0x80000001 ECX (LAHF/SAHF and LZCNT).
     /// Zero when unavailable; source target admission checks the range first.
     std::uint32_t max_extended_leaf = 0, extended1_ecx = 0;
+    /// Exact CPUID vendor identifier, followed by a zero terminator.
+    std::array<char,13> vendor_id{};
+    /// Classification of vendor_id; it does not establish instruction support.
+    enum cpu_vendor vendor = cpu_vendor::unknown;
   };
 
   /// Capture CPUID and, only with XSAVE and OSXSAVE, XCR0. No ISA profile required.
@@ -72,6 +76,26 @@ export namespace simd {
 }
 
 namespace simd {
+  namespace detail {
+    constexpr std::array<char,13> vendor_identifier(cpuid_t leaf) noexcept {
+      std::array<char,13> result{};
+      std::uint32_t words[]{std::uint32_t(leaf.ebx),std::uint32_t(leaf.edx),std::uint32_t(leaf.ecx)};
+      for(unsigned word=0;word!=3;++word)
+        for(unsigned byte=0;byte!=4;++byte)
+          result[4*word+byte]=char((words[word]>>(8*byte))&0xff);
+      return result;
+    }
+    constexpr enum cpu_vendor identify_vendor(std::array<char,13> const & id) noexcept {
+      std::string_view name{id.data(),12};
+      if(name=="GenuineIntel") return cpu_vendor::intel;
+      if(name=="AuthenticAMD") return cpu_vendor::amd;
+      return cpu_vendor::unknown;
+    }
+    static_assert(identify_vendor(vendor_identifier({0,0x756e6547,0x6c65746e,0x49656e69}))==cpu_vendor::intel);
+    static_assert(identify_vendor(vendor_identifier({0,0x68747541,0x444d4163,0x69746e65}))==cpu_vendor::amd);
+    static_assert(identify_vendor(vendor_identifier({}))==cpu_vendor::unknown);
+  }
+
   cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept {
 #if defined(_MSC_VER)
     int registers[4];
@@ -87,7 +111,10 @@ namespace simd {
 
   x86_capabilities observe_x86_capabilities() noexcept {
     x86_capabilities result;
-    result.max_basic_leaf = std::uint32_t(cpuid(0, 0).eax);
+    auto identity=cpuid(0,0);
+    result.max_basic_leaf = std::uint32_t(identity.eax);
+    result.vendor_id=detail::vendor_identifier(identity);
+    result.vendor=detail::identify_vendor(result.vendor_id);
     if (result.max_basic_leaf >= 1) {
       auto leaf = cpuid(1, 0);
       result.leaf1_ecx = std::uint32_t(leaf.ecx);
@@ -119,11 +146,6 @@ namespace simd {
   }
 
   const enum cpu_vendor cpu_vendor = [] static noexcept {
-    auto result = cpuid(0, 0);
-    std::array<std::int32_t, 3> data{result.ebx, result.edx, result.ecx};
-    std::string_view vendor{reinterpret_cast<char const *>(data.data()), 12};
-    if (vendor == "GenuineIntel") return cpu_vendor::intel;
-    if (vendor == "AuthenticAMD") return cpu_vendor::amd;
-    return cpu_vendor::unknown;
+    return detail::identify_vendor(detail::vendor_identifier(cpuid(0,0)));
   }();
 }
