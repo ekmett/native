@@ -12,8 +12,8 @@ extern "C" int pair_avx512(float);
 extern "C" int static_string_check();
 int main() {
   if (static_string_check()) return 5;
-  auto admission = simd::classify_x86_profile(
-    simd::observe_x86_capabilities(), simd::x86_profile::avx512);
+  auto admission = simd::classify_isa(
+    simd::observe_x86_capabilities(), simd::avx512);
   if (!admission.admitted()) { std::puts(admission.reason()); return 77; }
   simd::test::fp_scope region(simd::test::fp_mode::gradual);
   if(!region.controls_match()) return 3;

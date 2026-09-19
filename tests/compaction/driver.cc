@@ -13,20 +13,20 @@ int compaction_entry(int,char **);
 int main(int argc,char ** argv) {
 #if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
 #if SIMD_TEST_AVX512_FP16
-  constexpr auto profile = simd::x86_profile::avx512_fp16;
+  constexpr auto profile = simd::avx512_fp16;
 #elif SIMD_TEST_BF16
-  constexpr auto profile = simd::x86_profile::avx512_bf16;
+  constexpr auto profile = simd::avx512_bf16;
 #else
-  constexpr auto profile = SIMD_TEST_PROFILE == 512 ? simd::x86_profile::avx512 : simd::x86_profile::avx2;
+  constexpr auto profile = SIMD_TEST_PROFILE == 512 ? simd::avx512 : simd::avx2;
 #endif
-  auto admission=simd::classify_x86_profile(simd::observe_x86_capabilities(),profile);
+  auto admission=simd::classify_isa(simd::observe_x86_capabilities(),profile);
   if(!admission.admitted()) { std::puts(admission.reason());return 77; }
 #endif
 #if SIMD_TEST_PROFILE == 128 && SIMD_TEST_BF16
-  auto admission=simd::classify_arm_profile(simd::observe_arm_capabilities(),simd::arm_profile::neon_bf16);
+  auto admission=simd::classify_isa(simd::observe_arm_capabilities(),simd::neon_bf16);
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
 #elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_FP16
-  auto admission=simd::classify_arm_profile(simd::observe_arm_capabilities(),simd::arm_profile::neon_fp16);
+  auto admission=simd::classify_isa(simd::observe_arm_capabilities(),simd::neon_fp16);
   if(!admission.admitted()) { std::puts(admission.reason());return 77; }
 #endif
   return compaction_entry(argc,argv);

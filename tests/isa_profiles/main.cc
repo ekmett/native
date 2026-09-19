@@ -14,8 +14,8 @@ import simd.x86;
 namespace {
   unsigned supported() {
     auto cpu = simd::observe_x86_capabilities();
-    auto avx2 = simd::classify_x86_profile(cpu, simd::x86_profile::avx2);
-    auto avx512 = simd::classify_x86_profile(cpu, simd::x86_profile::avx512);
+    auto avx2 = simd::classify_isa(cpu, simd::avx2);
+    auto avx512 = simd::classify_isa(cpu, simd::avx512);
     std::printf("AVX2: %s; AVX512: %s\n", avx2.reason(), avx512.reason());
     return unsigned(avx2.admitted()) | (unsigned(avx512.admitted()) << 1);
   }

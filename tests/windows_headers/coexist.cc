@@ -32,9 +32,9 @@ int main() {
   GetSystemInfo(&info);
   if(!info.dwPageSize) return 1;
 #if defined(__aarch64__) || defined(_M_ARM64)
-  auto admitted = simd::classify_arm_profile(simd::observe_arm_capabilities(),simd::arm_profile::neon);
+  auto admitted = simd::classify_isa(simd::observe_arm_capabilities(),simd::neon);
 #else
-  auto admitted = simd::classify_x86_profile(simd::observe_x86_capabilities(),simd::x86_profile::avx2);
+  auto admitted = simd::classify_isa(simd::observe_x86_capabilities(),simd::avx2);
 #endif
   if(!admitted.admitted()) return 77;
   return vector_operation(static_cast<float>(info.dwPageSize)) ? 0 : 2;

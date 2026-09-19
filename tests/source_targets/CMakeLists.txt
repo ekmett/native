@@ -52,3 +52,15 @@ endforeach()
 set_tests_properties(simd.source_targets.metadata simd.source_targets.native
   simd.source_targets.codegen simd.source_targets.reject_invalid simd.source_targets.reject_no_target
   PROPERTIES LABELS "host;modules;source_targets" TIMEOUT 180)
+
+# Import only the capability module; admission must not require the SIMD hub.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  add_executable(simd_test_arm_admission arm.cc)
+  target_link_libraries(simd_test_arm_admission PRIVATE simd::common)
+  set_target_properties(simd_test_arm_admission PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(COMMAND simd_link_clang_cl_asan)
+    simd_link_clang_cl_asan(simd_test_arm_admission)
+  endif()
+  add_test(NAME simd.arm.admission COMMAND simd_test_arm_admission)
+  set_tests_properties(simd.arm.admission PROPERTIES LABELS "host;modules;baseline;source_targets")
+endif()

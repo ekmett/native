@@ -213,3 +213,25 @@ name. When needed, define `SIMD_TARGET_EXTRA_MINIMUM` before including
 `<simd/targets.h>` as an additional ISA value, for example
 `simd::target_features("avx2,f16c")`. This adds to admission requirements;
 it does not change compiler flags or make startup safe below the project minimum.
+
+## Capability module migration
+
+The platform modules are `simd.x86` and `simd.arm`. Each exports the shared
+`isa`, `classify_isa` and `with_isa` interface alongside its native capability
+snapshot and observer. Standalone capability consumers link `simd::common`;
+they do not need the vector hub. The raw `cpuid` function and vendor query remain
+in `simd.x86`, and waiting instructions remain in `simd.wait`.
+
+Replace the former `simd.cpuid` import with `simd.x86`. The fixed `x86_profile`
+and `arm_profile` enums, their classifiers and per-platform admission records
+have been removed. Pass the existing ISA values to `classify_isa(cpu, avx2)` or
+`classify_isa(cpu, neon_fp16)`, or use a finite list with `with_isa` when selecting
+an implementation. An additional ISA minimum is admitted together with the
+requested features. Failed observations, stale bits and unknown requirements
+cannot authorize optional instructions.
+
+The shared result retains all `missing_features` and `missing_xcr0` bits.
+`reason()` returns the target spelling of the first unavailable feature, an
+OS-state description, or `"admitted"`. Unavailable features include both failed
+queries and observed absence; inspect the native snapshot when that distinction
+matters. Rebuild module producers and consumers together after this API change.

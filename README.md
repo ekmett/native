@@ -63,12 +63,12 @@ custom element types and application dispatch.
 | Module | Public interface |
 | --- | --- |
 | `simd` | All native ISA variants for the host architecture and common utilities |
-| `simd.arm` | Baseline AArch64 OS capability observation and profile admission |
+| `simd.arm` | AArch64 OS capability observation and shared ISA admission |
 | `simd.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `simd.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
 | `simd.types`, `simd.memory`, `simd.static_string` | Type, memory and string utilities |
-| `simd.x86`, `simd.wait` | Baseline x86 feature queries and wait utilities |
+| `simd.x86`, `simd.wait` | x86 CPU/OS capability observation, shared ISA admission and wait utilities |
 
 The hub exposes the common vector template, ISA values and `wide`. Generic math
 uses argument-dependent lookup, so an element library can supply its own

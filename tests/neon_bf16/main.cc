@@ -47,20 +47,19 @@ namespace {
     ~environment() {set_fpcr(control);set_fpsr(status);}
   };
   constexpr bool classification() {
-    using P=simd::arm_profile;
     simd::arm_capabilities empty;
-    if(simd::classify_arm_profile(empty,P::neon_bf16).admitted()) return false;
+    if(simd::classify_isa(empty,simd::neon_bf16).admitted()) return false;
     simd::arm_capabilities all{true,true,true,true,true,true,true,true,true,true};
-    if(!simd::classify_arm_profile(all,P::neon_bf16).admitted()) return false;
-    if(!simd::classify_arm_profile(all,static_cast<P>(255)).invalid_profile) return false;
+    if(!simd::classify_isa(all,simd::neon_bf16).admitted()) return false;
+    if(!simd::classify_isa(all,simd::isa(simd::feature::invalid_features)).invalid_features) return false;
     auto baseline=all; baseline.bf16_observed=baseline.bf16=false;
-    if(!simd::classify_arm_profile(baseline,P::neon).admitted() ||
-        !simd::classify_arm_profile(baseline,P::neon_fp16).admitted() ||
-        simd::classify_arm_profile(baseline,P::neon_bf16).admitted()) return false;
+    if(!simd::classify_isa(baseline,simd::neon).admitted() ||
+        !simd::classify_isa(baseline,simd::neon_fp16).admitted() ||
+        simd::classify_isa(baseline,simd::neon_bf16).admitted()) return false;
     auto independent=all;
     independent.fp16_observed=independent.scalar_fp16=independent.vector_fp16=false;
     independent.ebf16_observed=independent.ebf16=false;
-    if(!simd::classify_arm_profile(independent,P::neon_bf16).admitted()) return false;
+    if(!simd::classify_isa(independent,simd::neon_bf16).admitted()) return false;
     for(unsigned missing=0;missing!=5;++missing) {
       auto c=all;
       switch(missing) {
@@ -70,10 +69,9 @@ namespace {
         case 3:c.bf16_observed=false;break;
         case 4:c.bf16=false;break;
       }
-      auto rejected=simd::classify_arm_profile(c,P::neon_bf16);
+      auto rejected=simd::classify_isa(c,simd::neon_bf16);
       if(rejected.admitted()) return false;
-      if(missing==3 && (!rejected.missing_bf16_observation || !rejected.missing_bf16)) return false;
-      if(missing==4 && (rejected.missing_bf16_observation || !rejected.missing_bf16)) return false;
+      if(missing>=3 && !rejected.missing_features.has(simd::feature::neon_bf16)) return false;
     }
     return true;
   }
@@ -168,7 +166,7 @@ int main(int argc,char **argv) {
   if(argc!=2)return 2;
   if(!std::strcmp(argv[1],"none")) {std::puts("No optional BF16 profile entered.");return 0;}
   auto cpu=simd::observe_arm_capabilities();
-  auto admission=simd::classify_arm_profile(cpu,simd::arm_profile::neon_bf16);
+  auto admission=simd::classify_isa(cpu,simd::neon_bf16);
   if(!std::strcmp(argv[1],"admission")) {
     std::puts(admission.reason());return classification()?0:3;
   }

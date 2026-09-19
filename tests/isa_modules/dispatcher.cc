@@ -12,8 +12,8 @@ extern "C" int backend_avx2(float const*,float const*,float*);
 extern "C" int backend_avx512(float const*,float const*,float*);
 extern "C" __declspec(dllexport) __declspec(noinline) unsigned supported_backends(){
  auto cpu=simd::observe_x86_capabilities();
- auto avx2=simd::classify_x86_profile(cpu,simd::x86_profile::avx2);
- auto avx512=simd::classify_x86_profile(cpu,simd::x86_profile::avx512);
+ auto avx2=simd::classify_isa(cpu,simd::avx2);
+ auto avx512=simd::classify_isa(cpu,simd::avx512);
  unsigned result=unsigned(avx2.admitted())|(unsigned(avx512.admitted())<<1);
  std::printf("AVX2: %s; AVX512: %s; supported=%u\n",avx2.reason(),avx512.reason(),result);
  return result;

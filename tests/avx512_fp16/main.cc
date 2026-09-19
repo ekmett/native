@@ -133,7 +133,7 @@ int main(int argc,char **argv) {
   if(std::strcmp(argv[1],"native"))return 2;
   auto cpu=simd::observe_x86_capabilities();
   std::printf("CPUID.7.0.EDX=%08x XCR0=%llx\n",cpu.leaf7_edx,static_cast<unsigned long long>(cpu.xcr0));
-  auto admission=simd::classify_x86_profile(cpu,simd::x86_profile::avx512_fp16);
+  auto admission=simd::classify_isa(cpu,simd::avx512_fp16);
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;

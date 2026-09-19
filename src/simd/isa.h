@@ -374,6 +374,21 @@ namespace simd {
     constexpr bool admitted() const noexcept {
       return missing_features==scalar && !missing_xcr0 && !invalid_features && !missing_xcr0_observation;
     }
+    /// First missing feature's target spelling, or a missing OS-state description.
+    /// The feature set and state mask retain all missing requirements. A feature
+    /// is unavailable both when its query failed and when it was observed absent.
+    constexpr char const * reason() const noexcept {
+      if(invalid_features) return "invalid ISA features";
+      for(auto const & entry:detail::feature_registry)
+        if(missing_features.has(entry.value)) return entry.spelling.data();
+      if(missing_xcr0_observation) return "XCR0 unavailable";
+      if(missing_xcr0 & (1ull<<1)) return "XMM state unavailable";
+      if(missing_xcr0 & (1ull<<2)) return "YMM state unavailable";
+      if(missing_xcr0 & (1ull<<5)) return "opmask state unavailable";
+      if(missing_xcr0 & (1ull<<6)) return "ZMM high state unavailable";
+      if(missing_xcr0 & (1ull<<7)) return "high ZMM registers unavailable";
+      return admitted() ? "admitted" : "ISA requirements unavailable";
+    }
   };
 
   namespace detail {

@@ -58,17 +58,16 @@ namespace {
     ~environment() {set_fpcr(control);set_fpsr(status);}
   };
   constexpr bool classification() {
-    using P=simd::arm_profile;
     simd::arm_capabilities empty;
-    if(simd::classify_arm_profile(empty,P::neon).admitted() ||
-        simd::classify_arm_profile(empty,P::neon_fp16).admitted()) return false;
+    if(simd::classify_isa(empty,simd::neon).admitted() ||
+        simd::classify_isa(empty,simd::neon_fp16).admitted()) return false;
     simd::arm_capabilities all{true,true,true,true,true,true};
-    if(!simd::classify_arm_profile(all,P::neon).admitted() ||
-        !simd::classify_arm_profile(all,P::neon_fp16).admitted()) return false;
-    if(!simd::classify_arm_profile(all,static_cast<P>(255)).invalid_profile) return false;
+    if(!simd::classify_isa(all,simd::neon).admitted() ||
+        !simd::classify_isa(all,simd::neon_fp16).admitted()) return false;
+    if(!simd::classify_isa(all,simd::isa(simd::feature::invalid_features)).invalid_features) return false;
     auto baseline=all; baseline.fp16_observed=baseline.scalar_fp16=baseline.vector_fp16=false;
-    if(!simd::classify_arm_profile(baseline,P::neon).admitted() ||
-        simd::classify_arm_profile(baseline,P::neon_fp16).admitted()) return false;
+    if(!simd::classify_isa(baseline,simd::neon).admitted() ||
+        simd::classify_isa(baseline,simd::neon_fp16).admitted()) return false;
     for(unsigned missing=0;missing!=6;++missing) {
       auto c=all;
       switch(missing) {
@@ -79,7 +78,7 @@ namespace {
         case 4:c.scalar_fp16=false;break;
         case 5:c.vector_fp16=false;break;
       }
-      if(simd::classify_arm_profile(c,P::neon_fp16).admitted()) return false;
+      if(simd::classify_isa(c,simd::neon_fp16).admitted()) return false;
     }
     return true;
   }
@@ -175,11 +174,11 @@ int main(int argc,char **argv) {
   if(!std::strcmp(argv[1],"none")) {std::puts("No optional FP16 profile entered.");return 0;}
   if(!std::strcmp(argv[1],"admission")) {
     auto cpu=simd::observe_arm_capabilities();
-    std::puts(simd::classify_arm_profile(cpu,simd::arm_profile::neon_fp16).reason());
+    std::puts(simd::classify_isa(cpu,simd::neon_fp16).reason());
     return classification()?0:3;
   }
   if(std::strcmp(argv[1],"native"))return 2;
-  auto admission=simd::classify_arm_profile(simd::observe_arm_capabilities(),simd::arm_profile::neon_fp16);
+  auto admission=simd::classify_isa(simd::observe_arm_capabilities(),simd::neon_fp16);
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;

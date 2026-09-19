@@ -10,17 +10,16 @@ profile.
 
 `simd::observe_x86_capabilities()` observes the current logical CPU and OS vector
 state. It checks basic leaf ranges and executes XGETBV only after CPUID reports
-both XSAVE and OSXSAVE. `simd::classify_x86_profile` is a separate constexpr
+both XSAVE and OSXSAVE. `simd::classify_isa` is a separate constexpr
 operation for real or synthetic snapshots:
 
 \code{.cpp}
 import simd.x86;
 auto cpu = simd::observe_x86_capabilities();
-auto admission = simd::classify_x86_profile(cpu, simd::x86_profile::avx2);
+auto admission = simd::classify_isa(cpu, simd::avx2);
 if (!admission.admitted()) {
-  // admission.reason() identifies the first missing CPU or OS requirement.
-  // The missing_leaf1_ecx/edx, missing_leaf7_ebx and missing_xcr0 masks
-  // retain every missing bit in its architectural register position.
+  // reason() names the first missing feature or OS-state requirement.
+  // missing_features and missing_xcr0 retain every missing requirement.
 }
 \endcode
 
@@ -28,11 +27,11 @@ AVX2 admission covers AVX, AVX2, FMA, BMI2, the compiler-implied SSE/POPCNT
 features, and enabled XMM/YMM state. AVX512 additionally requires F16C,
 AVX512F/DQ/BW/VL and enabled opmask and ZMM state. These requirements match
 `simd_target_profile`; application-supplied instruction flags may require
-additional checks. Unavailable leaves, unread XCR0, and invalid profile values
+additional checks. Unavailable leaves, unread XCR0, and unknown or foreign-architecture features
 cannot admit a profile.
 
-An installed consumer links `simd::common` for module metadata and `simd::simd`
-for runtime definitions. It does not import an ISA module or select a profile
+An installed consumer links `simd::common` for both module metadata and runtime
+definitions. It does not import an ISA module or select a profile
 just to call these queries. Linking the archive does not import the omnibus
 module or inherit its instruction flags. Classification alone is constexpr.
 

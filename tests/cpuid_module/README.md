@@ -52,9 +52,10 @@ the common archive's compiled observer and raw CPUID definitions. This is the
 same target in build-tree and installed consumers. No aggregate target, ISA
 module import or profile selection is needed. `observe_x86_capabilities()`
 checks leaf ranges and only reads XCR0 after both XSAVE and OSXSAVE are present.
-`classify_x86_profile(snapshot, x86_profile::avx2)` (or `avx512`) is constexpr,
-performs no hardware queries, and returns missing CPUID/XCR0 masks plus a stable
-first `reason()`. Invalid profile values reject. Vendor names are not inputs.
+`classify_isa(snapshot, avx2)` (or `avx512`) is constexpr,
+performs no hardware queries, and returns missing ISA features and XCR0 state plus a first `reason()`. Its reason
+is the target spelling of a missing feature or an OS-state description. Unknown
+or foreign-architecture features reject. Vendor names are not inputs.
 
 The contract matches `simd_target_profile`: AVX2, FMA and BMI2, and for AVX512
 the F, DQ, BW and VL subsets. It also checks Clang's implied SSE3, SSSE3,
@@ -65,7 +66,7 @@ An observation describes the executing logical CPU; callers remain responsible
 for affinity or a suitable common capability set on heterogeneous systems.
 
 `admission.cc` independently removes every required CPU/state bit, checks
-unavailable-leaf snapshots, unread state, invalid profiles, and CPU/OS reasons.
+unavailable-leaf snapshots, unread state, invalid features, and CPU/OS reasons.
 It is a configured-minimum module consumer with compile-time ISA guards, linked
 only to the build-tree `simd::common` archive; both the standalone fixture and
 ordinary x86 CTest suite run it. The `tests/cpuid_package` fixture reuses the
