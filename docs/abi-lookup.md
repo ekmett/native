@@ -34,6 +34,11 @@ corresponding meanings. This is a partial order: distinct singleton features
 are incomparable. `&` works for every feature/ISA pairing; there is no `|`
 operator.
 
+For function constraints, use `requires(A.has(feature::avx2 & feature::fma))`
+or the `target` selector below. Clang 23's Linux/macOS mangler rejects direct
+property expressions such as `requires(A.avx2 && A.fma)`; see the
+[tooling limits](validation.md).
+
 Default construction gives the empty set, equal to `scalar`. Construction from
 one feature sets exactly one bit. It never adds implied features:
 

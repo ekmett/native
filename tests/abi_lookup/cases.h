@@ -104,9 +104,18 @@ namespace abi_lookup_test {
     return a;
   }();
   static_assert(edited==isa(feature::fma) && single==isa(feature::avx2));
-  template<isa A> requires(A.avx2 && A.fma)
+  // Clang's Itanium mangler cannot encode properties directly in a function
+  // constraint. Keep property evaluation here and exercise the portable form.
+  template<isa A> concept has_fields=A.avx2 && A.fma;
+  template<isa A> requires has_fields<A>
   constexpr bool fields() { return A.has(feature::avx2&feature::fma); }
   static_assert(fields<pair>());
+  static_assert(!has_fields<single> && !has_fields<isa{}>);
+  template<isa A> requires(A.has(feature::avx2&feature::fma))
+  constexpr bool flags();
+  template<isa A> requires(A.has(feature::avx2&feature::fma))
+  constexpr bool flags() { return A.avx2 && A.fma; }
+  static_assert(flags<pair>());
   template<class T> concept alternatives=requires(T a) { a|a; };
   static_assert(!alternatives<isa> && !alternatives<feature>);
 }
