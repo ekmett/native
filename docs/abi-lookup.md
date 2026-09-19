@@ -71,11 +71,32 @@ The feature enumerators `x86_feature::avx512bf16` and `x86_feature::avx512fp16` 
 bits. The presets `avx512_bf16` and `avx512_fp16` include the broader AVX-512
 requirements.
 
+## Typed feature sets
+
+`feature_set<x86_feature>` and `feature_set<arm_feature>` store one family's
+features. Both are structural types usable as value template arguments, with
+`get`, `set`, `has`, equality and public word storage. Their methods accept only
+the matching enum. Conversion to `isa` preserves the exact set without adding
+compiler prerequisites. Typed sets also work with `target`, subset comparisons
+and requirement conjunction through the `arch` concept.
+
+```cpp
+constexpr feature_set<x86_feature> detected = x86_feature::avx2;
+static_assert(isa(detected) == isa(x86_feature::avx2));
+static_assert(!detected.has(x86_feature::avx));
+static_assert(target<detected, x86_feature::avx2, scalar> == 0);
+```
+
+An invalid enum passed to `set(value, true)` records an invalid set; reading it
+returns false and clearing it does nothing. `valid()` also detects unregistered
+padding bits written directly into storage. Conversion preserves that invalid
+requirement, and normalized CPU admission rejects invalid present/observed sets.
+
 ## Select an implementation
 
 `target<A, Choices...>` is an `int`: the zero-based index of the first choice
 contained in `A`, or `-1` when none matches. An empty choice pack also returns
-`-1`. The `arch` concept admits `x86_feature`, `arm_feature`, or `isa`; generic value
+`-1`. The `arch` concept admits either feature enum, either typed feature set, or `isa`; generic value
 parameters can use `template<arch auto A>`. Vector algorithms normally use
 `template<isa A>`:
 

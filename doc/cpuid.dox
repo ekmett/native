@@ -11,7 +11,10 @@ profile.
 `simd::observe_x86_capabilities()` observes the current logical CPU and OS vector
 state. It checks basic leaf ranges and executes XGETBV only after CPUID reports
 both XSAVE and OSXSAVE. `simd::classify_isa` is a separate constexpr
-operation for real or synthetic snapshots:
+operation for real or synthetic snapshots. Native results expose `present` and
+`observed` as `simd::feature_set<simd::x86_feature>`; both must contain a required
+feature. XCR0 validity remains separate. Raw CPUID inputs are retained under
+`raw` for diagnostics and are not re-decoded during native-record admission:
 
 \code{.cpp}
 import simd.cpu.x86;

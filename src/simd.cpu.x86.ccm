@@ -44,24 +44,35 @@ export namespace simd {
   };
 
 
-  /// Observed registers. Unavailable leaves and unread XCR0 remain zero.
-  /// This snapshot describes the executing logical CPU, not every CPU in a system.
+  /// Normalized features of the executing logical CPU, not every CPU in a system.
+  /// Admission reads present/observed and XCR0; raw registers are diagnostic only.
   struct x86_capabilities {
-    std::uint32_t max_basic_leaf = 0;
-    std::uint32_t leaf1_ecx = 0, leaf1_edx = 0, leaf7_ebx = 0;
+    /// Features whose queries succeeded and reported support; no compiler closure.
+    feature_set<x86_feature> present{};
+    /// Features whose CPUID leaves were available, whether present or absent.
+    feature_set<x86_feature> observed{};
+    /// OS-enabled vector state. Used only when xcr0_observed is true.
     std::uint64_t xcr0 = 0;
+    /// True after XSAVE/OSXSAVE permit XGETBV and its result was captured.
     bool xcr0_observed = false;
-    /// Maximum supported structured-feature subleaf, from CPUID.7.0 EAX.
-    /// Zero when leaf 7 is unavailable; subleaf 1 must not be assumed in that case.
-    std::uint32_t max_leaf7_subleaf = 0;
-    /// CPUID.7.1 EAX feature bits; bit 5 reports AVX512_BF16.
-    /// Zero unless leaf 7 and subleaf 1 were reported as available.
-    std::uint32_t leaf7_1_eax = 0;
-    /// CPUID.7.0 EDX; bit 23 reports AVX512_FP16. Zero without leaf 7.
-    std::uint32_t leaf7_edx = 0;
-    /// Extended CPUID range and leaf 0x80000001 ECX (LAHF/SAHF and LZCNT).
-    /// Zero when unavailable; source target admission checks the range first.
-    std::uint32_t max_extended_leaf = 0, extended1_ecx = 0;
+    /// CPUID query inputs retained for diagnostics, not a second admission source.
+    struct raw_observations {
+      std::uint32_t max_basic_leaf = 0;
+      std::uint32_t leaf1_ecx = 0, leaf1_edx = 0, leaf7_ebx = 0;
+      /// Maximum supported structured-feature subleaf, from CPUID.7.0 EAX.
+      /// Zero when leaf 7 is unavailable; subleaf 1 must not be assumed in that case.
+      std::uint32_t max_leaf7_subleaf = 0;
+      /// CPUID.7.1 EAX feature bits; bit 5 reports AVX512_BF16.
+      /// Zero unless leaf 7 and subleaf 1 were reported as available.
+      std::uint32_t leaf7_1_eax = 0;
+      /// CPUID.7.0 EDX; bit 23 reports AVX512_FP16. Zero without leaf 7.
+      std::uint32_t leaf7_edx = 0;
+      /// Extended CPUID range and leaf 0x80000001 ECX (LAHF/SAHF and LZCNT).
+      /// Zero when unavailable; source target admission checks the range first.
+      std::uint32_t max_extended_leaf = 0, extended1_ecx = 0;
+    };
+    /// Diagnostic snapshot; editing it does not update present/observed or XCR0.
+    raw_observations raw{};
     /// Exact CPUID vendor identifier, followed by a zero terminator.
     std::array<char,13> vendor_id{};
     /// Classification of vendor_id; it does not establish instruction support.
@@ -112,15 +123,15 @@ namespace simd {
   x86_capabilities observe_x86_capabilities() noexcept {
     x86_capabilities result;
     auto identity=cpuid(0,0);
-    result.max_basic_leaf = std::uint32_t(identity.eax);
+    result.raw.max_basic_leaf = std::uint32_t(identity.eax);
     result.vendor_id=detail::vendor_identifier(identity);
     result.vendor=detail::identify_vendor(result.vendor_id);
-    if (result.max_basic_leaf >= 1) {
+    if (result.raw.max_basic_leaf >= 1) {
       auto leaf = cpuid(1, 0);
-      result.leaf1_ecx = std::uint32_t(leaf.ecx);
-      result.leaf1_edx = std::uint32_t(leaf.edx);
+      result.raw.leaf1_ecx = std::uint32_t(leaf.ecx);
+      result.raw.leaf1_edx = std::uint32_t(leaf.edx);
       constexpr auto xsave = (1u << 26) | (1u << 27);
-      if ((result.leaf1_ecx & xsave) == xsave) {
+      if ((result.raw.leaf1_ecx & xsave) == xsave) {
 #if defined(_MSC_VER)
         result.xcr0 = _xgetbv(0);
 #else
@@ -131,17 +142,20 @@ namespace simd {
         result.xcr0_observed = true;
       }
     }
-    if (result.max_basic_leaf >= 7) {
+    if (result.raw.max_basic_leaf >= 7) {
       auto leaf = cpuid(7, 0);
-      result.leaf7_ebx = std::uint32_t(leaf.ebx);
-      result.leaf7_edx = std::uint32_t(leaf.edx);
-      result.max_leaf7_subleaf = std::uint32_t(leaf.eax);
-      if (result.max_leaf7_subleaf >= 1)
-        result.leaf7_1_eax = std::uint32_t(cpuid(7, 1).eax);
+      result.raw.leaf7_ebx = std::uint32_t(leaf.ebx);
+      result.raw.leaf7_edx = std::uint32_t(leaf.edx);
+      result.raw.max_leaf7_subleaf = std::uint32_t(leaf.eax);
+      if (result.raw.max_leaf7_subleaf >= 1)
+        result.raw.leaf7_1_eax = std::uint32_t(cpuid(7, 1).eax);
     }
-    result.max_extended_leaf=std::uint32_t(cpuid(std::int32_t(0x80000000u),0).eax);
-    if(result.max_extended_leaf>=0x80000001u)
-      result.extended1_ecx=std::uint32_t(cpuid(std::int32_t(0x80000001u),0).ecx);
+    result.raw.max_extended_leaf=std::uint32_t(cpuid(std::int32_t(0x80000000u),0).eax);
+    if(result.raw.max_extended_leaf>=0x80000001u)
+      result.raw.extended1_ecx=std::uint32_t(cpuid(std::int32_t(0x80000001u),0).ecx);
+    auto features=detail::decode_x86_features(result.raw);
+    result.present=features.present;
+    result.observed=features.observed;
     return result;
   }
 

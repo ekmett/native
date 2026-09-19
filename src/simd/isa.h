@@ -32,6 +32,8 @@ namespace simd {
   namespace detail {
     template<class T> concept instruction_feature=
       std::same_as<T,x86_feature> || std::same_as<T,arm_feature>;
+    template<instruction_feature E> inline constexpr std::size_t feature_count=
+      std::same_as<E,x86_feature> ? x86_feature_count : arm_feature_count;
     inline constexpr std::size_t invalid_feature_index=x86_feature_count+arm_feature_count;
     constexpr std::size_t feature_index(instruction_feature auto f) noexcept {
       auto i=std::uint64_t(f);
@@ -41,6 +43,50 @@ namespace simd {
         return i<arm_feature_count ? x86_feature_count+std::size_t(i) : invalid_feature_index;
     }
   }
+
+  /// A structural set of one architecture's features, without prerequisite closure.
+  /// E must be x86_feature or arm_feature; the other family's values are rejected.
+  template<detail::instruction_feature E> struct feature_set {
+    /// Local feature bits and a private invalid marker; not a serialized ABI.
+    std::array<std::uint64_t,(detail::feature_count<E>+1+63)/64> flags{};
+    /// Construct an empty set.
+    constexpr feature_set() noexcept = default;
+    /// Construct exactly one feature; an invalid value records an invalid set.
+    constexpr feature_set(E f) noexcept { set(f,true); }
+    /// Read a feature; out-of-range values are absent.
+    constexpr bool get(E f) const noexcept {
+      auto i=std::uint64_t(f);
+      return i<detail::feature_count<E> && ((flags[i/64]>>(i%64))&1);
+    }
+    /// Set or clear a feature. Requiring an invalid value records an invalid set;
+    /// clearing one leaves the set unchanged. Neither operation indexes outside flags.
+    constexpr void set(E f,bool value) noexcept {
+      auto i=std::uint64_t(f);
+      if(i>=detail::feature_count<E>) {
+        if(!value) return;
+        i=detail::feature_count<E>;
+      }
+      auto mask=std::uint64_t{1}<<(i%64);
+      auto & word=flags[i/64];
+      word=(word&~mask)|(value?mask:0);
+    }
+    /// True when the named feature is present.
+    constexpr bool has(E f) const noexcept { return get(f); }
+    /// True when every bit in other is present.
+    constexpr bool has(feature_set other) const noexcept {
+      for(std::size_t i=0;i<flags.size();++i)
+        if((flags[i]&other.flags[i])!=other.flags[i]) return false;
+      return true;
+    }
+    /// True when no invalid marker or unregistered padding bit is set.
+    constexpr bool valid() const noexcept {
+      constexpr auto used=detail::feature_count<E>%64;
+      constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
+      return (flags.back()&~mask)==0;
+    }
+    /// Compare all stored bits for exact equality.
+    constexpr bool operator==(feature_set const &) const = default;
+  };
 
   /// A structural instruction-feature set. Construction never adds prerequisites.
   /// Each registered feature has a mutable Boolean property, e.g. a.avx2.
@@ -57,6 +103,13 @@ namespace simd {
     constexpr isa() noexcept = default;
     /// Require exactly one feature, without prerequisite closure.
     constexpr isa(detail::instruction_feature auto f) noexcept { set(f,true); }
+    /// Convert a typed feature set exactly, preserving invalid requirements.
+    template<detail::instruction_feature E>
+    constexpr isa(feature_set<E> bits) noexcept {
+      for(std::size_t i=0;i<detail::feature_count<E>;++i)
+        if(bits.has(static_cast<E>(i))) set(static_cast<E>(i),true);
+      if(!bits.valid()) set(static_cast<E>(detail::feature_count<E>),true);
+    }
     /// Read one feature bit; out-of-range values are absent.
     constexpr bool get(detail::instruction_feature auto f) const noexcept {
       auto i=detail::feature_index(f);
@@ -214,7 +267,8 @@ namespace simd {
     __declspec(property(get=get_arm_pauth,put=set_arm_pauth)) bool arm_pauth;
   };
 
-  template<class T> concept arch=detail::instruction_feature<T> || std::same_as<T,isa>;
+  template<class T> concept arch=detail::instruction_feature<T> || std::same_as<T,isa> ||
+    std::same_as<T,feature_set<x86_feature>> || std::same_as<T,feature_set<arm_feature>>;
 
   /// Requirements compose by union: both operands must be available.
   constexpr isa operator&(arch auto left,arch auto right) noexcept {
@@ -275,6 +329,11 @@ namespace simd {
       isa implies;
       feature_register location;
       unsigned bit;
+      std::size_t index;
+      template<instruction_feature E>
+      constexpr feature_record(E f,std::string_view spelling,isa implies,
+          feature_register location,unsigned bit) noexcept:
+        value(f),spelling(spelling),implies(implies),location(location),bit(bit),index(std::size_t(f)) {}
     };
     // Clang target-feature dependencies, not an assertion that one CPU feature
     // bit alone guarantees another. Admission checks every bit in the closure.
@@ -426,68 +485,120 @@ namespace simd {
     template<class C> concept x86_observation=requires(C const & c) {
       c.max_basic_leaf; c.leaf1_ecx; c.leaf1_edx; c.leaf7_ebx;
       c.max_leaf7_subleaf; c.leaf7_1_eax; c.leaf7_edx;
-      c.xcr0; c.xcr0_observed;
     };
     template<class C> concept arm_observation=requires(C const & c) {
       c.baseline_observed; c.fp; c.asimd;
       c.fp16_observed; c.scalar_fp16; c.vector_fp16;
       c.bf16_observed; c.bf16;
     };
-  }
-
-  /// Pure classification of the existing simd.cpu.x86 observation record.
-  template<detail::x86_observation C>
-  constexpr isa_admission classify_isa(C const & cpu, isa requested,isa minimum={}) noexcept {
-    auto bits=feature_closure(requested&minimum);
-    isa_admission result;
-    result.invalid_features=!(bits<=detail::x86_features);
-    for(auto const & entry:detail::feature_registry) {
-      if(!bits.has(entry.value)) continue;
-      std::uint32_t observed=0;
-      switch(entry.location) {
-        case detail::feature_register::leaf1_ecx: if(cpu.max_basic_leaf>=1) observed=cpu.leaf1_ecx; break;
-        case detail::feature_register::leaf1_edx: if(cpu.max_basic_leaf>=1) observed=cpu.leaf1_edx; break;
-        case detail::feature_register::leaf7_ebx: if(cpu.max_basic_leaf>=7) observed=cpu.leaf7_ebx; break;
-        case detail::feature_register::leaf7_edx: if(cpu.max_basic_leaf>=7) observed=cpu.leaf7_edx; break;
-        case detail::feature_register::leaf7_1_eax: if(cpu.max_basic_leaf>=7 && cpu.max_leaf7_subleaf>=1) observed=cpu.leaf7_1_eax; break;
-        case detail::feature_register::extended1_ecx:
-          if constexpr(requires { cpu.max_extended_leaf; cpu.extended1_ecx; })
-            if(cpu.max_extended_leaf>=0x80000001u) observed=cpu.extended1_ecx;
-          break;
-        case detail::feature_register::arm: break;
+    template<class C,class E> concept normalized_features=requires(C const & c) {
+      { c.present } -> std::same_as<feature_set<E> const &>;
+      { c.observed } -> std::same_as<feature_set<E> const &>;
+    };
+    template<instruction_feature E> struct feature_observation {
+      feature_set<E> present{},observed{};
+    };
+    template<x86_observation C>
+    constexpr feature_observation<x86_feature> decode_x86_features(C const & cpu) noexcept {
+      feature_observation<x86_feature> result;
+      for(auto const & entry:feature_registry) {
+        std::uint32_t word=0;
+        bool observed=false;
+        switch(entry.location) {
+          case feature_register::leaf1_ecx: observed=cpu.max_basic_leaf>=1; word=cpu.leaf1_ecx; break;
+          case feature_register::leaf1_edx: observed=cpu.max_basic_leaf>=1; word=cpu.leaf1_edx; break;
+          case feature_register::leaf7_ebx: observed=cpu.max_basic_leaf>=7; word=cpu.leaf7_ebx; break;
+          case feature_register::leaf7_edx: observed=cpu.max_basic_leaf>=7; word=cpu.leaf7_edx; break;
+          case feature_register::leaf7_1_eax:
+            observed=cpu.max_basic_leaf>=7 && cpu.max_leaf7_subleaf>=1; word=cpu.leaf7_1_eax; break;
+          case feature_register::extended1_ecx:
+            if constexpr(requires { cpu.max_extended_leaf; cpu.extended1_ecx; }) {
+              observed=cpu.max_extended_leaf>=0x80000001u; word=cpu.extended1_ecx;
+            }
+            break;
+          case feature_register::arm: continue;
+        }
+        auto f=static_cast<x86_feature>(entry.index);
+        result.observed.set(f,observed);
+        result.present.set(f,observed && (word&(std::uint32_t{1}<<entry.bit)));
       }
-      if(!(observed&(std::uint32_t(1)<<entry.bit))) result.missing_features=result.missing_features&entry.value;
+      return result;
     }
-    if(bits.has(x86_feature::avx)) {
-      bool readable=cpu.max_basic_leaf>=1 && (cpu.leaf1_ecx&(1u<<26)) &&
-        (cpu.leaf1_ecx&(1u<<27)) && cpu.xcr0_observed;
-      result.missing_xcr0_observation=!readable;
-      result.missing_xcr0=((bits.has(x86_feature::avx512f))?0xe6ull:0x6ull)&~(readable?cpu.xcr0:0ull);
+    template<arm_observation C>
+    constexpr feature_observation<arm_feature> decode_arm_features(C const & cpu) noexcept {
+      feature_observation<arm_feature> result;
+      result.observed.set(arm_feature::neon,cpu.baseline_observed);
+      result.present.set(arm_feature::neon,cpu.baseline_observed && cpu.fp && cpu.asimd);
+      result.observed.set(arm_feature::neon_fp16,cpu.fp16_observed);
+      result.present.set(arm_feature::neon_fp16,cpu.fp16_observed && cpu.scalar_fp16 && cpu.vector_fp16);
+      result.observed.set(arm_feature::neon_bf16,cpu.bf16_observed);
+      result.present.set(arm_feature::neon_bf16,cpu.bf16_observed && cpu.bf16);
+      constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16;
+      if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
+        for(auto const & entry:feature_registry) {
+          if(entry.location!=feature_register::arm || baseline.has(entry.value)) continue;
+          auto f=static_cast<arm_feature>(entry.index);
+          auto observed=cpu.extra_observed.has(f);
+          result.observed.set(f,observed);
+          result.present.set(f,observed && cpu.extra_features.has(f));
+        }
+      return result;
     }
-    return result;
+    template<instruction_feature E>
+    constexpr isa_admission classify_features(feature_set<E> present,feature_set<E> observed,isa bits) noexcept {
+      isa_admission result;
+      auto known=std::same_as<E,x86_feature> ? x86_features : arm_features;
+      result.invalid_features=!present.valid() || !observed.valid() || !(bits<=known);
+      auto available=intersection(isa(present),isa(observed));
+      result.missing_features=intersection(bits,known);
+      for(std::size_t i=0;i<available.flags.size();++i)
+        result.missing_features.flags[i]&=~available.flags[i];
+      return result;
+    }
+    constexpr isa_admission classify_x86_features(feature_set<x86_feature> present,
+        feature_set<x86_feature> observed,std::uint64_t xcr0,bool readable,isa bits) noexcept {
+      auto result=classify_features(present,observed,bits);
+      if(bits.has(x86_feature::avx)) {
+        result.missing_xcr0_observation=!readable;
+        result.missing_xcr0=(bits.has(x86_feature::avx512f)?0xe6ull:0x6ull)&~(readable?xcr0:0ull);
+      }
+      return result;
+    }
   }
 
-  /// Pure classification of the existing simd.cpu.arm observation record.
-  template<detail::arm_observation C>
+  /// Classify normalized x86 features and independently observed OS vector state.
+  /// Both present and observed must contain each required feature. Raw diagnostics
+  /// are not read; changing them does not change the normalized observation.
+  template<class C> requires detail::normalized_features<C,x86_feature> && requires(C const & c) { c.xcr0; c.xcr0_observed; }
   constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
-    auto bits=feature_closure(requested&minimum);
-    isa_admission result;
-    result.invalid_features=!(bits<=detail::arm_features);
-    if(bits.neon && !(cpu.baseline_observed && cpu.fp && cpu.asimd))
-      result.missing_features.neon=true;
-    if(bits.neon_fp16 && !(cpu.fp16_observed && cpu.scalar_fp16 && cpu.vector_fp16))
-      result.missing_features.neon_fp16=true;
-    if(bits.neon_bf16 && !(cpu.bf16_observed && cpu.bf16))
-      result.missing_features.neon_bf16=true;
-    constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16;
-    for(auto const & entry:detail::feature_registry) {
-      if(entry.location!=detail::feature_register::arm || baseline.has(entry.value) || !bits.has(entry.value)) continue;
-      bool available=false;
-      if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
-        available=cpu.extra_observed.has(entry.value) && cpu.extra_features.has(entry.value);
-      if(!available) result.missing_features=result.missing_features&entry.value;
-    }
-    return result;
+    return detail::classify_x86_features(cpu.present,cpu.observed,cpu.xcr0,cpu.xcr0_observed,
+      feature_closure(requested&minimum));
+  }
+
+  /// Classify normalized ARM features. A feature must be both present and observed.
+  /// Raw query diagnostics do not override the normalized observation.
+  template<class C> requires detail::normalized_features<C,arm_feature>
+  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+    return detail::classify_features(cpu.present,cpu.observed,feature_closure(requested&minimum));
+  }
+
+  /// Decode a structural raw x86 snapshot before applying the same admission rules.
+  /// Unsupported leaves and unread XCR0 cannot authorize stale positive values.
+  template<detail::x86_observation C> requires (!detail::normalized_features<C,x86_feature>) && requires(C const & c) { c.xcr0; c.xcr0_observed; }
+  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+    auto features=detail::decode_x86_features(cpu);
+    bool readable=cpu.max_basic_leaf>=1 && (cpu.leaf1_ecx&(1u<<26)) &&
+      (cpu.leaf1_ecx&(1u<<27)) && cpu.xcr0_observed;
+    return detail::classify_x86_features(features.present,features.observed,cpu.xcr0,readable,
+      feature_closure(requested&minimum));
+  }
+
+  /// Decode a structural raw ARM snapshot before applying the same admission rules.
+  /// Failed OS queries cannot authorize stale positive values.
+  template<detail::arm_observation C> requires (!detail::normalized_features<C,arm_feature>)
+  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+    auto features=detail::decode_arm_features(cpu);
+    return detail::classify_features(features.present,features.observed,feature_closure(requested&minimum));
   }
 
   /// A source variant retains its requested ISA and inherited compiler minimum.

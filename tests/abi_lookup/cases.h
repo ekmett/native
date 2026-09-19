@@ -128,6 +128,111 @@ namespace abi_lookup_test {
   template<isa A> struct enum_requirement {};
   static_assert(!std::same_as<enum_requirement<x86_feature::aes>,enum_requirement<arm_feature::aes>>);
 
+  template<class S,class F> concept accepts_feature=requires(S s,F f) {
+    S(f); s.get(f); s.has(f); s.set(f,true);
+  };
+  static_assert(accepts_feature<feature_set<x86_feature>,x86_feature>);
+  static_assert(accepts_feature<feature_set<arm_feature>,arm_feature>);
+  static_assert(!accepts_feature<feature_set<x86_feature>,arm_feature>);
+  static_assert(!accepts_feature<feature_set<arm_feature>,x86_feature>);
+  static_assert(!std::constructible_from<feature_set<x86_feature>,feature_set<arm_feature>>);
+  template<feature_set<x86_feature> A> struct x86_set_requirement {};
+  template<feature_set<arm_feature> A> struct arm_set_requirement {};
+  static_assert(!std::same_as<x86_set_requirement<x86_feature::aes>,x86_set_requirement<x86_feature::avx>>);
+  static_assert(!std::same_as<arm_set_requirement<arm_feature::aes>,arm_set_requirement<arm_feature::neon>>);
+  static_assert(!std::same_as<enum_requirement<feature_set<x86_feature>{x86_feature::aes}>,
+    enum_requirement<feature_set<arm_feature>{arm_feature::aes}>>);
+  static_assert(arch<feature_set<x86_feature>> && arch<feature_set<arm_feature>>);
+  constexpr feature_set<x86_feature> typed_avx2=x86_feature::avx2;
+  constexpr feature_set<arm_feature> typed_neon=arm_feature::neon;
+  static_assert(target<typed_avx2,x86_feature::avx2,scalar> == 0);
+  static_assert(target<typed_neon,arm_feature::neon,scalar> == 0);
+  static_assert(typed_avx2<=avx2 && !(typed_avx2<=typed_neon));
+  static_assert((typed_avx2&x86_feature::fma)==(x86_feature::avx2&x86_feature::fma));
+  static_assert(isa(feature_set<x86_feature>{x86_feature::avx2})==isa(x86_feature::avx2));
+  static_assert(!isa(feature_set<x86_feature>{x86_feature::avx2}).has(x86_feature::avx));
+  template<class E> constexpr bool typed_set_bounds(std::size_t count) {
+    feature_set<E> empty;
+    if(!empty.valid() || isa(empty)!=scalar) return false;
+    for(std::size_t i=0;i<count;++i) {
+      auto f=static_cast<E>(i);
+      feature_set<E> s=f;
+      if(!s.valid() || !s.has(f) || !s.has(empty) || isa(s)!=isa(f)) return false;
+      s.set(f,false);
+      if(s!=empty) return false;
+    }
+    for(auto invalid:{std::uint64_t(count),~std::uint64_t{},std::uint64_t{1}<<63}) {
+      auto f=static_cast<E>(invalid);
+      feature_set<E> s;
+      if(s.has(f)) return false;
+      s.set(f,false);
+      if(s!=empty) return false;
+      s.set(f,true);
+      if(s.valid() || s.has(f) || isa(s)<=detail::known_features) return false;
+      auto saved=s;s.set(f,false);
+      if(s!=saved) return false;
+    }
+    feature_set<E> padding;
+    padding.flags.back()=std::uint64_t{1}<<63;
+    return !padding.valid() && !(isa(padding)<=detail::known_features);
+  }
+  static_assert(typed_set_bounds<x86_feature>(x86_feature_count));
+  static_assert(typed_set_bounds<arm_feature>(arm_feature_count));
+
+  struct normalized_x86 {
+    feature_set<x86_feature> present{},observed{};
+    std::uint64_t xcr0=0xe6;
+    bool xcr0_observed=true;
+  };
+  struct normalized_arm {
+    feature_set<arm_feature> present{},observed{};
+  };
+  template<class E,class C> constexpr bool normalized_missing(std::size_t count,isa profile) {
+    C full;
+    for(std::size_t i=0;i<count;++i) {
+      auto f=static_cast<E>(i);
+      full.present.set(f,true);full.observed.set(f,true);
+    }
+    if(!classify_isa(full,profile).admitted()) return false;
+    for(std::size_t i=0;i<count;++i) {
+      auto f=static_cast<E>(i);
+      auto cpu=full;cpu.observed.set(f,false);
+      auto result=classify_isa(cpu,profile);
+      if(result.admitted()==profile.has(f)) return false;
+      if(result.missing_features!=(profile.has(f)?isa(f):scalar)) return false;
+      cpu=full;cpu.present.set(f,false);
+      result=classify_isa(cpu,profile);
+      if(result.admitted()==profile.has(f)) return false;
+    }
+    if(classify_isa(full,isa(static_cast<E>(-1))).admitted()) return false;
+    auto invalid=full;invalid.present.set(static_cast<E>(-1),true);
+    if(!classify_isa(invalid,profile).invalid_features) return false;
+    invalid=full;invalid.observed.flags.back()|=std::uint64_t{1}<<63;
+    return classify_isa(invalid,profile).invalid_features &&
+      !classify_isa(invalid,scalar).admitted();
+  }
+  static_assert(normalized_missing<x86_feature,normalized_x86>(x86_feature_count,avx512_fp16));
+  static_assert(normalized_missing<arm_feature,normalized_arm>(arm_feature_count,neon_fp16&neon_bf16));
+  static_assert([] {
+    normalized_x86 cpu;
+    if(!classify_isa(cpu,scalar).admitted() || classify_isa(cpu,avx2).admitted()) return false;
+    // Scalar BMI2 (for example PDEP) does not require vector register state.
+    cpu.present=x86_feature::bmi2;cpu.observed=x86_feature::bmi2;
+    cpu.xcr0=0;cpu.xcr0_observed=false;
+    if(!classify_isa(cpu,x86_feature::bmi2).admitted()) return false;
+    if(classify_isa(cpu,x86_feature::avx).admitted()) return false;
+    for(std::size_t i=0;i<x86_feature_count;++i) {
+      auto f=static_cast<x86_feature>(i);
+      cpu.present.set(f,true);cpu.observed.set(f,true);
+    }
+    cpu.xcr0_observed=false;
+    auto missing=classify_isa(cpu,avx512);
+    if(missing.admitted() || !missing.missing_xcr0_observation || missing.missing_xcr0!=0xe6) return false;
+    cpu.xcr0_observed=true;cpu.xcr0=0;
+    missing=classify_isa(cpu,avx2);
+    return !missing.admitted() && !missing.missing_xcr0_observation && missing.missing_xcr0==6;
+  }());
+
   // Singleton construction is exact, unlike explicit compiler-feature closure.
   constexpr isa single=x86_feature::avx2;
   static_assert(single.has(x86_feature::avx2) && !single.has(x86_feature::avx));

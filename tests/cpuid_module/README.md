@@ -52,6 +52,10 @@ the common archive's compiled observer and raw CPUID definitions. This is the
 same target in build-tree and installed consumers. No aggregate target, ISA
 module import or profile selection is needed. `observe_x86_capabilities()`
 checks leaf ranges and only reads XCR0 after both XSAVE and OSXSAVE are present.
+Its typed `present` and `observed` sets are authoritative for admission; raw
+registers are nested under `raw` for diagnostics. XCR0 and vendor fields remain
+separate. The synthetic register-removal cases use an explicit raw fixture so
+they continue to exercise the shared decoder.
 `classify_isa(snapshot, avx2)` (or `avx512`) is constexpr,
 performs no hardware queries, and returns missing ISA features and XCR0 state plus a first `reason()`. Its reason
 is the target spelling of a missing feature or an OS-state description. Unknown

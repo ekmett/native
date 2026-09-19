@@ -223,7 +223,9 @@ available on either host.
 
 The platform modules are `simd.cpu.x86` and `simd.cpu.arm`. Each exports the shared
 `isa`, `classify_isa` and `with_isa` interface alongside its native capability
-snapshot and observer. Standalone capability consumers link `simd::common`;
+snapshot and observer. Native snapshots expose architecture-typed `present`
+and `observed` sets; both must contain a required feature. Their nested `raw`
+query results are diagnostics, not a second admission source. Standalone capability consumers link `simd::common`;
 they do not need the vector hub. The raw `cpuid` function and vendor query remain
 in `simd.cpu.x86`, and waiting instructions remain in `simd.wait`.
 

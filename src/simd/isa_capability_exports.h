@@ -9,6 +9,7 @@ export namespace simd {
   using ::simd::arm_feature_count;
   using ::simd::feature_closure;
   using ::simd::isa;
+  using ::simd::feature_set;
   using ::simd::scalar;
   using ::simd::avx2;
   using ::simd::avx512;

@@ -33,34 +33,43 @@ export namespace simd {
   /// Query before entering optional-profile code; no instruction probing occurs.
 
   /// \ingroup arm_capabilities
-  /// Normalized OS-advertised capabilities. False observation flags reject even
-  /// if a feature Boolean contains stale true data. Unknown platforms reject.
-  /// This records OS availability, not a CPU model or an independent ISA probe.
+  /// Normalized OS-advertised ARM features; unknown platforms reject.
+  /// Admission reads present/observed. The catalog retains compiler bundles such
+  /// as AES+PMULL, not independent raw architectural extension bits.
   struct arm_capabilities {
-    /// True only after the OS baseline FP/Advanced SIMD query succeeds.
-    bool baseline_observed = false;
-    /// OS permits baseline floating-point instructions and their register state.
-    bool fp = false;
-    /// OS permits baseline Advanced SIMD instructions and their register state.
-    bool asimd = false;
-    /// True only after an OS half-arithmetic feature query succeeds.
-    bool fp16_observed = false;
-    /// OS advertises scalar half-precision arithmetic (FPHP/FEAT_FP16).
-    bool scalar_fp16 = false;
-    /// OS advertises Advanced SIMD half-precision arithmetic (ASIMDHP/FEAT_FP16).
-    bool vector_fp16 = false;
-    /// True only after an OS BF16 feature query succeeds.
-    bool bf16_observed = false;
-    /// OS advertises non-streaming Advanced SIMD BF16 instructions (FEAT_BF16).
-    bool bf16 = false;
-    /// True only after an OS enhanced BF16 feature query succeeds.
-    bool ebf16_observed = false;
-    /// OS advertises enhanced BF16 behavior, usable when the caller sets FPCR.EBF.
-    /// Informational: NEON_BF16 admission does not require this extension.
-    bool ebf16 = false;
-    /// Additional source-target features, as ISA values.
-    /// A feature must occur in both sets; failed queries never authorize it.
-    isa extra_observed{}, extra_features{};
+    /// Features whose queries succeeded and reported support; no compiler closure.
+    feature_set<arm_feature> present{};
+    /// Features whose OS queries succeeded, whether present or absent.
+    feature_set<arm_feature> observed{};
+    /// Raw OS query results retained for diagnostics and enhanced BF16 behavior.
+    struct raw_observations {
+      /// True only after the OS baseline FP/Advanced SIMD query succeeds.
+      bool baseline_observed = false;
+      /// OS permits baseline floating-point instructions and their register state.
+      bool fp = false;
+      /// OS permits baseline Advanced SIMD instructions and their register state.
+      bool asimd = false;
+      /// True only after an OS half-arithmetic feature query succeeds.
+      bool fp16_observed = false;
+      /// OS advertises scalar half-precision arithmetic (FPHP/FEAT_FP16).
+      bool scalar_fp16 = false;
+      /// OS advertises Advanced SIMD half-precision arithmetic (ASIMDHP/FEAT_FP16).
+      bool vector_fp16 = false;
+      /// True only after an OS BF16 feature query succeeds.
+      bool bf16_observed = false;
+      /// OS advertises non-streaming Advanced SIMD BF16 instructions (FEAT_BF16).
+      bool bf16 = false;
+      /// True only after an OS enhanced BF16 feature query succeeds.
+      bool ebf16_observed = false;
+      /// OS advertises enhanced BF16 behavior, usable when the caller sets FPCR.EBF.
+      /// Informational: NEON_BF16 admission does not require this extension.
+      bool ebf16 = false;
+      /// Additional source-target queries, retaining the current compiler bundles.
+      /// A feature must occur in both sets; failed queries never authorize it.
+      feature_set<arm_feature> extra_observed{}, extra_features{};
+    };
+    /// Diagnostic snapshot; editing it does not update present/observed.
+    raw_observations raw{};
   };
 
   /// \ingroup arm_capabilities
@@ -83,20 +92,20 @@ namespace simd {
       value=data!=0; return 1;
     };
     bool baseline=false, half=false;
-    result.baseline_observed=query("hw.optional.neon",baseline)==1;
-    result.fp=result.asimd=baseline;
+    result.raw.baseline_observed=query("hw.optional.neon",baseline)==1;
+    result.raw.fp=result.raw.asimd=baseline;
     auto status=query("hw.optional.arm.FEAT_FP16",half);
     if(status==0) status=query("hw.optional.neon_fp16",half);
-    result.fp16_observed=status==1;
-    result.scalar_fp16=result.vector_fp16=half;
-    result.bf16_observed=query("hw.optional.arm.FEAT_BF16",result.bf16)==1;
-    result.ebf16_observed=query("hw.optional.arm.FEAT_EBF16",result.ebf16)==1;
+    result.raw.fp16_observed=status==1;
+    result.raw.scalar_fp16=result.raw.vector_fp16=half;
+    result.raw.bf16_observed=query("hw.optional.arm.FEAT_BF16",result.raw.bf16)==1;
+    result.raw.ebf16_observed=query("hw.optional.arm.FEAT_EBF16",result.raw.ebf16)==1;
     auto extra=[&](arm_feature f,char const * first,char const * second=nullptr) {
       bool a=false,b=true;
       auto observed=query(first,a)==1;
       if(second) observed=(query(second,b)==1)&&observed;
-      if(observed) result.extra_observed.set(f,true);
-      if(observed && a && b) result.extra_features.set(f,true);
+      if(observed) result.raw.extra_observed.set(f,true);
+      if(observed && a && b) result.raw.extra_features.set(f,true);
     };
     // Clang AES includes PMULL, SHA2 includes SHA1/SHA256, and SHA3 includes
     // SHA512. Query every component rather than assuming one implies another.
@@ -116,14 +125,14 @@ namespace simd {
     errno=0;
     auto hwcap=getauxval(AT_HWCAP);
     if(hwcap==0 && errno!=0) return result;
-    result.baseline_observed=result.fp16_observed=true;
-    result.fp=(hwcap&HWCAP_FP)!=0;
-    result.asimd=(hwcap&HWCAP_ASIMD)!=0;
-    result.scalar_fp16=(hwcap&HWCAP_FPHP)!=0;
-    result.vector_fp16=(hwcap&HWCAP_ASIMDHP)!=0;
+    result.raw.baseline_observed=result.raw.fp16_observed=true;
+    result.raw.fp=(hwcap&HWCAP_FP)!=0;
+    result.raw.asimd=(hwcap&HWCAP_ASIMD)!=0;
+    result.raw.scalar_fp16=(hwcap&HWCAP_FPHP)!=0;
+    result.raw.vector_fp16=(hwcap&HWCAP_ASIMDHP)!=0;
     auto extra=[&](arm_feature f,unsigned long mask) {
-      result.extra_observed.set(f,true);
-      if((hwcap&mask)==mask) result.extra_features.set(f,true);
+      result.raw.extra_observed.set(f,true);
+      if((hwcap&mask)==mask) result.raw.extra_features.set(f,true);
     };
     extra(arm_feature::aes,HWCAP_AES|HWCAP_PMULL);
     extra(arm_feature::sha2,HWCAP_SHA1|HWCAP_SHA2);
@@ -157,29 +166,29 @@ namespace simd {
     auto hwcap2=getauxval(AT_HWCAP2);
     if(hwcap2!=0 || errno==0) {
 #ifdef HWCAP2_BF16
-      result.bf16_observed=true;
-      result.bf16=(hwcap2&HWCAP2_BF16)!=0;
+      result.raw.bf16_observed=true;
+      result.raw.bf16=(hwcap2&HWCAP2_BF16)!=0;
 #endif
 #ifdef HWCAP2_EBF16
-      result.ebf16_observed=true;
-      result.ebf16=(hwcap2&HWCAP2_EBF16)!=0;
+      result.raw.ebf16_observed=true;
+      result.raw.ebf16=(hwcap2&HWCAP2_EBF16)!=0;
 #endif
     }
 #elif defined(_WIN32)
-    result.baseline_observed=result.fp16_observed=true;
-    result.fp=IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE)!=0;
-    result.asimd=IsProcessorFeaturePresent(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE)!=0;
+    result.raw.baseline_observed=result.raw.fp16_observed=true;
+    result.raw.fp=IsProcessorFeaturePresent(PF_ARM_V8_INSTRUCTIONS_AVAILABLE)!=0;
+    result.raw.asimd=IsProcessorFeaturePresent(PF_ARM_NEON_INSTRUCTIONS_AVAILABLE)!=0;
     // Documented SDK 26100 selector; older HALs return false for unknown features.
     constexpr DWORD fp16_feature=67; // PF_ARM_V82_FP16_INSTRUCTIONS_AVAILABLE
-    result.scalar_fp16=result.vector_fp16=IsProcessorFeaturePresent(fp16_feature)!=0;
+    result.raw.scalar_fp16=result.raw.vector_fp16=IsProcessorFeaturePresent(fp16_feature)!=0;
     constexpr DWORD bf16_feature=68; // PF_ARM_V86_BF16_INSTRUCTIONS_AVAILABLE
     constexpr DWORD ebf16_feature=69; // PF_ARM_V86_EBF16_INSTRUCTIONS_AVAILABLE
-    result.bf16_observed=result.ebf16_observed=true;
-    result.bf16=IsProcessorFeaturePresent(bf16_feature)!=0;
-    result.ebf16=IsProcessorFeaturePresent(ebf16_feature)!=0;
+    result.raw.bf16_observed=result.raw.ebf16_observed=true;
+    result.raw.bf16=IsProcessorFeaturePresent(bf16_feature)!=0;
+    result.raw.ebf16=IsProcessorFeaturePresent(ebf16_feature)!=0;
     auto extra=[&](arm_feature f,DWORD selector) {
-      result.extra_observed.set(f,true);
-      if(IsProcessorFeaturePresent(selector)) result.extra_features.set(f,true);
+      result.raw.extra_observed.set(f,true);
+      if(IsProcessorFeaturePresent(selector)) result.raw.extra_features.set(f,true);
     };
     extra(arm_feature::aes,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
     extra(arm_feature::sha2,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
@@ -188,12 +197,15 @@ namespace simd {
     extra(arm_feature::dotprod,43); // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
     extra(arm_feature::jsconv,44); // PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE
     extra(arm_feature::rcpc,45); // PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
-    result.extra_observed.set(arm_feature::sha3,true);
+    result.raw.extra_observed.set(arm_feature::sha3,true);
     if(IsProcessorFeaturePresent(64) && IsProcessorFeaturePresent(65))
-      result.extra_features.set(arm_feature::sha3,true); // SHA3 and SHA512
+      result.raw.extra_features.set(arm_feature::sha3,true); // SHA3 and SHA512
     // Windows exposes no selectors for the remaining catalog entries here;
     // leave them unobserved, even if a CPU model is usually known to have them.
 #endif
+    auto features=detail::decode_arm_features(result.raw);
+    result.present=features.present;
+    result.observed=features.observed;
     return result;
   }
 }

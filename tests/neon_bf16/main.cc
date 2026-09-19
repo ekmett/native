@@ -47,9 +47,9 @@ namespace {
     ~environment() {set_fpcr(control);set_fpsr(status);}
   };
   constexpr bool classification() {
-    simd::arm_capabilities empty;
+    simd::arm_capabilities::raw_observations empty;
     if(simd::classify_isa(empty,simd::neon_bf16).admitted()) return false;
-    simd::arm_capabilities all{true,true,true,true,true,true,true,true,true,true};
+    simd::arm_capabilities::raw_observations all{true,true,true,true,true,true,true,true,true,true};
     if(!simd::classify_isa(all,simd::neon_bf16).admitted()) return false;
     if(!simd::classify_isa(all,simd::isa(static_cast<simd::x86_feature>(-1))).invalid_features) return false;
     auto baseline=all; baseline.bf16_observed=baseline.bf16=false;
@@ -174,7 +174,7 @@ int main(int argc,char **argv) {
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   environment saved;set_fpcr(0);set_fpsr(0);
   if(!bf16_storage() || get_fpsr()!=0) {std::puts("BF16 storage failure");return 4;}
-  bool enhanced=cpu.ebf16_observed && cpu.ebf16;
+  bool enhanced=cpu.raw.ebf16_observed && cpu.raw.ebf16;
   if(!contract(enhanced))return 5;
   if(!alternative_controls(enhanced)) {std::puts("AH/FIZ control failure");return 6;}
   std::puts("BF16: 65536 storage encodings and guarded tails passed");

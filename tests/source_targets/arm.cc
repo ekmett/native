@@ -13,7 +13,7 @@ namespace {
     simd::arm_feature::rcpc, simd::arm_feature::pauth
   };
   constexpr auto full=[] {
-    simd::arm_capabilities cpu;
+    simd::arm_capabilities::raw_observations cpu;
     cpu.baseline_observed=cpu.fp=cpu.asimd=true;
     cpu.fp16_observed=cpu.scalar_fp16=cpu.vector_fp16=true;
     cpu.bf16_observed=cpu.bf16=true;
@@ -101,9 +101,9 @@ int main() {
   if(!synthetic()) return 1;
   auto cpu=simd::observe_arm_capabilities();
   // A real failed observation cannot be repaired by stale feature booleans.
-  if(!cpu.baseline_observed && simd::classify_isa(cpu,simd::neon).admitted()) return 2;
-  if(!cpu.fp16_observed && simd::classify_isa(cpu,simd::neon_fp16).admitted()) return 3;
-  if(!cpu.bf16_observed && simd::classify_isa(cpu,simd::neon_bf16).admitted()) return 4;
+  if(!cpu.observed.has(simd::arm_feature::neon) && simd::classify_isa(cpu,simd::neon).admitted()) return 2;
+  if(!cpu.observed.has(simd::arm_feature::neon_fp16) && simd::classify_isa(cpu,simd::neon_fp16).admitted()) return 3;
+  if(!cpu.observed.has(simd::arm_feature::neon_bf16) && simd::classify_isa(cpu,simd::neon_bf16).admitted()) return 4;
   std::printf("ARM admission: NEON=%s FP16=%s BF16=%s\n",
     simd::classify_isa(cpu,simd::neon).reason(),
     simd::classify_isa(cpu,simd::neon_fp16).reason(),
