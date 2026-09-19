@@ -1,6 +1,6 @@
 # CPUID and wait modules
 
-The x86-only `simd.cpuid` and `simd.wait` module definitions belong to
+The x86-only `simd.x86` and `simd.wait` module definitions belong to
 `simd::minimal` (also named `simd::common`), whose default x86 minimum is
 AVX2/FMA/BMI2 and is configurable at project setup. All intrinsic and system
 headers are in the global module fragment; the public types, templates and
@@ -47,7 +47,7 @@ records the separate optional-instruction probe object.
 
 ## Baseline profile admission
 
-Import `simd.cpuid` and link `simd::common` for baseline module metadata and
+Import `simd.x86` and link `simd::common` for baseline module metadata and
 the common archive's compiled observer and raw CPUID definitions. This is the
 same target in build-tree and installed consumers. No aggregate target, ISA
 module import or profile selection is needed. `observe_x86_capabilities()`

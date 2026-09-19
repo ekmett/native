@@ -68,7 +68,7 @@ custom element types and application dispatch.
 | `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `simd.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
 | `simd.types`, `simd.memory`, `simd.static_string` | Type, memory and string utilities |
-| `simd.cpuid`, `simd.wait` | Baseline x86 feature queries and wait utilities |
+| `simd.x86`, `simd.wait` | Baseline x86 feature queries and wait utilities |
 
 The hub exposes the common vector template, ISA values and `wide`. Generic math
 uses argument-dependent lookup, so an element library can supply its own

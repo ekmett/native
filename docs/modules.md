@@ -135,7 +135,7 @@ do not depend on `wide`.
 
 Common string, type, memory and numerical utilities retain independent named
 modules with one provider each. `simd.numerics` owns fp16/bf16 storage and scalar
-conversions. `simd.cpuid` and `simd.wait` are x86-only; `simd.arm` supplies Arm
+conversions. `simd.x86` and `simd.wait` are x86-only; `simd.arm` supplies Arm
 observation. Optional wait functions have their own target requirements.
 
 ## Extending the element type

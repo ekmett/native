@@ -8,7 +8,7 @@
 // Shared independent rational oracle: use only its gradual-underflow rows.
 #include "../neon_fp16/reference_cases.h"
 #include "../neon_fp16/sqrt_reference.h"
-import simd.cpuid;
+import simd.x86;
 import simd.scalar;
 #if !SIMD_MINIMAL_HAS_AVX512_FP16 && defined(__AVX512FP16__)
 #error Optional FP16 flags leaked into the minimum dispatcher

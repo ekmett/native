@@ -3,7 +3,7 @@
 /**
 \defgroup cpuid CPU Detection
 
-Import `simd.cpuid` for baseline x86 capability queries. The raw `simd::cpuid`
+Import `simd.x86` for baseline x86 capability queries. The raw `simd::cpuid`
 function preserves hardware register results, including unsupported-leaf
 behavior. Vendor identity is informational and never admits an instruction
 profile.
@@ -14,7 +14,7 @@ both XSAVE and OSXSAVE. `simd::classify_x86_profile` is a separate constexpr
 operation for real or synthetic snapshots:
 
 \code{.cpp}
-import simd.cpuid;
+import simd.x86;
 auto cpu = simd::observe_x86_capabilities();
 auto admission = simd::classify_x86_profile(cpu, simd::x86_profile::avx2);
 if (!admission.admitted()) {

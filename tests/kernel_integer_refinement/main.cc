@@ -14,7 +14,7 @@ import simd;
 #include <simd/integer.h>
 #include <simd/packing.h>
 #if defined(__x86_64__) || defined(_M_X64)
-import simd.cpuid;
+import simd.x86;
 #elif defined(__aarch64__) || defined(_M_ARM64)
 import simd.arm;
 #endif

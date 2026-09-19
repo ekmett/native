@@ -1,6 +1,6 @@
 #include "support/fp_environment.h"
 #include <cstdint>
-import simd.cpuid;
+import simd.x86;
 #include <cstdio>
 #if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags

@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <xmmintrin.h>
-import simd.cpuid;
+import simd.x86;
 import simd.scalar;
 #if !SIMD_MINIMAL_HAS_AVX512_BF16 && defined(__AVX512BF16__)
 #error Optional BF16 flags leaked into the minimum dispatcher

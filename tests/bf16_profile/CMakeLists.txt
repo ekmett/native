@@ -56,7 +56,7 @@ if(SIMD_BF16_OBJDUMP AND NOT bf16_usage_options MATCHES "sanitize=address")
 endif()
 if(bf16_standalone AND CMAKE_GENERATOR STREQUAL "Ninja")
   add_test(NAME simd.bf16.shared_bmi COMMAND "${CMAKE_COMMAND}"
-    "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DMODULES=simd.scalar;simd.wide;simd.numerics;simd.cpuid;simd"
+    "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DMODULES=simd.scalar;simd.wide;simd.numerics;simd.x86;simd"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/../profile_package/check_bmi.cmake")
   set_tests_properties(simd.bf16.shared_bmi PROPERTIES LABELS "host;modules;bf16;profiles")
 endif()

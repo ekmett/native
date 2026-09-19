@@ -29,7 +29,7 @@ import simd.numerics;
 static_assert((selected_arch & simd::feature::aes).has(selected_arch));
 static_assert(simd::feature::avx2 < (simd::feature::avx2 & simd::feature::fma));
 #if !API_NEON
-import simd.cpuid;
+import simd.x86;
 import simd.wait;
 #endif
 

@@ -31,10 +31,10 @@ run('provider-object',[*flags,'-c',pcm,'-o',out/'metadata.obj'])
 consumer=[*flags,'-DSIMD_TARGETS_METADATA_ONLY','-fmodule-file=simd_target_metadata='+str(pcm)]
 run('metadata',[*consumer,source/'metadata.cc',out/'metadata.obj','-o',out/'metadata.exe'])
 run('metadata-run',[out/'metadata.exe'])
-cpuid=out/'simd.cpuid.pcm'
-run('cpuid-provider',[*flags,'--precompile',root/'src/simd.cpuid.ccm','-o',cpuid])
+cpuid=out/'simd.x86.pcm'
+run('cpuid-provider',[*flags,'--precompile',root/'src/simd.x86.ccm','-o',cpuid])
 run('cpuid-object',[*flags,'-c',cpuid,'-o',out/'cpuid.obj'])
-run('observe',[*consumer,'-fmodule-file=simd.cpuid='+str(cpuid),source/'observe.cc',
+run('observe',[*consumer,'-fmodule-file=simd.x86='+str(cpuid),source/'observe.cc',
     out/'metadata.obj',out/'cpuid.obj','-o',out/'observe.exe'])
 run('observe-run',[out/'observe.exe'])
 run('arm-windows-provider',[*flags,'--target=aarch64-pc-windows-msvc','--precompile',

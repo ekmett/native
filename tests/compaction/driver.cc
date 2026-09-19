@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdio>
 #if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
-import simd.cpuid;
+import simd.x86;
 #elif SIMD_TEST_PROFILE == 128 && (SIMD_TEST_FP16 || SIMD_TEST_BF16)
 import simd.arm;
 #endif

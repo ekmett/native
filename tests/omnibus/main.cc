@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstdint>
 #if !TEST_NEON && !TEST_NEON_FP16 && !TEST_NEON_BF16
-import simd.cpuid;
+import simd.x86;
 #elif TEST_REQUIRED_NEON_FP16 || TEST_REQUIRED_NEON_BF16
 import simd.arm;
 #endif

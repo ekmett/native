@@ -11,7 +11,7 @@ module;
 #include <cpuid.h>
 #endif
 
-export module simd.cpuid;
+export module simd.x86;
 
 export namespace simd {
   /// \defgroup capabilities CPU capabilities and waiting

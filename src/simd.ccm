@@ -24,7 +24,7 @@ export import simd.static_string;
 export import simd.types;
 export import simd.memory;
 #if SIMD_HOST_X86
-export import simd.cpuid;
+export import simd.x86;
 export import simd.wait;
 #endif
 #if SIMD_HOST_NEON

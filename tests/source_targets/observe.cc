@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdio>
 import simd_target_metadata;
-import simd.cpuid;
+import simd.x86;
 int main() {
   auto cpu=simd::observe_x86_capabilities();
   bool avx2=simd::classify_isa(cpu,simd::avx2).admitted();
