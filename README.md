@@ -21,10 +21,27 @@ auto z = select(active, fma(x, y, V(1.f)), x);
 simd::wide<V, 12> batch(x);  // 96 values in twelve registers
 ```
 
-Architecture is part of the type. `simd::avx2`, `simd::avx512`, `simd::neon` and
-`simd::scalar` select instruction profiles; operations have no runtime dispatch.
+The ISA value is part of the type. `simd::avx2`, `simd::avx512`, `simd::neon` and
+`simd::scalar` are `constexpr isa` presets; operations have no runtime dispatch.
 An AVX-512 profile can also use 128-bit and 256-bit registers. Comparisons return
 `V::mask`, retaining the profile's vector-mask or compact-predicate representation.
+
+Feature requirements compose with `&` and compare by inclusion:
+
+```cpp
+constexpr simd::isa needs = simd::feature::avx2 & simd::feature::fma;
+static_assert(needs.has(simd::feature::fma));
+static_assert(needs <= simd::avx2);
+static_assert(simd::target<simd::avx2, simd::avx512, simd::avx2> == 1);
+
+auto requirements = simd::avx2;
+requirements.f16c = true;
+```
+
+`&` unions the required bits. A single feature sets exactly one bit;
+`feature_closure` adds compiler prerequisites explicitly. The presets already
+include their closure. [ISA values and target selection](docs/abi-lookup.md)
+covers properties, partial ordering, and the checked first-match selector.
 
 Short vectors have a logical lane count: a three-float load touches twelve bytes.
 Named swizzles return owning values and support overlapping assignment:
@@ -38,7 +55,7 @@ position.xyz = position.zyx;
 
 Reads may repeat components; writes require distinct destinations on a mutable
 lvalue. `saved` remains independent of subsequent changes to `position`.
-The [module guide](docs/modules.md) covers deduction, masks, memory, swizzles,
+The [module guide](docs/modules.md) covers construction, masks, memory, swizzles,
 custom element types and application dispatch.
 
 ## Modules
@@ -53,7 +70,7 @@ custom element types and application dispatch.
 | `simd.types`, `simd.memory`, `simd.static_string` | Type, memory and string utilities |
 | `simd.cpuid`, `simd.wait` | Baseline x86 feature queries and wait utilities |
 
-The hub exposes the common vector template, ISA feature tags and `wide`. Generic math
+The hub exposes the common vector template, ISA values and `wide`. Generic math
 uses argument-dependent lookup, so an element library can supply its own
 arithmetic and batched kernels. The downstream FTZ library
 uses that extension for reproducible binary32 arithmetic. SIMD itself leaves
@@ -62,7 +79,8 @@ the floating-point environment under application control.
 ## Build and consume
 
 The tested toolchain is Clang 23, CMake 4.4 and Ninja. Configuration checks C++26
-structured-binding packs and the Clang property extension used by swizzles.
+structured-binding packs and the Clang property extension used by ISA values
+and swizzles.
 
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
@@ -90,14 +108,15 @@ its own Clang target requirements; common utilities have one provider.
 
 Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
 you choose, then pass the matching list to `with_isa`. It checks CPU and OS
-support and invokes your callable with the first supported tag. It does not
-retarget a lambda. Generated variants have distinct overloads and matching
+support and invokes `callback.operator()<A>()` with the first supported ISA
+value. Write the callback as `[]<simd::isa A> { ... }`; selection does not
+retarget it. Generated variants have distinct constrained overloads and matching
 function attributes, with no per-variant CMake targets or BMIs.
 
 Presets include AVX2, AVX-512, AVX-512 BF16/FP16, NEON and NEON BF16/FP16. They
-are aliases for canonical feature sets; supported feature combinations can have
-their own source names. The native half operations retain their instruction
-contracts: [AVX-512 FP16](tests/avx512_fp16/README.md),
+are ISA values; supported feature combinations can have their own source names.
+CPU-model bundles remain future work. The native half operations retain their
+instruction contracts: [AVX-512 FP16](tests/avx512_fp16/README.md),
 [AVX-512 BF16](tests/bf16_profile/README.md),
 [NEON FP16](tests/neon_fp16/README.md), and [NEON BF16](tests/neon_bf16/README.md).
 Importing those APIs does not require that the CPU can execute them. Admission
@@ -117,6 +136,10 @@ installation with `SIMD_BUILD_HOST=OFF`. Include the attribute header when using
 macros such as `simd_inline`; imports do not carry macros.
 Using `isa.h` without modules requires C++20; the host modules require C++26.
 The configuration and attribute headers impose no new C++ language mode.
+
+The switch from architecture tag types to ISA value template arguments changes
+template identity and symbol names. Rebuild BMIs and all code that exchanges
+SIMD vector types across library boundaries when updating.
 
 [Compiled API examples](tests/api/README.md) exercise vector construction, masks,
 memory, swizzles, wide values and the common utilities. [Build details](doc/building.md)

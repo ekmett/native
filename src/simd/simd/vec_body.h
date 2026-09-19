@@ -266,18 +266,13 @@ namespace simd {
 #endif
   }
 
-  template<class U,std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::mask_shape<sizeof(U),N>
+  template<class U,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::mask_shape<sizeof(U),N>
   /// \ingroup masks
   /// A full-vector mask whose lanes are canonical zero/all-one values.
   /// `from_native` normalizes whole lanes; `unsafe_from_native` requires that
   /// invariant already. `to_bitset` places logical lane i in bit i.
   struct alignas(typename SIMD_BACKEND_NAMESPACE::mask_full_ops<sizeof(U),N>::native_type) vec<mask_lane<U>,N,Arch> : detail::swizzle_access<mask_lane<U>,N,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+    static constexpr isa architecture=Arch;
     template <class X> using rebind = vec<X,N,Arch>;
     /// Load exactly the logical lanes; the template alignment is a caller promise, never permission to read padding.
     template <std::size_t A = 1>
@@ -363,8 +358,9 @@ namespace simd {
   /// Compact comparison storage. Every import clears bits above the lane count,
   /// including the compatibility `unsafe_from_native` spelling.
 
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::predicate_shape<N>
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::predicate_shape<N>
   struct predicate<N,Arch> {
+    static constexpr isa architecture=Arch;
     using ops=SIMD_BACKEND_NAMESPACE::mask_compact_ops<N>;
     using native_type=typename ops::native_type;
     static constexpr std::size_t lanes=N;
@@ -419,30 +415,30 @@ namespace simd {
 
   namespace detail::SIMD_BACKEND {
     template<class T> using mask_lane_for=mask_lane<mask_word<mask_lane_bytes<T>>>;
-    template<class T,std::size_t N, SIMD_ARCH_CONCEPT Arch> using comparison_mask=std::conditional_t<mask_compact<mask_lane_bytes<T>,N>,
+    template<class T,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) using comparison_mask=std::conditional_t<mask_compact<mask_lane_bytes<T>,N>,
       predicate<N,Arch>,vec<mask_lane_for<T>,N,Arch>>;
   }
   namespace detail::SIMD_BACKEND {
-  template<SIMD_ARCH_CONCEPT Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
-    requires simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
+  template<::simd::isa Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
+    requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_pure vec<T,N,Arch> load_simd(U const * p,simd_memory<A,Access> = {}) noexcept { return vec<T,N,Arch>::load(p); }
-  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
+  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
   simd_inline void store_simd(U * p,vec<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept { value.store(p); }
-  template<SIMD_ARCH_CONCEPT Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
-    requires simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
+  template<::simd::isa Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
+    requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_pure vec<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=T{},simd_memory<A,Access> = {}) noexcept {
     std::array<T,N> a;a.fill(fill);for(std::size_t i=0;i<count;++i)a[i]=p[i];return vec<T,N,Arch>::load(a.data());
   }
-  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
+  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename vec<T,N,Arch>::native_type; }
   simd_inline void store_simd_partial(U * p,vec<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept {
     std::array<T,N> a;value.store(a.data());for(std::size_t i=0;i<count;++i)p[i]=a[i];
   }
   }
   /// \ingroup masks
   /// Change full-mask lane width without changing lane truth or lane count.
-  template<class U,class T,std::size_t N, SIMD_ARCH_CONCEPT Arch> requires simd_mask_element<U> && simd_mask_element<T> &&
+  template<class U,class T,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<U> && simd_mask_element<T> &&
     requires { typename vec<U,N,Arch>::native_type; typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const vec<U,N,Arch> mask_cast(vec<T,N,Arch> value) noexcept {
     if constexpr(sizeof(U)==sizeof(T)) return vec<U,N,Arch>::unsafe_from_native(value.to_native());
@@ -450,7 +446,7 @@ namespace simd {
   }
   /// \ingroup masks
   /// Compress full-vector truth into a supported compact predicate.
-  template<class T,std::size_t N, SIMD_ARCH_CONCEPT Arch> requires simd_mask_element<T> && SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<T,N,Arch>::native_type; }
+  template<class T,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const predicate<N,Arch> to_predicate(vec<T,N,Arch> value) noexcept {
 #if SIMD_HAS_AVX512F && SIMD_HAS_AVX512VL
     if constexpr(sizeof(T)*N==16 && SIMD_BACKEND_NAMESPACE::mask_compact<sizeof(T),N>) {
@@ -471,7 +467,7 @@ namespace simd {
   }
   /// \ingroup masks
   /// Expand a predicate to canonical zero/all-one lanes of mask element `T`.
-  template<class T,std::size_t N, SIMD_ARCH_CONCEPT Arch> requires simd_mask_element<T> && SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<T,N,Arch>::native_type; }
+  template<class T,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const vec<T,N,Arch> to_vector_mask(predicate<N,Arch> value) noexcept {
 #if SIMD_HAS_AVX512F && SIMD_HAS_AVX512VL
     if constexpr(sizeof(T)*N==16 && SIMD_BACKEND_NAMESPACE::mask_compact<sizeof(T),N>) {
@@ -512,14 +508,9 @@ namespace simd {
   /// \ingroup masks
   /// Boolean data stores one byte, zero or one, per lane.
   /// Use explicit conversions to cross into full masks or compact predicates.
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::mask_shape<1,N>
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::mask_shape<1,N>
   struct vec<bool,N,Arch> : detail::swizzle_access<bool,N,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+    static constexpr isa architecture=Arch;
     template <class X> using rebind = vec<X,N,Arch>;
     /// Load exactly the logical lanes; the template alignment is a caller promise, never permission to read padding.
     template <std::size_t A = 1>
@@ -636,37 +627,37 @@ namespace simd {
   };
 
   namespace detail::SIMD_BACKEND {
-  template<SIMD_ARCH_CONCEPT Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
-    requires std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
+  template<::simd::isa Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
+    requires SIMD_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_pure vec<T,N,Arch> load_simd(U const * p,simd_memory<A,Access> = {}) noexcept { return vec<T,N,Arch>::load(p); }
-  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
+  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
   simd_inline void store_simd(U * p,vec<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept { value.store(p); }
-  template<SIMD_ARCH_CONCEPT Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
-    requires std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
+  template<::simd::isa Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
+    requires SIMD_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_pure vec<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=false,simd_memory<A,Access> = {}) noexcept {
     return vec<T,N,Arch>::load_partial(p,count,fill);
   }
-  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
+  template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename vec<T,N,Arch>::native_type; }
   simd_inline void store_simd_partial(U * p,vec<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept { value.store_partial(p,count); }
   }
   /// Expand lane truth into canonical zero/all-one full-vector mask lanes.
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<bool,N,Arch>::native_type; }
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<bool,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const vec<mask8,N,Arch> to_vector_mask(vec<bool,N,Arch> value) noexcept {
     return vec<mask8,N,Arch>::from_native(value.to_native());
   }
   /// Convert lane truth into Boolean data lanes represented as zero or one, preserving the lane count.
-  template<class T,std::size_t N, SIMD_ARCH_CONCEPT Arch> requires simd_mask_element<T> && requires { typename vec<bool,N,Arch>::native_type; typename vec<T,N,Arch>::native_type; }
+  template<class T,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && simd_mask_element<T> && requires { typename vec<bool,N,Arch>::native_type; typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const vec<bool,N,Arch> to_bool(vec<T,N,Arch> value) noexcept {
     auto byte_mask=mask_cast<mask8>(value);
     return vec<bool,N,Arch>::unsafe_from_native(vec<bool,N,Arch>::ops::bit_and(byte_mask.to_native(),SIMD_BACKEND_NAMESPACE::bool_ones<N>()));
   }
   /// Convert lane truth into Boolean data lanes represented as zero or one, preserving the lane count.
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<bool,N,Arch>::native_type; }
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<bool,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const vec<bool,N,Arch> to_bool(predicate<N,Arch> value) noexcept { return to_bool(to_vector_mask<mask8>(value)); }
   /// Compress lane truth into the supported compact predicate representation.
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<bool,N,Arch>::native_type; }
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename vec<bool,N,Arch>::native_type; }
   simd_nodiscard simd_inline simd_const predicate<N,Arch> to_predicate(vec<bool,N,Arch> value) noexcept {
     auto result=value!=vec<bool,N,Arch>(false);
     if constexpr(decltype(result)::compact) return result;
@@ -1692,33 +1683,28 @@ namespace simd {
   } // namespace detail
 
   namespace detail::SIMD_BACKEND {
-  template <SIMD_ARCH_CONCEPT Arch, simd_integer_element T, std::size_t N, std::size_t A = 1,
+  template <::simd::isa Arch, simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_pure vec<T, N,Arch> load_simd(T const *p, simd_memory<A, Access> = {}) noexcept;
   template <simd_integer_element T, std::size_t N, std::size_t A = 1,
-            simd_access Access = simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+            simd_access Access = simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_inline void store_simd(T *p, vec<T, N,Arch> v, simd_memory<A, Access> = {}) noexcept;
-  template <SIMD_ARCH_CONCEPT Arch, simd_integer_element T, std::size_t N, std::size_t A = 1,
+  template <::simd::isa Arch, simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_pure vec<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
                                                                     simd_memory<A, Access> = {}) noexcept;
   template <simd_integer_element T, std::size_t N, std::size_t A = 1,
-            simd_access Access = simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+            simd_access Access = simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_inline void store_simd_partial(T *p, vec<T, N,Arch> v, std::size_t count,
                                       simd_memory<A, Access> = {}) noexcept;
 
   }
-  template <simd_integer_element T, SIMD_ARCH_CONCEPT Arch> struct vec<T, 1,Arch> : detail::swizzle_access<T,1,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+  template <simd_integer_element T, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct vec<T, 1,Arch> : detail::swizzle_access<T,1,Arch> {
+    static constexpr isa architecture=Arch;
     template <class U> using rebind = vec<U,1,Arch>;
     template <std::size_t A = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
@@ -2150,15 +2136,10 @@ namespace simd {
   // Qualified native helper names must exist even before constraints are checked.
   // A real integer specialization owns one intrinsic register. The storage trait
   // chooses representation only; every operation below has integer semantics.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires(N > 1 && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>)
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(N > 1 && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>)
   struct vec<T, N,Arch> : detail::swizzle_access<T,N,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+    static constexpr isa architecture=Arch;
     template <class U> using rebind = vec<U,N,Arch>;
     template <std::size_t A = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
@@ -2660,8 +2641,8 @@ namespace simd {
 #endif
 
   namespace detail::SIMD_BACKEND {
-  template <SIMD_ARCH_CONCEPT Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <::simd::isa Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_pure vec<T, N,Arch> load_simd(T const *p, simd_memory<A, Access>) noexcept {
     using V = vec<T, N,Arch>;
     typename V::native_type value;
@@ -2678,8 +2659,8 @@ namespace simd {
     std::memcpy(&value, static_cast<void const *>(p), sizeof(value));
     return V::from_native(value);
   }
-  template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access, SIMD_ARCH_CONCEPT Arch>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_inline void store_simd(T *p, vec<T, N,Arch> v, simd_memory<A, Access>) noexcept {
 #if defined(__GNUC__) || defined(__clang__)
     if constexpr (A > 1)
@@ -2690,8 +2671,8 @@ namespace simd {
 #endif
     std::memcpy(static_cast<void *>(p), &v.value, sizeof(v.value));
   }
-  template <SIMD_ARCH_CONCEPT Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <::simd::isa Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_pure vec<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
                                                                     simd_memory<A, Access>) noexcept {
     assert(count <= N);
@@ -2700,8 +2681,8 @@ namespace simd {
       std::memcpy(data.data(), static_cast<void const *>(p), count * sizeof(T));
     return SIMD_BACKEND_NAMESPACE::load_simd<Arch,T, N>(data.data());
   }
-  template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access, SIMD_ARCH_CONCEPT Arch>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_inline void store_simd_partial(T *p, vec<T, N,Arch> v, std::size_t count,
                                       simd_memory<A, Access>) noexcept {
     assert(count <= N);
@@ -2710,13 +2691,13 @@ namespace simd {
     if (count)
       std::memcpy(static_cast<void *>(p), data.data(), count * sizeof(T));
   }
-  template <SIMD_ARCH_CONCEPT Arch, simd_integer_element T, std::size_t N>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <::simd::isa Arch, simd_integer_element T, std::size_t N>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_pure vec<T, N,Arch> load_simd(std::array<T, N> const &p) noexcept {
     return SIMD_BACKEND_NAMESPACE::load_simd<Arch,T, N>(p.data());
   }
-  template <SIMD_ARCH_CONCEPT Arch, simd_integer_element T, std::size_t N>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <::simd::isa Arch, simd_integer_element T, std::size_t N>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_pure vec<T, N,Arch> load_simd(std::span<T const, N> p) noexcept {
     return SIMD_BACKEND_NAMESPACE::load_simd<Arch,T, N>(p.data());
   }
@@ -2724,14 +2705,14 @@ namespace simd {
 
   }
   namespace detail::SIMD_BACKEND {
-  template <class M, class T, std::size_t N, class Arch>
+  template <class M, class T, std::size_t N, isa Arch>
   concept integer_mask_for =
       std::same_as<M, typename vec<T, N,Arch>::mask_type> || std::same_as<M, vec<SIMD_BACKEND_NAMESPACE::mask_lane_for<T>, N,Arch>>;
   }
   /// \ingroup masks
   /// Choose a in true lanes and b in false lanes; both operands are evaluated.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> select(M m, vec<T, N,Arch> a, vec<T, N,Arch> b) noexcept {
     if constexpr (N == 1)
       return any(m) ? a : b;
@@ -2742,8 +2723,8 @@ namespace simd {
   }
   /// \ingroup masks
   /// Select individual bits: (bits & a) | (~bits & b); no mask canonicalization.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> bit_select(vec<T, N,Arch> bits, vec<T, N,Arch> a,
                                                               vec<T, N,Arch> b) noexcept {
     if constexpr(N==1) return (bits & a) | (~bits & b);
@@ -2754,36 +2735,36 @@ namespace simd {
   // Compatibility: numeric masks select individual bits, never lane truth values.
   /// \ingroup masks
   /// Choose a in true lanes and b in false lanes; both operands are evaluated.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && SIMD_BACKEND_NAMESPACE::integer_shape<T, N>
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> select(vec<T, N,Arch> bits, vec<T, N,Arch> a,
                                                           vec<T, N,Arch> b) noexcept {
     return bit_select(bits, a, b);
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
-  template <simd_mask_element M, std::size_t N, SIMD_ARCH_CONCEPT Arch>
+  template <simd_mask_element M, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_const auto mask_bits(vec<M, N,Arch> m) noexcept {
     using U = typename M::storage_type;
     return vec<U, N,Arch>::from_native(m.to_native());
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
-  template <simd_integer_element T, simd_mask_element M, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires(sizeof(T) == sizeof(M))
+  template <simd_integer_element T, simd_mask_element M, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(sizeof(T) == sizeof(M))
   simd_nodiscard simd_inline simd_const vec<std::make_unsigned_t<T>, N,Arch> mask_bits(vec<M, N,Arch> m) noexcept {
     return mask_bits(m);
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
-  template <simd_integer_element T, std::size_t N, SIMD_ARCH_CONCEPT Arch>
+  template <simd_integer_element T, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_const vec<std::make_unsigned_t<T>, N,Arch> mask_bits(predicate<N,Arch> m) noexcept {
     return mask_bits(to_vector_mask<SIMD_BACKEND_NAMESPACE::mask_lane_for<T>>(m));
   }
   /// \ingroup masks
   /// Add modulo the lane width in active lanes, retaining prior elsewhere.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> masked_add(M m, vec<T, N,Arch> prior, vec<T, N,Arch> a,
                                                               vec<T, N,Arch> b) noexcept {
     if constexpr (N == 1)
@@ -2795,15 +2776,15 @@ namespace simd {
   }
   /// \ingroup masks
   /// Add modulo the lane width in active lanes and zero inactive lanes.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> masked_add_zero(M m, vec<T, N,Arch> a, vec<T, N,Arch> b) noexcept {
     return masked_add(m, vec<T, N,Arch>(T(0)), a, b);
   }
   /// \ingroup masks
   /// Subtract modulo the lane width in active lanes, retaining prior elsewhere.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> masked_sub(M m, vec<T, N,Arch> prior, vec<T, N,Arch> a,
                                                               vec<T, N,Arch> b) noexcept {
     if constexpr (N == 1)
@@ -2815,15 +2796,15 @@ namespace simd {
   }
   /// \ingroup masks
   /// Subtract modulo the lane width in active lanes and zero inactive lanes.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> masked_sub_zero(M m, vec<T, N,Arch> a, vec<T, N,Arch> b) noexcept {
     return masked_sub(m, vec<T, N,Arch>(T(0)), a, b);
   }
   /// \ingroup masks
   /// Multiply modulo the lane width in active lanes, retaining prior elsewhere.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> masked_mul(M m, vec<T, N,Arch> prior, vec<T, N,Arch> a,
                                                               vec<T, N,Arch> b) noexcept {
     if constexpr (N == 1)
@@ -2835,8 +2816,8 @@ namespace simd {
   }
   /// \ingroup masks
   /// Multiply modulo the lane width in active lanes and zero inactive lanes.
-  template <simd_integer_element T, std::size_t N, class M, SIMD_ARCH_CONCEPT Arch>
-    requires(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
+  template <simd_integer_element T, std::size_t N, class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(SIMD_BACKEND_NAMESPACE::integer_shape<T, N> && SIMD_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
   simd_nodiscard simd_inline simd_const vec<T, N,Arch> masked_mul_zero(M m, vec<T, N,Arch> a, vec<T, N,Arch> b) noexcept {
     return masked_mul(m, vec<T, N,Arch>(T(0)), a, b);
   }
@@ -2846,12 +2827,12 @@ namespace simd {
 // a builtin scalar shift. The immediate tag retains its public size conversion.
 namespace simd {
   /// Reject this unsupported operand combination instead of converting implicitly to a native register.
-  template<simd_integer_element T, std::size_t N, std::size_t K, SIMD_ARCH_CONCEPT Arch>
-    requires (K >= sizeof(T) * 8)
+  template<simd_integer_element T, std::size_t N, std::size_t K, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8)
   void operator<<(vec<T, N,Arch>, imm_t<K>) = delete;
   /// Reject this unsupported operand combination instead of converting implicitly to a native register.
-  template<simd_integer_element T, std::size_t N, std::size_t K, SIMD_ARCH_CONCEPT Arch>
-    requires (K >= sizeof(T) * 8)
+  template<simd_integer_element T, std::size_t N, std::size_t K, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8)
   void operator>>(vec<T, N,Arch>, imm_t<K>) = delete;
 }
 
@@ -2900,19 +2881,14 @@ namespace simd {
   }
   namespace detail::SIMD_BACKEND {
     template <class T> inline constexpr bool custom_argument = ::simd::simd_custom_element<std::remove_cvref_t<T>>;
-    template <class T, std::size_t N, SIMD_ARCH_CONCEPT Arch> inline constexpr bool custom_argument<vec<T,N,Arch>> = ::simd::simd_custom_element<T>;
+    template <class T, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) inline constexpr bool custom_argument<vec<T,N,Arch>> = ::simd::simd_custom_element<T>;
   }
   namespace detail::SIMD_BACKEND {
 
   using ::simd::detail::register_memory;
   }
-  template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 1,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,1,Arch>, 1>, detail::swizzle_access<float,1,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+  template <::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct simd_empty_bases vec<float, 1,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,1,Arch>, 1>, detail::swizzle_access<float,1,Arch> {
+    static constexpr isa architecture=Arch;
     template <class T> using rebind = vec<T,1,Arch>;
     using vector_mask_type=vec<mask32,1,Arch>;
     using mask_type=SIMD_BACKEND_NAMESPACE::comparison_mask<float,1,Arch>;
@@ -3028,13 +3004,8 @@ namespace simd {
 namespace simd {
 #endif
 #if SIMD_HAS_AVX512F && SIMD_HAS_AVX512DQ
-  template <SIMD_ARCH_CONCEPT Arch> struct vec<float, 16,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,16,Arch>, 16> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+  template <::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct vec<float, 16,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,16,Arch>, 16> {
+    static constexpr isa architecture=Arch;
     template <class T> using rebind = vec<T,16,Arch>;
     using vector_mask_type=vec<mask32,16,Arch>;
     using mask_type=SIMD_BACKEND_NAMESPACE::comparison_mask<float,16,Arch>;
@@ -3158,13 +3129,8 @@ namespace simd {
   };
 #endif
 #if SIMD_HAS_ARM_NEON
-  template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 4,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+  template <::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct simd_empty_bases vec<float, 4,Arch> : SIMD_BACKEND_NAMESPACE::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
+    static constexpr isa architecture=Arch;
     template <class T> using rebind = vec<T,4,Arch>;
     using vector_mask_type=vec<mask32,4,Arch>;
     using mask_type=SIMD_BACKEND_NAMESPACE::comparison_mask<float,4,Arch>;
@@ -3287,7 +3253,7 @@ namespace simd {
   namespace detail::SIMD_BACKEND {
     // VSCALEF uses floor, including negative fractions. Native rounding also
     // observes the caller's denormal-input mode before this operation.
-    template <std::size_t N, SIMD_ARCH_CONCEPT Arch>
+    template <std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
     simd_nodiscard simd_inline simd_pure vec<float,N,Arch> scaleb_floor(vec<float,N,Arch> x) noexcept {
 #if SIMD_HAS_AVX2
       if constexpr(N==1) return vec<float,N,Arch>(_mm_cvtss_f32(_mm_floor_ss(_mm_setzero_ps(),_mm_set_ss(x.value))));
@@ -3316,7 +3282,7 @@ namespace simd {
       if(x==0.0f) return negative?std::bit_cast<float>(a&0x80000000u):x*exponent;
       return std::bit_cast<float>((a&0x80000000u)|(negative?0u:0x7f800000u));
     }
-    template <std::size_t N,class M, SIMD_ARCH_CONCEPT Arch>
+    template <std::size_t N,class M, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
     simd_nodiscard simd_inline simd_pure vec<float,N,Arch> scaleb_fallback(M mask,
         vec<float,N,Arch> prior,vec<float,N,Arch> value,vec<float,N,Arch> exponent) noexcept {
       using V=vec<float,N,Arch>;using U=vec<uint32_t,N,Arch>;
@@ -3358,8 +3324,8 @@ namespace simd {
   /// Scale active lanes by 2^floor(exponent), retaining `prior` in other lanes.
   /// Inactive lanes are excluded from the scaling operation. The result follows
   /// the caller's floating-point environment, including denormal controls.
-  template <std::size_t N,class M, SIMD_ARCH_CONCEPT Arch>
-    requires(std::same_as<M,typename vec<float,N,Arch>::mask_type> ||
+  template <std::size_t N,class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(std::same_as<M,typename vec<float,N,Arch>::mask_type> ||
              std::same_as<M,typename vec<float,N,Arch>::vector_mask_type>)
   simd_nodiscard simd_inline simd_pure vec<float,N,Arch> masked_scaleb(M mask,
       vec<float,N,Arch> prior,vec<float,N,Arch> value,vec<float,N,Arch> exponent) noexcept {
@@ -3384,8 +3350,8 @@ namespace simd {
   }
   /// \ingroup vector_math
   /// Scale active lanes by 2^floor(exponent), writing positive zero elsewhere.
-  template <std::size_t N,class M, SIMD_ARCH_CONCEPT Arch>
-    requires(std::same_as<M,typename vec<float,N,Arch>::mask_type> ||
+  template <std::size_t N,class M, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) &&(std::same_as<M,typename vec<float,N,Arch>::mask_type> ||
              std::same_as<M,typename vec<float,N,Arch>::vector_mask_type>)
   simd_nodiscard simd_inline simd_pure vec<float,N,Arch> masked_scaleb_zero(M mask,
       vec<float,N,Arch> value,vec<float,N,Arch> exponent) noexcept {
@@ -3394,102 +3360,83 @@ namespace simd {
   /// \ingroup vector_math
   /// Scale every lane by 2^floor(exponent), including fractional exponents.
   /// Unlike an integer ldexp exponent, the exponent argument is itself a vector.
-  template <std::size_t N, SIMD_ARCH_CONCEPT Arch>
+  template <std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_pure vec<float,N,Arch> scaleb(vec<float,N,Arch> value,
       vec<float,N,Arch> exponent) noexcept {
     return masked_scaleb_zero(typename vec<float,N,Arch>::mask_type(true),value,exponent);
   }
   /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator+(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a+vec<float,N,Arch>(b); }
   /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator+(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)+b; }
   /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator-(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a-vec<float,N,Arch>(b); }
   /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator-(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)-b; }
   /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator*(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a*vec<float,N,Arch>(b); }
   /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator*(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)*b; }
   /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator/(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a/vec<float,N,Arch>(b); }
   /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator/(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)/b; }
   /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator<(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a<vec<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator<(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)<b; }
   /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator>(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a>vec<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator>(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)>b; }
   /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator<=(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a<=vec<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator<=(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)<=b; }
   /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator>=(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a>=vec<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator>=(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)>=b; }
   /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator==(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a==vec<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator==(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)==b; }
   /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator!=(vec<float,N,Arch> a, U b) noexcept(noexcept(vec<float,N,Arch>(b))) { return a!=vec<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-  template <std::size_t N,class U, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
+  template <std::size_t N,class U, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,vec<float,N,Arch>>) && std::convertible_to<U,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto operator!=(U a, vec<float,N,Arch> b) noexcept(noexcept(vec<float,N,Arch>(a))) { return vec<float,N,Arch>(a)!=b; }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-  template <std::size_t N,class A,class B, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<A> && !SIMD_BACKEND_NAMESPACE::custom_argument<B>) && std::convertible_to<A,vec<float,N,Arch>> && std::convertible_to<B,vec<float,N,Arch>>
+  template <std::size_t N,class A,class B, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<A> && !SIMD_BACKEND_NAMESPACE::custom_argument<B>) && std::convertible_to<A,vec<float,N,Arch>> && std::convertible_to<B,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto fma(vec<float,N,Arch> a,A b,B c) noexcept(noexcept(vec<float,N,Arch>(b)) && noexcept(vec<float,N,Arch>(c))) { return fma(a,vec<float,N,Arch>(b),vec<float,N,Arch>(c)); }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-  template <std::size_t N,class A,class B, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<A> && !SIMD_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,vec<float,N,Arch>>) && std::convertible_to<A,vec<float,N,Arch>> && std::convertible_to<B,vec<float,N,Arch>>
+  template <std::size_t N,class A,class B, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<A> && !SIMD_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,vec<float,N,Arch>>) && std::convertible_to<A,vec<float,N,Arch>> && std::convertible_to<B,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto fma(A a,vec<float,N,Arch> b,B c) noexcept(noexcept(vec<float,N,Arch>(a)) && noexcept(vec<float,N,Arch>(c))) { return fma(vec<float,N,Arch>(a),b,vec<float,N,Arch>(c)); }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-  template <std::size_t N,class A,class B, SIMD_ARCH_CONCEPT Arch> requires (!SIMD_BACKEND_NAMESPACE::custom_argument<A> && !SIMD_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,vec<float,N,Arch>>) && (!std::same_as<B,vec<float,N,Arch>>) && std::convertible_to<A,vec<float,N,Arch>> && std::convertible_to<B,vec<float,N,Arch>>
+  template <std::size_t N,class A,class B, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && (!SIMD_BACKEND_NAMESPACE::custom_argument<A> && !SIMD_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,vec<float,N,Arch>>) && (!std::same_as<B,vec<float,N,Arch>>) && std::convertible_to<A,vec<float,N,Arch>> && std::convertible_to<B,vec<float,N,Arch>>
   simd_nodiscard simd_inline auto fma(A a,B b,vec<float,N,Arch> c) noexcept(noexcept(vec<float,N,Arch>(a)) && noexcept(vec<float,N,Arch>(b))) { return fma(vec<float,N,Arch>(a),vec<float,N,Arch>(b),c); }
-#if SIMD_HAS_AVX2
-  /// Deduce a homogeneous mask vector from its lane arguments and explicit architecture.
-  template<SIMD_ARCH_CONCEPT Arch>
-  vec(Arch,__m128) -> vec<float,4,Arch>;
-  /// Deduce a homogeneous mask vector from its lane arguments and explicit architecture.
-  template<SIMD_ARCH_CONCEPT Arch>
-  vec(Arch,__m256) -> vec<float,8,Arch>;
-#endif
-#if SIMD_HAS_AVX512F && SIMD_HAS_AVX512DQ
-  /// Deduce a homogeneous mask vector from its lane arguments and explicit architecture.
-  template<SIMD_ARCH_CONCEPT Arch>
-  vec(Arch,__m512) -> vec<float,16,Arch>;
-#endif
-#if SIMD_HAS_ARM_NEON
-  /// Deduce four float lanes from native NEON storage and the explicit architecture tag.
-  template<SIMD_ARCH_CONCEPT Arch>
-  vec(Arch,float32x4_t) -> vec<float,4,Arch>;
-#endif
-
   /// \ingroup vector_math
   /// Clear each binary32 sign bit, preserving the remaining payload bits.
-  template <std::size_t N, SIMD_ARCH_CONCEPT Arch>
+  template <std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_const auto abs(vec<float,N,Arch> a) noexcept {
     return vec<float,N,Arch>::from_bits(a.bits() & typename vec<float,N,Arch>::bits_type(0x7fffffffu));
   }
@@ -3498,7 +3445,7 @@ namespace simd {
   /// \ingroup vector_math
   /// Convert floats to signed 32-bit integers by truncation toward zero.
   /// \pre Every truncated result is representable; NaNs and infinities are outside the contract.
-  template <class To, std::size_t N, SIMD_ARCH_CONCEPT Arch> requires std::same_as<To,std::int32_t>
+  template <class To, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && std::same_as<To,std::int32_t>
   simd_nodiscard simd_inline vec<To,N,Arch> convert(vec<float,N,Arch> x) noexcept {
     if constexpr(N==2 || N==3) return vec<To,N,Arch>::from_storage(convert<To>(x.to_storage()));
     else if constexpr (N==1) return vec<To,N,Arch>(static_cast<std::int32_t>(x.value));
@@ -3516,7 +3463,7 @@ namespace simd {
   /// \ingroup vector_math
   /// Numerically convert signed 32-bit integers to binary32.
   /// This is not a bit cast. Values outside binary32's exact integer range round.
-  template <class To, std::size_t N, SIMD_ARCH_CONCEPT Arch> requires std::same_as<To,float>
+  template <class To, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && std::same_as<To,float>
   simd_nodiscard simd_inline vec<To,N,Arch> convert(vec<std::int32_t,N,Arch> x) noexcept {
     if constexpr(N==2 || N==3) return vec<To,N,Arch>::from_storage(convert<To>(x.to_storage()));
     else if constexpr (N==1) return vec<To,N,Arch>(static_cast<float>(x.value));
@@ -3563,16 +3510,16 @@ namespace simd {
   namespace detail::SIMD_BACKEND {
   // Alignment is a caller promise. Access is a hint; streaming currently falls
   // back to ordinary moves on every backend and needs no completion fence.
-  template <SIMD_ARCH_CONCEPT Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
-    requires (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
+  template <::simd::isa Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::simd::simd_custom_element<T>)
   simd_nodiscard simd_inline simd_pure vec<T,N,Arch> load_simd(simd_noescape U const * p,simd_memory<A,Access> = {}) noexcept {
     if constexpr (::simd::simd_custom_element<T>) return vec<T,N,Arch>::template load_memory<A>(p);
     else if constexpr (::simd::simd_custom_element<U>) return vec<U,N,Arch>::template load_memory<A>(p).to_native();
     else return SIMD_BACKEND_NAMESPACE::simd_load_native<vec<float,N,Arch>,A>(p);
   }
-  template <class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
+  template <class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::simd::simd_custom_element<T>)
   simd_inline void store_simd(simd_noescape U * p,vec<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept {
     if constexpr (::simd::simd_custom_element<U>) vec<U,N,Arch>(value).template store_memory<A>(p);
@@ -3580,8 +3527,8 @@ namespace simd {
     else if constexpr (::simd::simd_custom_element<T>) value.to_native().template store_memory<A>(p);
     else SIMD_BACKEND_NAMESPACE::simd_store_native<vec<float,N,Arch>,A>(p,value);
   }
-  template <SIMD_ARCH_CONCEPT Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
-    requires (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
+  template <::simd::isa Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::simd::simd_custom_element<T>)
   simd_nodiscard simd_inline simd_pure vec<T,N,Arch> load_simd_partial(simd_noescape U const * p,std::size_t count,
       T fill=T{},simd_memory<A,Access> = {}) noexcept {
@@ -3589,16 +3536,16 @@ namespace simd {
     for(std::size_t i=0;i<count;++i)temporary[i]=p[i];
     return SIMD_BACKEND_NAMESPACE::load_simd<Arch,T,N>(temporary.data());
   }
-  template <class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, SIMD_ARCH_CONCEPT Arch>
-    requires (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
+  template <class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::simd::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::simd::simd_custom_element<T>)
   simd_inline void store_simd_partial(simd_noescape U * p,vec<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept {
     std::array<U,N> temporary;store_simd(temporary.data(),value);
     for(std::size_t i=0;i<count;++i)p[i]=temporary[i];
   }
-  template <SIMD_ARCH_CONCEPT Arch,class T,std::size_t N>
+  template <::simd::isa Arch,class T,std::size_t N> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_pure auto load_simd(std::array<T,N> const & values) noexcept { return SIMD_BACKEND_NAMESPACE::load_simd<Arch,T,N>(values.data()); }
-  template <SIMD_ARCH_CONCEPT Arch,class T,std::size_t N> requires (N!=std::dynamic_extent)
+  template <::simd::isa Arch,class T,std::size_t N> requires SIMD_ARCH_REQUIRES(Arch) && (N!=std::dynamic_extent)
   simd_nodiscard simd_inline simd_pure auto load_simd(std::span<T,N> values) noexcept { return load_simd<Arch,std::remove_cv_t<T>,N>(values.data()); }
   }
 
@@ -3615,7 +3562,7 @@ namespace SIMD_BACKEND_NAMESPACE::native {
 #if SIMD_HAS_AVX512F && SIMD_HAS_AVX512DQ
   using fp32x16 = ::simd::vec<float,16,SIMD_DEFAULT_ARCH>;
 #endif
-  template<class V> concept float_register = requires { V::lanes; typename V::architecture; } && SIMD_ARCH_CONCEPT<typename V::architecture>;
+  template<class V> concept float_register = requires { V::lanes; V::architecture; } && (::simd::abi_lookup<V::architecture,::simd::detail::raw_kernel_policies>::index == SIMD_RAW_TARGET && (SIMD_RAW_TARGET != 6 || V::architecture == ::simd::scalar));
   // Ordered comparison: second operand wins on equality or unordered, including
   // signed zero and NaNs, identically on each architecture.
   template<float_register V> simd_nodiscard simd_inline simd_const V min(V a, V b) { return select(a < b, a, b); }
@@ -3659,7 +3606,7 @@ namespace simd {
   namespace detail::SIMD_BACKEND {
     enum class rounding_direction { down, up, zero };
 
-    template<rounding_direction Direction,std::size_t N, SIMD_ARCH_CONCEPT Arch>
+    template<rounding_direction Direction,std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
     simd_inline vec<float,N,Arch> round_integral(vec<float,N,Arch> x) noexcept {
       using V = vec<float,N,Arch>;
       if constexpr (N == 2 || N == 3) {
@@ -3703,13 +3650,13 @@ namespace simd {
   /// Signed zeros and infinities are preserved; NaNs remain NaNs. Raw denormal
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<float,N,Arch>::native_type; }
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<float,N,Arch>::native_type; }
   simd_nodiscard simd_inline vec<float,N,Arch> floor(vec<float,N,Arch> x) noexcept {
     return detail::SIMD_BACKEND::round_integral<detail::SIMD_BACKEND::rounding_direction::down>(x);
   }
   /// \ingroup vector_math
   /// Apply floor to each register in an array; an empty array performs no lane work.
-  template<std::size_t N,std::size_t M, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<float,N,Arch>::native_type; }
+  template<std::size_t N,std::size_t M, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<float,N,Arch>::native_type; }
   simd_nodiscard simd_inline std::array<vec<float,N,Arch>,M> floor(std::array<vec<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{floor(x)...}};
@@ -3719,13 +3666,13 @@ namespace simd {
   /// Signed zeros and infinities are preserved; NaNs remain NaNs. Raw denormal
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<float,N,Arch>::native_type; }
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<float,N,Arch>::native_type; }
   simd_nodiscard simd_inline vec<float,N,Arch> ceil(vec<float,N,Arch> x) noexcept {
     return detail::SIMD_BACKEND::round_integral<detail::SIMD_BACKEND::rounding_direction::up>(x);
   }
   /// \ingroup vector_math
   /// Apply ceil to each register in an array; an empty array performs no lane work.
-  template<std::size_t N,std::size_t M, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<float,N,Arch>::native_type; }
+  template<std::size_t N,std::size_t M, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<float,N,Arch>::native_type; }
   simd_nodiscard simd_inline std::array<vec<float,N,Arch>,M> ceil(std::array<vec<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{ceil(x)...}};
@@ -3735,13 +3682,13 @@ namespace simd {
   /// Signed zeros and infinities are preserved; NaNs remain NaNs. Raw denormal
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
-  template<std::size_t N, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<float,N,Arch>::native_type; }
+  template<std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<float,N,Arch>::native_type; }
   simd_nodiscard simd_inline vec<float,N,Arch> trunc(vec<float,N,Arch> x) noexcept {
     return detail::SIMD_BACKEND::round_integral<detail::SIMD_BACKEND::rounding_direction::zero>(x);
   }
   /// \ingroup vector_math
   /// Apply trunc to each register in an array; an empty array performs no lane work.
-  template<std::size_t N,std::size_t M, SIMD_ARCH_CONCEPT Arch> requires requires { typename vec<float,N,Arch>::native_type; }
+  template<std::size_t N,std::size_t M, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) && requires { typename vec<float,N,Arch>::native_type; }
   simd_nodiscard simd_inline std::array<vec<float,N,Arch>,M> trunc(std::array<vec<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{trunc(x)...}};
@@ -3872,7 +3819,7 @@ namespace simd {
   /// This rearranges bits, including NaN payloads and signed zeros. Short padding
   /// never contributes to count or output and is zero in the result.
   /// \snippet api.cc compaction
-  template<class T, std::size_t N, SIMD_ARCH_CONCEPT Arch> requires
+  template<class T, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline compaction_result<vec<T,N,Arch>> compress(
@@ -3888,7 +3835,7 @@ namespace simd {
   /// \ingroup vector_memory
   /// Consume packed's first popcount(mask) lanes in order at selected positions.
   /// Unselected lanes retain prior bitwise. Short physical padding is zeroed.
-  template<class T, std::size_t N, SIMD_ARCH_CONCEPT Arch> requires
+  template<class T, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     requires { typename vec<T,N,Arch>::native_type; }
   simd_nodiscard simd_inline vec<T,N,Arch> expand(
@@ -3904,7 +3851,7 @@ namespace simd {
   /// Write the first min(capacity,popcount(mask)) selected lanes, in input order.
   /// Return the number WRITTEN, not the total selected count. No element beyond
   /// that prefix is accessed. Null is valid when capacity or the mask is zero.
-  template<class T, std::size_t N, SIMD_ARCH_CONCEPT Arch> requires
+  template<class T, std::size_t N, ::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     requires { typename vec<T,N,Arch>::native_type; }
   simd_inline std::size_t compress_store(T * destination, std::size_t capacity,

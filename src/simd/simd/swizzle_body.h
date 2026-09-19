@@ -6,7 +6,7 @@ namespace simd::detail::SIMD_BACKEND {
   template<std::size_t... I> struct swizzle {
     static constexpr std::size_t size=sizeof...(I);
     template<class Self> using result = std::conditional_t<size==1,typename Self::value_type,
-      vec<typename Self::value_type,size,typename Self::architecture>>;
+      vec<typename Self::value_type,size,Self::architecture>>;
     static constexpr bool unique=[] {
       constexpr std::size_t indices[]{I...};
       for(std::size_t i=0;i<size;++i)
@@ -94,7 +94,7 @@ namespace simd::detail::SIMD_BACKEND {
 namespace simd::detail {
   // Properties are compiler accessors, not proxy objects: a read owns its lanes,
   // and assignment materializes the complete right side before any scatter.
-  template<class T,std::size_t N,SIMD_ARCH_CONCEPT Arch> requires(N<=4)
+  template<class T,std::size_t N,::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) &&(N<=4)
   struct swizzle_access<T,N,Arch> {
     template<std::size_t K> using result = std::conditional_t<K==1,T,vec<T,K,Arch>>;
 #define SIMD_SWIZZLE_FIELD(NAME,K,...) \

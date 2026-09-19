@@ -55,9 +55,9 @@ int main() {
     auto value = state;
     state ^= state << 13; state ^= state >> 7; state ^= state << 17;
     auto mask = round == 0 ? 0ull : round == 1 ? ~0ull : state;
-    check(deposit_bits(test_arch{},value,mask) == deposit_oracle(value,mask));
+    check(simd::deposit_bits<test_arch>(value,mask) == deposit_oracle(value,mask));
     for (unsigned j = 0; j != unsigned(std::popcount(mask)); ++j) {
-      auto bit = deposit_bits(test_arch{},std::uint64_t{1} << j,mask);
+      auto bit = simd::deposit_bits<test_arch>(std::uint64_t{1} << j,mask);
       check(std::has_single_bit(bit) && (bit & mask) != 0);
       check(unsigned(std::popcount(mask & (bit-1))) == j);
     }

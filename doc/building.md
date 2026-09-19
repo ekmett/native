@@ -20,8 +20,9 @@ selects the primary regression implementation. Neither changes the hub API.
 
 `SIMD_ENABLE_EXCEPTIONS` defaults to OFF. Producer and consumer compiler,
 standard-library and exception modes must agree. `SIMD_ENABLE_ASAN` enables
-host-memory checks. Named swizzles require Clang's property extension; exported
-targets supply `-fms-extensions` for `clang++`, and `clang-cl` accepts it directly.
+host-memory checks. ISA properties and named swizzles require Clang's property
+extension; exported targets supply `-fms-extensions` for `clang++`, and `clang-cl`
+accepts it directly.
 
 ## Installed C++ modules
 
@@ -48,9 +49,18 @@ regenerates one compatible baseline hub BMI and shares each common module.
 Clang's module validation stays enabled. Function targets do not change the
 compiler/STL/exception compatibility rules.
 
+The ISA value API changes vector template arguments from tag types to structural
+`isa` values. Rebuild BMIs and all producer and consumer code that exchanges
+these vector types; the template identities and mangled names have changed.
+Pointer/scalar entry signatures retain their declared ABI.
+
 The [source target-list helper](../docs/omnibus.md) generates selected kernel
 overloads under Clang target pragmas in one source file. CPU/OS admission uses
 the same feature descriptions. No per-variant CMake target is required.
+The body macro receives an ISA value and declares a constrained
+`template<simd::isa A>` function. `with_isa` selects its value argument through
+a `[]<simd::isa A> { ... }` callback; that callback retains the compiler target
+of its definition.
 `simd_target_profile(target profile)` remains an optional convenience for older
 applications that compile kernels in separate translation units.
 `simd_target_omnibus(target)` is now a compatibility no-op.
@@ -60,6 +70,9 @@ applications that compile kernels in separate translation units.
 Imports do not export macros. `simd::headers` supplies `config.h`, `attributes.h`,
 `isa.h` and `targets.h` under the `simd/` include directory. Native implementation
 headers are installed privately under `lib/simd/include` for BMI regeneration.
+The ISA metadata header requires C++20 and the Clang property extension; the host
+modules require C++26. `SIMD_TARGET_ISA(name)` yields a checked ISA value for a
+registered source target.
 
 ```sh
 cmake -S . -B build/headers -G Ninja -DSIMD_BUILD_HOST=OFF

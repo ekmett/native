@@ -100,16 +100,16 @@ namespace {
       static_assert(std::same_as<decltype(constructed),V const>);
       static_assert(!readable_z<V> && !readable_xyz<V>);
       expect(constructed,std::array{T(1),T(2)},"constexpr two-lane constructor values");
-      expect(simd::vec(test_arch{},T(1),T(2)),std::array{T(1),T(2)},"tagged two-lane deduction values");
+      expect(test_vec<T,2>(T(1),T(2)),std::array{T(1),T(2)},"explicit two-lane values");
     } else {
       constexpr V constructed{T(1),T(2),T(3)};
       static_assert(std::same_as<decltype(constructed),V const>);
       static_assert(readable_z<V> && readable_xyz<V>);
       expect(constructed,std::array{T(1),T(2),T(3)},"constexpr three-lane constructor values");
-      expect(simd::vec(test_arch{},T(1),T(2),T(3)),std::array{T(1),T(2),T(3)},"tagged three-lane deduction values");
+      expect(test_vec<T,3>(T(1),T(2),T(3)),std::array{T(1),T(2),T(3)},"explicit three-lane values");
     }
     static_assert(!readable_w<V>);
-    static_assert(std::same_as<decltype(simd::vec(test_arch{},std::array<T,N>{})),V>);
+    static_assert(std::same_as<decltype(V(std::array<T,N>{})),V>);
     expect(V{},std::array<T,N>{},"short value initialization zeros logical lanes");
     auto value=V(std::array<T,N>{});
     require((value==V(T(0))).to_bitset()==((std::uint64_t(1)<<N)-1),"short comparison mask shape");
@@ -119,7 +119,7 @@ namespace {
     using V=test_vec<float,N>;using M=typename V::mask;
     using Full=test_vec<simd::mask32,N>;
     static_assert(std::is_trivially_copyable_v<M>);
-    static_assert(M::compact==std::same_as<test_arch,simd::avx512>);
+    static_assert(M::compact==(test_arch==simd::avx512));
     static_assert(sizeof(Full)==16 && std::is_trivially_copyable_v<Full>);
     constexpr auto low=(std::uint64_t(1)<<N)-1;
     auto full=Full::from_bitset(~std::uint64_t(0));
@@ -293,8 +293,8 @@ int main() {
   memory<float,2>();memory<float,3>();
   memory<std::int32_t,2>();memory<std::int32_t,3>();
   memory<std::uint32_t,2>();memory<std::uint32_t,3>();
-  constexpr char const * arch=std::same_as<test_arch,simd::avx512>?"avx512":
-    std::same_as<test_arch,simd::avx2>?"avx2":"neon";
+  constexpr char const * arch=test_arch==simd::avx512?"avx512":
+    test_arch==simd::avx2?"avx2":"neon";
   using M2=typename test_vec<float,2>::mask;
   using M3=typename test_vec<float,3>::mask;
   std::printf("swizzle passed: arch=%s, float/int32/uint32 logical lanes=2,3, compact masks=%d,%d; owning snapshots, exact word scatter and guarded memory\n",

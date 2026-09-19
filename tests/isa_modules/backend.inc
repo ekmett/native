@@ -14,8 +14,6 @@ template<> struct vec<float,PROBE_LANES,PROBE_ARCH> {
   inline __attribute__((always_inline)) explicit vec(native_register x):value(x){}
   template<class... X> requires(sizeof...(X)==PROBE_LANES && (std::same_as<X,float>&&...))
   inline __attribute__((always_inline)) vec(X... x):value{x...}{}
-  template<class... X> requires(sizeof...(X)==PROBE_LANES && (std::same_as<X,float>&&...))
-  inline __attribute__((always_inline)) vec(PROBE_ARCH,X... x):value{x...}{}
   static inline __attribute__((always_inline)) vec load(float const* x){
 #if PROBE_LANES == 8
     return vec(_mm256_loadu_ps(x));

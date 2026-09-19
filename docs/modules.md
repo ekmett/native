@@ -6,26 +6,25 @@ kernels to compile and how to admit them before execution.
 
 ## Identity and generic algorithms
 
-`simd::vec<T,N,Arch>` is a class template with ordinary types as architecture
-tags. Vectors with different architecture arguments remain distinct even when their register widths match. The module name
+`simd::vec<T,N,A>` takes an element type, a lane count and an `isa` value as a
+non-type template argument. Vectors with different ISA values remain distinct
+even when their register widths match. The module name
 controls visibility; the template arguments control overload resolution and ABI.
-Using an AVX2-tagged vector in an AVX-512 function keeps its original
+Using an AVX2 vector in an AVX-512 function keeps its original
 mask representation and type identity.
 
-There is no default architecture. Class template argument deduction takes an
-explicit tag, followed by lane values or an array:
+Choose the ISA explicitly when constructing a vector:
 
 ```cpp
-auto lanes = simd::vec(simd::avx2{}, 1.f, 2.f, 3.f, 4.f);
-// vec<float,4,avx2>; copying lanes deduces the same type.
+simd::vec<float,4,simd::avx2> lanes{1.f, 2.f, 3.f, 4.f};
 ```
 
-Generic algorithms take the architecture as a type parameter:
+Generic algorithms take the ISA as a value parameter:
 
 ```cpp
-template<class Arch, std::size_t N>
+template<simd::isa A, std::size_t N>
 struct kernel {
-  using V = simd::vec<float,N,Arch>;
+  using V = simd::vec<float,N,A>;
   static void run(float const * a, float const * b, float * out) {
     auto x = V::load(a), y = V::load(b);
     fma(x,y,x).store(out);
@@ -34,6 +33,16 @@ struct kernel {
 // Instantiate in a translation unit compiled for the selected profile:
 // kernel<simd::avx2,8>::run(a,b,out);
 ```
+
+Presets such as `simd::avx2` and `simd::avx512` are `constexpr isa` values.
+Use `.has(...)`, feature properties or subset comparisons to inspect them.
+Single-feature construction is exact; `feature_closure` adds prerequisites
+explicitly. The [ISA guide](abi-lookup.md) covers feature conjunction and
+compile-time target selection.
+
+Changing the ISA argument from a tag type to a structural value changes template
+identity and symbol names. Rebuild BMIs and every library or executable that
+exchanges these vector types when updating.
 
 The element type supplies its arithmetic contract; the architecture supplies
 native storage and instruction capabilities. A numerical extension specializes
@@ -115,7 +124,7 @@ currently uses ordinary accesses, so it carries no non-temporal-store guarantee.
 ## Definition placement
 
 The hub includes system headers and native intrinsic wrappers in its global
-module fragment. Canonical architecture tags select constrained definitions;
+module fragment. ISA values select constrained definitions;
 Clang function target attributes establish each implementation's requirements.
 Consumer feature macros do not change a module's definitions.
 
@@ -145,15 +154,22 @@ Every ISA family can use the common scalar type.
 ## Build and dispatch
 
 The qualified toolchain is Clang 23, CMake 4.4 and Ninja. Configuration compiles
-structured-binding-pack and property/deducing-this feature tests. Named swizzles
-use Clang's `__declspec(property)` extension; this is not standard C++26 syntax.
+structured-binding-pack and property/deducing-this feature tests. ISA properties
+and named swizzles use Clang's `__declspec(property)` extension; this is not
+standard C++26 syntax.
 The `simd::headers` target propagates `-fms-extensions` to Clang's GNU-style
 driver, including installed consumers. The clang-cl driver enables it already.
 Installed module sources and build metadata permit consumer BMI regeneration;
 PCMs are compiler-specific artifacts.
 
+LLVM 23 can emit `-Wmodules-ambiguous-internal-linkage` at feature-property use
+when the declarations occur in several module global fragments. Focused
+constexpr reads, writes and constraint checks pass; the warning remains.
+Consumers that treat it as an error can use `A.has(simd::feature::fma)` for
+feature checks. See the [tooling limits](validation.md).
+
 Link `simd::simd` and import `simd`. The [target-list guide](omnibus.md) shows
-how to compile a body for a chosen ordered list of feature tags and dispatch
+how to compile a body for a chosen ordered list of ISA values and dispatch
 after CPU/OS admission. The helper uses ordinary Clang function attributes;
 users can also write attributed functions themselves or retain separate
 translation units with `simd_target_profile`.

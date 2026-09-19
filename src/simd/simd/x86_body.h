@@ -2,13 +2,8 @@
 namespace simd {
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <SIMD_ARCH_CONCEPT Arch> struct simd_empty_bases vec<float, 4,Arch> : detail::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+  template <::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct simd_empty_bases vec<float, 4,Arch> : detail::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
+    static constexpr isa architecture=Arch;
     template <class T> using rebind = vec<T,4,Arch>;
     using vector_mask_type=vec<mask32,4,Arch>;
     using mask_type=std::conditional_t<bool(SIMD_HAS_AVX512VL),predicate<4,Arch>,vec<mask32,4,Arch>>;
@@ -150,13 +145,8 @@ namespace simd {
 
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <SIMD_ARCH_CONCEPT Arch> struct vec<float, 8,Arch> : detail::register_memory<vec<float,8,Arch>, 8> {
-    using architecture = Arch;
-    /// Select this architecture and forward arguments to the corresponding constructor.
-    /// Exception behavior is exactly that of the forwarded construction.
-    template<class... X> requires std::constructible_from<vec,X...>
-    simd_inline constexpr vec(Arch, X &&... x)
-        noexcept(std::is_nothrow_constructible_v<vec,X...>) : vec(std::forward<X>(x)...) {}
+  template <::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch) struct vec<float, 8,Arch> : detail::register_memory<vec<float,8,Arch>, 8> {
+    static constexpr isa architecture=Arch;
     template <class T> using rebind = vec<T,8,Arch>;
     using vector_mask_type=vec<mask32,8,Arch>;
     using mask_type=std::conditional_t<bool(SIMD_HAS_AVX512VL),predicate<8,Arch>,vec<mask32,8,Arch>>;

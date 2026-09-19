@@ -3,6 +3,7 @@
 module;
 #include "simd/attributes.h"
 #include "simd/isa.h"
+#include "simd/value_traits.h"
 
 #include <array>
 #include <concepts>

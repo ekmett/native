@@ -2,8 +2,8 @@
 namespace SIMD_BACKEND_NAMESPACE::native {
   namespace detail {
     template<class V> struct fp32_bit_bridge;
-    template<std::size_t N, SIMD_ARCH_CONCEPT Arch>
-      requires requires { typename ::simd::vec<float,N,Arch>::bits_type; }
+    template<std::size_t N, ::simd::isa Arch>
+      requires SIMD_ARCH_REQUIRES(Arch) && requires { typename ::simd::vec<float,N,Arch>::bits_type; }
     struct fp32_bit_bridge<::simd::vec<float,N,Arch>> {
       using value_type=::simd::vec<float,N,Arch>;
       using bits_type=typename value_type::bits_type;

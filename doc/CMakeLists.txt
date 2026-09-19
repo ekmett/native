@@ -27,9 +27,9 @@ set(DOXYGEN_EXPAND_ONLY_PREDEF YES)
 # contracts in the comments while rendering the ordinary constructor signature.
 set(DOXYGEN_PREDEFINED
   "SIMD_HAS_NATIVE_FP16=1" "SIMD_HAS_NATIVE_BF16=1"
-  "explicit(...):=explicit" "__cplusplus=202600L" "SIMD_PROFILE=512" "SIMD_BACKEND:=avx512_backend" "SIMD_ARCH:=::simd::avx512"
+  "explicit(...):=explicit" "__declspec(x):=" "__cplusplus=202600L" "SIMD_PROFILE=512" "SIMD_BACKEND:=avx512_backend" "SIMD_ARCH:=::simd::avx512"
   "SIMD_BACKEND_NAMESPACE:=simd::detail::avx512_backend"
-  "SIMD_ARCH_CONCEPT:=simd::architecture"
+  "SIMD_ARCH_REQUIRES(Arch):=(::simd::avx512 <= Arch)"
   "SIMD_WIDE_FAMILY:=0" "SIMD_WIDE_DETAIL:=detail::wide_generic_detail"
   "SIMD_WIDE_TARGET:="
   "SIMD_HAS_AVX2:=1" "SIMD_HAS_AVX512F:=1" "SIMD_HAS_AVX512DQ:=1"
@@ -44,6 +44,23 @@ set(DOXYGEN_PREDEFINED
 # one expansion in the actual owning header, retaining signatures and comments;
 # this is a representative overload, with internal dispatch constraints intact.
 set(docs_source_root "${CMAKE_CURRENT_BINARY_DIR}/source")
+# Doxygen's symbol exclusions leave class members in XML. Stage isa with its
+# named property hooks removed, retaining generic get/set/has and the properties.
+# Describe the generated property declarations here to keep the source compact.
+set(docs_isa "${docs_source_root}/src/simd/isa.h")
+file(READ "${PROJECT_SOURCE_DIR}/src/simd/isa.h" docs_isa_text)
+string(REGEX REPLACE
+  "    constexpr (bool get_[a-z0-9_]+\\(\\) const noexcept|void set_[a-z0-9_]+\\(bool value\\) noexcept) \\{[^\r\n]*\\}[\r\n]*"
+  "" docs_isa_text "${docs_isa_text}")
+string(REGEX REPLACE
+  "(__declspec\\(property\\(get=get_([a-z0-9_]+),put=set_[a-z0-9_]+\\)\\) bool [a-z0-9_]+;)"
+  "\\1 ///< Read or update the \\2 feature bit through flags."
+  docs_isa_text "${docs_isa_text}")
+file(MAKE_DIRECTORY "${docs_source_root}/src/simd")
+file(WRITE "${docs_isa}" "${docs_isa_text}")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${PROJECT_SOURCE_DIR}/src/simd/isa.h")
+list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/simd/isa.h")
 set(docs_wide "${docs_source_root}/src/simd/wide.h")
 file(READ "${PROJECT_SOURCE_DIR}/src/simd/wide.h" docs_wide_text)
 foreach(fragment IN ITEMS wide_members wide_operations)
@@ -146,7 +163,7 @@ set(DOXYGEN_WARN_LOGFILE "${PROJECT_BINARY_DIR}/docs/warnings.log")
 set(DOXYGEN_PROJECT_BRIEF "Vectors, masks and wide register packs for C++26")
 doxygen_add_docs(simd_docs
   "${PROJECT_SOURCE_DIR}/src"
-  "${docs_wide}" "${docs_wide_adapter}"
+  "${docs_isa}" "${docs_wide}" "${docs_wide_adapter}"
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
   COMMENT "Build simd API documentation and examples")

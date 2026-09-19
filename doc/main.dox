@@ -10,7 +10,7 @@
 
 \tableofcontents
 
-C++26 SIMD types, architecture tags, masks and wide register-pack evaluation.
+C++26 SIMD types, structural ISA values, masks and wide register-pack evaluation.
 See the module and build guides for the current public API and packaging model.
 
 - \subpage license_page

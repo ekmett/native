@@ -12,13 +12,13 @@ import simd.avx2;
 import simd.avx512;
 #endif
 #if defined(USE_AVX2)
-static_assert(std::same_as<decltype(simd::vec{simd::avx2{},1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f}),simd::vec<float,8,simd::avx2>>);
+static_assert(std::same_as<decltype(simd::vec<float,8,simd::avx2>{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f}),simd::vec<float,8,simd::avx2>>);
 extern "C" __declspec(dllexport) __declspec(noinline) void add8(float const*a,float const*b,float*out){
   using V=simd::vec<float,8,simd::avx2>;auto result=V::load(a)+V::load(b);result.store(out);
 }
 #endif
 #if defined(USE_AVX512)
-static_assert(std::same_as<decltype(simd::vec{simd::avx512{},1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f}),simd::vec<float,16,simd::avx512>>);
+static_assert(std::same_as<decltype(simd::vec<float,16,simd::avx512>{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f}),simd::vec<float,16,simd::avx512>>);
 extern "C" __declspec(dllexport) __declspec(noinline) void add16(float const*a,float const*b,float*out){
   using V=simd::vec<float,16,simd::avx512>;auto result=V::load(a)+V::load(b);result.store(out);
 }

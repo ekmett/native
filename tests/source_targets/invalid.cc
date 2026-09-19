@@ -7,4 +7,4 @@ import simd;
 #endif
 #include <simd/targets.h>
 #define SIMD_TARGET_invalid "avx2,not-a-feature"
-SIMD_TARGET_TYPE(invalid) reject;
+constexpr auto reject=SIMD_TARGET_ISA(invalid);

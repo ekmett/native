@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -9,160 +10,335 @@
 #include <utility>
 
 namespace simd {
-  using feature_set = std::uint64_t;
-
-  /// Independent instruction features. Presets below are convenience aliases.
-  enum class feature : feature_set {
-    mmx=1ull<<0, sse=1ull<<1, sse2=1ull<<2, sse3=1ull<<3,
-    ssse3=1ull<<4, sse41=1ull<<5, sse42=1ull<<6, popcnt=1ull<<7,
-    avx=1ull<<8, avx2=1ull<<9, fma=1ull<<10, f16c=1ull<<11,
-    bmi1=1ull<<12, bmi2=1ull<<13, avx512f=1ull<<14,
-    avx512dq=1ull<<15, avx512bw=1ull<<16, avx512vl=1ull<<17,
-    avx512_bf16=1ull<<18, avx512_fp16=1ull<<19,
-    neon=1ull<<20, neon_fp16=1ull<<21, neon_bf16=1ull<<22,
-    aes=1ull<<23, pclmul=1ull<<24, cx16=1ull<<25,
-    avx512cd=1ull<<26, avx512ifma=1ull<<27,
-    lzcnt=1ull<<28, movbe=1ull<<29, sahf=1ull<<30,
-    arm_aes=1ull<<31, arm_sha2=1ull<<32, arm_sha3=1ull<<33,
-    arm_crc=1ull<<34, arm_lse=1ull<<35, arm_rdm=1ull<<36,
-    arm_fp16fml=1ull<<37, arm_dotprod=1ull<<38,
-    arm_complxnum=1ull<<39, arm_jsconv=1ull<<40,
-    arm_rcpc=1ull<<41, arm_pauth=1ull<<42
+  /// Independent instruction features, represented by ordinal bit indices.
+  enum class feature : std::uint64_t {
+    mmx, sse, sse2, sse3, ssse3, sse41,
+    sse42, popcnt, avx, avx2, fma, f16c,
+    bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
+    avx512bf16, avx512fp16, neon, neon_fp16, neon_bf16, aes,
+    pclmul, cx16, avx512cd, avx512ifma, lzcnt, movbe,
+    sahf, arm_aes, arm_sha2, arm_sha3, arm_crc, arm_lse,
+    arm_rdm, arm_fp16fml, arm_dotprod, arm_complxnum, arm_jsconv, arm_rcpc,
+    arm_pauth,
+    invalid_features // Reserved admission failure marker, never a registered instruction.
   };
-  /// Combine two independent feature bits into a set.
-  constexpr feature_set operator|(feature a, feature b) noexcept {
-    return feature_set(a)|feature_set(b);
+  inline constexpr std::size_t feature_count=std::size_t(feature::invalid_features)+1;
+
+  /// A structural instruction-feature set. Construction never adds prerequisites.
+  /// Each registered feature has a mutable Boolean property with the same name,
+  /// e.g. a.avx2 or a.avx512fp16. Properties read and update flags through their
+  /// accessors; they occupy no additional storage. See docs/abi-lookup.md for
+  /// feature conjunction, property assignment and subset selection.
+  struct isa {
+    /// Bit storage indexed by feature ordinals, including the invalid marker.
+    std::array<std::uint64_t,(feature_count+63)/64> flags{};
+
+    /// Construct the empty requirement set.
+    constexpr isa() noexcept = default;
+    /// Require exactly one feature, without prerequisite closure.
+    constexpr isa(feature f) noexcept { set(f,true); }
+    /// Read one feature bit.
+    constexpr bool get(feature f) const noexcept {
+      auto i=std::size_t(f);
+      return (flags[i/64]>>(i%64))&1;
+    }
+    /// Set or clear one feature bit without changing any other requirement.
+    constexpr void set(feature f,bool value) noexcept {
+      auto i=std::size_t(f);
+      auto mask=std::uint64_t{1}<<(i%64);
+      auto & word=flags[i/64];
+      word=(word&~mask)|(value?mask:0);
+    }
+    /// True when the single feature is present.
+    constexpr bool has(feature f) const noexcept { return get(f); }
+    /// True when every feature in other is present, including the empty set.
+    constexpr bool has(isa other) const noexcept {
+      for(std::size_t i=0;i<flags.size();++i)
+        if((flags[i]&other.flags[i])!=other.flags[i]) return false;
+      return true;
+    }
+    /// Compare all stored bits for exact set equality.
+    constexpr bool operator==(isa const &) const = default;
+
+    constexpr bool get_mmx() const noexcept { return get(feature::mmx); }
+    constexpr void set_mmx(bool value) noexcept { set(feature::mmx,value); }
+    __declspec(property(get=get_mmx,put=set_mmx)) bool mmx;
+    constexpr bool get_sse() const noexcept { return get(feature::sse); }
+    constexpr void set_sse(bool value) noexcept { set(feature::sse,value); }
+    __declspec(property(get=get_sse,put=set_sse)) bool sse;
+    constexpr bool get_sse2() const noexcept { return get(feature::sse2); }
+    constexpr void set_sse2(bool value) noexcept { set(feature::sse2,value); }
+    __declspec(property(get=get_sse2,put=set_sse2)) bool sse2;
+    constexpr bool get_sse3() const noexcept { return get(feature::sse3); }
+    constexpr void set_sse3(bool value) noexcept { set(feature::sse3,value); }
+    __declspec(property(get=get_sse3,put=set_sse3)) bool sse3;
+    constexpr bool get_ssse3() const noexcept { return get(feature::ssse3); }
+    constexpr void set_ssse3(bool value) noexcept { set(feature::ssse3,value); }
+    __declspec(property(get=get_ssse3,put=set_ssse3)) bool ssse3;
+    constexpr bool get_sse41() const noexcept { return get(feature::sse41); }
+    constexpr void set_sse41(bool value) noexcept { set(feature::sse41,value); }
+    __declspec(property(get=get_sse41,put=set_sse41)) bool sse41;
+    constexpr bool get_sse42() const noexcept { return get(feature::sse42); }
+    constexpr void set_sse42(bool value) noexcept { set(feature::sse42,value); }
+    __declspec(property(get=get_sse42,put=set_sse42)) bool sse42;
+    constexpr bool get_popcnt() const noexcept { return get(feature::popcnt); }
+    constexpr void set_popcnt(bool value) noexcept { set(feature::popcnt,value); }
+    __declspec(property(get=get_popcnt,put=set_popcnt)) bool popcnt;
+    constexpr bool get_avx() const noexcept { return get(feature::avx); }
+    constexpr void set_avx(bool value) noexcept { set(feature::avx,value); }
+    __declspec(property(get=get_avx,put=set_avx)) bool avx;
+    constexpr bool get_avx2() const noexcept { return get(feature::avx2); }
+    constexpr void set_avx2(bool value) noexcept { set(feature::avx2,value); }
+    __declspec(property(get=get_avx2,put=set_avx2)) bool avx2;
+    constexpr bool get_fma() const noexcept { return get(feature::fma); }
+    constexpr void set_fma(bool value) noexcept { set(feature::fma,value); }
+    __declspec(property(get=get_fma,put=set_fma)) bool fma;
+    constexpr bool get_f16c() const noexcept { return get(feature::f16c); }
+    constexpr void set_f16c(bool value) noexcept { set(feature::f16c,value); }
+    __declspec(property(get=get_f16c,put=set_f16c)) bool f16c;
+    constexpr bool get_bmi1() const noexcept { return get(feature::bmi1); }
+    constexpr void set_bmi1(bool value) noexcept { set(feature::bmi1,value); }
+    __declspec(property(get=get_bmi1,put=set_bmi1)) bool bmi1;
+    constexpr bool get_bmi2() const noexcept { return get(feature::bmi2); }
+    constexpr void set_bmi2(bool value) noexcept { set(feature::bmi2,value); }
+    __declspec(property(get=get_bmi2,put=set_bmi2)) bool bmi2;
+    constexpr bool get_avx512f() const noexcept { return get(feature::avx512f); }
+    constexpr void set_avx512f(bool value) noexcept { set(feature::avx512f,value); }
+    __declspec(property(get=get_avx512f,put=set_avx512f)) bool avx512f;
+    constexpr bool get_avx512dq() const noexcept { return get(feature::avx512dq); }
+    constexpr void set_avx512dq(bool value) noexcept { set(feature::avx512dq,value); }
+    __declspec(property(get=get_avx512dq,put=set_avx512dq)) bool avx512dq;
+    constexpr bool get_avx512bw() const noexcept { return get(feature::avx512bw); }
+    constexpr void set_avx512bw(bool value) noexcept { set(feature::avx512bw,value); }
+    __declspec(property(get=get_avx512bw,put=set_avx512bw)) bool avx512bw;
+    constexpr bool get_avx512vl() const noexcept { return get(feature::avx512vl); }
+    constexpr void set_avx512vl(bool value) noexcept { set(feature::avx512vl,value); }
+    __declspec(property(get=get_avx512vl,put=set_avx512vl)) bool avx512vl;
+    constexpr bool get_avx512bf16() const noexcept { return get(feature::avx512bf16); }
+    constexpr void set_avx512bf16(bool value) noexcept { set(feature::avx512bf16,value); }
+    __declspec(property(get=get_avx512bf16,put=set_avx512bf16)) bool avx512bf16;
+    constexpr bool get_avx512fp16() const noexcept { return get(feature::avx512fp16); }
+    constexpr void set_avx512fp16(bool value) noexcept { set(feature::avx512fp16,value); }
+    __declspec(property(get=get_avx512fp16,put=set_avx512fp16)) bool avx512fp16;
+    constexpr bool get_neon() const noexcept { return get(feature::neon); }
+    constexpr void set_neon(bool value) noexcept { set(feature::neon,value); }
+    __declspec(property(get=get_neon,put=set_neon)) bool neon;
+    constexpr bool get_neon_fp16() const noexcept { return get(feature::neon_fp16); }
+    constexpr void set_neon_fp16(bool value) noexcept { set(feature::neon_fp16,value); }
+    __declspec(property(get=get_neon_fp16,put=set_neon_fp16)) bool neon_fp16;
+    constexpr bool get_neon_bf16() const noexcept { return get(feature::neon_bf16); }
+    constexpr void set_neon_bf16(bool value) noexcept { set(feature::neon_bf16,value); }
+    __declspec(property(get=get_neon_bf16,put=set_neon_bf16)) bool neon_bf16;
+    constexpr bool get_aes() const noexcept { return get(feature::aes); }
+    constexpr void set_aes(bool value) noexcept { set(feature::aes,value); }
+    __declspec(property(get=get_aes,put=set_aes)) bool aes;
+    constexpr bool get_pclmul() const noexcept { return get(feature::pclmul); }
+    constexpr void set_pclmul(bool value) noexcept { set(feature::pclmul,value); }
+    __declspec(property(get=get_pclmul,put=set_pclmul)) bool pclmul;
+    constexpr bool get_cx16() const noexcept { return get(feature::cx16); }
+    constexpr void set_cx16(bool value) noexcept { set(feature::cx16,value); }
+    __declspec(property(get=get_cx16,put=set_cx16)) bool cx16;
+    constexpr bool get_avx512cd() const noexcept { return get(feature::avx512cd); }
+    constexpr void set_avx512cd(bool value) noexcept { set(feature::avx512cd,value); }
+    __declspec(property(get=get_avx512cd,put=set_avx512cd)) bool avx512cd;
+    constexpr bool get_avx512ifma() const noexcept { return get(feature::avx512ifma); }
+    constexpr void set_avx512ifma(bool value) noexcept { set(feature::avx512ifma,value); }
+    __declspec(property(get=get_avx512ifma,put=set_avx512ifma)) bool avx512ifma;
+    constexpr bool get_lzcnt() const noexcept { return get(feature::lzcnt); }
+    constexpr void set_lzcnt(bool value) noexcept { set(feature::lzcnt,value); }
+    __declspec(property(get=get_lzcnt,put=set_lzcnt)) bool lzcnt;
+    constexpr bool get_movbe() const noexcept { return get(feature::movbe); }
+    constexpr void set_movbe(bool value) noexcept { set(feature::movbe,value); }
+    __declspec(property(get=get_movbe,put=set_movbe)) bool movbe;
+    constexpr bool get_sahf() const noexcept { return get(feature::sahf); }
+    constexpr void set_sahf(bool value) noexcept { set(feature::sahf,value); }
+    __declspec(property(get=get_sahf,put=set_sahf)) bool sahf;
+    constexpr bool get_arm_aes() const noexcept { return get(feature::arm_aes); }
+    constexpr void set_arm_aes(bool value) noexcept { set(feature::arm_aes,value); }
+    __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
+    constexpr bool get_arm_sha2() const noexcept { return get(feature::arm_sha2); }
+    constexpr void set_arm_sha2(bool value) noexcept { set(feature::arm_sha2,value); }
+    __declspec(property(get=get_arm_sha2,put=set_arm_sha2)) bool arm_sha2;
+    constexpr bool get_arm_sha3() const noexcept { return get(feature::arm_sha3); }
+    constexpr void set_arm_sha3(bool value) noexcept { set(feature::arm_sha3,value); }
+    __declspec(property(get=get_arm_sha3,put=set_arm_sha3)) bool arm_sha3;
+    constexpr bool get_arm_crc() const noexcept { return get(feature::arm_crc); }
+    constexpr void set_arm_crc(bool value) noexcept { set(feature::arm_crc,value); }
+    __declspec(property(get=get_arm_crc,put=set_arm_crc)) bool arm_crc;
+    constexpr bool get_arm_lse() const noexcept { return get(feature::arm_lse); }
+    constexpr void set_arm_lse(bool value) noexcept { set(feature::arm_lse,value); }
+    __declspec(property(get=get_arm_lse,put=set_arm_lse)) bool arm_lse;
+    constexpr bool get_arm_rdm() const noexcept { return get(feature::arm_rdm); }
+    constexpr void set_arm_rdm(bool value) noexcept { set(feature::arm_rdm,value); }
+    __declspec(property(get=get_arm_rdm,put=set_arm_rdm)) bool arm_rdm;
+    constexpr bool get_arm_fp16fml() const noexcept { return get(feature::arm_fp16fml); }
+    constexpr void set_arm_fp16fml(bool value) noexcept { set(feature::arm_fp16fml,value); }
+    __declspec(property(get=get_arm_fp16fml,put=set_arm_fp16fml)) bool arm_fp16fml;
+    constexpr bool get_arm_dotprod() const noexcept { return get(feature::arm_dotprod); }
+    constexpr void set_arm_dotprod(bool value) noexcept { set(feature::arm_dotprod,value); }
+    __declspec(property(get=get_arm_dotprod,put=set_arm_dotprod)) bool arm_dotprod;
+    constexpr bool get_arm_complxnum() const noexcept { return get(feature::arm_complxnum); }
+    constexpr void set_arm_complxnum(bool value) noexcept { set(feature::arm_complxnum,value); }
+    __declspec(property(get=get_arm_complxnum,put=set_arm_complxnum)) bool arm_complxnum;
+    constexpr bool get_arm_jsconv() const noexcept { return get(feature::arm_jsconv); }
+    constexpr void set_arm_jsconv(bool value) noexcept { set(feature::arm_jsconv,value); }
+    __declspec(property(get=get_arm_jsconv,put=set_arm_jsconv)) bool arm_jsconv;
+    constexpr bool get_arm_rcpc() const noexcept { return get(feature::arm_rcpc); }
+    constexpr void set_arm_rcpc(bool value) noexcept { set(feature::arm_rcpc,value); }
+    __declspec(property(get=get_arm_rcpc,put=set_arm_rcpc)) bool arm_rcpc;
+    constexpr bool get_arm_pauth() const noexcept { return get(feature::arm_pauth); }
+    constexpr void set_arm_pauth(bool value) noexcept { set(feature::arm_pauth,value); }
+    __declspec(property(get=get_arm_pauth,put=set_arm_pauth)) bool arm_pauth;
+  };
+
+  template<class T> concept arch=std::same_as<T,feature> || std::same_as<T,isa>;
+
+  /// Requirements compose by union: both operands must be available.
+  constexpr isa operator&(arch auto left,arch auto right) noexcept {
+    isa result=left, other=right;
+    for(std::size_t i=0;i<result.flags.size();++i) result.flags[i]|=other.flags[i];
+    return result;
   }
-  /// Add one feature to an existing set.
-  constexpr feature_set operator|(feature_set a, feature b) noexcept {
-    return a|feature_set(b);
-  }
-  /// Add one feature to an existing set, with the bit on the left.
-  constexpr feature_set operator|(feature a, feature_set b) noexcept {
-    return feature_set(a)|b;
-  }
+  // Concrete enum overloads prevent the built-in ordinal comparisons from winning.
+  /// A singleton feature is never a strict subset of another singleton.
+  constexpr bool operator<(feature,feature) noexcept { return false; }
+  /// A singleton feature is never a strict superset of another singleton.
+  constexpr bool operator>(feature,feature) noexcept { return false; }
+  /// Singleton inclusion holds exactly when both feature names are equal.
+  constexpr bool operator<=(feature a,feature b) noexcept { return a==b; }
+  /// Reverse singleton inclusion holds exactly when both features are equal.
+  constexpr bool operator>=(feature a,feature b) noexcept { return a==b; }
+  /// True when every feature required by a is present in b.
+  constexpr bool operator<=(arch auto a,arch auto b) noexcept { return isa(b).has(a); }
+  /// True when a contains every feature required by b.
+  constexpr bool operator>=(arch auto a,arch auto b) noexcept { return b<=a; }
+  /// True when a is a subset of b and their feature sets differ.
+  constexpr bool operator<(arch auto a,arch auto b) noexcept { return isa(a)!=isa(b) && a<=b; }
+  /// True when a strictly contains b.
+  constexpr bool operator>(arch auto a,arch auto b) noexcept { return b<a; }
+
+  /// First matching requirement, with every later choice checked for shadowing.
+  template<arch auto A,arch auto... Choices>
+  inline constexpr int target=[]() consteval {
+    constexpr std::array<isa,sizeof...(Choices)> choices{isa(Choices)...};
+    static_assert([&] {
+      for(std::size_t i=0;i<choices.size();++i)
+        for(std::size_t j=i+1;j<choices.size();++j)
+          if(choices[i]<=choices[j]) return false;
+      return true;
+    }(),"a later target is shadowed by an earlier one");
+    for(std::size_t i=0;i<choices.size();++i)
+      if(choices[i]<=isa(A)) return int(i);
+    return -1;
+  }();
 
   namespace detail {
+    constexpr isa intersection(isa a,isa b) noexcept {
+      for(std::size_t i=0;i<a.flags.size();++i) a.flags[i]&=b.flags[i];
+      return a;
+    }
     enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_edx, leaf7_1_eax, extended1_ecx, arm };
     struct feature_record {
       feature value;
       std::string_view spelling;
-      feature_set implies;
+      isa implies;
       feature_register location;
       unsigned bit;
     };
     // Clang target-feature dependencies, not an assertion that one CPU feature
     // bit alone guarantees another. Admission checks every bit in the closure.
     inline constexpr feature_record feature_registry[] = {
-      {feature::mmx,"mmx",0,feature_register::leaf1_edx,23},
-      {feature::sse,"sse",feature_set(feature::mmx),feature_register::leaf1_edx,25},
-      {feature::sse2,"sse2",feature_set(feature::sse),feature_register::leaf1_edx,26},
-      {feature::sse3,"sse3",feature_set(feature::sse2),feature_register::leaf1_ecx,0},
-      {feature::ssse3,"ssse3",feature_set(feature::sse3),feature_register::leaf1_ecx,9},
-      {feature::sse41,"sse4.1",feature_set(feature::ssse3),feature_register::leaf1_ecx,19},
-      {feature::sse42,"sse4.2",feature::sse41|feature::popcnt,feature_register::leaf1_ecx,20},
-      {feature::popcnt,"popcnt",0,feature_register::leaf1_ecx,23},
-      {feature::avx,"avx",feature_set(feature::sse42),feature_register::leaf1_ecx,28},
-      {feature::avx2,"avx2",feature_set(feature::avx),feature_register::leaf7_ebx,5},
-      {feature::fma,"fma",feature_set(feature::avx),feature_register::leaf1_ecx,12},
-      {feature::f16c,"f16c",feature_set(feature::avx),feature_register::leaf1_ecx,29},
-      {feature::bmi1,"bmi",0,feature_register::leaf7_ebx,3},
-      {feature::bmi2,"bmi2",0,feature_register::leaf7_ebx,8},
-      {feature::avx512f,"avx512f",feature::avx2|feature::f16c|feature::fma,feature_register::leaf7_ebx,16},
-      {feature::avx512dq,"avx512dq",feature_set(feature::avx512f),feature_register::leaf7_ebx,17},
-      {feature::avx512bw,"avx512bw",feature_set(feature::avx512f),feature_register::leaf7_ebx,30},
-      {feature::avx512vl,"avx512vl",feature_set(feature::avx512f),feature_register::leaf7_ebx,31},
-      {feature::avx512_bf16,"avx512bf16",feature_set(feature::avx512bw),feature_register::leaf7_1_eax,5},
-      {feature::avx512_fp16,"avx512fp16",feature_set(feature::avx512bw),feature_register::leaf7_edx,23},
-      {feature::neon,"neon",0,feature_register::arm,0},
-      {feature::neon_fp16,"fullfp16",feature_set(feature::neon),feature_register::arm,1},
-      {feature::neon_bf16,"bf16",feature_set(feature::neon),feature_register::arm,2},
-      {feature::aes,"aes",feature_set(feature::sse2),feature_register::leaf1_ecx,25},
-      {feature::pclmul,"pclmul",feature_set(feature::sse2),feature_register::leaf1_ecx,1},
-      {feature::cx16,"cx16",0,feature_register::leaf1_ecx,13},
-      {feature::avx512cd,"avx512cd",feature_set(feature::avx512f),feature_register::leaf7_ebx,28},
-      {feature::avx512ifma,"avx512ifma",feature_set(feature::avx512f),feature_register::leaf7_ebx,21},
-      {feature::lzcnt,"lzcnt",0,feature_register::extended1_ecx,5},
-      {feature::movbe,"movbe",0,feature_register::leaf1_ecx,22},
-      {feature::sahf,"sahf",0,feature_register::extended1_ecx,0},
-      {feature::arm_aes,"aes",feature_set(feature::neon),feature_register::arm,3},
-      {feature::arm_sha2,"sha2",feature_set(feature::neon),feature_register::arm,4},
-      {feature::arm_sha3,"sha3",feature_set(feature::arm_sha2),feature_register::arm,5},
-      {feature::arm_crc,"crc",feature_set(feature::neon),feature_register::arm,6},
-      {feature::arm_lse,"lse",feature_set(feature::neon),feature_register::arm,7},
-      {feature::arm_rdm,"rdm",feature_set(feature::neon),feature_register::arm,8},
-      {feature::arm_fp16fml,"fp16fml",feature_set(feature::neon_fp16),feature_register::arm,9},
-      {feature::arm_dotprod,"dotprod",feature_set(feature::neon),feature_register::arm,10},
-      {feature::arm_complxnum,"complxnum",feature_set(feature::neon),feature_register::arm,11},
-      {feature::arm_jsconv,"jsconv",feature_set(feature::neon),feature_register::arm,12},
-      {feature::arm_rcpc,"rcpc",feature_set(feature::neon),feature_register::arm,13},
-      {feature::arm_pauth,"pauth",feature_set(feature::neon),feature_register::arm,14}
+      {feature::mmx,"mmx",{},feature_register::leaf1_edx,23},
+      {feature::sse,"sse",isa(feature::mmx),feature_register::leaf1_edx,25},
+      {feature::sse2,"sse2",isa(feature::sse),feature_register::leaf1_edx,26},
+      {feature::sse3,"sse3",isa(feature::sse2),feature_register::leaf1_ecx,0},
+      {feature::ssse3,"ssse3",isa(feature::sse3),feature_register::leaf1_ecx,9},
+      {feature::sse41,"sse4.1",isa(feature::ssse3),feature_register::leaf1_ecx,19},
+      {feature::sse42,"sse4.2",feature::sse41&feature::popcnt,feature_register::leaf1_ecx,20},
+      {feature::popcnt,"popcnt",{},feature_register::leaf1_ecx,23},
+      {feature::avx,"avx",isa(feature::sse42),feature_register::leaf1_ecx,28},
+      {feature::avx2,"avx2",isa(feature::avx),feature_register::leaf7_ebx,5},
+      {feature::fma,"fma",isa(feature::avx),feature_register::leaf1_ecx,12},
+      {feature::f16c,"f16c",isa(feature::avx),feature_register::leaf1_ecx,29},
+      {feature::bmi1,"bmi",{},feature_register::leaf7_ebx,3},
+      {feature::bmi2,"bmi2",{},feature_register::leaf7_ebx,8},
+      {feature::avx512f,"avx512f",feature::avx2&feature::f16c&feature::fma,feature_register::leaf7_ebx,16},
+      {feature::avx512dq,"avx512dq",isa(feature::avx512f),feature_register::leaf7_ebx,17},
+      {feature::avx512bw,"avx512bw",isa(feature::avx512f),feature_register::leaf7_ebx,30},
+      {feature::avx512vl,"avx512vl",isa(feature::avx512f),feature_register::leaf7_ebx,31},
+      {feature::avx512bf16,"avx512bf16",isa(feature::avx512bw),feature_register::leaf7_1_eax,5},
+      {feature::avx512fp16,"avx512fp16",isa(feature::avx512bw),feature_register::leaf7_edx,23},
+      {feature::neon,"neon",{},feature_register::arm,0},
+      {feature::neon_fp16,"fullfp16",isa(feature::neon),feature_register::arm,1},
+      {feature::neon_bf16,"bf16",isa(feature::neon),feature_register::arm,2},
+      {feature::aes,"aes",isa(feature::sse2),feature_register::leaf1_ecx,25},
+      {feature::pclmul,"pclmul",isa(feature::sse2),feature_register::leaf1_ecx,1},
+      {feature::cx16,"cx16",{},feature_register::leaf1_ecx,13},
+      {feature::avx512cd,"avx512cd",isa(feature::avx512f),feature_register::leaf7_ebx,28},
+      {feature::avx512ifma,"avx512ifma",isa(feature::avx512f),feature_register::leaf7_ebx,21},
+      {feature::lzcnt,"lzcnt",{},feature_register::extended1_ecx,5},
+      {feature::movbe,"movbe",{},feature_register::leaf1_ecx,22},
+      {feature::sahf,"sahf",{},feature_register::extended1_ecx,0},
+      {feature::arm_aes,"aes",isa(feature::neon),feature_register::arm,3},
+      {feature::arm_sha2,"sha2",isa(feature::neon),feature_register::arm,4},
+      {feature::arm_sha3,"sha3",isa(feature::arm_sha2),feature_register::arm,5},
+      {feature::arm_crc,"crc",isa(feature::neon),feature_register::arm,6},
+      {feature::arm_lse,"lse",isa(feature::neon),feature_register::arm,7},
+      {feature::arm_rdm,"rdm",isa(feature::neon),feature_register::arm,8},
+      {feature::arm_fp16fml,"fp16fml",isa(feature::neon_fp16),feature_register::arm,9},
+      {feature::arm_dotprod,"dotprod",isa(feature::neon),feature_register::arm,10},
+      {feature::arm_complxnum,"complxnum",isa(feature::neon),feature_register::arm,11},
+      {feature::arm_jsconv,"jsconv",isa(feature::neon),feature_register::arm,12},
+      {feature::arm_rcpc,"rcpc",isa(feature::neon),feature_register::arm,13},
+      {feature::arm_pauth,"pauth",isa(feature::neon),feature_register::arm,14}
     };
-    inline constexpr feature_set known_features=(1ull<<43)-1;
-    inline constexpr feature_set arm_features=(feature::neon|feature::neon_fp16|feature::neon_bf16)|(((1ull<<43)-1)&~((1ull<<31)-1));
-    inline constexpr feature_set x86_features=known_features&~arm_features;
-    inline constexpr feature_set invalid_features=1ull<<63;
+    inline constexpr isa arm_features=[] {
+      isa result;
+      for(auto const & entry:feature_registry)
+        if(entry.location==feature_register::arm) result.set(entry.value,true);
+      return result;
+    }();
+    inline constexpr isa x86_features=[] {
+      isa result;
+      for(auto const & entry:feature_registry)
+        if(entry.location!=feature_register::arm) result.set(entry.value,true);
+      return result;
+    }();
+    inline constexpr isa known_features=arm_features&x86_features;
+    inline constexpr isa invalid_features=feature::invalid_features;
+    // A shared value keeps repeated source constraints equivalent across
+    // declarations; an immediately invoked macro lambda would not.
+    template<isa A> inline constexpr isa source_isa=[]() consteval {
+      static_assert(A<=known_features,"source target contains an unregistered ISA feature");
+      static_assert(A<=x86_features || A<=arm_features,"source target combines x86 and ARM features");
+      return A;
+    }();
   }
 
-  /// Canonical compiler-implied feature closure, shared by tags and admission.
-  constexpr feature_set feature_closure(feature_set bits) noexcept {
-    feature_set previous;
+  /// Explicit compiler-implied closure, shared by presets and admission.
+  constexpr isa feature_closure(isa bits) noexcept {
+    isa previous;
     do {
       previous=bits;
       for(auto const & entry:detail::feature_registry)
-        if(bits&feature_set(entry.value)) bits|=entry.implies;
+        if(bits.has(entry.value)) bits=bits&entry.implies;
     } while(previous!=bits);
     return bits;
   }
 
-  /// Canonical tag storage lives in simd so tag-only calls retain public ADL.
-  /// Prefer isa<...>, which computes the prerequisite closure before naming it.
-  template<feature_set Bits> struct isa_tag {
-    static_assert((Bits&~detail::known_features)==0,"unknown SIMD ISA feature");
-    static_assert(!(Bits&detail::arm_features) || !(Bits&detail::x86_features),"cannot combine x86 and ARM ISA features");
-    static_assert(feature_closure(Bits)==Bits,"use simd::isa to normalize feature prerequisites");
-    static constexpr feature_set features=Bits;
-  };
-  namespace detail {
-    template<class> inline constexpr bool is_isa=false;
-    template<feature_set Bits> inline constexpr bool is_isa<isa_tag<Bits>> = true;
-  }
-
-  /// Feature order and redundant prerequisites do not create different types.
-  template<auto Bits> using isa=isa_tag<feature_closure(feature_set(Bits))>;
-  template<class A> concept architecture=detail::is_isa<A>;
-  template<class A, feature F> concept has_feature=architecture<A> && ((A::features&feature_set(F))!=0);
-  template<class A, feature_set Bits> concept has_features=architecture<A> && ((A::features&Bits)==Bits);
-
-  using scalar=isa<0>;
-  using avx2=isa<feature::avx2|feature::fma|feature::bmi2>;
-  using avx512=isa<avx2::features|feature::avx512f|feature::avx512dq|feature::avx512bw|feature::avx512vl>;
-  using avx512_bf16=isa<avx512::features|feature::avx512_bf16>;
-  using avx512_fp16=isa<avx512::features|feature::avx512_fp16>;
-  using neon=isa<feature::neon>;
-  using neon_fp16=isa<feature::neon_fp16>;
-  using neon_bf16=isa<feature::neon_bf16>;
-  namespace detail {
-    template<class A> concept scalar_architecture=architecture<A> && A::features==0;
-    template<class A> concept avx512_base_architecture=has_features<A,isa<avx2::features|feature::avx512f|feature::avx512dq>::features>;
-    template<class A> concept avx512_architecture=has_features<A,avx512::features>;
-    template<class A> concept avx512_nobw_novl_architecture=avx512_base_architecture<A> && !has_feature<A,feature::avx512bw> && !has_feature<A,feature::avx512vl>;
-    template<class A> concept avx512_bw_novl_architecture=avx512_base_architecture<A> && has_feature<A,feature::avx512bw> && !has_feature<A,feature::avx512vl>;
-    template<class A> concept avx512_nobw_vl_architecture=avx512_base_architecture<A> && !has_feature<A,feature::avx512bw> && has_feature<A,feature::avx512vl>;
-    template<class A> concept avx2_architecture=has_features<A,avx2::features> && !avx512_base_architecture<A>;
-    template<class A> concept neon_architecture=has_feature<A,feature::neon>;
-    template<class A> concept avx512_bf16_architecture=avx512_architecture<A> && has_feature<A,feature::avx512_bf16>;
-    template<class A> concept avx512_fp16_architecture=avx512_architecture<A> && has_feature<A,feature::avx512_fp16>;
-    template<class A> concept avx512_half_architecture=avx512_bf16_architecture<A> && avx512_fp16_architecture<A>;
-    template<class A> concept neon_bf16_architecture=neon_architecture<A> && has_feature<A,feature::neon_bf16>;
-    template<class A> concept neon_fp16_architecture=neon_architecture<A> && has_feature<A,feature::neon_fp16>;
-    template<class A> concept neon_half_architecture=neon_bf16_architecture<A> && neon_fp16_architecture<A>;
-  }
+  inline constexpr isa scalar{};
+  inline constexpr isa avx2=feature_closure(feature::avx2&feature::fma&feature::bmi2);
+  inline constexpr isa avx512=feature_closure(avx2&feature::avx512f&feature::avx512dq&feature::avx512bw&feature::avx512vl);
+  inline constexpr isa avx512_bf16=feature_closure(avx512&feature::avx512bf16);
+  inline constexpr isa avx512_fp16=feature_closure(avx512&feature::avx512fp16);
+  inline constexpr isa neon=feature_closure(feature::neon);
+  inline constexpr isa neon_fp16=feature_closure(feature::neon_fp16);
+  inline constexpr isa neon_bf16=feature_closure(feature::neon_bf16);
 
   /// Parse a registered literal target feature list. CPU names, negative
   /// features and unknown features fail closed rather than guessing admission.
-  constexpr feature_set target_features(std::string_view text) noexcept {
-    if(text.empty()) return 0;
+  constexpr isa target_features(std::string_view text) noexcept {
+    if(text.empty()) return {};
 #if defined(__aarch64__) || defined(_M_ARM64)
     bool arm_target=true;
 #else
@@ -172,14 +348,14 @@ namespace simd {
     // on an x86 host. AES is spelled identically by both compiler backends.
     if(text.find("neon")!=std::string_view::npos || text.find("fullfp16")!=std::string_view::npos)
       arm_target=true;
-    feature_set bits=0;
+    isa bits;
     while(!text.empty()) {
       auto comma=text.find(',');
       auto token=text.substr(0,comma);
       bool found=false;
       for(auto const & entry:detail::feature_registry) if(token==entry.spelling &&
           (entry.spelling!="aes" || (entry.location==detail::feature_register::arm)==arm_target)) {
-        bits|=feature_set(entry.value); found=true; break;
+        bits.set(entry.value,true); found=true; break;
       }
       if(!found) return detail::invalid_features;
       if(comma==std::string_view::npos) break;
@@ -190,13 +366,13 @@ namespace simd {
   }
 
   struct isa_admission {
-    feature_set missing_features=0;
+    isa missing_features{};
     std::uint64_t missing_xcr0=0;
     bool invalid_features=false;
     bool missing_xcr0_observation=false;
     /// True only when every requested feature and OS state component is present.
     constexpr bool admitted() const noexcept {
-      return !missing_features && !missing_xcr0 && !invalid_features && !missing_xcr0_observation;
+      return missing_features==scalar && !missing_xcr0 && !invalid_features && !missing_xcr0_observation;
     }
   };
 
@@ -215,12 +391,12 @@ namespace simd {
 
   /// Pure classification of the existing simd.cpuid observation record.
   template<detail::x86_observation C>
-  constexpr isa_admission classify_isa(C const & cpu, feature_set requested) noexcept {
-    auto bits=feature_closure(requested);
+  constexpr isa_admission classify_isa(C const & cpu, isa requested,isa minimum={}) noexcept {
+    auto bits=feature_closure(requested&minimum);
     isa_admission result;
-    result.invalid_features=(bits&~detail::x86_features)!=0;
+    result.invalid_features=!(bits<=detail::x86_features);
     for(auto const & entry:detail::feature_registry) {
-      if(!(bits&feature_set(entry.value))) continue;
+      if(!bits.has(entry.value)) continue;
       std::uint32_t observed=0;
       switch(entry.location) {
         case detail::feature_register::leaf1_ecx: if(cpu.max_basic_leaf>=1) observed=cpu.leaf1_ecx; break;
@@ -234,114 +410,91 @@ namespace simd {
           break;
         case detail::feature_register::arm: break;
       }
-      if(!(observed&(std::uint32_t(1)<<entry.bit))) result.missing_features|=feature_set(entry.value);
+      if(!(observed&(std::uint32_t(1)<<entry.bit))) result.missing_features.set(entry.value,true);
     }
-    if(bits&feature_set(feature::avx)) {
+    if(bits.has(feature::avx)) {
       bool readable=cpu.max_basic_leaf>=1 && (cpu.leaf1_ecx&(1u<<26)) &&
         (cpu.leaf1_ecx&(1u<<27)) && cpu.xcr0_observed;
       result.missing_xcr0_observation=!readable;
-      result.missing_xcr0=((bits&feature_set(feature::avx512f))?0xe6ull:0x6ull)&~(readable?cpu.xcr0:0ull);
+      result.missing_xcr0=((bits.has(feature::avx512f))?0xe6ull:0x6ull)&~(readable?cpu.xcr0:0ull);
     }
     return result;
   }
 
   /// Pure classification of the existing simd.arm observation record.
   template<detail::arm_observation C>
-  constexpr isa_admission classify_isa(C const & cpu, feature_set requested) noexcept {
-    auto bits=feature_closure(requested);
+  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+    auto bits=feature_closure(requested&minimum);
     isa_admission result;
-    result.invalid_features=(bits&~detail::arm_features)!=0;
-    if((bits&feature_set(feature::neon)) && !(cpu.baseline_observed && cpu.fp && cpu.asimd))
-      result.missing_features|=feature_set(feature::neon);
-    if((bits&feature_set(feature::neon_fp16)) && !(cpu.fp16_observed && cpu.scalar_fp16 && cpu.vector_fp16))
-      result.missing_features|=feature_set(feature::neon_fp16);
-    if((bits&feature_set(feature::neon_bf16)) && !(cpu.bf16_observed && cpu.bf16))
-      result.missing_features|=feature_set(feature::neon_bf16);
-    constexpr auto baseline=feature::neon|feature::neon_fp16|feature::neon_bf16;
-    auto extra=bits&detail::arm_features&~baseline;
-    if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
-      result.missing_features|=extra&~(cpu.extra_observed&cpu.extra_features);
-    else result.missing_features|=extra;
+    result.invalid_features=!(bits<=detail::arm_features);
+    if(bits.neon && !(cpu.baseline_observed && cpu.fp && cpu.asimd))
+      result.missing_features.neon=true;
+    if(bits.neon_fp16 && !(cpu.fp16_observed && cpu.scalar_fp16 && cpu.vector_fp16))
+      result.missing_features.neon_fp16=true;
+    if(bits.neon_bf16 && !(cpu.bf16_observed && cpu.bf16))
+      result.missing_features.neon_bf16=true;
+    constexpr auto baseline=feature::neon&feature::neon_fp16&feature::neon_bf16;
+    for(auto const & entry:detail::feature_registry) {
+      if(entry.location!=detail::feature_register::arm || baseline.has(entry.value) || !bits.has(entry.value)) continue;
+      bool available=false;
+      if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
+        available=cpu.extra_observed.has(entry.value) && cpu.extra_features.has(entry.value);
+      if(!available) result.missing_features.set(entry.value,true);
+    }
     return result;
   }
 
-  /// Admit a type tag together with an explicit inherited project minimum.
-  template<architecture A, class C>
-  constexpr isa_admission classify_isa(C const & cpu, A, feature_set minimum=0) noexcept {
-    return classify_isa(cpu,A::features|minimum);
-  }
-
-  /// A source variant retains its requested type and inherited compiler minimum.
-  template<architecture A, feature_set Minimum> struct target_entry {
-    static_assert((Minimum&~detail::known_features)==0,"source minimum contains an unregistered ISA feature");
-    using architecture=A;
-    static constexpr feature_set minimum=Minimum;
+  /// A source variant retains its requested ISA and inherited compiler minimum.
+  struct target_entry {
+    isa architecture;
+    isa minimum{};
+    /// Compare the requested ISA and inherited compiler minimum exactly.
+    constexpr bool operator==(target_entry const &) const = default;
   };
-  template<class... A> struct isa_list {};
-  /// Concatenate ordered target lists without sorting or changing type identity.
-  template<class... A, class... B>
+  template<auto... Entries> struct isa_list {};
+  /// Concatenate ordered source metadata without sorting or deduplicating it.
+  template<auto... A,auto... B>
   constexpr isa_list<A...,B...> operator+(isa_list<A...>,isa_list<B...>) noexcept { return {}; }
-  namespace detail {
-    template<class A> struct entry_traits { using architecture=A; static constexpr feature_set minimum=0; };
-    template<architecture A, feature_set M> struct entry_traits<target_entry<A,M>> {
-      using architecture=A; static constexpr feature_set minimum=M;
-    };
-  }
 
-  /// Sentinel returned by abi_lookup when no policy entry matches.
-  inline constexpr std::size_t abi_npos=std::size_t(-1);
   namespace detail {
-    template<class E,std::size_t I> struct abi_match {
-      using type=E;
-      using architecture=typename entry_traits<E>::architecture;
-      static_assert(::simd::architecture<architecture>,"ABI policies must be architecture tags or target_entry types");
+    template<auto E,int I> struct abi_match {
+      static constexpr target_entry entry=[] {
+        if constexpr(arch<std::remove_cv_t<decltype(E)>>) return target_entry{E};
+        else return E;
+      }();
+      static constexpr isa architecture=entry.architecture;
+      static constexpr isa minimum=entry.minimum;
+      static_assert(architecture<=known_features,"ABI policy contains an unregistered ISA feature");
+      static_assert(minimum<=known_features,"ABI policy minimum contains an unregistered ISA feature");
+      static constexpr isa required_features=feature_closure(architecture&minimum);
       static constexpr bool matched=true;
-      static constexpr std::size_t index=I;
-      static constexpr feature_set minimum=entry_traits<E>::minimum;
-      static_assert((minimum&~known_features)==0,"ABI policy minimum contains an unregistered ISA feature");
-      static constexpr feature_set required_features=feature_closure(architecture::features|minimum);
+      static constexpr int index=I;
     };
-    template<architecture A,std::size_t I,class... E> struct abi_lookup_impl {
-      using type=void;
-      using architecture=void;
+    template<isa A,int I,auto... Entries> struct abi_lookup_impl {
       static constexpr bool matched=false;
-      static constexpr std::size_t index=abi_npos;
-      static constexpr feature_set minimum=0;
-      static constexpr feature_set required_features=0;
+      static constexpr int index=-1;
+      static constexpr isa architecture{},minimum{},required_features{};
     };
-    template<architecture A,std::size_t I,class E,class... Rest>
+    template<isa A,int I,auto E,auto... Rest>
     struct abi_lookup_impl<A,I,E,Rest...> : std::conditional_t<
-      (A::features&abi_match<E,I>::required_features)==abi_match<E,I>::required_features,
+      abi_match<E,I>::required_features<=A,
       abi_match<E,I>,abi_lookup_impl<A,I+1,Rest...>> {};
   }
-  /// Select the first policy whose requested and inherited compiler features
-  /// are contained in A. No CPU query, compiler retargeting or type conversion
-  /// occurs. A match exposes its original entry as type and requested tag as
-  /// architecture; no match exposes void types and index == abi_npos.
-  template<architecture A,class List> struct abi_lookup;
-  template<architecture A,class... Entries>
+  /// Internal value-list selection retaining compiler-implied requirements.
+  /// Unlike target's exact set selection, this includes prerequisite closure.
+  template<isa A,class List> struct abi_lookup;
+  template<isa A,auto... Entries>
   struct abi_lookup<A,isa_list<Entries...>> : detail::abi_lookup_impl<A,0,Entries...> {};
 
-  /// Disjoint overload constraint for an ordinal in one ordered policy list.
-  /// The no-match sentinel never satisfies this concept.
-  template<class A,class List,std::size_t I> concept requires_abi=
-    architecture<A> && abi_lookup<A,List>::matched && (abi_lookup<A,List>::index==I);
-
-  /// Ordered first-match admission. Returns false without invoking the callback
-  /// when no entry is admitted. This does not compile or target-attribute code.
-  /// The callback receives only the selected type tag; capture results explicitly.
-  template<class... Entries, class C, class F>
-  constexpr bool with_isa(isa_list<Entries...>, C const & cpu, F && callback, feature_set minimum=0) {
+  /// Admit the first available source variant and invoke callback.operator()<A>().
+  template<auto... Entries,class C,class F>
+  constexpr bool with_isa(isa_list<Entries...>,C const & cpu,F && callback,isa minimum={}) {
     bool selected=false;
-    auto try_entry=[&]<class E>() {
-      using traits=detail::entry_traits<E>;
-      using A=typename traits::architecture;
-      static_assert(architecture<A>);
-      static_assert((traits::minimum&~detail::known_features)==0,
-        "source minimum contains an unregistered ISA feature");
-      if(!selected && classify_isa(cpu,A{},minimum|traits::minimum).admitted()) {
+    auto try_entry=[&]<auto E>() {
+      using entry=detail::abi_match<E,0>;
+      if(!selected && classify_isa(cpu,entry::architecture,minimum&entry::minimum).admitted()) {
         selected=true;
-        std::forward<F>(callback)(A{});
+        std::forward<F>(callback).template operator()<entry::architecture>();
       }
     };
     (try_entry.template operator()<Entries>(),...);

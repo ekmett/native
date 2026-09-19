@@ -3,14 +3,11 @@
 #pragma once
 // Include after a named-module declaration; isa.h definitions belong to the GMF.
 export namespace simd {
-  using ::simd::feature_set;
   using ::simd::feature;
+  using ::simd::feature_count;
+  using ::simd::arch;
   using ::simd::feature_closure;
-  using ::simd::isa_tag;
   using ::simd::isa;
-  using ::simd::architecture;
-  using ::simd::has_feature;
-  using ::simd::has_features;
   using ::simd::scalar;
   using ::simd::avx2;
   using ::simd::avx512;
@@ -24,10 +21,20 @@ export namespace simd {
   using ::simd::classify_isa;
   using ::simd::target_entry;
   using ::simd::isa_list;
-  using ::simd::abi_npos;
   using ::simd::abi_lookup;
-  using ::simd::requires_abi;
+  using ::simd::target;
   using ::simd::with_isa;
-  using ::simd::operator|;
+  using ::simd::operator&;
+  using ::simd::operator<;
+  using ::simd::operator>;
+  using ::simd::operator<=;
+  using ::simd::operator>=;
   using ::simd::operator+;
+}
+// Source-target macro validation also runs in importing translation units.
+export namespace simd::detail {
+  using ::simd::detail::source_isa;
+  using ::simd::detail::known_features;
+  using ::simd::detail::x86_features;
+  using ::simd::detail::arm_features;
 }

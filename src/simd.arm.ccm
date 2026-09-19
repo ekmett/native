@@ -65,9 +65,9 @@ export namespace simd {
     /// OS advertises enhanced BF16 behavior, usable when the caller sets FPCR.EBF.
     /// Informational: NEON_BF16 admission does not require this extension.
     bool ebf16 = false;
-    /// Additional source-target features, using simd::feature bit positions.
-    /// A feature must occur in both masks; failed queries never authorize it.
-    std::uint64_t extra_observed = 0, extra_features = 0;
+    /// Additional source-target features, as ISA values.
+    /// A feature must occur in both sets; failed queries never authorize it.
+    isa extra_observed{}, extra_features{};
   };
 
   /// \ingroup arm_capabilities
@@ -167,8 +167,8 @@ namespace simd {
       bool a=false,b=true;
       auto observed=query(first,a)==1;
       if(second) observed=(query(second,b)==1)&&observed;
-      if(observed) result.extra_observed|=feature_set(f);
-      if(observed && a && b) result.extra_features|=feature_set(f);
+      if(observed) result.extra_observed.set(f,true);
+      if(observed && a && b) result.extra_features.set(f,true);
     };
     // Clang AES includes PMULL, SHA2 includes SHA1/SHA256, and SHA3 includes
     // SHA512. Query every component rather than assuming one implies another.
@@ -194,8 +194,8 @@ namespace simd {
     result.scalar_fp16=(hwcap&HWCAP_FPHP)!=0;
     result.vector_fp16=(hwcap&HWCAP_ASIMDHP)!=0;
     auto extra=[&](feature f,unsigned long mask) {
-      result.extra_observed|=feature_set(f);
-      if((hwcap&mask)==mask) result.extra_features|=feature_set(f);
+      result.extra_observed.set(f,true);
+      if((hwcap&mask)==mask) result.extra_features.set(f,true);
     };
     extra(feature::arm_aes,HWCAP_AES|HWCAP_PMULL);
     extra(feature::arm_sha2,HWCAP_SHA1|HWCAP_SHA2);
@@ -250,8 +250,8 @@ namespace simd {
     result.bf16=IsProcessorFeaturePresent(bf16_feature)!=0;
     result.ebf16=IsProcessorFeaturePresent(ebf16_feature)!=0;
     auto extra=[&](feature f,DWORD selector) {
-      result.extra_observed|=feature_set(f);
-      if(IsProcessorFeaturePresent(selector)) result.extra_features|=feature_set(f);
+      result.extra_observed.set(f,true);
+      if(IsProcessorFeaturePresent(selector)) result.extra_features.set(f,true);
     };
     extra(feature::arm_aes,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
     extra(feature::arm_sha2,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
@@ -260,9 +260,9 @@ namespace simd {
     extra(feature::arm_dotprod,43); // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
     extra(feature::arm_jsconv,44); // PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE
     extra(feature::arm_rcpc,45); // PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
-    result.extra_observed|=feature_set(feature::arm_sha3);
+    result.extra_observed.set(feature::arm_sha3,true);
     if(IsProcessorFeaturePresent(64) && IsProcessorFeaturePresent(65))
-      result.extra_features|=feature_set(feature::arm_sha3); // SHA3 and SHA512
+      result.extra_features.set(feature::arm_sha3,true); // SHA3 and SHA512
     // Windows exposes no selectors for the remaining catalog entries here;
     // leave them unobserved, even if a CPU model is usually known to have them.
 #endif

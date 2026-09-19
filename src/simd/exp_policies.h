@@ -2,58 +2,28 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include <simd/targets.h>
-#include "simd/abi_refinement.h"
+#include "simd/kernel_policies.h"
 
-// Source names retain literal compiler targets. The C++ refinement below checks
-// every emitted record against its computed union and callee-choice signature.
-#define SIMD_TARGET_exp_base "avx2,fma,bmi2,avx512f,avx512dq"
-#define SIMD_TARGET_exp_bw "avx2,fma,bmi2,avx512f,avx512dq,avx512bw"
-#define SIMD_TARGET_exp_vl "avx2,fma,bmi2,avx512f,avx512dq,avx512vl"
-#define SIMD_TARGET_exp_bw_bf16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16"
-#define SIMD_TARGET_exp_bw_fp16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512fp16"
-#define SIMD_TARGET_exp_bw_half "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16"
-#define SIMD_TARGET_exp_full_half "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"
+// Clang attributes require literal target strings.
+#define SIMD_TARGET_exp_base SIMD_KERNEL_TARGET_2
+#define SIMD_TARGET_exp_bw SIMD_KERNEL_TARGET_3
+#define SIMD_TARGET_exp_vl SIMD_KERNEL_TARGET_4
 
 namespace simd::detail {
-  using raw_exp_policies=simd::isa_list<simd::avx512,SIMD_TARGET_TYPE(exp_bw),
-    SIMD_TARGET_TYPE(exp_vl),SIMD_TARGET_TYPE(exp_base),simd::avx2>;
-  using exp_result_policies=simd::isa_list<SIMD_TARGET_TYPE(exp_full_half),SIMD_TARGET_TYPE(exp_bw_half),
-    simd::avx512_bf16,SIMD_TARGET_TYPE(exp_bw_bf16),simd::avx512_fp16,SIMD_TARGET_TYPE(exp_bw_fp16),
-    simd::avx512,SIMD_TARGET_TYPE(exp_bw),SIMD_TARGET_TYPE(exp_vl),SIMD_TARGET_TYPE(exp_base),simd::avx2>;
-  // Named transitive summaries: all raw operations currently inherit the same
-  // five backend declaration scopes. VL is a genuine mask/scaling boundary;
-  // BW remains a backend attribute requirement for this binary32 graph.
-  using exp_compare_select_policies=raw_exp_policies;
-  using exp_multiply_fma_policies=raw_exp_policies;
-  using exp_round_policies=raw_exp_policies;
-  using exp_scaling_policies=raw_exp_policies; // includes fallback integer/memory work
-  static_assert(std::same_as<exp_compare_select_policies,exp_multiply_fma_policies> &&
-    std::same_as<exp_compare_select_policies,exp_round_policies> &&
-    std::same_as<exp_compare_select_policies,exp_scaling_policies>);
-  // Identical partitions are composed once, not once per polynomial operation.
-  using exp_refinement=abi_refinement<exp_compare_select_policies,exp_result_policies>;
-  using exp_policies=exp_refinement::policies;
-  static_assert(exp_refinement::capacity==55);
-  static_assert(exp_refinement::cells.size==11);
+  // Every callee in the binary32 graph uses this same five-way split.
+  template<isa A> inline constexpr auto exp_target=
+    target<A,avx512,kernel_bw,kernel_vl,kernel_base,avx2>;
 }
 
-// index, source target spelling, raw-exp choice, wide-constructor choice
-#define SIMD_EXP_POLICY_CELLS(X) \
-  X(0,exp_full_half,0,0) \
-  X(1,avx512_bf16,0,2) \
-  X(2,avx512_fp16,0,4) \
-  X(3,avx512,0,6) \
-  X(4,exp_bw_half,1,1) \
-  X(5,exp_bw_bf16,1,3) \
-  X(6,exp_bw_fp16,1,5) \
-  X(7,exp_bw,1,7) \
-  X(8,exp_vl,2,8) \
-  X(9,exp_base,3,9) \
-  X(10,avx2,4,10)
+// Ordinal and literal Clang target for each body.
+#define SIMD_EXP_TARGETS(X) \
+  X(0,avx512) \
+  X(1,exp_bw) \
+  X(2,exp_vl) \
+  X(3,exp_base) \
+  X(4,avx2)
 
-#define CHECK_EXP_CELL(i,name,raw,result) \
-  static_assert(SIMD_TARGET_TYPE(name)::features==simd::detail::exp_refinement::cells.records[i].requirements); \
-  static_assert(simd::detail::exp_refinement::cells.records[i].choices==std::array<std::size_t,2>{raw,result}); \
-  static_assert(simd::requires_abi<SIMD_TARGET_TYPE(name),simd::detail::exp_policies,i>);
-SIMD_EXP_POLICY_CELLS(CHECK_EXP_CELL)
-#undef CHECK_EXP_CELL
+#define CHECK_EXP_TARGET(i,name) \
+  static_assert(simd::detail::exp_target<SIMD_TARGET_ISA(name)> == i);
+SIMD_EXP_TARGETS(CHECK_EXP_TARGET)
+#undef CHECK_EXP_TARGET

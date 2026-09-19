@@ -1,74 +1,138 @@
-# Compile-time implementation policies
+# ISA values and target selection
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-`abi_lookup<Arch, Policies>` selects the first entry in an `isa_list` whose
-required features are contained in `Arch::features`. It is available through
-`<simd/isa.h>` in C++20 and through `import simd;`. It performs no CPU query.
-Use `with_isa` separately when admitting code for execution on a particular CPU.
+`isa` is a structural feature set that can be a template argument. `feature`
+names instruction features; `&` combines their requirements by union:
 
 ```cpp
-using base = simd::isa<simd::avx2::features | simd::feature::avx512f |
-                       simd::feature::avx512dq>;
-using with_vl = simd::isa<base::features | simd::feature::avx512vl>;
-using policies = simd::isa_list<with_vl, base, simd::avx2>;
-using choice = simd::abi_lookup<simd::avx512, policies>;
-static_assert(choice::matched && choice::index == 0);
-static_assert(std::same_as<choice::type, with_vl>);
+using namespace simd;
+
+constexpr isa needs = [] {
+  using enum feature;
+  return avx2 & fma & f16c;
+}();
+
+static_assert(needs.has(feature::fma));
+static_assert(feature::avx2 <= needs);
+static_assert(needs <= avx512);
+
+constexpr isa adjusted = [] {
+  auto a = avx2;
+  a.f16c = true;
+  a.bmi2 = false;
+  return a;
+}();
+static_assert(adjusted.f16c && !adjusted.bmi2);
 ```
 
-`index` is a zero-based position in that particular list. A match exposes
-`type` (the original entry), `architecture` (its requested tag), `minimum`
-(its inherited compiler requirements), and `required_features` (the prerequisite
-closure of the requested and inherited features). Ordinary tag entries have a
-zero minimum. For example, `target_entry<avx2, avx512::features>` requires all
-AVX-512 preset features to match; an `avx2` caller alone is insufficient. The
-result still retains that exact `target_entry` and its requested `avx2` tag.
+The properties read and update the set's bits; they store no additional state.
+`a.has(b)` accepts a feature or another `isa`. `a <= b` means every bit of `a`
+occurs in `b`, and `<` means strict inclusion. The reverse comparisons have the
+corresponding meanings. This is a partial order: distinct singleton features
+are incomparable. `&` works for every feature/ISA pairing; there is no `|`
+operator.
 
-For an empty list or no match, `matched` is false, `index` is `abi_npos`, both
-type aliases are `void`, and both feature fields are zero. Check `matched`
-before treating the feature fields as a policy. No scalar fallback is added.
-An explicit `scalar` entry has zero requirements and matches every architecture,
-so put it last when that is the desired fallback.
+For function constraints, use `requires(A.has(feature::avx2 & feature::fma))`
+or the `target` selector below. Clang 23's Linux/macOS mangler rejects direct
+property expressions such as `requires(A.avx2 && A.fma)`; see the
+[tooling limits](validation.md).
 
-Order also resolves overlapping and incomparable requirements. A tag containing
-both BW and VL can match either a BW entry or a VL entry; the earlier one wins.
-Put a combined entry before both if that intersection needs its own body.
-Feature prerequisites are normalized, but entries are neither sorted nor
-deduplicated.
-
-`requires_abi<Arch, Policies, I>` accepts precisely the tags selecting position
-`I`. It is false for no-match, even when `I == abi_npos`, so overload constraints
-for different positions are disjoint:
+Default construction gives the empty set, equal to `scalar`. Construction from
+one feature sets exactly one bit. It never adds implied features:
 
 ```cpp
-template<simd::architecture Arch, std::size_t L, std::size_t N>
-  requires simd::requires_abi<Arch, policies, 0>
-__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512vl")))
-simd::wide<simd::vec<float,L,Arch>,N>
-operation(simd::wide<simd::vec<float,L,Arch>,N> const & input);
+constexpr isa one = feature::avx2;
+static_assert(one.avx2 && !one.avx && !one.fma);
+constexpr isa compiler_features = feature_closure(one);
+static_assert(compiler_features.avx);
 ```
 
-This declaration illustrates one policy overload; other positions need their
-own definitions and target attributes. Keep the original `Arch` in arguments,
-intermediates and results. Selecting a sufficient policy does not retag values,
-and different caller tags can still create different template instantiations.
-`requires_abi` selects an overload; it does not target its body. Every called
-helper must also be legal under that body's target requirements.
+`feature_closure` explicitly adds compiler prerequisites. Compiler target parsing
+and CPU admission apply that closure. The existing `scalar`, `avx2`, `avx512`,
+`avx512_bf16`, `avx512_fp16`, `neon`, `neon_fp16` and `neon_bf16` presets are
+`constexpr isa` values whose prerequisite closure is already included. For
+example, the `avx2` preset also requests FMA and BMI2. CPU-model bundles remain
+future work.
 
-Choose policies per operation and account for element type, register width and
-numerical policy separately. For a composed operation, refine the choices of
-all dependencies: the tuple of their selected positions identifies a combined
-case. Concatenating their lists does not compute that refinement.
+The feature enumerators `feature::avx512bf16` and `feature::avx512fp16` name single
+bits. The presets `avx512_bf16` and `avx512_fp16` include the broader AVX-512
+requirements.
 
-The public hub now uses an internal common refinement for x86
-`exp(wide<vec<float,L,Arch>,N>)`. Named raw-operation summaries share the
-current backend partitions; identical partitions are composed once with the
-result-constructor policy. Eleven disjoint attributed overloads retain the
-caller's complete `Arch` and call the unchanged array arithmetic. The internal
-composition helper is not a new public API. Generic scalar/custom/ARM wide
-paths and other wide operations retain their existing target families.
-BW/half constructor attribute requirements remain explicit; this is not a
-claim of eleven different exponential algorithms or a performance improvement.
-See the [focused refinement checks](../tests/exp_policy_refinement/README.md).
+## Select an implementation
+
+`target<A, Choices...>` is an `int`: the zero-based index of the first choice
+contained in `A`, or `-1` when none matches. An empty choice pack also returns
+`-1`. The `arch` concept admits either a `feature` or an `isa`; generic value
+parameters can use `template<arch auto A>`. Vector algorithms normally use
+`template<isa A>`:
+
+```cpp
+template<isa A>
+inline constexpr int operation_target = target<A, avx512, avx2>;
+
+static_assert(operation_target<avx512_bf16> == 0);
+static_assert(operation_target<avx2> == 1);
+static_assert(operation_target<scalar> == -1);
+static_assert(target<feature::avx2, feature::avx2> == 0);
+
+template<isa A> requires(target<A, avx512, avx2> == 1)
+void operation(float const * input, float * output);
+```
+
+Selection compares the exact sets supplied; it does not add prerequisites.
+An explicit final `scalar` matches every set. `A` may contain features beyond
+the selected requirement, and the complete caller ISA remains in argument and
+result types.
+
+Put stronger requirements before weaker ones. Every pair `i < j` is checked:
+if `Choices[i] <= Choices[j]`, the later choice is unreachable and compilation
+fails. This rejects duplicates and backward subsumption, even if an earlier
+choice already matched or the supplied `A` matches nothing:
+
+```cpp
+// Each declaration below is intentionally ill-formed.
+// constexpr int shadowed = target<avx512, avx2, avx512>;
+// constexpr int duplicate = target<avx2, avx2, avx2>;
+// constexpr int unmatched = target<neon, avx2, avx512>;
+// constexpr int late = target<avx512, avx512, scalar, avx2>;
+```
+
+Incomparable choices may appear in either order; the first matching one wins.
+The helper is available through `<simd/isa.h>` in C++20 or `import simd;`.
+It performs compile-time selection only. Give native implementations their
+required Clang target attributes, and use `with_isa` for CPU/OS admission before
+execution. See the [source-target guide](omnibus.md).
+
+## Compiler-minimum metadata
+
+`isa_list<...>` and `abi_lookup<A, List>` retain the internal ordered metadata
+used by source variants and composed kernels. Use the direct choice pack above
+for ordinary target selection. A structural `target_entry{architecture, minimum}`
+records an ISA and its inherited compiler minimum:
+
+```cpp
+constexpr auto inherited = target_entry{avx2, feature::avx512vl};
+using choices = isa_list<inherited, avx2>;
+using picked = abi_lookup<avx512, choices>;
+static_assert(picked::index == 0);
+static_assert(picked::architecture == avx2);
+static_assert(picked::minimum == feature::avx512vl);
+```
+
+The lookup exposes `matched`, an `int index`, and `isa` values `architecture`,
+`minimum` and `required_features`. It includes compiler prerequisite closure
+when testing the entry's requested ISA and minimum. Unknown minimum bits are
+diagnosed. No match gives `matched == false`, `index == -1` and empty ISA values.
+
+The built-in FP32 exp kernel has five implementation choices because its raw
+callees share five declaration scopes. FP32, integer and mask values ignore
+unrelated half features; native FP16 and BF16 values require their own extension.
+Internal traits handle these built-in requirements. Custom types keep their
+declared ISA without an extra metadata protocol.
+
+Composed kernels whose callees have different lists need a common refinement
+that preserves each callee's first match. Those checks stay internal. See the
+[exp tests](../tests/exp_policy_refinement/README.md) for target, value and codegen
+coverage.

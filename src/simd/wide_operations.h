@@ -80,9 +80,11 @@
     }
   }
 
+  // Reject non-pack operands before ISA routing: routing itself combines and
+  // compares ISA values whose ADL also sees these generic binary operators.
   /// \ingroup wide_values
   /// Apply `+` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a + b; }
   simd_nodiscard simd_inline constexpr auto operator+(A const & a, B const & b)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_dispatch(a,b,SIMD_WIDE_DETAIL::wide_add{}))) {
@@ -91,7 +93,7 @@
 
   /// \ingroup wide_values
   /// Apply `-` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a - b; }
   simd_nodiscard simd_inline constexpr auto operator-(A const & a, B const & b)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_dispatch(a,b,SIMD_WIDE_DETAIL::wide_sub{}))) {
@@ -100,7 +102,7 @@
 
   /// \ingroup wide_values
   /// Apply `*` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a * b; }
   simd_nodiscard simd_inline constexpr auto operator*(A const & a, B const & b)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_dispatch(a,b,SIMD_WIDE_DETAIL::wide_mul{}))) {
@@ -109,7 +111,7 @@
 
   /// \ingroup wide_values
   /// Apply `/` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a / b; }
   simd_nodiscard simd_inline constexpr auto operator/(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x / y) { return x / y; },
@@ -118,7 +120,7 @@
 
   /// \ingroup wide_values
   /// Apply `%` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a % b; }
   simd_nodiscard simd_inline constexpr auto operator%(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x % y) { return x % y; },
@@ -127,7 +129,7 @@
 
   /// \ingroup wide_values
   /// Apply `&` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a & b; }
   simd_nodiscard simd_inline constexpr auto operator&(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x & y) { return x & y; },
@@ -136,7 +138,7 @@
 
   /// \ingroup wide_values
   /// Apply `|` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a | b; }
   simd_nodiscard simd_inline constexpr auto operator|(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x | y) { return x | y; },
@@ -145,7 +147,7 @@
 
   /// \ingroup wide_values
   /// Apply `^` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a ^ b; }
   simd_nodiscard simd_inline constexpr auto operator^(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x ^ y) { return x ^ y; },
@@ -154,7 +156,7 @@
 
   /// \ingroup wide_values
   /// Apply `<<` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a << b; }
   simd_nodiscard simd_inline constexpr auto operator<<(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x << y) { return x << y; },
@@ -163,7 +165,7 @@
 
   /// \ingroup wide_values
   /// Apply `>>` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a >> b; }
   simd_nodiscard simd_inline constexpr auto operator>>(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >> y) { return x >> y; },
@@ -172,7 +174,7 @@
 
   /// \ingroup wide_values
   /// Apply `==` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a == b; }
   simd_nodiscard simd_inline constexpr auto operator==(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x == y) { return x == y; },
@@ -181,7 +183,7 @@
 
   /// \ingroup wide_values
   /// Apply `!=` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a != b; }
   simd_nodiscard simd_inline constexpr auto operator!=(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x != y) { return x != y; },
@@ -190,7 +192,7 @@
 
   /// \ingroup wide_values
   /// Apply `<` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a < b; }
   simd_nodiscard simd_inline constexpr auto operator<(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x < y) { return x < y; },
@@ -199,7 +201,7 @@
 
   /// \ingroup wide_values
   /// Apply `>` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a > b; }
   simd_nodiscard simd_inline constexpr auto operator>(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x > y) { return x > y; },
@@ -208,7 +210,7 @@
 
   /// \ingroup wide_values
   /// Apply `<=` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a <= b; }
   simd_nodiscard simd_inline constexpr auto operator<=(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x <= y) { return x <= y; },
@@ -217,7 +219,7 @@
 
   /// \ingroup wide_values
   /// Apply `>=` to corresponding elements; a non-pack argument is broadcast.
-  template<class A, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,A,B> && SIMD_WIDE_DETAIL::wide_arguments<A, B> &&
+  template<class A, class B> requires SIMD_WIDE_DETAIL::wide_arguments<A, B> && (::simd::detail::wide_target<A,B> == SIMD_WIDE_INDEX) &&
     requires(SIMD_WIDE_DETAIL::wide_element_t<A> const & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a >= b; }
   simd_nodiscard simd_inline constexpr auto operator>=(A const & a, B const & b) {
     return SIMD_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >= y) { return x >= y; },
@@ -226,35 +228,35 @@
 
   /// \ingroup wide_values
   /// Apply unary `+` to each element, retaining its result type.
-  template<class T, std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && requires(T const & a) { +a; }
+  template<class T, std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && requires(T const & a) { +a; }
   simd_nodiscard simd_inline constexpr auto operator+(wide<T, N> const & a) {
     return SIMD_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(+x) { return +x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Apply unary `-` to each element, retaining its result type.
-  template<class T, std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && requires(T const & a) { -a; }
+  template<class T, std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && requires(T const & a) { -a; }
   simd_nodiscard simd_inline constexpr auto operator-(wide<T, N> const & a) {
     return SIMD_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(-x) { return -x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Apply unary `~` to each element, retaining its result type.
-  template<class T, std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && requires(T const & a) { ~a; }
+  template<class T, std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && requires(T const & a) { ~a; }
   simd_nodiscard simd_inline constexpr auto operator~(wide<T, N> const & a) {
     return SIMD_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(~x) { return ~x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Apply unary `!` to each element, retaining its result type.
-  template<class T, std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && requires(T const & a) { !a; }
+  template<class T, std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && requires(T const & a) { !a; }
   simd_nodiscard simd_inline constexpr auto operator!(wide<T, N> const & a) {
     return SIMD_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(!x) { return !x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `+=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_batch_assignable<wide<T,N>,B,SIMD_WIDE_DETAIL::wide_add> ||
       ((SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a += b; }))
@@ -272,7 +274,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `-=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_batch_assignable<wide<T,N>,B,SIMD_WIDE_DETAIL::wide_sub> ||
       ((SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a -= b; }))
@@ -290,7 +292,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `*=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_batch_assignable<wide<T,N>,B,SIMD_WIDE_DETAIL::wide_mul> ||
       ((SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
         requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a *= b; }))
@@ -308,7 +310,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `/=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a /= b; }
   simd_inline constexpr wide<T, N> & operator/=(wide<T, N> & a, B const & b) {
@@ -317,7 +319,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `%=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a %= b; }
   simd_inline constexpr wide<T, N> & operator%=(wide<T, N> & a, B const & b) {
@@ -326,7 +328,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `&=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a &= b; }
   simd_inline constexpr wide<T, N> & operator&=(wide<T, N> & a, B const & b) {
@@ -335,7 +337,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `|=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a |= b; }
   simd_inline constexpr wide<T, N> & operator|=(wide<T, N> & a, B const & b) {
@@ -344,7 +346,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `^=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a ^= b; }
   simd_inline constexpr wide<T, N> & operator^=(wide<T, N> & a, B const & b) {
@@ -353,7 +355,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `<<=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a <<= b; }
   simd_inline constexpr wide<T, N> & operator<<=(wide<T, N> & a, B const & b) {
@@ -362,7 +364,7 @@
 
   /// \ingroup wide_values
   /// Update the left pack with elementwise `>>=`; a scalar right side is broadcast.
-  template<class T, std::size_t N, class B> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+  template<class T, std::size_t N, class B> requires (::simd::detail::wide_target<T,B> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
     (SIMD_WIDE_DETAIL::wide_traits<B>::value || std::copy_constructible<B>) &&
     requires(T & a, SIMD_WIDE_DETAIL::wide_element_t<B> const & b) { a >>= b; }
   simd_inline constexpr wide<T, N> & operator>>=(wide<T, N> & a, B const & b) {
@@ -504,28 +506,28 @@
   /// \ingroup wide_values
   /// Classify each element as finite, preserving its actual bool or mask result type.
   /// The result construction and ADL call both contribute to conditional `noexcept`.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_isfinite,T>
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_isfinite,T>
   simd_nodiscard simd_inline constexpr auto isfinite(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_isfinite>(input))) {
     return SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_isfinite>(input);
   }
   /// \ingroup wide_values
   /// Classify infinities using the element operation and its actual result type.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_isinf,T>
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_isinf,T>
   simd_nodiscard simd_inline constexpr auto isinf(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_isinf>(input))) {
     return SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_isinf>(input);
   }
   /// \ingroup wide_values
   /// Classify NaNs using the element operation and its actual result type.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_isnan,T>
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_isnan,T>
   simd_nodiscard simd_inline constexpr auto isnan(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_isnan>(input))) {
     return SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_isnan>(input);
   }
   /// \ingroup wide_values
   /// Read each element's sign predicate, retaining its actual mask or bool type.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_signbit,T>
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_signbit,T>
   simd_nodiscard simd_inline constexpr auto signbit(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_signbit>(input))) {
     return SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_signbit>(input);
@@ -533,7 +535,7 @@
   /// \ingroup wide_values
   /// Copy signs from `b` to `a` using the homogeneous element operation.
   /// The result construction and ADL call both contribute to conditional `noexcept`.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_copysign,T,T> &&
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_copysign,T,T> &&
     std::same_as<SIMD_WIDE_DETAIL::wide_result<SIMD_WIDE_DETAIL::wide_copysign,T,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> copysign(wide<T,N> const & a,wide<T,N> const & b)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_copysign>(a,b))) {
@@ -542,7 +544,7 @@
   /// \ingroup wide_values
   /// Round each element down, using its ADL operation and retaining the element type.
   /// The result construction and ADL call both contribute to conditional `noexcept`.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_floor,T> &&
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_floor,T> &&
     std::same_as<SIMD_WIDE_DETAIL::wide_result<SIMD_WIDE_DETAIL::wide_floor,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> floor(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_floor>(input))) {
@@ -550,7 +552,7 @@
   }
   /// \ingroup wide_values
   /// Round each element up, using its ADL operation and retaining the element type.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_ceil,T> &&
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_ceil,T> &&
     std::same_as<SIMD_WIDE_DETAIL::wide_result<SIMD_WIDE_DETAIL::wide_ceil,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> ceil(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_ceil>(input))) {
@@ -558,7 +560,7 @@
   }
   /// \ingroup wide_values
   /// Round each element toward zero, using its ADL operation and retaining the element type.
-  template<class T,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T> && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_trunc,T> &&
+  template<class T,std::size_t N> requires (::simd::detail::wide_target<T> == SIMD_WIDE_INDEX) && SIMD_WIDE_DETAIL::wide_value_operation<N,SIMD_WIDE_DETAIL::wide_trunc,T> &&
     std::same_as<SIMD_WIDE_DETAIL::wide_result<SIMD_WIDE_DETAIL::wide_trunc,T>,T>
   simd_nodiscard simd_inline constexpr wide<T,N> trunc(wide<T,N> const & input)
       noexcept(noexcept(SIMD_WIDE_DETAIL::wide_map<SIMD_WIDE_DETAIL::wide_trunc>(input))) {
@@ -566,13 +568,13 @@
   }
   /// \ingroup wide_values
   /// Copy one value to a pack with the explicitly selected extent.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R>
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX)
   simd_nodiscard simd_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
     return wide<R,N>::broadcast(value);
   }
   /// \ingroup wide_values
   /// Apply the element library's absolute-value operation.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_abs(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_abs(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> abs(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_abs(a); })
@@ -593,7 +595,7 @@
   /// \ingroup wide_values
   /// Apply the element library's square-root operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_sqrt(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_sqrt(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> sqrt(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_sqrt(a); })
@@ -614,7 +616,7 @@
   /// \ingroup wide_values
   /// Apply the element library's sine operation in radians.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_sin(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_sin(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> sin(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_sin(a); })
@@ -635,7 +637,7 @@
   /// \ingroup wide_values
   /// Apply the element library's cosine operation in radians.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_cos(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_cos(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> cos(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_cos(a); })
@@ -656,7 +658,7 @@
   /// \ingroup wide_values
   /// Apply exponential; pass the compile-time Flush tag when the element supports it.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<bool Flush = false,class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_exp<Flush>(x); }
+  template<bool Flush = false,class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_exp<Flush>(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> exp(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_exp<Flush>(a); })
@@ -677,7 +679,7 @@
   /// \ingroup wide_values
   /// Apply the element library's exp(x)-1 operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_expm1(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_expm1(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> expm1(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_expm1(a); })
@@ -698,7 +700,7 @@
   /// \ingroup wide_values
   /// Apply the element library's natural logarithm.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_log(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_log(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> log(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_log(a); })
@@ -719,7 +721,7 @@
   /// \ingroup wide_values
   /// Apply the element library's log(1+x) operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_log1p(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_log1p(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> log1p(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_log1p(a); })
@@ -740,7 +742,7 @@
   /// \ingroup wide_values
   /// Apply the element library's hyperbolic tangent.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_tanh(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_tanh(x); }
   simd_nodiscard simd_inline constexpr wide<R,N> tanh(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_tanh(a); })
@@ -761,7 +763,7 @@
   /// \ingroup wide_values
   /// Apply the element library's atan2(y,x), preserving argument order.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_atan2(x,x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_atan2(x,x); }
   simd_nodiscard simd_inline constexpr wide<R,N> atan2(wide<R,N> const & y,wide<R,N> const & x)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { SIMD_WIDE_DETAIL::adl_atan2(a,a); })
@@ -785,7 +787,7 @@
   /// \ingroup wide_values
   /// Apply the element library's fused multiply-add to corresponding elements.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_fma(x,x,x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_fma(x,x,x); }
   simd_nodiscard simd_inline constexpr wide<R,N> fma(wide<R,N> const & a,wide<R,N> const & b,wide<R,N> const & c)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & x) { SIMD_WIDE_DETAIL::adl_fma(x,x,x); })
@@ -810,7 +812,7 @@
   /// \ingroup wide_values
   /// Return paired sine and cosine packs using the element's paired operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<class R,std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R> && requires(R const & x) { SIMD_WIDE_DETAIL::adl_sincos(x); }
+  template<class R,std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX) && requires(R const & x) { SIMD_WIDE_DETAIL::adl_sincos(x); }
   simd_nodiscard simd_inline constexpr auto sincos(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & x) { SIMD_WIDE_DETAIL::adl_sincos(x); })
@@ -834,7 +836,7 @@
   }
   /// \ingroup wide_values
   /// Choose from `a` or `b` according to the corresponding element mask.
-  template <class R, std::size_t N> requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,R>
+  template <class R, std::size_t N> requires (::simd::detail::wide_target<R> == SIMD_WIDE_INDEX)
   simd_nodiscard simd_inline wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
       wide<R, N> const & a, wide<R, N> const & b)
       noexcept([] {

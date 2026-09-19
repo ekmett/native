@@ -8,9 +8,11 @@ import simd.scalar;
 #endif
 #include <simd/targets.h>
 #define SCALAR_TARGETS(X,...) X(scalar,__VA_ARGS__)
-#define SCALAR_BODY(name,tag) int name(tag,int value) { return value+1; }
+#define SCALAR_BODY(name,tag) \
+  template<simd::isa A> requires(A == tag) \
+  int name(int value) { return value+1; }
 SIMD_TARGET_VARIANTS(source_scalar,SCALAR_TARGETS,SCALAR_BODY)
 #undef SCALAR_BODY
 #define EMPTY_TARGETS(X,...)
 static_assert(sizeof(SIMD_TARGET_LIST(EMPTY_TARGETS))==1);
-int scalar_result(int value) { return source_scalar(simd::scalar{},value); }
+int scalar_result(int value) { return source_scalar<simd::scalar>(value); }

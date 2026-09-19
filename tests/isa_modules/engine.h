@@ -7,18 +7,15 @@
 #include <array>
 #include <concepts>
 #include <utility>
+#include "../../src/simd/isa.h"
 
 namespace simd {
-  struct avx2 {};
-  struct avx512 {};
-  template<class T,std::size_t N,class Arch> struct vec;
-  template<class Arch,class... X> requires(sizeof...(X)>0 && (std::same_as<X,float>&&...))
-  vec(Arch,X...)->vec<float,sizeof...(X),Arch>;
+  template<class T,std::size_t N,isa Arch> struct vec;
 }
 namespace fixture {
   // One ordinary definition, instantiated in each selected-ISA translation unit.
   // There is no source reinclusion or namespace rewriting in consumer code.
-  template<class Arch, std::size_t Lanes>
+  template<simd::isa Arch, std::size_t Lanes>
   struct engine {
     using value_type = simd::vec<float,Lanes,Arch>;
 

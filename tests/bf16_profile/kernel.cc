@@ -22,7 +22,7 @@ template<std::size_t N> constexpr bool shape() {
   static_assert(simd::test::bf16_storage_only<B>);
   static_assert(sizeof(B) == 2*N && alignof(B) == 2*N && std::is_trivially_copyable_v<B>);
   static_assert(sizeof(simd::bf16) == 2 && B::mask::compact && B::lanes == N);
-  static_assert(std::same_as<decltype(simd::vec(simd::avx512_bf16{},std::array<simd::bf16,N>{})),B>);
+  static_assert(std::same_as<decltype(simd::vec<simd::bf16,N,simd::avx512_bf16>(std::array<simd::bf16,N>{})),B>);
   static_assert(std::same_as<decltype(simd::dot2(B{},B{},F{})),F>);
   static_assert(noexcept(simd::dot2(B{},B{},F{})) && !addable<B>);
   return true;
@@ -43,7 +43,7 @@ extern "C" simd_noinline void bf16_dot2(std::uint16_t const * a, std::uint16_t c
 }
 
 template<std::size_t... I> auto lane_construction(std::index_sequence<I...>) {
-  return simd::vec(simd::avx512_bf16{},simd::bf16::from_bits(std::uint16_t(I))...);
+  return simd::vec<simd::bf16,sizeof...(I),simd::avx512_bf16>(simd::bf16::from_bits(std::uint16_t(I))...);
 }
 template<std::size_t N> bool storage() {
   using B = bf16_vector<N>;

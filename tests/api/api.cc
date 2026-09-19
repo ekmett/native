@@ -13,19 +13,21 @@
 #include <utility>
 #if API_AVX512
 import simd;
-using selected_arch = simd::avx512;
+constexpr auto selected_arch = simd::avx512;
 #elif API_NEON
 import simd;
-using selected_arch = simd::neon;
+constexpr auto selected_arch = simd::neon;
 #else
 import simd;
-using selected_arch = simd::avx2;
+constexpr auto selected_arch = simd::avx2;
 #endif
 import simd.wide;
 import simd.memory;
 import simd.types;
 import simd.static_string;
 import simd.numerics;
+static_assert((selected_arch & simd::feature::aes).has(selected_arch));
+static_assert(simd::feature::avx2 < (simd::feature::avx2 & simd::feature::fma));
 #if !API_NEON
 import simd.cpuid;
 import simd.wait;
@@ -35,12 +37,12 @@ namespace {
 void check(bool value) { if (!value) std::abort(); }
 
 //! [vector_construction]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void vector_construction() {
   using V = simd::vec<float, 4, Arch>;
   V zero{};
   V repeated(2.f);
-  auto lanes = simd::vec(Arch{}, 1.f, 2.f, 3.f, 4.f);
+  auto lanes = V{1.f, 2.f, 3.f, 4.f};
   static_assert(std::same_as<decltype(lanes), V>);
   check(all(zero == V(0.f)));
   check(all(repeated == V(2.f)));
@@ -48,7 +50,7 @@ void vector_construction() {
 //! [vector_construction]
 
 //! [masks]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void masks() {
   using V = simd::vec<float, 4, Arch>;
   V x{1.f, 2.f, 3.f, 4.f};
@@ -64,7 +66,7 @@ void masks() {
 //! [masks]
 
 //! [memory]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void memory() {
   using V = simd::vec<float, 4, Arch>;
   std::array<float, 4> input{1.f, 2.f, 3.f, 4.f};
@@ -79,7 +81,7 @@ void memory() {
 //! [memory]
 
 //! [compaction]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void compaction() {
   using V = simd::vec<std::uint32_t, 4, Arch>;
   auto active = V::mask::from_bitset(0b1010);
@@ -95,7 +97,7 @@ void compaction() {
 //! [compaction]
 
 //! [swizzles]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void swizzles() {
   using V = simd::vec<float, 3, Arch>;
   V position{1.f, 2.f, 3.f};
@@ -108,7 +110,7 @@ void swizzles() {
 //! [swizzles]
 
 //! [arithmetic]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void arithmetic() {
   using V = simd::vec<float, 4, Arch>;
   auto y = fma(V(2.f), V(3.f), V(1.f));
@@ -122,7 +124,7 @@ void arithmetic() {
 //! [arithmetic]
 
 //! [rounding]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void rounding() {
   using V = simd::vec<float, 4, Arch>;
   V x{-1.75f, -0.25f, 0.25f, 1.75f};
@@ -133,7 +135,7 @@ void rounding() {
 //! [rounding]
 
 //! [exponential]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void exponential() {
   using V = simd::vec<float, 4, Arch>;
   std::array<V, 2> registers{V(0.f), V(1.f)};
@@ -144,7 +146,7 @@ void exponential() {
 //! [exponential]
 
 //! [bit_transport]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void bit_transport() {
   using V = simd::vec<float, 4, Arch>;
   auto tiny = V::from_bits(0x80000001u);
@@ -156,7 +158,7 @@ void bit_transport() {
 //! [bit_transport]
 
 //! [wide_values]
-template<simd::architecture Arch>
+template<simd::isa Arch>
 void wide_values() {
   using V = simd::vec<float, 4, Arch>;
   simd::wide batch{V(1.f), V(2.f), V(3.f)};

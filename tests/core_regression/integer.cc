@@ -165,12 +165,12 @@ static_assert((test_vec<int32_t,1>(0x7fffffffu)+1).value==std::numeric_limits<in
 static_assert((test_vec<int64_t,1>(-1)>>imm<63>).value==-1);
 static_assert(any(test_vec<int32_t,1>(-1)<test_vec<int32_t,1>(0)));
 int main() {
-  static_assert(std::same_as<decltype(simd::vec{test_arch{},int32_t(1)}), test_vec<int32_t, 1>>);
+  static_assert(std::same_as<decltype(test_vec<int32_t,1>{int32_t(1)}), test_vec<int32_t, 1>>);
 #if defined(__AVX2__) || defined(__ARM_NEON)
-  static_assert(std::same_as<decltype(simd::vec{test_arch{},int32_t(1), int32_t(2), int32_t(3), int32_t(4)}), test_vec<int32_t, 4>>);
+  static_assert(std::same_as<decltype(test_vec<int32_t,4>{int32_t(1), int32_t(2), int32_t(3), int32_t(4)}), test_vec<int32_t, 4>>);
 #endif
 #if defined(__AVX2__) || defined(__ARM_NEON)
-  simd::vec mixed{test_arch{},int16_t(1), uint16_t(2), int32_t(3), int32_t(4)};
+  test_vec<int32_t,4> mixed{int16_t(1), uint16_t(2), int32_t(3), int32_t(4)};
   static_assert(std::same_as<decltype(mixed), test_vec<int32_t, 4>>);
   std::array<int32_t, 4> lanes{};
   simd::store_simd(lanes.data(), mixed);

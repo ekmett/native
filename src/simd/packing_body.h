@@ -4,10 +4,10 @@
 
 namespace simd {
   /// Deposit the low popcount(mask) bits into mask's set positions, in order.
-  /// The architecture tag selects an admitted instruction profile.
-  template<SIMD_ARCH_CONCEPT Arch>
+  /// The ISA template argument selects an admitted instruction profile.
+  template<::simd::isa Arch> requires SIMD_ARCH_REQUIRES(Arch)
   simd_nodiscard simd_inline simd_const std::uint64_t deposit_bits(
-      Arch, std::uint64_t value, std::uint64_t mask) noexcept {
+      std::uint64_t value, std::uint64_t mask) noexcept {
 #if SIMD_HAS_AVX2
     return _pdep_u64(value, mask);
 #else
@@ -25,8 +25,8 @@ namespace simd {
 #if SIMD_HAS_AVX2 || SIMD_HAS_ARM_NEON
   /// Truncate unsigned lanes to half their width and concatenate a then b.
   /// This preserves lane order and low bits; it does not saturate.
-  template <simd_integer_element To, simd_integer_element From, std::size_t N, SIMD_ARCH_CONCEPT Arch>
-    requires (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
+  template <simd_integer_element To, simd_integer_element From, std::size_t N, ::simd::isa Arch>
+    requires SIMD_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From) == 2 * sizeof(To) && N * sizeof(From) >= 16 &&
       requires { sizeof(vec<From, N, Arch>); sizeof(vec<To, 2 * N, Arch>); })
   simd_nodiscard simd_inline simd_const vec<To, 2 * N, Arch> narrow_concat(

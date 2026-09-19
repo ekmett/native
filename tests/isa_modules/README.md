@@ -13,7 +13,7 @@ replace or claim complete coverage of the production API.
 
 The `simd::vec<T,N,Arch>` fixture specializations have
 private ISA flags.
-One generic `fixture::engine<Arch,Lanes>` supplies the architecture type
+One generic `fixture::engine<Arch,Lanes>` supplies the architecture value
 and finds arithmetic through ADL. The dispatcher has no ISA imports or IPO;
 its guard permits the configured minimum and rejects AVX-512 flags unless
 minimal feature metadata explicitly enables them. It checks

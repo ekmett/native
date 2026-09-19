@@ -3,6 +3,7 @@
 #pragma once
 #include "simd/attributes.h"
 #include "simd/isa.h"
+#include "simd/value_traits.h"
 
 #include <array>
 #include <concepts>
@@ -30,40 +31,38 @@ namespace simd {
 
   namespace detail {
     template<class T, class = void> struct wide_features {
-      static constexpr feature_set value = 0;
+      static constexpr isa value=scalar;
     };
-    template<class T> struct wide_features<T,std::void_t<typename T::architecture>> {
-      static constexpr feature_set value = [] {
-        if constexpr (architecture<typename T::architecture>) return T::architecture::features;
-        else return feature_set{0};
-      }();
+    template<class T> struct wide_features<T,std::void_t<decltype(T::architecture)>> {
+      static constexpr isa value=value_architecture_v<T>;
     };
     template<class T,std::size_t N> struct wide_features<wide<T,N>> : wide_features<T> {};
     template<class T,std::size_t N> struct wide_features<std::array<T,N>> : wide_features<T> {};
+    template<class T,class U> struct wide_features<std::pair<T,U>> {
+      static constexpr isa value=wide_features<std::remove_cvref_t<T>>::value &
+        wide_features<std::remove_cvref_t<U>>::value;
+    };
     // Only operands with a SIMD architecture participate. Scalar/custom values
     // retain the generic ADL path. Arrays and nested packs contribute their
     // element features; mixed conversions use the union of both endpoints.
-    constexpr unsigned wide_family(feature_set bits) {
-      constexpr auto base512 = avx2::features | feature::avx512f | feature::avx512dq;
-      if ((bits & base512) == base512)
-        return 2 + ((bits & feature_set(feature::avx512bw)) ? 1 : 0) +
-          ((bits & feature_set(feature::avx512vl)) ? 2 : 0) +
-          ((bits & feature_set(feature::avx512_bf16)) ? 4 : 0) +
-          ((bits & feature_set(feature::avx512_fp16)) ? 8 : 0);
-      if ((bits & avx2::features) == avx2::features) return 1;
-      if (bits & feature_set(feature::neon))
-        return 20 + ((bits & feature_set(feature::neon_bf16)) ? 1 : 0) +
-          ((bits & feature_set(feature::neon_fp16)) ? 2 : 0);
-      return 0;
-    }
-    template<unsigned Family,class... T> concept wide_family_is =
-      wide_family((feature_set{0} | ... | wide_features<std::remove_cvref_t<T>>::value)) == Family;
-    // MSVC's empty array can own a dummy T with a nontrivial constructor.
+    template<class... T> inline constexpr auto wide_target=[] {
+      constexpr isa bits=(scalar & ... & wide_features<std::remove_cvref_t<T>>::value);
+      // A custom cross-host conversion combines both hosts. Preserve the
+      // previous operand-union preference for its x86 declaration scope.
+      constexpr isa x86=intersection(bits,x86_features), arm=intersection(bits,arm_features);
+      constexpr isa selected=x86!=scalar && arm!=scalar ? (avx2<=bits ? x86 : arm) : bits;
+      return abi_lookup<selected,wide_kernel_policies>::index;
+    }();
+    template<class T> inline constexpr bool wide_equivalent_default=
+      value_traits<std::remove_cv_t<T>>::aggregate_default;
+    // MSVC's array can own a T with an attributed nontrivial constructor,
+    // including a dummy element at N == 0.
     // Aggregate-initialize that storage in T's target scope, bypassing the
     // library's unattributed implicit array constructor. Leave trivial/deleted
-    // defaults and every nonempty pack on the original defaulted path.
-    template<class T,std::size_t N> inline constexpr bool wide_empty_default =
-      N == 0 && std::is_default_constructible_v<T> &&
+    // defaults on the original defaulted path. Nonempty packs opt in only when
+    // their concrete element guarantees equivalent default/value initialization.
+    template<class T,std::size_t N> inline constexpr bool wide_target_default =
+      (N == 0 || wide_equivalent_default<T>) && std::is_default_constructible_v<T> &&
       !std::is_trivially_default_constructible_v<T> &&
       std::is_default_constructible_v<std::array<T,N>> &&
       !std::is_trivially_default_constructible_v<std::array<T,N>>;
@@ -87,7 +86,7 @@ namespace simd {
     alignas(T) std::array<T, N> registers;
 
     /// Default-initialize the underlying array. Use `wide{}` for value initialization.
-    constexpr wide() requires (!detail::wide_empty_default<T,N>) = default;
+    constexpr wide() requires (!detail::wide_target_default<T,N>) = default;
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
     simd_nodiscard simd_inline constexpr T & get() & noexcept simd_lifetimebound { return registers[I]; }
@@ -103,162 +102,162 @@ namespace simd {
 
   private:
     struct conversion_tag {};
-#define SIMD_WIDE_FAMILY 0
+#define SIMD_WIDE_INDEX 15
 #define SIMD_WIDE_DETAIL detail::wide_generic_detail
 #define SIMD_WIDE_TARGET
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 1
+#define SIMD_WIDE_INDEX 10
 #define SIMD_WIDE_DETAIL detail::wide_avx2_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_1)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 2
+#define SIMD_WIDE_INDEX 9
 #define SIMD_WIDE_DETAIL detail::wide_avx512_base_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_2)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 3
+#define SIMD_WIDE_INDEX 7
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_3)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 4
+#define SIMD_WIDE_INDEX 8
 #define SIMD_WIDE_DETAIL detail::wide_avx512_vl_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512vl")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_4)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 5
+#define SIMD_WIDE_INDEX 3
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_5)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 7
+#define SIMD_WIDE_INDEX 5
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_bf16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_7)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 9
+#define SIMD_WIDE_INDEX 1
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_bf16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_9)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 11
+#define SIMD_WIDE_INDEX 6
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_fp16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512fp16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_11)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 13
+#define SIMD_WIDE_INDEX 2
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_fp16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_13)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 15
+#define SIMD_WIDE_INDEX 4
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_bf16_fp16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_15)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 17
+#define SIMD_WIDE_INDEX 0
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_bf16_fp16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_17)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 20
+#define SIMD_WIDE_INDEX 14
 #define SIMD_WIDE_DETAIL detail::wide_neon_detail
-#define SIMD_WIDE_TARGET __attribute__((target("neon")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_20)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 21
+#define SIMD_WIDE_INDEX 12
 #define SIMD_WIDE_DETAIL detail::wide_neon_bf16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("neon,bf16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_21)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 22
+#define SIMD_WIDE_INDEX 13
 #define SIMD_WIDE_DETAIL detail::wide_neon_fp16_detail
-#define SIMD_WIDE_TARGET __attribute__((target("neon,fullfp16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_22)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 23
+#define SIMD_WIDE_INDEX 11
 #define SIMD_WIDE_DETAIL detail::wide_neon_half_detail
-#define SIMD_WIDE_TARGET __attribute__((target("neon,fullfp16,bf16")))
+#define SIMD_WIDE_TARGET __attribute__((target(SIMD_KERNEL_TARGET_23)))
 #include "simd/wide_members.h"
 #undef SIMD_WIDE_TARGET
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
   };
@@ -266,160 +265,160 @@ namespace simd {
   template<class T, class... U> requires (std::same_as<T,U> && ...)
   wide(T,U...) -> wide<T,1 + sizeof...(U)>;
 
-#define SIMD_WIDE_FAMILY 0
+#define SIMD_WIDE_INDEX 15
 #define SIMD_WIDE_DETAIL detail::wide_generic_detail
 #include "simd/wide_operations.h"
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 1
+#define SIMD_WIDE_INDEX 10
 #define SIMD_WIDE_DETAIL detail::wide_avx2_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_1))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 2
+#define SIMD_WIDE_INDEX 9
 #define SIMD_WIDE_DETAIL detail::wide_avx512_base_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_2))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 3
+#define SIMD_WIDE_INDEX 7
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_3))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 4
+#define SIMD_WIDE_INDEX 8
 #define SIMD_WIDE_DETAIL detail::wide_avx512_vl_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512vl"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_4))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 5
+#define SIMD_WIDE_INDEX 3
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_5))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 7
+#define SIMD_WIDE_INDEX 5
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_bf16_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_7))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 9
+#define SIMD_WIDE_INDEX 1
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_bf16_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_9))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 11
+#define SIMD_WIDE_INDEX 6
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_fp16_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512fp16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_11))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 13
+#define SIMD_WIDE_INDEX 2
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_fp16_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_13))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 15
+#define SIMD_WIDE_INDEX 4
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_bf16_fp16_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_15))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__x86_64__) || defined(_M_X64)
-#define SIMD_WIDE_FAMILY 17
+#define SIMD_WIDE_INDEX 0
 #define SIMD_WIDE_DETAIL detail::wide_avx512_bw_vl_bf16_fp16_detail
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_17))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 20
+#define SIMD_WIDE_INDEX 14
 #define SIMD_WIDE_DETAIL detail::wide_neon_detail
-#pragma clang attribute push(__attribute__((target("neon"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_20))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 21
+#define SIMD_WIDE_INDEX 12
 #define SIMD_WIDE_DETAIL detail::wide_neon_bf16_detail
-#pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_21))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 22
+#define SIMD_WIDE_INDEX 13
 #define SIMD_WIDE_DETAIL detail::wide_neon_fp16_detail
-#pragma clang attribute push(__attribute__((target("neon,fullfp16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_22))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-#define SIMD_WIDE_FAMILY 23
+#define SIMD_WIDE_INDEX 11
 #define SIMD_WIDE_DETAIL detail::wide_neon_half_detail
-#pragma clang attribute push(__attribute__((target("neon,fullfp16,bf16"))), apply_to=function)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_23))), apply_to=function)
 #include "simd/wide_operations.h"
 #pragma clang attribute pop
 #undef SIMD_WIDE_DETAIL
-#undef SIMD_WIDE_FAMILY
+#undef SIMD_WIDE_INDEX
 #endif
 
 }

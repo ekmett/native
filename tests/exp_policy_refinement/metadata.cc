@@ -5,56 +5,60 @@
 
 namespace refinement_test {
   using namespace simd;
-  using small=isa<feature::bmi1>;
-  using large=isa<feature::aes>;
-  using combined=isa<small::features|large::features>;
-  static_assert(std::popcount(small::features)<std::popcount(large::features));
+  constexpr isa small=feature_closure(feature::bmi1);
+  constexpr isa large=feature_closure(feature::aes);
+  constexpr isa combined=small&large;
+  constexpr auto count=[](isa value) { unsigned n=0;for(auto word:value.flags)n+=std::popcount(word);return n; };
+  static_assert(count(small)<count(large));
   using first=isa_list<small,large,scalar>;
   using second=isa_list<large,scalar>;
   using joined=refinement<first,second>;
   static_assert(joined::cells.size==4);
   // Preserve the original tuple priorities while filtering impossible cells.
-  static_assert(joined::cells.records[0].choices==std::array<std::size_t,2>{0,0});
-  static_assert(joined::cells.records[1].choices==std::array<std::size_t,2>{0,1});
-  static_assert(joined::cells.records[2].choices==std::array<std::size_t,2>{1,0});
-  static_assert(joined::cells.records[3].choices==std::array<std::size_t,2>{2,1});
+  static_assert(joined::cells.records[0].choices==std::array<int,2>{0,0});
+  static_assert(joined::cells.records[1].choices==std::array<int,2>{0,1});
+  static_assert(joined::cells.records[2].choices==std::array<int,2>{1,0});
+  static_assert(joined::cells.records[3].choices==std::array<int,2>{2,1});
   static_assert(joined::agrees<scalar>() && joined::agrees<small>() &&
     joined::agrees<large>() && joined::agrees<combined>());
   // One list retains its declared priority even when a lower-priority policy
-  // has more prerequisites. Reversing that list reverses the winning type.
+  // has more prerequisites. Reversing that list reverses the winning requirement.
   using single=refinement<first>;
   using reverse=refinement<isa_list<large,small,scalar>>;
-  static_assert(std::same_as<abi_lookup<combined,single::policies>::type,small>);
-  static_assert(std::same_as<abi_lookup<combined,reverse::policies>::type,large>);
+  static_assert(abi_lookup<combined,single::policies>::architecture==small);
+  static_assert(abi_lookup<combined,reverse::policies>::architecture==large);
   static_assert(single::agrees<combined>() && reverse::agrees<combined>());
 
-  using inherited=target_entry<small,feature_set(feature::aes)>;
+  constexpr auto inherited=target_entry{small,feature::aes};
   using minimum=refinement<isa_list<inherited,small>,isa_list<large,scalar>>;
   static_assert(minimum::agrees<small>() && minimum::agrees<combined>());
   static_assert(minimum::cells.size==2);
-  static_assert(minimum::cells.records[0].requirements==combined::features);
+  static_assert(minimum::cells.records[0].requirements==combined);
   using mixed=refinement<isa_list<avx2,neon>,isa_list<neon,avx2>>;
   static_assert(mixed::cells.size==2);
   static_assert(mixed::agrees<avx2>() && mixed::agrees<neon>() && mixed::agrees<scalar>());
   using empty=refinement<isa_list<>,first>;
   static_assert(empty::cells.size==0 && empty::agrees<scalar>());
-  static_assert(!requires_abi<scalar,empty::policies,abi_npos>);
+  static_assert(abi_lookup<scalar,empty::policies>::index == -1);
 
   template<std::size_t K> consteval bool check_exp_boundary() {
-    constexpr feature_set bits=avx2::features |
-      ((K&1)?feature_set(feature::avx512f):0) |
-      ((K&2)?feature_set(feature::avx512dq):0) |
-      ((K&4)?feature_set(feature::avx512bw):0) |
-      ((K&8)?feature_set(feature::avx512vl):0) |
-      ((K&16)?feature_set(feature::avx512_bf16):0) |
-      ((K&32)?feature_set(feature::avx512_fp16):0) |
-      ((K&64)?feature_set(feature::aes):0);
-    return exp_refinement::agrees<isa<bits>>();
+    constexpr isa A=feature_closure(avx2 &
+      ((K&1)?isa(feature::avx512f):scalar) &
+      ((K&2)?isa(feature::avx512dq):scalar) &
+      ((K&4)?isa(feature::avx512bw):scalar) &
+      ((K&8)?isa(feature::avx512vl):scalar) &
+      ((K&16)?isa(feature::avx512bf16):scalar) &
+      ((K&32)?isa(feature::avx512fp16):scalar) &
+      ((K&64)?isa(feature::aes):scalar));
+    using selected=abi_lookup<A,exp_policies>;
+    return exp_target<A> == selected::index &&
+      !selected::architecture.has(feature::avx512bf16) &&
+      !selected::architecture.has(feature::avx512fp16);
   }
   template<std::size_t... K> consteval bool exp_boundaries(std::index_sequence<K...>) {
     return (check_exp_boundary<K>() && ...);
   }
   static_assert(exp_boundaries(std::make_index_sequence<128>{}));
-  static_assert(exp_refinement::agrees<scalar>() && exp_refinement::agrees<neon>());
+  static_assert(exp_target<scalar> == -1 && exp_target<neon> == -1);
 }
 int main() {}

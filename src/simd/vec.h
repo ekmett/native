@@ -20,37 +20,37 @@
 #undef SIMD_BACKEND_BODY
 
 #if SIMD_HOST_X86 && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
-#define SIMD_COMMON_ARCH_CONCEPT ::simd::detail::memory_avx512_bf16_architecture
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 1)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_9))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
-#undef SIMD_COMMON_ARCH_CONCEPT
-#define SIMD_COMMON_ARCH_CONCEPT ::simd::detail::memory_avx512_fp16_architecture
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"))), apply_to=function)
+#undef SIMD_COMMON_ARCH
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 2)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_13))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
-#undef SIMD_COMMON_ARCH_CONCEPT
-#define SIMD_COMMON_ARCH_CONCEPT ::simd::detail::memory_avx512_half_architecture
-#pragma clang attribute push(__attribute__((target("avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"))), apply_to=function)
+#undef SIMD_COMMON_ARCH
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 0)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_17))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
-#undef SIMD_COMMON_ARCH_CONCEPT
+#undef SIMD_COMMON_ARCH
 #endif
 
 #if SIMD_HOST_NEON && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
-#define SIMD_COMMON_ARCH_CONCEPT ::simd::detail::memory_neon_bf16_architecture
-#pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 9)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_21))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
-#undef SIMD_COMMON_ARCH_CONCEPT
-#define SIMD_COMMON_ARCH_CONCEPT ::simd::detail::memory_neon_fp16_architecture
-#pragma clang attribute push(__attribute__((target("neon,fullfp16"))), apply_to=function)
+#undef SIMD_COMMON_ARCH
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 10)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_22))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
-#undef SIMD_COMMON_ARCH_CONCEPT
-#define SIMD_COMMON_ARCH_CONCEPT ::simd::detail::memory_neon_half_architecture
-#pragma clang attribute push(__attribute__((target("neon,bf16,fullfp16"))), apply_to=function)
+#undef SIMD_COMMON_ARCH
+#define SIMD_COMMON_ARCH(...) (::simd::abi_lookup<__VA_ARGS__,::simd::detail::memory_kernel_policies>::index == 8)
+#pragma clang attribute push(__attribute__((target(SIMD_KERNEL_TARGET_23))), apply_to=function)
 #include "simd/simd/common_body.h"
 #pragma clang attribute pop
-#undef SIMD_COMMON_ARCH_CONCEPT
+#undef SIMD_COMMON_ARCH
 #endif

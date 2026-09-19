@@ -3,10 +3,37 @@
 #pragma once
 #include "refinement.h"
 #include "../../src/simd/exp_policies.h"
+#define SIMD_TARGET_exp_bw_bf16 SIMD_KERNEL_TARGET_7
+#define SIMD_TARGET_exp_bw_fp16 SIMD_KERNEL_TARGET_11
+#define SIMD_TARGET_exp_bw_half SIMD_KERNEL_TARGET_15
+#define SIMD_TARGET_exp_full_half SIMD_KERNEL_TARGET_17
+
+// Test inputs: case number, caller tag, expected one of five FP32 exp cells.
+// Extra half features must leave that selected FP32 implementation unchanged.
+#define EXP_CALLER_CASES(X) \
+  X(0,exp_full_half,0) \
+  X(1,avx512_bf16,0) \
+  X(2,avx512_fp16,0) \
+  X(3,avx512,0) \
+  X(4,exp_bw_half,1) \
+  X(5,exp_bw_bf16,1) \
+  X(6,exp_bw_fp16,1) \
+  X(7,exp_bw,1) \
+  X(8,exp_vl,2) \
+  X(9,exp_base,3) \
+  X(10,avx2,4)
+
 namespace refinement_test {
-  using raw_exp_policies=simd::detail::raw_exp_policies;
-  using result_policies=simd::detail::exp_result_policies;
-  using exp_refinement=simd::detail::exp_refinement;
-  using exp_policies=simd::detail::exp_policies;
+  using exp_policies=simd::detail::x86_kernel_policies;
+  using simd::detail::exp_target;
+  // Only the test entry points are repeated for each caller tag.
+#define CALLER_TARGET(i,name,raw) + simd::isa_list<SIMD_TARGET_ISA(name)>{}
+  using caller_targets=decltype(simd::isa_list<>{} EXP_CALLER_CASES(CALLER_TARGET));
+#undef CALLER_TARGET
 }
-#define EXP_POLICY_CELLS(X) SIMD_EXP_POLICY_CELLS(X)
+
+#define CHECK_EXP_CALLER(i,name,raw) \
+  static_assert((simd::abi_lookup<SIMD_TARGET_ISA(name),refinement_test::caller_targets>::index == i)); \
+  static_assert((simd::detail::exp_target<SIMD_TARGET_ISA(name)> == raw));
+EXP_CALLER_CASES(CHECK_EXP_CALLER)
+#undef CHECK_EXP_CALLER

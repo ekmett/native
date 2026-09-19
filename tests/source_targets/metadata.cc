@@ -12,9 +12,15 @@ import simd;
 #endif
 
 namespace simd {
-  constexpr feature_set source_tag_adl(architecture auto tag) { return decltype(tag)::features; }
+  constexpr isa source_isa_adl(isa value) { return value; }
 }
-static_assert(source_tag_adl(simd::avx2{})==simd::avx2::features);
+static_assert(source_isa_adl(simd::avx2)==simd::avx2);
+
+template<simd::isa A> requires(A==SIMD_TARGET_ISA(avx2))
+constexpr int repeated();
+template<simd::isa A> requires(A==SIMD_TARGET_ISA(avx2))
+constexpr int repeated() { return 7; }
+static_assert(repeated<simd::avx2>()==7);
 
 namespace {
   struct x86_snapshot {
@@ -28,38 +34,39 @@ namespace {
     bool baseline_observed=true,fp=true,asimd=true;
     bool fp16_observed=true,scalar_fp16=true,vector_fp16=true;
     bool bf16_observed=true,bf16=true;
-    std::uint64_t extra_observed=~0ull,extra_features=~0ull;
+    simd::isa extra_observed=simd::detail::arm_features,extra_features=simd::detail::arm_features;
   };
-  using plain_avx2=simd::isa<simd::feature::avx2>;
-  using combined=simd::isa<simd::avx512_fp16::features|simd::feature::avx512_bf16>;
-  static_assert(std::same_as<combined,simd::isa<simd::avx512_bf16::features|simd::feature::avx512_fp16>>);
-  static_assert(!simd::has_feature<plain_avx2,simd::feature::fma>);
-  static_assert(!simd::has_feature<plain_avx2,simd::feature::bmi1>);
-  static_assert(!simd::has_feature<plain_avx2,simd::feature::bmi2>);
-  static_assert(!simd::has_feature<plain_avx2,simd::feature::f16c>);
-  static_assert(simd::has_feature<simd::isa<simd::feature::avx512f>,simd::feature::f16c>);
-  static_assert(simd::has_feature<simd::isa<simd::feature::avx512f>,simd::feature::fma>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(avx2),simd::avx2>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(scalar),simd::scalar>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(avx512),simd::avx512>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(avx512_bf16),simd::avx512_bf16>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(avx512_fp16),simd::avx512_fp16>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(neon),simd::neon>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(neon_fp16),simd::neon_fp16>);
-  static_assert(std::same_as<SIMD_TARGET_TYPE(neon_bf16),simd::neon_bf16>);
-  static_assert(simd::target_features("avx2,no-fma")&(1ull<<63));
-  static_assert(simd::target_features("default")&(1ull<<63));
-  static_assert(simd::target_features("")==0);
-  static_assert(simd::target_features("arch=skylake")&(1ull<<63));
-  static_assert(simd::target_features("avx2,")&(1ull<<63));
-  static_assert(simd::target_features("avx2,f16c")==simd::isa<simd::feature::avx2|simd::feature::f16c>::features);
+  constexpr simd::isa plain_avx2=simd::feature::avx2;
+  constexpr auto combined=simd::avx512_fp16&simd::feature::avx512bf16;
+  static_assert(combined==(simd::avx512_bf16&simd::feature::avx512fp16));
+  static_assert(!plain_avx2.has(simd::feature::fma));
+  static_assert(!plain_avx2.has(simd::feature::bmi1));
+  static_assert(!plain_avx2.has(simd::feature::bmi2));
+  static_assert(!plain_avx2.has(simd::feature::f16c));
+  static_assert(!simd::isa(simd::feature::avx512f).has(simd::feature::f16c));
+  static_assert(simd::feature_closure(simd::feature::avx512f).has(simd::feature::f16c));
+  static_assert(simd::feature_closure(simd::feature::avx512f).has(simd::feature::fma));
+  static_assert(SIMD_TARGET_ISA(avx2)==simd::avx2);
+  static_assert(SIMD_TARGET_ISA(scalar)==simd::scalar);
+  static_assert(SIMD_TARGET_ISA(avx512)==simd::avx512);
+  static_assert(SIMD_TARGET_ISA(avx512_bf16)==simd::avx512_bf16);
+  static_assert(SIMD_TARGET_ISA(avx512_fp16)==simd::avx512_fp16);
+  static_assert(SIMD_TARGET_ISA(neon)==simd::neon);
+  static_assert(SIMD_TARGET_ISA(neon_fp16)==simd::neon_fp16);
+  static_assert(SIMD_TARGET_ISA(neon_bf16)==simd::neon_bf16);
+  static_assert(!(simd::target_features("avx2,no-fma")<=simd::detail::known_features));
+  static_assert(!(simd::target_features("default")<=simd::detail::known_features));
+  static_assert(simd::target_features("")==simd::scalar);
+  static_assert(!(simd::target_features("arch=skylake")<=simd::detail::known_features));
+  static_assert(!(simd::target_features("avx2,")<=simd::detail::known_features));
+  static_assert(simd::target_features("avx2,f16c")==simd::feature_closure(simd::feature::avx2&simd::feature::f16c));
 
   constexpr bool synthetic() {
     x86_snapshot cpu;
-    if(!simd::classify_isa(cpu,combined{}).admitted()) return false;
-    if(simd::classify_isa(cpu,simd::neon{}).admitted()) return false;
+    if(!simd::classify_isa(cpu,combined).admitted()) return false;
+    if(simd::classify_isa(cpu,simd::neon).admitted()) return false;
     // All recorded CPU requirements and every OS state component are necessary.
-    constexpr auto need=combined::features;
+    constexpr auto need=combined;
     constexpr std::uint32_t ecx=(1u<<0)|(1u<<9)|(1u<<12)|(1u<<19)|(1u<<20)|(1u<<23)|(1u<<26)|(1u<<27)|(1u<<28)|(1u<<29);
     constexpr std::uint32_t edx=(1u<<23)|(1u<<25)|(1u<<26);
     constexpr std::uint32_t ebx=(1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31);
@@ -88,14 +95,14 @@ namespace {
     cpu={};cpu.xcr0_observed=false;
     if(simd::classify_isa(cpu,need).admitted()) return false;
     cpu={};cpu.max_extended_leaf=0x80000000u;
-    if(simd::classify_isa(cpu,simd::isa<simd::feature::lzcnt>{}).admitted()) return false;
+    if(simd::classify_isa(cpu,simd::feature::lzcnt).admitted()) return false;
     cpu={};cpu.extended1_ecx=0;
-    if(simd::classify_isa(cpu,simd::isa<simd::feature::sahf>{}).admitted()) return false;
+    if(simd::classify_isa(cpu,simd::feature::sahf).admitted()) return false;
 
     arm_snapshot arm;
-    using arm_all=simd::isa<simd::neon_fp16::features|simd::feature::neon_bf16|simd::feature::arm_dotprod>;
-    if(!simd::classify_isa(arm,arm_all{}).admitted()) return false;
-    if(simd::classify_isa(arm,simd::avx2{}).admitted()) return false;
+    constexpr auto arm_all=simd::neon_fp16&simd::feature::neon_bf16&simd::feature::arm_dotprod;
+    if(!simd::classify_isa(arm,arm_all).admitted()) return false;
+    if(simd::classify_isa(arm,simd::avx2).admitted()) return false;
     for(unsigned i=0;i<8;++i) {
       arm={};
       switch(i) {
@@ -108,32 +115,32 @@ namespace {
         case 6:arm.bf16_observed=false;break;
         case 7:arm.bf16=false;break;
       }
-      if(simd::classify_isa(arm,arm_all{}).admitted()) return false;
+      if(simd::classify_isa(arm,arm_all).admitted()) return false;
     }
-    arm={};arm.extra_observed=0;
-    if(simd::classify_isa(arm,arm_all{}).admitted()) return false;
-    arm={};arm.extra_features=0;
-    if(simd::classify_isa(arm,arm_all{}).admitted()) return false;
+    arm={};arm.extra_observed={};
+    if(simd::classify_isa(arm,arm_all).admitted()) return false;
+    arm={};arm.extra_features={};
+    if(simd::classify_isa(arm,arm_all).admitted()) return false;
 
-    int calls=0;simd::feature_set selected=0;
-    auto callback=[&]<class A>(A) { ++calls;selected=A::features; };
+    int calls=0;simd::isa selected{};
+    auto callback=[&]<simd::isa A> { ++calls;selected=A; };
     cpu={};
-    if(!simd::with_isa(simd::isa_list<combined,simd::avx2>{},cpu,callback) || calls!=1 || selected!=combined::features) return false;
+    if(!simd::with_isa(simd::isa_list<combined,simd::avx2>{},cpu,callback) || calls!=1 || selected!=combined) return false;
     calls=0;cpu.xcr0=6;
-    if(!simd::with_isa(simd::isa_list<combined,simd::avx2>{},cpu,callback) || calls!=1 || selected!=simd::avx2::features) return false;
+    if(!simd::with_isa(simd::isa_list<combined,simd::avx2>{},cpu,callback) || calls!=1 || selected!=simd::avx2) return false;
     calls=0;
     if(simd::with_isa(simd::isa_list<combined>{},cpu,callback) || calls) return false;
     if(simd::with_isa(simd::isa_list<>{},cpu,callback) || calls) return false;
     // An AVX2-looking variant can inherit a stronger project minimum.
-    using inherited=simd::target_entry<simd::avx2,simd::avx512::features>;
+    constexpr auto inherited=simd::target_entry{simd::avx2,simd::avx512};
     if(simd::with_isa(simd::isa_list<inherited>{},cpu,callback) || calls) return false;
     cpu={};cpu.leaf7_1_eax=0;
-    if(simd::with_isa(simd::isa_list<simd::avx2>{},cpu,callback,simd::avx512_bf16::features) || calls) return false;
+    if(simd::with_isa(simd::isa_list<simd::avx2>{},cpu,callback,simd::avx512_bf16) || calls) return false;
     return true;
   }
   static_assert(synthetic());
 }
 int main() {
   if(!synthetic()) return 1;
-  std::puts("Canonical tags, CPU/OS admission, inherited minima, ordered selection and no-match passed.");
+  std::puts("ISA values, CPU/OS admission, inherited minima, ordered selection and no-match passed.");
 }

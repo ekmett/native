@@ -39,7 +39,7 @@ import simd;
   using native=float __attribute__((ext_vector_type(lanes))); \
   for(unsigned i=0;i<32;i+=lanes) { \
     native value;__builtin_memcpy(&value,input+i,sizeof(value)); \
-    value+=value;value=name##_native(tag{},value); \
+    value+=value;value=name##_native<tag>(value); \
     __builtin_memcpy(output+i,&value,sizeof(value)); \
   }
 #else
@@ -48,18 +48,20 @@ import simd;
   for(unsigned i=0;i<32;i+=2*lanes) { \
     simd::wide<V,2> value{V::load(input+i),V::load(input+i+lanes)}; \
     value=value+value; \
-    V first=name##_native(tag{},value.registers[0]); \
-    V second=name##_native(tag{},value.registers[1]); \
+    V first=name##_native<tag>(value.registers[0]); \
+    V second=name##_native<tag>(value.registers[1]); \
     first.store(output+i);second.store(output+i+lanes); \
   }
 #endif
 #define DOUBLE_BODY(name,tag) \
-  template<class V> __attribute__((always_inline)) inline V name##_native(tag,V value) { \
+  template<simd::isa A,class V> requires(A == tag) \
+  __attribute__((always_inline)) inline V name##_native(V value) { \
     NATIVE_DOUBLE(value) \
   } \
-  __attribute__((noinline)) void name(tag,float * output,float const * input) { \
-    constexpr unsigned lanes=simd::has_feature<tag,simd::feature::avx512f>?16: \
-      simd::has_feature<tag,simd::feature::neon>?4:8; \
+  template<simd::isa A> requires(A == tag) \
+  __attribute__((noinline)) void name(float * output,float const * input) { \
+    constexpr unsigned lanes=tag.has(simd::feature::avx512f)?16: \
+      tag.has(simd::feature::neon)?4:8; \
     DOUBLE_STEP(name,tag,lanes) \
   }
 SIMD_TARGET_VARIANTS(source_kernel,SELECTED_TARGETS,DOUBLE_BODY)
@@ -107,9 +109,9 @@ int main() {
   unsigned expected=0,executed=0,skipped=0,index=0;
 #define RUN_EACH(name,...) \
   ++index; \
-  if(simd::classify_isa(cpu,SIMD_TARGET_TYPE(name){},SIMD_TARGET_MINIMUM).admitted()) { \
+  if(simd::classify_isa(cpu,SIMD_TARGET_ISA(name),SIMD_TARGET_MINIMUM).admitted()) { \
     if(!expected) expected=index; \
-    clear();source_kernel(SIMD_TARGET_TYPE(name){},output,input); \
+    clear();source_kernel<SIMD_TARGET_ISA(name)>(output,input); \
     if(!correct()) return 2; \
     ++executed;std::printf("source target %s: executed\n",#name); \
   } else { \
@@ -118,18 +120,18 @@ int main() {
   SELECTED_TARGETS(RUN_EACH)
 #undef RUN_EACH
   unsigned calls=0;
-  simd::feature_set selected_features=0;
+  simd::isa selected_features{};
   clear();
-  auto selected=simd::with_isa(SIMD_TARGET_LIST(SELECTED_TARGETS),cpu,[&](auto tag) {
-    ++calls;selected_features=decltype(tag)::features;
-    source_kernel(tag,output,input);
+  auto selected=simd::with_isa(SIMD_TARGET_LIST(SELECTED_TARGETS),cpu,[&]<simd::isa A> {
+    ++calls;selected_features=A;
+    source_kernel<A>(output,input);
   });
   if(selected!=(executed!=0) || calls!=unsigned(selected)) return 3;
   if(!selected) return 77; // Scalar ran; this host admits no selected native body.
   if(!correct()) return 4;
   index=0;
 #define CHECK_ORDER(name,...) \
-  if(++index==expected && selected_features!=SIMD_TARGET_TYPE(name)::features) return 5;
+  if(++index==expected && selected_features!=SIMD_TARGET_ISA(name)) return 5;
   SELECTED_TARGETS(CHECK_ORDER)
 #undef CHECK_ORDER
   std::printf("scalar path passed; %u variants executed, %u skipped; ordered dispatch passed\n",executed,skipped);
