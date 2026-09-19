@@ -25,27 +25,39 @@ namespace simd {
   inline constexpr std::size_t feature_count=std::size_t(feature::invalid_features)+1;
 
   /// A structural instruction-feature set. Construction never adds prerequisites.
+  /// Each registered feature has a mutable Boolean property with the same name,
+  /// e.g. a.avx2 or a.avx512fp16. Properties read and update flags through their
+  /// accessors; they occupy no additional storage. See docs/abi-lookup.md for
+  /// feature conjunction, property assignment and subset selection.
   struct isa {
+    /// Bit storage indexed by feature ordinals, including the invalid marker.
     std::array<std::uint64_t,(feature_count+63)/64> flags{};
 
+    /// Construct the empty requirement set.
     constexpr isa() noexcept = default;
+    /// Require exactly one feature, without prerequisite closure.
     constexpr isa(feature f) noexcept { set(f,true); }
+    /// Read one feature bit.
     constexpr bool get(feature f) const noexcept {
       auto i=std::size_t(f);
       return (flags[i/64]>>(i%64))&1;
     }
+    /// Set or clear one feature bit without changing any other requirement.
     constexpr void set(feature f,bool value) noexcept {
       auto i=std::size_t(f);
       auto mask=std::uint64_t{1}<<(i%64);
       auto & word=flags[i/64];
       word=(word&~mask)|(value?mask:0);
     }
+    /// True when the single feature is present.
     constexpr bool has(feature f) const noexcept { return get(f); }
+    /// True when every feature in other is present, including the empty set.
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
       return true;
     }
+    /// Compare all stored bits for exact set equality.
     constexpr bool operator==(isa const &) const = default;
 
     constexpr bool get_mmx() const noexcept { return get(feature::mmx); }
@@ -188,13 +200,21 @@ namespace simd {
     return result;
   }
   // Concrete enum overloads prevent the built-in ordinal comparisons from winning.
+  /// A singleton feature is never a strict subset of another singleton.
   constexpr bool operator<(feature,feature) noexcept { return false; }
+  /// A singleton feature is never a strict superset of another singleton.
   constexpr bool operator>(feature,feature) noexcept { return false; }
+  /// Singleton inclusion holds exactly when both feature names are equal.
   constexpr bool operator<=(feature a,feature b) noexcept { return a==b; }
+  /// Reverse singleton inclusion holds exactly when both features are equal.
   constexpr bool operator>=(feature a,feature b) noexcept { return a==b; }
+  /// True when every feature required by a is present in b.
   constexpr bool operator<=(arch auto a,arch auto b) noexcept { return isa(b).has(a); }
+  /// True when a contains every feature required by b.
   constexpr bool operator>=(arch auto a,arch auto b) noexcept { return b<=a; }
+  /// True when a is a subset of b and their feature sets differ.
   constexpr bool operator<(arch auto a,arch auto b) noexcept { return isa(a)!=isa(b) && a<=b; }
+  /// True when a strictly contains b.
   constexpr bool operator>(arch auto a,arch auto b) noexcept { return b<a; }
 
   /// First matching requirement, with every later choice checked for shadowing.
@@ -428,9 +448,11 @@ namespace simd {
   struct target_entry {
     isa architecture;
     isa minimum{};
+    /// Compare the requested ISA and inherited compiler minimum exactly.
     constexpr bool operator==(target_entry const &) const = default;
   };
   template<auto... Entries> struct isa_list {};
+  /// Concatenate ordered source metadata without sorting or deduplicating it.
   template<auto... A,auto... B>
   constexpr isa_list<A...,B...> operator+(isa_list<A...>,isa_list<B...>) noexcept { return {}; }
 
