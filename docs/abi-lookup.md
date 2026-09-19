@@ -108,31 +108,47 @@ execution. See the [source-target guide](omnibus.md).
 ## Extend an overload set
 
 `target` does not close the function's overload set. A new implementation can
-use its own disjoint constraint without changing the existing choice pack:
+use its own disjoint constraint without changing the existing choice pack.
+Across CPU families, select the native definitions with preprocessing first:
 
 ```cpp
+#include <simd/config.h>
+import simd;
+using namespace simd;
+
 template<isa A>
 void double16(float * out, float const * in) = delete;
 
+#if SIMD_HOST_X86
 template<isa A> requires(target<A, avx512, avx2> == 0)
 void double16(float * out, float const * in);
 
 template<isa A> requires(target<A, avx512, avx2> == 1)
 void double16(float * out, float const * in);
 
-template<isa A>
-  requires(A.has(feature::neon) && target<A, avx512, avx2> == -1)
+#elif SIMD_HOST_NEON
+template<isa A> requires(A.has(feature::neon))
 void double16(float * out, float const * in);
+#endif
 ```
 
 These are constrained function overloads. The deleted primary rejects ISAs
-with no implementation. For ordinary x86 and ARM bundles, `A.has(feature::neon)`
-alone is disjoint from the two x86 cases. Raw ISA values can contain both
-families, so the explicit `-1` test keeps the constraints disjoint even for
-those synthetic sets. It does not make a mixed set executable on either CPU;
-CPU/OS admission still applies. The target helper checks its own choice pack,
-not the other function overloads; overlapping constraints can make a call
-ambiguous.
+with no implementation. The ISA metadata is available on every host, but
+`import simd` exposes native vectors for the compilation target. `requires`
+does not hide incompatible intrinsic headers, nondependent native types, or
+foreign Clang target attributes. Guard their includes and definitions, or put
+the implementations in source files selected for that platform.
+
+The NEON case is an ARM implementation of the same interface, not another
+variant emitted into an x86 binary. Since the x86 overloads are absent from
+the ARM build, its constraint needs no reference to the x86 choice pack.
+At the metadata level, `A.has(feature::neon) && target<A, avx512, avx2> == -1`
+expresses disjointness even for synthetic mixed feature sets; that expression
+does not replace a host guard or CPU/OS admission.
+
+Within one build, an additional overload still needs to avoid ambiguous
+overlap with the existing ones. The target helper checks its own choice pack,
+not the other function overloads.
 
 Declare every overload before defining a dispatcher template that calls
 `double16<A>`. With these pointer arguments, argument-dependent lookup cannot
