@@ -352,11 +352,12 @@ accumulation into 16 FP32 lanes. It does not qualify other CPU implementations,
 add FP16 arithmetic or ARM half profiles, change scalar half conversions, or
 close the broader native-half issue.
 
-The new CPUID subleaf fields are appended to preserve existing positional
-aggregate initializers, but they grow the public `x86_capabilities` and
-`x86_admission` records and change their binary layouts. Consumers passing or
-storing these records across compiled boundaries must rebuild together. This
-is not an ABI-neutral change to those two records.
+At this historical checkpoint, the new CPUID subleaf fields were appended to
+preserve existing positional aggregate initializers, but grew the public
+`x86_capabilities` and `x86_admission` records and changed their binary layouts.
+Consumers passing or storing these records across compiled boundaries needed
+to rebuild together. The later shared ISA admission API replaces the
+per-platform result; see [the migration](omnibus.md).
 
 
 ## Optional native NEON BF16 checkpoint
@@ -409,3 +410,30 @@ or `target<A, ...>` in function constraints. A named concept can also contain
 property expressions. Ordinary constant-evaluated property reads and writes
 remain supported. The regression suite checks property constraints through a
 test-local concept and matching declarations/definitions using `has`.
+
+## Shared ISA admission and architecture modules
+
+The platform observers now live in `simd.cpu.x86` and `simd.cpu.arm`. Both expose the
+same value-based `classify_isa` and finite-list `with_isa` API; the duplicate
+fixed-profile classifiers are removed. Native observation definitions are
+unchanged. See [the migration](omnibus.md) for the
+module rename, result fields and rebuild requirement.
+
+LLVM 23.1.1 on macOS ARM passed 16 focused CTests, including native NEON FP16,
+BF16, source variants, code generation, negative compilation and the standalone
+ARM capability-module importer. The installed package was physically relocated;
+its six source-target/admission consumer checks also passed. Capability queries
+required normal host access: the sandbox denied sysctl and caused the initial
+native checks to skip, so those skipped runs are not native evidence.
+
+The renamed x86 module, its object, the standalone admission consumer's
+per-preset constexpr checks, and the real-observer consumer compiled for x86-64
+macOS. That is compilation evidence only; x86 runtime and the other operating
+systems still need their native checks. No new instruction features or ISA
+representation are introduced here.
+
+The CPU umbrella checkpoint also passes all 84 local ARM SIMD tests and all 21
+FTZ tests against the updated installed package. A fresh install, physically
+relocated before consumer configuration, passes seven source-target/admission
+checks including a consumer that imports only `simd.cpu` and links only
+`simd::common`. Hosted checks qualify the final module names separately.

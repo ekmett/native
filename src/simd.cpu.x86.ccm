@@ -1,0 +1,129 @@
+// SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <array>
+#include <cstdint>
+#include <string_view>
+#include "simd/attributes.h"
+#include "simd/isa.h"
+#if defined(_MSC_VER)
+#include <intrin.h>
+#else
+#include <cpuid.h>
+#endif
+
+export module simd.cpu.x86;
+#include "simd/isa_capability_exports.h"
+
+export namespace simd {
+  /// \defgroup capabilities CPU capabilities and waiting
+  /// x86-only queries and wait helpers. Feature queries belong outside hot loops;
+  /// SIMD instruction admission also requires the appropriate OS vector state.
+  /// \snippet api.cc capabilities
+
+  /// \ingroup capabilities
+  /// Raw CPUID register values, interpreted as signed storage words.
+  struct simd_nodiscard cpuid_t {
+    std::int32_t eax, ebx, ecx, edx;
+  };
+
+  /// \ingroup capabilities
+  /// Execute CPUID with leaf eax and subleaf ecx, returning all four registers.
+  /// Unsupported leaves retain the instruction's behavior; check maximum leaves
+  /// before interpreting feature bits. This does not check XCR0/OS vector state.
+  /// CPUID serializes execution; query capabilities outside critical paths.
+  cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept;
+
+  /// \showenumvalues
+  /// \brief Recognized CPUID vendor strings; vendor identity alone does not imply features.
+  /// \details Values classify leaf zero only and are independent of OS vector-state support.
+  enum class simd_nodiscard cpu_vendor : std::uint8_t {
+    intel = 0, ///< CPUID reports GenuineIntel.
+    amd = 1, ///< CPUID reports AuthenticAMD.
+    unknown = 2 ///< Any other vendor string.
+  };
+
+
+  /// Observed registers. Unavailable leaves and unread XCR0 remain zero.
+  /// This snapshot describes the executing logical CPU, not every CPU in a system.
+  struct x86_capabilities {
+    std::uint32_t max_basic_leaf = 0;
+    std::uint32_t leaf1_ecx = 0, leaf1_edx = 0, leaf7_ebx = 0;
+    std::uint64_t xcr0 = 0;
+    bool xcr0_observed = false;
+    /// Maximum supported structured-feature subleaf, from CPUID.7.0 EAX.
+    /// Zero when leaf 7 is unavailable; subleaf 1 must not be assumed in that case.
+    std::uint32_t max_leaf7_subleaf = 0;
+    /// CPUID.7.1 EAX feature bits; bit 5 reports AVX512_BF16.
+    /// Zero unless leaf 7 and subleaf 1 were reported as available.
+    std::uint32_t leaf7_1_eax = 0;
+    /// CPUID.7.0 EDX; bit 23 reports AVX512_FP16. Zero without leaf 7.
+    std::uint32_t leaf7_edx = 0;
+    /// Extended CPUID range and leaf 0x80000001 ECX (LAHF/SAHF and LZCNT).
+    /// Zero when unavailable; source target admission checks the range first.
+    std::uint32_t max_extended_leaf = 0, extended1_ecx = 0;
+  };
+
+  /// Capture CPUID and, only with XSAVE and OSXSAVE, XCR0. No ISA profile required.
+  x86_capabilities observe_x86_capabilities() noexcept;
+
+  /// Cached vendor identification; vendor alone does not establish features.
+  extern const enum cpu_vendor cpu_vendor;
+}
+
+namespace simd {
+  cpuid_t cpuid(std::int32_t eax, std::int32_t ecx) noexcept {
+#if defined(_MSC_VER)
+    int registers[4];
+    __cpuidex(registers, eax, ecx);
+    return {registers[0], registers[1], registers[2], registers[3]};
+#else
+    cpuid_t result;
+    __cpuid_count(eax, ecx, result.eax, result.ebx, result.ecx, result.edx);
+    return result;
+#endif
+  }
+
+
+  x86_capabilities observe_x86_capabilities() noexcept {
+    x86_capabilities result;
+    result.max_basic_leaf = std::uint32_t(cpuid(0, 0).eax);
+    if (result.max_basic_leaf >= 1) {
+      auto leaf = cpuid(1, 0);
+      result.leaf1_ecx = std::uint32_t(leaf.ecx);
+      result.leaf1_edx = std::uint32_t(leaf.edx);
+      constexpr auto xsave = (1u << 26) | (1u << 27);
+      if ((result.leaf1_ecx & xsave) == xsave) {
+#if defined(_MSC_VER)
+        result.xcr0 = _xgetbv(0);
+#else
+        std::uint32_t low, high;
+        __asm__("xgetbv" : "=a"(low), "=d"(high) : "c"(0));
+        result.xcr0 = std::uint64_t(low) | (std::uint64_t(high) << 32);
+#endif
+        result.xcr0_observed = true;
+      }
+    }
+    if (result.max_basic_leaf >= 7) {
+      auto leaf = cpuid(7, 0);
+      result.leaf7_ebx = std::uint32_t(leaf.ebx);
+      result.leaf7_edx = std::uint32_t(leaf.edx);
+      result.max_leaf7_subleaf = std::uint32_t(leaf.eax);
+      if (result.max_leaf7_subleaf >= 1)
+        result.leaf7_1_eax = std::uint32_t(cpuid(7, 1).eax);
+    }
+    result.max_extended_leaf=std::uint32_t(cpuid(std::int32_t(0x80000000u),0).eax);
+    if(result.max_extended_leaf>=0x80000001u)
+      result.extended1_ecx=std::uint32_t(cpuid(std::int32_t(0x80000001u),0).ecx);
+    return result;
+  }
+
+  const enum cpu_vendor cpu_vendor = [] static noexcept {
+    auto result = cpuid(0, 0);
+    std::array<std::int32_t, 3> data{result.ebx, result.edx, result.ecx};
+    std::string_view vendor{reinterpret_cast<char const *>(data.data()), 12};
+    if (vendor == "GenuineIntel") return cpu_vendor::intel;
+    if (vendor == "AuthenticAMD") return cpu_vendor::amd;
+    return cpu_vendor::unknown;
+  }();
+}

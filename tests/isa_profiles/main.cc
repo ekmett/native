@@ -5,7 +5,7 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-import simd.cpuid;
+import simd.cpu.x86;
 
 #if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
@@ -14,8 +14,8 @@ import simd.cpuid;
 namespace {
   unsigned supported() {
     auto cpu = simd::observe_x86_capabilities();
-    auto avx2 = simd::classify_x86_profile(cpu, simd::x86_profile::avx2);
-    auto avx512 = simd::classify_x86_profile(cpu, simd::x86_profile::avx512);
+    auto avx2 = simd::classify_isa(cpu, simd::avx2);
+    auto avx512 = simd::classify_isa(cpu, simd::avx512);
     std::printf("AVX2: %s; AVX512: %s\n", avx2.reason(), avx512.reason());
     return unsigned(avx2.admitted()) | (unsigned(avx512.admitted()) << 1);
   }

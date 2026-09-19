@@ -90,16 +90,16 @@ target_compile_definitions(simd_minimal PRIVATE
 target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
   FILES simd.scalar.ccm simd.wide.ccm simd.static_string.ccm
-    simd.memory.ccm simd.types.ccm simd.numerics.ccm)
+    simd.memory.ccm simd.types.ccm simd.numerics.ccm simd.cpu.ccm)
 
 # Baseline x86 utilities are independent of every SIMD profile.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
-    FILES simd.cpuid.ccm simd.wait.ccm)
+    FILES simd.cpu.x86.ccm simd.wait.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.arm.ccm)
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.cpu.arm.ccm)
 endif()
 
 simd_module_target(simd simd)

@@ -43,12 +43,11 @@ before the call and restore their own environment when appropriate.
 
 ## Admission and validation
 
-A baseline caller imports `simd.arm`, observes capabilities, and requires
-`classify_arm_profile(cpu, arm_profile::neon_bf16).admitted()` before optional
+A baseline caller imports `simd.cpu.arm`, observes capabilities, and requires
+`classify_isa(cpu, neon_bf16).admitted()` before optional
 entry. NEON_BF16 requires baseline FP/Advanced SIMD and an observed BF16 feature;
-it does not require FP16 or EBF16. Unknown/failed observations reject. The public `arm_capabilities` and
-`arm_admission` records grow in this checkpoint: rebuild producers and consumers
-together rather than mixing old archives/BMIs with new declarations. EBF16 is
+it does not require FP16 or EBF16. Unknown/failed observations reject. The capability record includes separate observation flags, so stale feature
+values cannot authorize instructions. EBF16 is
 reported separately for applications choosing enhanced arithmetic. Any stronger
 configured minimum remains the application's startup requirement.
 

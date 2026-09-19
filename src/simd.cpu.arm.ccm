@@ -24,20 +24,13 @@ module;
 #include <processthreadsapi.h>
 #endif
 
-export module simd.arm;
+export module simd.cpu.arm;
+#include "simd/isa_capability_exports.h"
 
 export namespace simd {
   /// \defgroup arm_capabilities ARM capabilities
   /// AArch64 OS capability admission, independent of the native SIMD hub.
   /// Query before entering optional-profile code; no instruction probing occurs.
-
-  /// \ingroup arm_capabilities
-  /// Instruction requirements supplied by simd_target_profile, without tuning policy.
-  enum class arm_profile : std::uint8_t {
-    neon, ///< Baseline AArch64 floating point and Advanced SIMD.
-    neon_fp16, ///< Baseline plus scalar and vector half-precision arithmetic.
-    neon_bf16 ///< Baseline plus native BF16 dot products (FEAT_BF16).
-  };
 
   /// \ingroup arm_capabilities
   /// Normalized OS-advertised capabilities. False observation flags reject even
@@ -69,71 +62,6 @@ export namespace simd {
     /// A feature must occur in both sets; failed queries never authorize it.
     isa extra_observed{}, extra_features{};
   };
-
-  /// \ingroup arm_capabilities
-  /// Every missing requirement from pure profile classification; no OS query occurs.
-  struct arm_admission {
-    /// The requested enumeration value is not a known profile.
-    bool invalid_profile = false;
-    /// No successful baseline FP/Advanced SIMD observation is available.
-    bool missing_baseline_observation = false;
-    /// Required baseline floating-point support is absent or unobserved.
-    bool missing_fp = false;
-    /// Required baseline Advanced SIMD support is absent or unobserved.
-    bool missing_asimd = false;
-    /// Half arithmetic is required but no successful feature observation exists.
-    bool missing_fp16_observation = false;
-    /// Required scalar half arithmetic is absent or unobserved.
-    bool missing_scalar_fp16 = false;
-    /// Required vector half arithmetic is absent or unobserved.
-    bool missing_vector_fp16 = false;
-    /// BF16 is required but no successful feature observation exists.
-    bool missing_bf16_observation = false;
-    /// Required BF16 instructions are absent or unobserved.
-    bool missing_bf16 = false;
-    /// True only when every required feature is successfully observed and present.
-    constexpr bool admitted() const noexcept {
-      return !invalid_profile && !missing_baseline_observation && !missing_fp &&
-        !missing_asimd && !missing_fp16_observation && !missing_scalar_fp16 && !missing_vector_fp16 && !missing_bf16_observation && !missing_bf16;
-    }
-    /// First rejection reason; individual fields retain all missing requirements.
-    constexpr char const * reason() const noexcept {
-      if(invalid_profile) return "unknown ARM profile";
-      if(missing_baseline_observation) return "ARM baseline features unobserved";
-      if(missing_fp) return "OS does not advertise ARM floating point";
-      if(missing_asimd) return "OS does not advertise Advanced SIMD";
-      if(missing_fp16_observation) return "ARM FP16 features unobserved";
-      if(missing_scalar_fp16) return "OS does not advertise scalar FP16 arithmetic";
-      if(missing_vector_fp16) return "OS does not advertise vector FP16 arithmetic";
-      if(missing_bf16_observation) return "ARM BF16 features unobserved";
-      if(missing_bf16) return "OS does not advertise BF16 instructions";
-      return "admitted";
-    }
-  };
-
-  /// \ingroup arm_capabilities
-  /// Classify a supplied observation without querying the OS or executing optional
-  /// instructions. NEON_FP16 requires scalar and vector FP16, since +fullfp16
-  /// enables both. This does not admit any extra caller-configured minimum ISA.
-  constexpr arm_admission classify_arm_profile(arm_capabilities const & cpu, arm_profile profile) noexcept {
-    arm_admission result;
-    if(profile != arm_profile::neon && profile != arm_profile::neon_fp16 && profile != arm_profile::neon_bf16) {
-      result.invalid_profile=true; return result;
-    }
-    result.missing_baseline_observation=!cpu.baseline_observed;
-    result.missing_fp=!cpu.baseline_observed || !cpu.fp;
-    result.missing_asimd=!cpu.baseline_observed || !cpu.asimd;
-    if(profile==arm_profile::neon_fp16) {
-      result.missing_fp16_observation=!cpu.fp16_observed;
-      result.missing_scalar_fp16=!cpu.fp16_observed || !cpu.scalar_fp16;
-      result.missing_vector_fp16=!cpu.fp16_observed || !cpu.vector_fp16;
-    }
-    if(profile==arm_profile::neon_bf16) {
-      result.missing_bf16_observation=!cpu.bf16_observed;
-      result.missing_bf16=!cpu.bf16_observed || !cpu.bf16;
-    }
-    return result;
-  }
 
   /// \ingroup arm_capabilities
   /// Query OS-advertised AArch64 features without executing optional instructions.
