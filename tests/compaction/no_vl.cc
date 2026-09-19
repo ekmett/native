@@ -4,9 +4,9 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
-constexpr auto partial_arch = simd::feature_closure(simd::avx2 & simd::feature::avx512f & simd::feature::avx512dq);
-static_assert(!partial_arch.has(simd::feature::avx512vl));
-static_assert(!partial_arch.has(simd::feature::avx512bw));
+constexpr auto partial_arch = simd::feature_closure(simd::avx2 & simd::x86_feature::avx512f & simd::x86_feature::avx512dq);
+static_assert(!partial_arch.has(simd::x86_feature::avx512vl));
+static_assert(!partial_arch.has(simd::x86_feature::avx512bw));
 template<std::size_t N> bool check() {
   using V=simd::vec<std::uint32_t,N,partial_arch>;
   std::array<std::uint32_t,N> input{},out{},expected{};

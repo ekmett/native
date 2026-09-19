@@ -105,7 +105,7 @@ SIMD_TARGET_POP()
 
 #elif SIMD_HOST_NEON
 SIMD_TARGET_PUSH(neon)
-template<isa A> requires(A.has(feature::neon))
+template<isa A> requires(A.has(arm_feature::neon))
 void double16(float * out, float const * in) {
   using V = vec<float, 4, neon>;
   for (unsigned i = 0; i < 16; i += 4) {
@@ -154,11 +154,11 @@ architecture. Unknown features, CPU-name shortcuts and negative feature strings
 are rejected: silently guessing their admission requirements would make the
 dispatch unsafe. The registry in `simd/isa.h` defines the supported vocabulary.
 Clang target pragmas do not change predefined macros such as `__AVX512F__`;
-write variant choices using `A.has(simd::feature::avx512f)`, `A.avx512f`, or
+write variant choices using `A.has(simd::x86_feature::avx512f)`, `A.avx512f`, or
 subset comparisons such as `simd::avx512 <= A`.
 
 Ordinary feature construction and conjunction do not add prerequisites:
-`simd::isa(simd::feature::avx2)` has exactly the AVX2 bit. Use
+`simd::isa(simd::x86_feature::avx2)` has exactly the AVX2 bit. Use
 `feature_closure` when constructing compiler requirements yourself. The named
 presets are feature bundles; CPU-model bundles remain future work.
 
@@ -223,7 +223,9 @@ available on either host.
 
 The platform modules are `simd.cpu.x86` and `simd.cpu.arm`. Each exports the shared
 `isa`, `classify_isa` and `with_isa` interface alongside its native capability
-snapshot and observer. Standalone capability consumers link `simd::common`;
+snapshot and observer. Native snapshots expose architecture-typed `present`
+and `observed` sets; both must contain a required feature. Their nested `raw`
+query results are diagnostics, not a second admission source. Standalone capability consumers link `simd::common`;
 they do not need the vector hub. The raw `cpuid` function and vendor query remain
 in `simd.cpu.x86`, and waiting instructions remain in `simd.wait`.
 

@@ -165,7 +165,7 @@ PCMs are compiler-specific artifacts.
 LLVM 23 can emit `-Wmodules-ambiguous-internal-linkage` at feature-property use
 when the declarations occur in several module global fragments. Focused
 constexpr reads, writes and constraint checks pass; the warning remains.
-Consumers that treat it as an error can use `A.has(simd::feature::fma)` for
+Consumers that treat it as an error can use `A.has(simd::x86_feature::fma)` for
 feature checks. See the [tooling limits](validation.md).
 
 Link `simd::simd` and import `simd`. The [target-list guide](omnibus.md) shows
@@ -249,3 +249,17 @@ platform's capability observer, independently of vector operations. Link
 or `simd.cpu.arm` on AArch64. Direct architecture imports remain available.
 Both feature families use the same structural ISA bitset; the native observer
 and OS-state checks determine which requirements the host can execute.
+
+Native capability records contain `present` and `observed` typed sets:
+`feature_set<x86_feature>` or `feature_set<arm_feature>`. Admission requires each
+feature in both sets. X86 retains `xcr0`, `xcr0_observed`, `vendor_id` and `vendor`
+separately. Nested `raw` members retain the original register/query diagnostics;
+editing diagnostics does not update normalized features or OS state. Synthetic
+native snapshots should fill the typed sets explicitly. Structural raw fixtures
+remain usable with `classify_isa` and run through the same decoder.
+
+ARM entries still describe the existing compiler requirements: NEON joins FP
+and Advanced SIMD, FP16 joins scalar and vector arithmetic, and AES joins AES
+and PMULL. The typed set is not yet a complete list of independent architectural
+extension bits. Enhanced BF16 remains informational under `raw.ebf16` and
+`raw.ebf16_observed`; it does not authorize or enable FPCR.EBF by itself.

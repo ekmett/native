@@ -102,7 +102,7 @@ namespace simd {
         }
       }
 #elif defined(__aarch64__) || defined(_M_ARM64)
-      if constexpr((::simd::feature::neon <= Arch)) {
+      if constexpr((::simd::arm_feature::neon <= Arch)) {
         if constexpr(std::same_as<T,float>) {
           auto x=vcombine_f32(vld1_f32(p),vdup_n_f32(0.f));
           if constexpr(N==3) x=vld1q_lane_f32(p+2,x,2);
@@ -132,7 +132,7 @@ namespace simd {
         }
       }
 #elif defined(__aarch64__) || defined(_M_ARM64)
-      if constexpr((::simd::feature::neon <= Arch)) {
+      if constexpr((::simd::arm_feature::neon <= Arch)) {
         if constexpr(std::same_as<T,float>) {
           auto x=std::bit_cast<float32x4_t>(value);vst1_f32(p,vget_low_f32(x));
           if constexpr(N==3) vst1q_lane_f32(p+2,x,2);

@@ -398,14 +398,14 @@ reads, writes and named-concept constraints pass. A small unrelated property
 example with two global fragments reproduces the warning. A single-owner experiment still warns
 when a consumer includes the header before importing the module. The library
 retains header interoperability and does not suppress the diagnostic.
-`A.has(simd::feature::fma)` avoids property syntax for feature checks when a
+`A.has(simd::x86_feature::fma)` avoids property syntax for feature checks when a
 consumer treats that warning as an error. These observations describe the
 tested cases, not a general guarantee about Clang's property implementation.
 
 On Linux and macOS, Clang 23 cannot mangle a direct property expression in a
 function constraint such as `requires(A.avx2 && A.fma)`: it reports
 `cannot yet mangle PseudoObjectExpr expression`. Windows uses a different
-mangling scheme and accepts it. Use `requires(A.has(feature::avx2 & feature::fma))`
+mangling scheme and accepts it. Use `requires(A.has(x86_feature::avx2 & x86_feature::fma))`
 or `target<A, ...>` in function constraints. A named concept can also contain
 property expressions. Ordinary constant-evaluated property reads and writes
 remain supported. The regression suite checks property constraints through a

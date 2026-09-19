@@ -69,218 +69,218 @@
 // ISA value. A target attribute adds features; it does not erase the project
 // minimum. An unregistered stronger minimum is rejected instead of under-admitted.
 #ifdef __MMX__
-#define SIMD_DETAIL_MIN_MMX (::simd::isa(::simd::feature::mmx))
+#define SIMD_DETAIL_MIN_MMX (::simd::isa(::simd::x86_feature::mmx))
 #else
 #define SIMD_DETAIL_MIN_MMX (::simd::isa{})
 #endif
 #ifdef __SSE__
-#define SIMD_DETAIL_MIN_SSE (::simd::isa(::simd::feature::sse))
+#define SIMD_DETAIL_MIN_SSE (::simd::isa(::simd::x86_feature::sse))
 #else
 #define SIMD_DETAIL_MIN_SSE (::simd::isa{})
 #endif
 #ifdef __SSE2__
-#define SIMD_DETAIL_MIN_SSE2 (::simd::isa(::simd::feature::sse2))
+#define SIMD_DETAIL_MIN_SSE2 (::simd::isa(::simd::x86_feature::sse2))
 #else
 #define SIMD_DETAIL_MIN_SSE2 (::simd::isa{})
 #endif
 #ifdef __SSE3__
-#define SIMD_DETAIL_MIN_SSE3 (::simd::isa(::simd::feature::sse3))
+#define SIMD_DETAIL_MIN_SSE3 (::simd::isa(::simd::x86_feature::sse3))
 #else
 #define SIMD_DETAIL_MIN_SSE3 (::simd::isa{})
 #endif
 #ifdef __SSSE3__
-#define SIMD_DETAIL_MIN_SSSE3 (::simd::isa(::simd::feature::ssse3))
+#define SIMD_DETAIL_MIN_SSSE3 (::simd::isa(::simd::x86_feature::ssse3))
 #else
 #define SIMD_DETAIL_MIN_SSSE3 (::simd::isa{})
 #endif
 #ifdef __SSE4_1__
-#define SIMD_DETAIL_MIN_SSE41 (::simd::isa(::simd::feature::sse41))
+#define SIMD_DETAIL_MIN_SSE41 (::simd::isa(::simd::x86_feature::sse41))
 #else
 #define SIMD_DETAIL_MIN_SSE41 (::simd::isa{})
 #endif
 #ifdef __SSE4_2__
-#define SIMD_DETAIL_MIN_SSE42 (::simd::isa(::simd::feature::sse42))
+#define SIMD_DETAIL_MIN_SSE42 (::simd::isa(::simd::x86_feature::sse42))
 #else
 #define SIMD_DETAIL_MIN_SSE42 (::simd::isa{})
 #endif
 #ifdef __POPCNT__
-#define SIMD_DETAIL_MIN_POPCNT (::simd::isa(::simd::feature::popcnt))
+#define SIMD_DETAIL_MIN_POPCNT (::simd::isa(::simd::x86_feature::popcnt))
 #else
 #define SIMD_DETAIL_MIN_POPCNT (::simd::isa{})
 #endif
 #ifdef __AVX__
-#define SIMD_DETAIL_MIN_AVX (::simd::isa(::simd::feature::avx))
+#define SIMD_DETAIL_MIN_AVX (::simd::isa(::simd::x86_feature::avx))
 #else
 #define SIMD_DETAIL_MIN_AVX (::simd::isa{})
 #endif
 #ifdef __AVX2__
-#define SIMD_DETAIL_MIN_AVX2 (::simd::isa(::simd::feature::avx2))
+#define SIMD_DETAIL_MIN_AVX2 (::simd::isa(::simd::x86_feature::avx2))
 #else
 #define SIMD_DETAIL_MIN_AVX2 (::simd::isa{})
 #endif
 #ifdef __FMA__
-#define SIMD_DETAIL_MIN_FMA (::simd::isa(::simd::feature::fma))
+#define SIMD_DETAIL_MIN_FMA (::simd::isa(::simd::x86_feature::fma))
 #else
 #define SIMD_DETAIL_MIN_FMA (::simd::isa{})
 #endif
 #ifdef __F16C__
-#define SIMD_DETAIL_MIN_F16C (::simd::isa(::simd::feature::f16c))
+#define SIMD_DETAIL_MIN_F16C (::simd::isa(::simd::x86_feature::f16c))
 #else
 #define SIMD_DETAIL_MIN_F16C (::simd::isa{})
 #endif
 #ifdef __BMI__
-#define SIMD_DETAIL_MIN_BMI1 (::simd::isa(::simd::feature::bmi1))
+#define SIMD_DETAIL_MIN_BMI1 (::simd::isa(::simd::x86_feature::bmi1))
 #else
 #define SIMD_DETAIL_MIN_BMI1 (::simd::isa{})
 #endif
 #ifdef __BMI2__
-#define SIMD_DETAIL_MIN_BMI2 (::simd::isa(::simd::feature::bmi2))
+#define SIMD_DETAIL_MIN_BMI2 (::simd::isa(::simd::x86_feature::bmi2))
 #else
 #define SIMD_DETAIL_MIN_BMI2 (::simd::isa{})
 #endif
 #ifdef __AVX512F__
-#define SIMD_DETAIL_MIN_AVX512F (::simd::isa(::simd::feature::avx512f))
+#define SIMD_DETAIL_MIN_AVX512F (::simd::isa(::simd::x86_feature::avx512f))
 #else
 #define SIMD_DETAIL_MIN_AVX512F (::simd::isa{})
 #endif
 #ifdef __AVX512DQ__
-#define SIMD_DETAIL_MIN_AVX512DQ (::simd::isa(::simd::feature::avx512dq))
+#define SIMD_DETAIL_MIN_AVX512DQ (::simd::isa(::simd::x86_feature::avx512dq))
 #else
 #define SIMD_DETAIL_MIN_AVX512DQ (::simd::isa{})
 #endif
 #ifdef __AVX512BW__
-#define SIMD_DETAIL_MIN_AVX512BW (::simd::isa(::simd::feature::avx512bw))
+#define SIMD_DETAIL_MIN_AVX512BW (::simd::isa(::simd::x86_feature::avx512bw))
 #else
 #define SIMD_DETAIL_MIN_AVX512BW (::simd::isa{})
 #endif
 #ifdef __AVX512VL__
-#define SIMD_DETAIL_MIN_AVX512VL (::simd::isa(::simd::feature::avx512vl))
+#define SIMD_DETAIL_MIN_AVX512VL (::simd::isa(::simd::x86_feature::avx512vl))
 #else
 #define SIMD_DETAIL_MIN_AVX512VL (::simd::isa{})
 #endif
 #ifdef __AVX512BF16__
-#define SIMD_DETAIL_MIN_AVX512BF16 (::simd::isa(::simd::feature::avx512bf16))
+#define SIMD_DETAIL_MIN_AVX512BF16 (::simd::isa(::simd::x86_feature::avx512bf16))
 #else
 #define SIMD_DETAIL_MIN_AVX512BF16 (::simd::isa{})
 #endif
 #ifdef __AVX512FP16__
-#define SIMD_DETAIL_MIN_AVX512FP16 (::simd::isa(::simd::feature::avx512fp16))
+#define SIMD_DETAIL_MIN_AVX512FP16 (::simd::isa(::simd::x86_feature::avx512fp16))
 #else
 #define SIMD_DETAIL_MIN_AVX512FP16 (::simd::isa{})
 #endif
 #ifdef __ARM_NEON
-#define SIMD_DETAIL_MIN_NEON (::simd::isa(::simd::feature::neon))
+#define SIMD_DETAIL_MIN_NEON (::simd::isa(::simd::arm_feature::neon))
 #else
 #define SIMD_DETAIL_MIN_NEON (::simd::isa{})
 #endif
 #if defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC) || defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC)
-#define SIMD_DETAIL_MIN_NEON_FP16 (::simd::isa(::simd::feature::neon_fp16))
+#define SIMD_DETAIL_MIN_NEON_FP16 (::simd::isa(::simd::arm_feature::neon_fp16))
 #else
 #define SIMD_DETAIL_MIN_NEON_FP16 (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_BF16_VECTOR_ARITHMETIC
-#define SIMD_DETAIL_MIN_NEON_BF16 (::simd::isa(::simd::feature::neon_bf16))
+#define SIMD_DETAIL_MIN_NEON_BF16 (::simd::isa(::simd::arm_feature::neon_bf16))
 #else
 #define SIMD_DETAIL_MIN_NEON_BF16 (::simd::isa{})
 #endif
 #ifdef __AES__
-#define SIMD_DETAIL_MIN_AES (::simd::isa(::simd::feature::aes))
+#define SIMD_DETAIL_MIN_AES (::simd::isa(::simd::x86_feature::aes))
 #else
 #define SIMD_DETAIL_MIN_AES (::simd::isa{})
 #endif
 #ifdef __PCLMUL__
-#define SIMD_DETAIL_MIN_PCLMUL (::simd::isa(::simd::feature::pclmul))
+#define SIMD_DETAIL_MIN_PCLMUL (::simd::isa(::simd::x86_feature::pclmul))
 #else
 #define SIMD_DETAIL_MIN_PCLMUL (::simd::isa{})
 #endif
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16) && (defined(__x86_64__) || defined(_M_X64))
-#define SIMD_DETAIL_MIN_CX16 (::simd::isa(::simd::feature::cx16))
+#define SIMD_DETAIL_MIN_CX16 (::simd::isa(::simd::x86_feature::cx16))
 #else
 #define SIMD_DETAIL_MIN_CX16 (::simd::isa{})
 #endif
 #ifdef __AVX512CD__
-#define SIMD_DETAIL_MIN_AVX512CD (::simd::isa(::simd::feature::avx512cd))
+#define SIMD_DETAIL_MIN_AVX512CD (::simd::isa(::simd::x86_feature::avx512cd))
 #else
 #define SIMD_DETAIL_MIN_AVX512CD (::simd::isa{})
 #endif
 #ifdef __AVX512IFMA__
-#define SIMD_DETAIL_MIN_AVX512IFMA (::simd::isa(::simd::feature::avx512ifma))
+#define SIMD_DETAIL_MIN_AVX512IFMA (::simd::isa(::simd::x86_feature::avx512ifma))
 #else
 #define SIMD_DETAIL_MIN_AVX512IFMA (::simd::isa{})
 #endif
 
 #ifdef __LZCNT__
-#define SIMD_DETAIL_MIN_LZCNT (::simd::isa(::simd::feature::lzcnt))
+#define SIMD_DETAIL_MIN_LZCNT (::simd::isa(::simd::x86_feature::lzcnt))
 #else
 #define SIMD_DETAIL_MIN_LZCNT (::simd::isa{})
 #endif
 #ifdef __MOVBE__
-#define SIMD_DETAIL_MIN_MOVBE (::simd::isa(::simd::feature::movbe))
+#define SIMD_DETAIL_MIN_MOVBE (::simd::isa(::simd::x86_feature::movbe))
 #else
 #define SIMD_DETAIL_MIN_MOVBE (::simd::isa{})
 #endif
 #ifdef __LAHF_SAHF__
-#define SIMD_DETAIL_MIN_SAHF (::simd::isa(::simd::feature::sahf))
+#define SIMD_DETAIL_MIN_SAHF (::simd::isa(::simd::x86_feature::sahf))
 #else
 #define SIMD_DETAIL_MIN_SAHF (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_AES
-#define SIMD_DETAIL_MIN_ARM_AES (::simd::isa(::simd::feature::arm_aes))
+#define SIMD_DETAIL_MIN_ARM_AES (::simd::isa(::simd::arm_feature::aes))
 #else
 #define SIMD_DETAIL_MIN_ARM_AES (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_SHA2
-#define SIMD_DETAIL_MIN_ARM_SHA2 (::simd::isa(::simd::feature::arm_sha2))
+#define SIMD_DETAIL_MIN_ARM_SHA2 (::simd::isa(::simd::arm_feature::sha2))
 #else
 #define SIMD_DETAIL_MIN_ARM_SHA2 (::simd::isa{})
 #endif
 #if defined(__ARM_FEATURE_SHA3) || defined(__ARM_FEATURE_SHA512)
-#define SIMD_DETAIL_MIN_ARM_SHA3 (::simd::isa(::simd::feature::arm_sha3))
+#define SIMD_DETAIL_MIN_ARM_SHA3 (::simd::isa(::simd::arm_feature::sha3))
 #else
 #define SIMD_DETAIL_MIN_ARM_SHA3 (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_CRC32
-#define SIMD_DETAIL_MIN_ARM_CRC (::simd::isa(::simd::feature::arm_crc))
+#define SIMD_DETAIL_MIN_ARM_CRC (::simd::isa(::simd::arm_feature::crc))
 #else
 #define SIMD_DETAIL_MIN_ARM_CRC (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_ATOMICS
-#define SIMD_DETAIL_MIN_ARM_LSE (::simd::isa(::simd::feature::arm_lse))
+#define SIMD_DETAIL_MIN_ARM_LSE (::simd::isa(::simd::arm_feature::lse))
 #else
 #define SIMD_DETAIL_MIN_ARM_LSE (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_QRDMX
-#define SIMD_DETAIL_MIN_ARM_RDM (::simd::isa(::simd::feature::arm_rdm))
+#define SIMD_DETAIL_MIN_ARM_RDM (::simd::isa(::simd::arm_feature::rdm))
 #else
 #define SIMD_DETAIL_MIN_ARM_RDM (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_FP16_FML
-#define SIMD_DETAIL_MIN_ARM_FP16FML (::simd::isa(::simd::feature::arm_fp16fml))
+#define SIMD_DETAIL_MIN_ARM_FP16FML (::simd::isa(::simd::arm_feature::fp16fml))
 #else
 #define SIMD_DETAIL_MIN_ARM_FP16FML (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_DOTPROD
-#define SIMD_DETAIL_MIN_ARM_DOTPROD (::simd::isa(::simd::feature::arm_dotprod))
+#define SIMD_DETAIL_MIN_ARM_DOTPROD (::simd::isa(::simd::arm_feature::dotprod))
 #else
 #define SIMD_DETAIL_MIN_ARM_DOTPROD (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_COMPLEX
-#define SIMD_DETAIL_MIN_ARM_COMPLEX (::simd::isa(::simd::feature::arm_complxnum))
+#define SIMD_DETAIL_MIN_ARM_COMPLEX (::simd::isa(::simd::arm_feature::complxnum))
 #else
 #define SIMD_DETAIL_MIN_ARM_COMPLEX (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_JCVT
-#define SIMD_DETAIL_MIN_ARM_JSCVT (::simd::isa(::simd::feature::arm_jsconv))
+#define SIMD_DETAIL_MIN_ARM_JSCVT (::simd::isa(::simd::arm_feature::jsconv))
 #else
 #define SIMD_DETAIL_MIN_ARM_JSCVT (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_RCPC
-#define SIMD_DETAIL_MIN_ARM_RCPC (::simd::isa(::simd::feature::arm_rcpc))
+#define SIMD_DETAIL_MIN_ARM_RCPC (::simd::isa(::simd::arm_feature::rcpc))
 #else
 #define SIMD_DETAIL_MIN_ARM_RCPC (::simd::isa{})
 #endif
 #ifdef __ARM_FEATURE_PAUTH
-#define SIMD_DETAIL_MIN_ARM_PAUTH (::simd::isa(::simd::feature::arm_pauth))
+#define SIMD_DETAIL_MIN_ARM_PAUTH (::simd::isa(::simd::arm_feature::pauth))
 #else
 #define SIMD_DETAIL_MIN_ARM_PAUTH (::simd::isa{})
 #endif

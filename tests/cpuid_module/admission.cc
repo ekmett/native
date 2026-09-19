@@ -9,7 +9,14 @@ import simd.cpu.x86;
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
 namespace {
-  constexpr simd::x86_capabilities full{
+  // Independent raw fixture: removing a register bit exercises the decoder.
+  struct raw_snapshot {
+    std::uint32_t max_basic_leaf=0,leaf1_ecx=0,leaf1_edx=0,leaf7_ebx=0;
+    std::uint64_t xcr0=0;
+    bool xcr0_observed=false;
+    std::uint32_t max_leaf7_subleaf=0,leaf7_1_eax=0,leaf7_edx=0;
+  };
+  constexpr raw_snapshot full{
     7, (1u<<0)|(1u<<9)|(1u<<12)|(1u<<19)|(1u<<20)|(1u<<23)|
       (1u<<26)|(1u<<27)|(1u<<28)|(1u<<29),
     (1u<<23)|(1u<<25)|(1u<<26),
@@ -79,7 +86,7 @@ namespace {
     auto cpu = full; cpu.xcr0_observed = false;
     auto unread = simd::classify_isa(cpu, profile);
     if (unread.admitted() || !unread.missing_xcr0_observation || unread.missing_xcr0 != expected_xcr0) return false;
-    auto result = simd::classify_isa(full, simd::isa(simd::feature::invalid_features));
+    auto result = simd::classify_isa(full, simd::isa(static_cast<simd::x86_feature>(-1)));
     return result.invalid_features && !result.admitted();
   }
   static_assert(synthetic(simd::avx2));
@@ -95,11 +102,17 @@ int main() {
   cpu = full; cpu.xcr0 &= ~(1u << 2);
   if (std::strcmp(simd::classify_isa(cpu, simd::avx2).reason(), "YMM state unavailable")) return 3;
   auto native = simd::observe_x86_capabilities();
-  if (native.max_basic_leaf < 1 && (native.leaf1_ecx || native.leaf1_edx || native.xcr0_observed)) return 4;
-  if (native.max_basic_leaf < 7 && (native.leaf7_ebx || native.leaf7_edx)) return 5;
+  auto identity=simd::cpuid(0,0);
+  std::int32_t vendor_words[]{identity.ebx,identity.edx,identity.ecx};
+  if(native.vendor_id[12]!=0 || std::memcmp(native.vendor_id.data(),vendor_words,12)) return 10;
+  auto expected_vendor=std::strcmp(native.vendor_id.data(),"GenuineIntel")==0 ? simd::cpu_vendor::intel :
+    std::strcmp(native.vendor_id.data(),"AuthenticAMD")==0 ? simd::cpu_vendor::amd : simd::cpu_vendor::unknown;
+  if(native.vendor!=expected_vendor) return 11;
+  if (native.raw.max_basic_leaf < 1 && (native.raw.leaf1_ecx || native.raw.leaf1_edx || native.xcr0_observed)) return 4;
+  if (native.raw.max_basic_leaf < 7 && (native.raw.leaf7_ebx || native.raw.leaf7_edx)) return 5;
   constexpr auto xsave = (1u<<26)|(1u<<27);
-  if (native.xcr0_observed != (native.max_basic_leaf >= 1 && (native.leaf1_ecx & xsave) == xsave)) return 6;
-  if ((native.max_basic_leaf < 7 || native.max_leaf7_subleaf < 1) && native.leaf7_1_eax) return 7;
+  if (native.xcr0_observed != (native.raw.max_basic_leaf >= 1 && (native.raw.leaf1_ecx & xsave) == xsave)) return 6;
+  if ((native.raw.max_basic_leaf < 7 || native.raw.max_leaf7_subleaf < 1) && native.raw.leaf7_1_eax) return 7;
   cpu = full; cpu.leaf7_1_eax = 0;
   if (std::strcmp(simd::classify_isa(cpu, simd::avx512_bf16).reason(), "avx512bf16")) return 8;
   cpu = full; cpu.leaf7_edx = 0;

@@ -5,8 +5,8 @@
 
 namespace refinement_test {
   using namespace simd;
-  constexpr isa small=feature_closure(feature::bmi1);
-  constexpr isa large=feature_closure(feature::aes);
+  constexpr isa small=feature_closure(x86_feature::bmi1);
+  constexpr isa large=feature_closure(x86_feature::aes);
   constexpr isa combined=small&large;
   constexpr auto count=[](isa value) { unsigned n=0;for(auto word:value.flags)n+=std::popcount(word);return n; };
   static_assert(count(small)<count(large));
@@ -29,7 +29,7 @@ namespace refinement_test {
   static_assert(abi_lookup<combined,reverse::policies>::architecture==large);
   static_assert(single::agrees<combined>() && reverse::agrees<combined>());
 
-  constexpr auto inherited=target_entry{small,feature::aes};
+  constexpr auto inherited=target_entry{small,x86_feature::aes};
   using minimum=refinement<isa_list<inherited,small>,isa_list<large,scalar>>;
   static_assert(minimum::agrees<small>() && minimum::agrees<combined>());
   static_assert(minimum::cells.size==2);
@@ -43,17 +43,17 @@ namespace refinement_test {
 
   template<std::size_t K> consteval bool check_exp_boundary() {
     constexpr isa A=feature_closure(avx2 &
-      ((K&1)?isa(feature::avx512f):scalar) &
-      ((K&2)?isa(feature::avx512dq):scalar) &
-      ((K&4)?isa(feature::avx512bw):scalar) &
-      ((K&8)?isa(feature::avx512vl):scalar) &
-      ((K&16)?isa(feature::avx512bf16):scalar) &
-      ((K&32)?isa(feature::avx512fp16):scalar) &
-      ((K&64)?isa(feature::aes):scalar));
+      ((K&1)?isa(x86_feature::avx512f):scalar) &
+      ((K&2)?isa(x86_feature::avx512dq):scalar) &
+      ((K&4)?isa(x86_feature::avx512bw):scalar) &
+      ((K&8)?isa(x86_feature::avx512vl):scalar) &
+      ((K&16)?isa(x86_feature::avx512bf16):scalar) &
+      ((K&32)?isa(x86_feature::avx512fp16):scalar) &
+      ((K&64)?isa(x86_feature::aes):scalar));
     using selected=abi_lookup<A,exp_policies>;
     return exp_target<A> == selected::index &&
-      !selected::architecture.has(feature::avx512bf16) &&
-      !selected::architecture.has(feature::avx512fp16);
+      !selected::architecture.has(x86_feature::avx512bf16) &&
+      !selected::architecture.has(x86_feature::avx512fp16);
   }
   template<std::size_t... K> consteval bool exp_boundaries(std::index_sequence<K...>) {
     return (check_exp_boundary<K>() && ...);

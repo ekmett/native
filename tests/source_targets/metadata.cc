@@ -36,16 +36,16 @@ namespace {
     bool bf16_observed=true,bf16=true;
     simd::isa extra_observed=simd::detail::arm_features,extra_features=simd::detail::arm_features;
   };
-  constexpr simd::isa plain_avx2=simd::feature::avx2;
-  constexpr auto combined=simd::avx512_fp16&simd::feature::avx512bf16;
-  static_assert(combined==(simd::avx512_bf16&simd::feature::avx512fp16));
-  static_assert(!plain_avx2.has(simd::feature::fma));
-  static_assert(!plain_avx2.has(simd::feature::bmi1));
-  static_assert(!plain_avx2.has(simd::feature::bmi2));
-  static_assert(!plain_avx2.has(simd::feature::f16c));
-  static_assert(!simd::isa(simd::feature::avx512f).has(simd::feature::f16c));
-  static_assert(simd::feature_closure(simd::feature::avx512f).has(simd::feature::f16c));
-  static_assert(simd::feature_closure(simd::feature::avx512f).has(simd::feature::fma));
+  constexpr simd::isa plain_avx2=simd::x86_feature::avx2;
+  constexpr auto combined=simd::avx512_fp16&simd::x86_feature::avx512bf16;
+  static_assert(combined==(simd::avx512_bf16&simd::x86_feature::avx512fp16));
+  static_assert(!plain_avx2.has(simd::x86_feature::fma));
+  static_assert(!plain_avx2.has(simd::x86_feature::bmi1));
+  static_assert(!plain_avx2.has(simd::x86_feature::bmi2));
+  static_assert(!plain_avx2.has(simd::x86_feature::f16c));
+  static_assert(!simd::isa(simd::x86_feature::avx512f).has(simd::x86_feature::f16c));
+  static_assert(simd::feature_closure(simd::x86_feature::avx512f).has(simd::x86_feature::f16c));
+  static_assert(simd::feature_closure(simd::x86_feature::avx512f).has(simd::x86_feature::fma));
   static_assert(SIMD_TARGET_ISA(avx2)==simd::avx2);
   static_assert(SIMD_TARGET_ISA(scalar)==simd::scalar);
   static_assert(SIMD_TARGET_ISA(avx512)==simd::avx512);
@@ -59,9 +59,9 @@ namespace {
   static_assert(simd::target_features("")==simd::scalar);
   static_assert(!(simd::target_features("arch=skylake")<=simd::detail::known_features));
   static_assert(!(simd::target_features("avx2,")<=simd::detail::known_features));
-  static_assert(simd::target_features("avx2,f16c")==simd::feature_closure(simd::feature::avx2&simd::feature::f16c));
+  static_assert(simd::target_features("avx2,f16c")==simd::feature_closure(simd::x86_feature::avx2&simd::x86_feature::f16c));
 
-  constexpr bool synthetic() {
+  constexpr bool synthetic_x86_features() {
     x86_snapshot cpu;
     if(!simd::classify_isa(cpu,combined).admitted()) return false;
     if(simd::classify_isa(cpu,simd::neon).admitted()) return false;
@@ -82,6 +82,11 @@ namespace {
       cpu={}; cpu.leaf7_1_eax&=~(1u<<bit);
       if(simd::classify_isa(cpu,need).admitted()==(bit==5)) return false;
     }
+    return true;
+  }
+  constexpr bool synthetic_x86_state() {
+    x86_snapshot cpu;
+    constexpr auto need=combined;
     for(unsigned bit=0;bit<64;++bit) {
       cpu={};cpu.xcr0&=~(1ull<<bit);
       if(simd::classify_isa(cpu,need).admitted()==bool(0xe6ull&(1ull<<bit))) return false;
@@ -95,12 +100,15 @@ namespace {
     cpu={};cpu.xcr0_observed=false;
     if(simd::classify_isa(cpu,need).admitted()) return false;
     cpu={};cpu.max_extended_leaf=0x80000000u;
-    if(simd::classify_isa(cpu,simd::feature::lzcnt).admitted()) return false;
+    if(simd::classify_isa(cpu,simd::x86_feature::lzcnt).admitted()) return false;
     cpu={};cpu.extended1_ecx=0;
-    if(simd::classify_isa(cpu,simd::feature::sahf).admitted()) return false;
+    if(simd::classify_isa(cpu,simd::x86_feature::sahf).admitted()) return false;
 
+    return true;
+  }
+  constexpr bool synthetic_arm() {
     arm_snapshot arm;
-    constexpr auto arm_all=simd::neon_fp16&simd::feature::neon_bf16&simd::feature::arm_dotprod;
+    constexpr auto arm_all=simd::neon_fp16&simd::arm_feature::neon_bf16&simd::arm_feature::dotprod;
     if(!simd::classify_isa(arm,arm_all).admitted()) return false;
     if(simd::classify_isa(arm,simd::avx2).admitted()) return false;
     for(unsigned i=0;i<8;++i) {
@@ -122,6 +130,10 @@ namespace {
     arm={};arm.extra_features={};
     if(simd::classify_isa(arm,arm_all).admitted()) return false;
 
+    return true;
+  }
+  constexpr bool synthetic_selection() {
+    x86_snapshot cpu;
     int calls=0;simd::isa selected{};
     auto callback=[&]<simd::isa A> { ++calls;selected=A; };
     cpu={};
@@ -138,9 +150,14 @@ namespace {
     if(simd::with_isa(simd::isa_list<simd::avx2>{},cpu,callback,simd::avx512_bf16) || calls) return false;
     return true;
   }
-  static_assert(synthetic());
+  // Keep each independent oracle within the default constexpr step budget.
+  static_assert(synthetic_x86_features());
+  static_assert(synthetic_x86_state());
+  static_assert(synthetic_arm());
+  static_assert(synthetic_selection());
 }
 int main() {
-  if(!synthetic()) return 1;
+  if(!synthetic_x86_features() || !synthetic_x86_state() ||
+      !synthetic_arm() || !synthetic_selection()) return 1;
   std::puts("ISA values, CPU/OS admission, inherited minima, ordered selection and no-match passed.");
 }

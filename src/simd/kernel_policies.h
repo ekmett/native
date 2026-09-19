@@ -27,14 +27,14 @@
 // be required by its callee's target attribute. Keep those requirements until
 // that callee is split into narrower scopes.
 namespace simd::detail {
-  inline constexpr isa kernel_base=feature_closure(avx2 & feature::avx512f & feature::avx512dq);
-  inline constexpr isa kernel_bw=feature_closure(kernel_base & feature::avx512bw);
-  inline constexpr isa kernel_vl=feature_closure(kernel_base & feature::avx512vl);
-  inline constexpr isa kernel_bw_bf16=feature_closure(kernel_bw & feature::avx512bf16);
-  inline constexpr isa kernel_bw_fp16=feature_closure(kernel_bw & feature::avx512fp16);
-  inline constexpr isa kernel_bw_half=feature_closure(kernel_bw_bf16 & feature::avx512fp16);
-  inline constexpr isa kernel_full_half=feature_closure(avx512_bf16 & feature::avx512fp16);
-  inline constexpr isa kernel_neon_half=feature_closure(neon_bf16 & feature::neon_fp16);
+  inline constexpr isa kernel_base=feature_closure(avx2 & x86_feature::avx512f & x86_feature::avx512dq);
+  inline constexpr isa kernel_bw=feature_closure(kernel_base & x86_feature::avx512bw);
+  inline constexpr isa kernel_vl=feature_closure(kernel_base & x86_feature::avx512vl);
+  inline constexpr isa kernel_bw_bf16=feature_closure(kernel_bw & x86_feature::avx512bf16);
+  inline constexpr isa kernel_bw_fp16=feature_closure(kernel_bw & x86_feature::avx512fp16);
+  inline constexpr isa kernel_bw_half=feature_closure(kernel_bw_bf16 & x86_feature::avx512fp16);
+  inline constexpr isa kernel_full_half=feature_closure(avx512_bf16 & x86_feature::avx512fp16);
+  inline constexpr isa kernel_neon_half=feature_closure(neon_bf16 & arm_feature::neon_fp16);
 
   using x86_kernel_policies=isa_list<avx512,kernel_bw,kernel_vl,kernel_base,avx2>;
   using raw_kernel_policies=decltype(x86_kernel_policies{}+isa_list<neon,scalar>{});

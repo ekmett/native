@@ -26,8 +26,8 @@ import simd.memory;
 import simd.types;
 import simd.static_string;
 import simd.numerics;
-static_assert((selected_arch & simd::feature::aes).has(selected_arch));
-static_assert(simd::feature::avx2 < (simd::feature::avx2 & simd::feature::fma));
+static_assert((selected_arch & simd::x86_feature::aes).has(selected_arch));
+static_assert(simd::x86_feature::avx2 < (simd::x86_feature::avx2 & simd::x86_feature::fma));
 #if !API_NEON
 import simd.cpu.x86;
 import simd.wait;

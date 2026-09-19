@@ -60,8 +60,8 @@ import simd;
   } \
   template<simd::isa A> requires(A == tag) \
   __attribute__((noinline)) void name(float * output,float const * input) { \
-    constexpr unsigned lanes=tag.has(simd::feature::avx512f)?16: \
-      tag.has(simd::feature::neon)?4:8; \
+    constexpr unsigned lanes=tag.has(simd::x86_feature::avx512f)?16: \
+      tag.has(simd::arm_feature::neon)?4:8; \
     DOUBLE_STEP(name,tag,lanes) \
   }
 SIMD_TARGET_VARIANTS(source_kernel,SELECTED_TARGETS,DOUBLE_BODY)

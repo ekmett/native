@@ -46,9 +46,10 @@ before the call and restore their own environment when appropriate.
 A baseline caller imports `simd.cpu.arm`, observes capabilities, and requires
 `classify_isa(cpu, neon_bf16).admitted()` before optional
 entry. NEON_BF16 requires baseline FP/Advanced SIMD and an observed BF16 feature;
-it does not require FP16 or EBF16. Unknown/failed observations reject. The capability record includes separate observation flags, so stale feature
-values cannot authorize instructions. EBF16 is
-reported separately for applications choosing enhanced arithmetic. Any stronger
+it does not require FP16 or EBF16. Unknown/failed observations reject. The capability record includes typed `present` and `observed` sets, so stale
+feature values cannot authorize instructions. Original query diagnostics remain
+under `raw`; EBF16 is reported there as `raw.ebf16` with `raw.ebf16_observed` for
+applications choosing enhanced arithmetic. Any stronger
 configured minimum remains the application's startup requirement.
 
 - Linux uses `getauxval(AT_HWCAP)` for baseline and `AT_HWCAP2` for BF16/EBF16.
