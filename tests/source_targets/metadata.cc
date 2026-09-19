@@ -61,7 +61,7 @@ namespace {
   static_assert(!(simd::target_features("avx2,")<=simd::detail::known_features));
   static_assert(simd::target_features("avx2,f16c")==simd::feature_closure(simd::x86_feature::avx2&simd::x86_feature::f16c));
 
-  constexpr bool synthetic() {
+  constexpr bool synthetic_x86_features() {
     x86_snapshot cpu;
     if(!simd::classify_isa(cpu,combined).admitted()) return false;
     if(simd::classify_isa(cpu,simd::neon).admitted()) return false;
@@ -82,6 +82,11 @@ namespace {
       cpu={}; cpu.leaf7_1_eax&=~(1u<<bit);
       if(simd::classify_isa(cpu,need).admitted()==(bit==5)) return false;
     }
+    return true;
+  }
+  constexpr bool synthetic_x86_state() {
+    x86_snapshot cpu;
+    constexpr auto need=combined;
     for(unsigned bit=0;bit<64;++bit) {
       cpu={};cpu.xcr0&=~(1ull<<bit);
       if(simd::classify_isa(cpu,need).admitted()==bool(0xe6ull&(1ull<<bit))) return false;
@@ -99,6 +104,9 @@ namespace {
     cpu={};cpu.extended1_ecx=0;
     if(simd::classify_isa(cpu,simd::x86_feature::sahf).admitted()) return false;
 
+    return true;
+  }
+  constexpr bool synthetic_arm() {
     arm_snapshot arm;
     constexpr auto arm_all=simd::neon_fp16&simd::arm_feature::neon_bf16&simd::arm_feature::dotprod;
     if(!simd::classify_isa(arm,arm_all).admitted()) return false;
@@ -122,6 +130,10 @@ namespace {
     arm={};arm.extra_features={};
     if(simd::classify_isa(arm,arm_all).admitted()) return false;
 
+    return true;
+  }
+  constexpr bool synthetic_selection() {
+    x86_snapshot cpu;
     int calls=0;simd::isa selected{};
     auto callback=[&]<simd::isa A> { ++calls;selected=A; };
     cpu={};
@@ -138,9 +150,14 @@ namespace {
     if(simd::with_isa(simd::isa_list<simd::avx2>{},cpu,callback,simd::avx512_bf16) || calls) return false;
     return true;
   }
-  static_assert(synthetic());
+  // Keep each independent oracle within the default constexpr step budget.
+  static_assert(synthetic_x86_features());
+  static_assert(synthetic_x86_state());
+  static_assert(synthetic_arm());
+  static_assert(synthetic_selection());
 }
 int main() {
-  if(!synthetic()) return 1;
+  if(!synthetic_x86_features() || !synthetic_x86_state() ||
+      !synthetic_arm() || !synthetic_selection()) return 1;
   std::puts("ISA values, CPU/OS admission, inherited minima, ordered selection and no-match passed.");
 }

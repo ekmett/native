@@ -14,9 +14,9 @@ Its pointer/scalar entry and dispatcher are separate targets; it admits
 Admission requires AVX2/FMA/BMI2 and compiler-implied features, AVX512F/DQ/BW/VL,
 CPUID.7.0.EDX[23], OSXSAVE and XCR0 XMM/YMM/opmask/ZMM state. Leaf availability
 is checked before interpreting stored feature bits. The application's configured
-minimum still applies before any dispatcher executes. This checkpoint appends
-`leaf7_edx` to the public capability record; the shared admission result records
-missing instructions as ISA features.
+minimum still applies before any dispatcher executes. The capability record
+retains `raw.leaf7_edx` for diagnostics; admission consumes its normalized
+`present` and `observed` sets and records missing instructions as ISA features.
 Rebuild producers and consumers together after updating the package.
 
 The hub contains both BF16 and FP16 definitions without requiring either
