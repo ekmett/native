@@ -31,7 +31,7 @@ for i in range(1,len(objects),2):
     file_format,contents=objects[i:i+2]
     if file_format.startswith('mach-o'):
         # Mach-O's local section symbol ltmp0 can be the displayed label for
-        # the first function. Count the defined global kernel symbols instead,
+        # the first function. Count defined global or weak kernel symbols instead,
         # and resolve each body within this object and section, never by name
         # or address alone across all input objects.
         sections=re.split(r'(?m)^Disassembly of section ([^\n]+):\s*$',contents)
@@ -39,7 +39,7 @@ for i in range(1,len(objects),2):
         for j in range(1,len(sections),2):
             for address,name,body in function_bodies(sections[j+1]):
                 bodies[sections[j],address]=body
-        symbols=re.findall(r'(?m)^([0-9a-f]+)\s+g\s+F\s+(\S+)\s+([^\n]+)$',sections[0])
+        symbols=re.findall(r'(?m)^([0-9a-f]+)\s+[gw]\s+F\s+(\S+)\s+([^\n]+)$',sections[0])
         for address,section,name in symbols:
             if not source_kernel(name): continue
             body=bodies.get((section,int(address,16)))
