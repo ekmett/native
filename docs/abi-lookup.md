@@ -105,6 +105,44 @@ It performs compile-time selection only. Give native implementations their
 required Clang target attributes, and use `with_isa` for CPU/OS admission before
 execution. See the [source-target guide](omnibus.md).
 
+## Extend an overload set
+
+`target` does not close the function's overload set. A new implementation can
+use its own disjoint constraint without changing the existing choice pack:
+
+```cpp
+template<isa A>
+void double16(float * out, float const * in) = delete;
+
+template<isa A> requires(target<A, avx512, avx2> == 0)
+void double16(float * out, float const * in);
+
+template<isa A> requires(target<A, avx512, avx2> == 1)
+void double16(float * out, float const * in);
+
+template<isa A>
+  requires(A.has(feature::neon) && target<A, avx512, avx2> == -1)
+void double16(float * out, float const * in);
+```
+
+These are constrained function overloads. The deleted primary rejects ISAs
+with no implementation. For ordinary x86 and ARM bundles, `A.has(feature::neon)`
+alone is disjoint from the two x86 cases. Raw ISA values can contain both
+families, so the explicit `-1` test keeps the constraints disjoint even for
+those synthetic sets. It does not make a mixed set executable on either CPU;
+CPU/OS admission still applies. The target helper checks its own choice pack,
+not the other function overloads; overlapping constraints can make a call
+ambiguous.
+
+Declare every overload before defining a dispatcher template that calls
+`double16<A>`. With these pointer arguments, argument-dependent lookup cannot
+discover an overload declared later. The native definitions need the matching
+Clang target scopes and belong in builds for their host architecture; see the
+[direct kernel example](omnibus.md).
+
+Use `has` in these constraints. Adding `!!` to `A.neon` does not remove the
+property expression that Clang's Linux/macOS mangler rejects.
+
 ## Compiler-minimum metadata
 
 `isa_list<...>` and `abi_lookup<A, List>` retain the internal ordered metadata

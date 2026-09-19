@@ -67,6 +67,50 @@ The named pragma stack preserves the surrounding scope; it does not remove its
 requirements. If nesting is intentional, include the outer scope's features in
 `SIMD_TARGET_EXTRA_MINIMUM` so the generated admission list checks them too.
 
+## Write variants directly
+
+You can write the overloads yourself. This x86 kernel doubles sixteen floats:
+
+```cpp
+#include <simd/targets.h>
+import simd;
+
+using namespace simd;
+
+template<isa A>
+void double16(float * out, float const * in) = delete;
+
+SIMD_TARGET_PUSH(avx512)
+template<isa A> requires(target<A, avx512, avx2> == 0)
+void double16(float * out, float const * in) {
+  using V = vec<float, 16, avx512>;
+  auto x = V::load(in);
+  (x + x).store(out);
+}
+SIMD_TARGET_POP()
+
+SIMD_TARGET_PUSH(avx2)
+template<isa A> requires(target<A, avx512, avx2> == 1)
+void double16(float * out, float const * in) {
+  using V = vec<float, 8, avx2>;
+  for (unsigned i = 0; i < 16; i += 8) {
+    auto x = V::load(in + i);
+    (x + x).store(out + i);
+  }
+}
+SIMD_TARGET_POP()
+```
+
+Call `double16<A>(out, in)` with a CPU/OS-admitted `A`. An `avx512_bf16`
+bundle selects case zero; `avx2` selects case one. Each body uses its selected
+ISA for local vectors, so additional caller features cannot strengthen the
+body's compiler requirements. `target` selects the overload; push/pop supplies
+its compiler flags.
+
+The overload set remains open. An ARM build can provide a disjoint NEON case
+without adding NEON to that x86 choice pack. See [overload extension and
+declaration order](abi-lookup.md).
+
 ## Choose feature sets
 
 Presets are `constexpr isa` values with compiler prerequisites included. To
