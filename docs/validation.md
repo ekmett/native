@@ -357,7 +357,7 @@ preserve existing positional aggregate initializers, but grew the public
 `x86_capabilities` and `x86_admission` records and changed their binary layouts.
 Consumers passing or storing these records across compiled boundaries needed
 to rebuild together. The later shared ISA admission API replaces the
-per-platform result; see [the migration](omnibus.md#capability-module-migration).
+per-platform result; see [the migration](omnibus.md).
 
 
 ## Optional native NEON BF16 checkpoint
@@ -416,7 +416,7 @@ test-local concept and matching declarations/definitions using `has`.
 The platform observers now live in `simd.x86` and `simd.arm`. Both expose the
 same value-based `classify_isa` and finite-list `with_isa` API; the duplicate
 fixed-profile classifiers are removed. Native observation definitions are
-unchanged. See [the migration](omnibus.md#capability-module-migration) for the
+unchanged. See [the migration](omnibus.md) for the
 module rename, result fields and rebuild requirement.
 
 LLVM 23.1.1 on macOS ARM passed 16 focused CTests, including native NEON FP16,
