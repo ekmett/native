@@ -124,11 +124,10 @@ body's compiler requirements. `target` selects the overload; push/pop supplies
 its compiler flags.
 
 `<simd/config.h>` supplies the host macros; module imports do not export
-preprocessor macros. Only the ARM build sees the NEON definition. The hub
-already includes the matching intrinsic headers internally; if you include
-`<immintrin.h>` or `<arm_neon.h>` yourself, guard those includes too. Constraints
-select among implementations that the compiler can build for its target;
-they do not make foreign instruction families available.
+preprocessor macros. These guards cover the native target scopes and concrete
+vector types used above. Dependent bodies can remain shared; see the
+[dependent NEON example](abi-lookup.md). Constraints do not make foreign
+instruction families available.
 
 The overload set remains open within each build. See [overload extension and
 declaration order](abi-lookup.md).
@@ -169,6 +168,23 @@ Vector types retain implicit conversion to and from their native register
 representation. An attributed body can mix standard intrinsics with SIMD
 operations without explicit bridge calls. Those intrinsics still require the
 same target support as they would in ordinary Clang code.
+
+The hub already guards its intrinsic headers by CPU family. Use the same
+boundary when including them yourself:
+
+```cpp
+#include <simd/config.h>
+#if SIMD_HOST_X86
+#include <immintrin.h>
+#elif SIMD_HOST_NEON
+#include <arm_neon.h>
+#endif
+import simd;
+```
+
+These guards describe the compilation target, not a runtime CPU check. Keep
+foreign Clang target attributes behind the same boundary: constraints defer
+dependent C++ bodies, not preprocessing or attribute validation.
 
 Installed packages distribute module sources. CMake builds one compatible hub
 BMI and one provider for each common module; target variants do not multiply
