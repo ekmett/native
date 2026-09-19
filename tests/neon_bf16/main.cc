@@ -9,7 +9,7 @@
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
-import simd.arm;
+import simd.cpu.arm;
 import simd.scalar;
 extern "C" bool bf16_storage();
 extern "C" void bf16_dot2(std::uint16_t const *,std::uint16_t const *,float const *,float *) noexcept;

@@ -6,7 +6,7 @@ module;
 #include "simd/attributes.h"
 
 export module simd.wait;
-import simd.x86;
+import simd.cpu.x86;
 
 export namespace simd {
   /// \defgroup wait Waiting

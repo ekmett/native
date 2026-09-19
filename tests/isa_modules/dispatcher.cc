@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
-import simd.x86;
+import simd.cpu.x86;
 #if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif

@@ -216,13 +216,19 @@ it does not change compiler flags or make startup safe below the project minimum
 
 ## Capability module migration
 
-The platform modules are `simd.x86` and `simd.arm`. Each exports the shared
+Import `simd.cpu` for the shared feature/ISA vocabulary and the native platform's
+CPU utilities without the vector hub. It re-exports `simd.cpu.x86` and `simd.wait`
+on x86, or `simd.cpu.arm` on AArch64. Both architectures' feature names remain
+available on either host.
+
+The platform modules are `simd.cpu.x86` and `simd.cpu.arm`. Each exports the shared
 `isa`, `classify_isa` and `with_isa` interface alongside its native capability
 snapshot and observer. Standalone capability consumers link `simd::common`;
 they do not need the vector hub. The raw `cpuid` function and vendor query remain
-in `simd.x86`, and waiting instructions remain in `simd.wait`.
+in `simd.cpu.x86`, and waiting instructions remain in `simd.wait`.
 
-Replace the former `simd.cpuid` import with `simd.x86`. The fixed `x86_profile`
+Replace the former `simd.cpuid` import with `simd.cpu.x86`, and `simd.arm` with
+`simd.cpu.arm`; use `simd.cpu` for portable imports. The fixed `x86_profile`
 and `arm_profile` enums, their classifiers and per-platform admission records
 have been removed. Pass the existing ISA values to `classify_isa(cpu, avx2)` or
 `classify_isa(cpu, neon_fp16)`, or use a finite list with `with_isa` when selecting

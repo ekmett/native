@@ -16,7 +16,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/../../etc/cmake/simdProfile.cmake")
 add_library(cpuid_provider OBJECT)
 target_sources(cpuid_provider PUBLIC FILE_SET CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../src"
-  FILES "${CMAKE_CURRENT_LIST_DIR}/../../src/simd.x86.ccm")
+  FILES "${CMAKE_CURRENT_LIST_DIR}/../../src/simd.cpu.x86.ccm")
 target_include_directories(cpuid_provider PRIVATE "${CMAKE_CURRENT_LIST_DIR}/../../src")
 set_property(TARGET cpuid_provider PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
 # The generic engine has one baseline object; CMake may synthesize consumer BMIs.

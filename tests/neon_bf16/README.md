@@ -43,7 +43,7 @@ before the call and restore their own environment when appropriate.
 
 ## Admission and validation
 
-A baseline caller imports `simd.arm`, observes capabilities, and requires
+A baseline caller imports `simd.cpu.arm`, observes capabilities, and requires
 `classify_isa(cpu, neon_bf16).admitted()` before optional
 entry. NEON_BF16 requires baseline FP/Advanced SIMD and an observed BF16 feature;
 it does not require FP16 or EBF16. Unknown/failed observations reject. The capability record includes separate observation flags, so stale feature

@@ -12,7 +12,7 @@ module;
 #include <cpuid.h>
 #endif
 
-export module simd.x86;
+export module simd.cpu.x86;
 #include "simd/isa_capability_exports.h"
 
 export namespace simd {

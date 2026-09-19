@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdio>
 #include <string_view>
-import simd.arm;
+import simd.cpu.arm;
 
 namespace {
   constexpr simd::feature extras[]{

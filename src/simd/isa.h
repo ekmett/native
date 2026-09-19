@@ -404,7 +404,7 @@ namespace simd {
     };
   }
 
-  /// Pure classification of the existing simd.x86 observation record.
+  /// Pure classification of the existing simd.cpu.x86 observation record.
   template<detail::x86_observation C>
   constexpr isa_admission classify_isa(C const & cpu, isa requested,isa minimum={}) noexcept {
     auto bits=feature_closure(requested&minimum);
@@ -436,7 +436,7 @@ namespace simd {
     return result;
   }
 
-  /// Pure classification of the existing simd.arm observation record.
+  /// Pure classification of the existing simd.cpu.arm observation record.
   template<detail::arm_observation C>
   constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
     auto bits=feature_closure(requested&minimum);

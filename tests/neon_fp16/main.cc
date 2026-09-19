@@ -9,7 +9,7 @@
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
-import simd.arm;
+import simd.cpu.arm;
 import simd.scalar;
 // FP16 feature macros can remain set via FP16FML after -fullfp16. The
 // baseline_features test compiles native intrinsics with this exact command

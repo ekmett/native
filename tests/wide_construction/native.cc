@@ -12,9 +12,9 @@ import simd;
 #include <simd/wide.h>
 #include <simd/simd/math/exp.h>
 #if defined(__x86_64__) || defined(_M_X64)
-import simd.x86;
+import simd.cpu.x86;
 #elif defined(__aarch64__) || defined(_M_ARM64)
-import simd.arm;
+import simd.cpu.arm;
 #endif
 #endif
 #include "traits.h"

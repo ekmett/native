@@ -3,9 +3,9 @@
 #include <cstdio>
 #include <cstdint>
 #if !TEST_NEON && !TEST_NEON_FP16 && !TEST_NEON_BF16
-import simd.x86;
+import simd.cpu.x86;
 #elif TEST_REQUIRED_NEON_FP16 || TEST_REQUIRED_NEON_BF16
-import simd.arm;
+import simd.cpu.arm;
 #endif
 #if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags

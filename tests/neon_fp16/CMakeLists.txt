@@ -60,7 +60,7 @@ if(SIMD_NEON_FP16_OBJDUMP AND NOT neon_fp16_usage_options MATCHES "sanitize=addr
 endif()
 if(neon_fp16_standalone AND CMAKE_GENERATOR STREQUAL "Ninja")
   add_test(NAME simd.neon_fp16.shared_bmi COMMAND "${CMAKE_COMMAND}"
-    "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DMODULES=simd.scalar;simd.wide;simd.numerics;simd.arm;simd"
+    "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DMODULES=simd.scalar;simd.wide;simd.numerics;simd.cpu.arm;simd.cpu;simd"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/../profile_package/check_bmi.cmake")
   set_tests_properties(simd.neon_fp16.shared_bmi PROPERTIES LABELS "host;modules;neon_fp16;profiles")
 endif()

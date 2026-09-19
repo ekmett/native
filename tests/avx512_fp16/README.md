@@ -10,7 +10,7 @@ numeric conversion operations remain absent.
 
 This fixture compiles the optional kernel with `simd_target_profile(kernel AVX512_FP16)`.
 Its pointer/scalar entry and dispatcher are separate targets; it admits
-`avx512_fp16` using `simd.x86` before entering the optional kernel.
+`avx512_fp16` using `simd.cpu.x86` before entering the optional kernel.
 Admission requires AVX2/FMA/BMI2 and compiler-implied features, AVX512F/DQ/BW/VL,
 CPUID.7.0.EDX[23], OSXSAVE and XCR0 XMM/YMM/opmask/ZMM state. Leaf availability
 is checked before interpreting stored feature bits. The application's configured

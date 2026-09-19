@@ -135,7 +135,7 @@ do not depend on `wide`.
 
 Common string, type, memory and numerical utilities retain independent named
 modules with one provider each. `simd.numerics` owns fp16/bf16 storage and scalar
-conversions. `simd.x86` and `simd.wait` are x86-only; `simd.arm` supplies Arm
+conversions. `simd.cpu.x86` and `simd.wait` are x86-only; `simd.cpu.arm` supplies Arm
 observation. Optional wait functions have their own target requirements.
 
 ## Extending the element type
@@ -240,3 +240,12 @@ ARM. `simd::common` remains an alias. Linking minimal carries its configured
 requirements to consumers; stronger functions carry their own target attributes.
 Admission checks may select a stronger implementation, but the process must
 already satisfy its configured minimum.
+
+## CPU capabilities
+
+`import simd.cpu;` exposes the shared feature/ISA vocabulary and the native
+platform's capability observer, independently of vector operations. Link
+`simd::common`. The umbrella re-exports `simd.cpu.x86` and `simd.wait` on x86,
+or `simd.cpu.arm` on AArch64. Direct architecture imports remain available.
+Both feature families use the same structural ISA bitset; the native observer
+and OS-state checks determine which requirements the host can execute.

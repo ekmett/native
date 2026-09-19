@@ -53,7 +53,7 @@ behavior. Requirements of arbitrary user callbacks and ADL functions remain
 the caller's responsibility. `log` and `sincos` remain extension adapters where
 no raw vector overload exists.
 
-`simd.static_string`, `simd.types`, `simd.memory`, `simd.x86`, `simd.wait` and
+`simd.static_string`, `simd.types`, `simd.memory`, `simd.cpu.x86`, `simd.wait` and
 `simd.numerics` define their APIs directly in their modules. System and intrinsic
 headers remain in the global module fragment. The x86-only CPUID/wait modules
 are omitted from ARM builds. `simd.numerics` owns fp16/bf16 and their explicit

@@ -24,7 +24,7 @@ module;
 #include <processthreadsapi.h>
 #endif
 
-export module simd.arm;
+export module simd.cpu.arm;
 #include "simd/isa_capability_exports.h"
 
 export namespace simd {

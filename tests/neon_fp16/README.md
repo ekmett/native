@@ -21,7 +21,7 @@ is implemented; native numeric conversions remain future work. Native ARM BF16 s
 products have a separate [NEON_BF16 profile](../neon_bf16/README.md).
 
 Before entering a translation unit compiled for NEON_FP16, a minimum-profile
-caller imports `simd.arm`, calls `observe_arm_capabilities()`, and requires
+caller imports `simd.cpu.arm`, calls `observe_arm_capabilities()`, and requires
 `classify_isa(cpu, neon_fp16).admitted()`. The classifier
 requires baseline FP/Advanced SIMD and scalar/vector half arithmetic. Any stronger
 application-configured minimum remains the application's startup requirement.

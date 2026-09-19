@@ -413,7 +413,7 @@ test-local concept and matching declarations/definitions using `has`.
 
 ## Shared ISA admission and architecture modules
 
-The platform observers now live in `simd.x86` and `simd.arm`. Both expose the
+The platform observers now live in `simd.cpu.x86` and `simd.cpu.arm`. Both expose the
 same value-based `classify_isa` and finite-list `with_isa` API; the duplicate
 fixed-profile classifiers are removed. Native observation definitions are
 unchanged. See [the migration](omnibus.md) for the
@@ -431,3 +431,9 @@ per-preset constexpr checks, and the real-observer consumer compiled for x86-64
 macOS. That is compilation evidence only; x86 runtime and the other operating
 systems still need their native checks. No new instruction features or ISA
 representation are introduced here.
+
+The CPU umbrella checkpoint also passes all 84 local ARM SIMD tests and all 21
+FTZ tests against the updated installed package. A fresh install, physically
+relocated before consumer configuration, passes seven source-target/admission
+checks including a consumer that imports only `simd.cpu` and links only
+`simd::common`. Hosted checks qualify the final module names separately.
