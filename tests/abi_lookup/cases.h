@@ -3,11 +3,11 @@
 #pragma once
 namespace abi_lookup_test {
   using namespace simd;
-  constexpr auto base=feature_closure(avx2&feature::avx512f&feature::avx512dq);
-  constexpr auto bw=base&feature::avx512bw;
-  constexpr auto vl=base&feature::avx512vl;
-  constexpr auto both=bw&feature::avx512vl;
-  constexpr auto extra=both&feature::aes;
+  constexpr auto base=feature_closure(avx2&x86_feature::avx512f&x86_feature::avx512dq);
+  constexpr auto bw=base&x86_feature::avx512bw;
+  constexpr auto vl=base&x86_feature::avx512vl;
+  constexpr auto both=bw&x86_feature::avx512vl;
+  constexpr auto extra=both&x86_feature::aes;
   using policies=isa_list<bw,vl,base,avx2>;
   static_assert(abi_lookup<bw,policies>::index==0);
   static_assert(abi_lookup<vl,policies>::index==1);
@@ -25,27 +25,27 @@ namespace abi_lookup_test {
   static_assert(abi_lookup<both,isa_list<both,bw,vl>>::index==0);
   static_assert(abi_lookup<extra,policies>::index==0);
   static_assert(both==avx512);
-  static_assert((feature::avx512vl&bw)==both);
+  static_assert((x86_feature::avx512vl&bw)==both);
   static_assert(abi_lookup<extra,policies>::architecture==bw);
   static_assert(abi_lookup<extra,policies>::required_features==bw);
 
   // Metadata keeps the requested ISA and closes the compiler requirements.
-  constexpr auto inherited=target_entry{avx2,feature::avx512vl};
+  constexpr auto inherited=target_entry{avx2,x86_feature::avx512vl};
   using inherited_policies=isa_list<inherited,avx2>;
   static_assert(!abi_lookup<avx2,isa_list<inherited>>::matched);
   static_assert(abi_lookup<avx2,inherited_policies>::index==1);
-  constexpr auto enough=feature_closure(avx2&feature::avx512vl);
+  constexpr auto enough=feature_closure(avx2&x86_feature::avx512vl);
   using picked=abi_lookup<enough,inherited_policies>;
   static_assert(picked::matched && picked::index==0);
   static_assert(picked::architecture==avx2);
-  static_assert(picked::minimum==isa(feature::avx512vl));
+  static_assert(picked::minimum==isa(x86_feature::avx512vl));
   static_assert(picked::required_features==enough);
-  constexpr auto wrong_host=target_entry{avx2,feature::neon};
+  constexpr auto wrong_host=target_entry{avx2,arm_feature::neon};
   static_assert(!abi_lookup<avx512,isa_list<wrong_host>>::matched);
   static_assert(!abi_lookup<neon,isa_list<wrong_host>>::matched);
 
   template<auto A,auto... P> concept has_target=requires { target<A,P...>; };
-  static_assert(arch<isa> && arch<feature> && !arch<int>);
+  static_assert(arch<isa> && arch<x86_feature> && arch<arm_feature> && !arch<int>);
   static_assert(!has_target<42,avx2> && !has_target<avx2,42>);
   static_assert(target<scalar,bw,vl,base,avx2> == -1);
   static_assert(target<avx512> == -1);
@@ -53,7 +53,7 @@ namespace abi_lookup_test {
   static_assert(target<neon,avx2,scalar> == 1);
   static_assert(target<both,vl,bw> == 0);
   static_assert(target<extra,bw,vl,base,avx2> == 0);
-  static_assert(target<feature::avx2,feature::avx2> == 0);
+  static_assert(target<x86_feature::avx2,x86_feature::avx2> == 0);
   using missing=abi_lookup<scalar,policies>;
   static_assert(!missing::matched && missing::index==-1);
   static_assert(!abi_lookup<avx512,isa_list<>>::matched);
@@ -68,7 +68,7 @@ namespace abi_lookup_test {
   static_assert(abi_lookup<avx512,isa_list<scalar,avx512>>::index==0);
   static_assert(!abi_lookup<neon,policies>::matched);
   static_assert(!abi_lookup<avx512,isa_list<neon>>::matched);
-  constexpr auto arm_both=neon_bf16&feature::neon_fp16;
+  constexpr auto arm_both=neon_bf16&arm_feature::neon_fp16;
   static_assert(abi_lookup<arm_both,isa_list<neon_fp16,neon_bf16>>::architecture==neon_fp16);
 
   template<isa A> constexpr int exp_target=target<A,bw,vl,base,avx2>;
@@ -84,38 +84,82 @@ namespace abi_lookup_test {
   struct partial<A> { static constexpr int index=0; };
   static_assert(partial<extra>::index==0 && partial<avx2>::index==-1);
 
+  // Architecture-local ordinals must never alias in shared ISA storage.
+  static_assert(isa(x86_feature::aes)!=isa(arm_feature::aes));
+  static_assert(!(x86_feature::aes<=arm_feature::aes));
+  static_assert(!(arm_feature::aes>=x86_feature::aes));
+  static_assert(!(arm_feature::neon<arm_feature::aes));
+  static_assert(!(arm_feature::aes<arm_feature::neon));
+  static_assert(arm_feature::aes<=arm_feature::aes);
+  static_assert(arm_feature::aes>=arm_feature::aes);
+  constexpr auto both_aes=x86_feature::aes&arm_feature::aes;
+  static_assert(both_aes.has(x86_feature::aes) && both_aes.has(arm_feature::aes));
+  static_assert([] {
+    for(std::size_t i=0;i<x86_feature_count;++i) {
+      auto f=static_cast<x86_feature>(i);
+      if(!isa(f).has(f)) return false;
+      for(std::size_t j=0;j<arm_feature_count;++j)
+        if(isa(f).has(static_cast<arm_feature>(j))) return false;
+    }
+    for(std::size_t i=0;i<arm_feature_count;++i) {
+      auto f=static_cast<arm_feature>(i);
+      if(!isa(f).has(f)) return false;
+    }
+    return true;
+  }());
+  constexpr bool invalid_enum_bounds() {
+    auto check=[](auto invalid) {
+      isa a=x86_feature::aes&arm_feature::aes;
+      if(a.get(invalid)) return false;
+      a.set(invalid,false);
+      if(a!=both_aes) return false;
+      a.set(invalid,true);
+      return !a.get(invalid) && a.has(both_aes) &&
+        !(a<=detail::known_features) &&
+        !(feature_closure(isa(invalid))<=detail::known_features);
+    };
+    return check(static_cast<x86_feature>(x86_feature_count)) &&
+      check(static_cast<arm_feature>(arm_feature_count)) &&
+      check(static_cast<x86_feature>(-1)) && check(static_cast<arm_feature>(-1)) &&
+      check(static_cast<x86_feature>(std::uint64_t{1}<<63)) &&
+      check(static_cast<arm_feature>(std::uint64_t{1}<<63));
+  }
+  static_assert(invalid_enum_bounds());
+  template<isa A> struct enum_requirement {};
+  static_assert(!std::same_as<enum_requirement<x86_feature::aes>,enum_requirement<arm_feature::aes>>);
+
   // Singleton construction is exact, unlike explicit compiler-feature closure.
-  constexpr isa single=feature::avx2;
-  static_assert(single.has(feature::avx2) && !single.has(feature::avx));
+  constexpr isa single=x86_feature::avx2;
+  static_assert(single.has(x86_feature::avx2) && !single.has(x86_feature::avx));
   static_assert(single<avx2 && !(avx2<single));
   static_assert(isa{}.has(isa{}) && isa{}<single);
-  static_assert(feature::avx2<=feature::avx2 && !(feature::avx2<feature::avx2));
-  static_assert(!(feature::avx2<feature::fma) && !(feature::fma<feature::avx2));
-  static_assert(!(feature::avx2<=feature::fma) && !(feature::fma>=feature::avx2));
-  constexpr auto pair=feature::avx2&feature::fma;
-  static_assert(pair==(single&feature::fma));
-  static_assert(pair==(feature::fma&single) && pair==(single&isa(feature::fma)));
-  static_assert(pair>feature::avx2 && feature::fma<pair && pair>=single);
-  static_assert(feature::avx2<=single && single>=feature::avx2);
+  static_assert(x86_feature::avx2<=x86_feature::avx2 && !(x86_feature::avx2<x86_feature::avx2));
+  static_assert(!(x86_feature::avx2<x86_feature::fma) && !(x86_feature::fma<x86_feature::avx2));
+  static_assert(!(x86_feature::avx2<=x86_feature::fma) && !(x86_feature::fma>=x86_feature::avx2));
+  constexpr auto pair=x86_feature::avx2&x86_feature::fma;
+  static_assert(pair==(single&x86_feature::fma));
+  static_assert(pair==(x86_feature::fma&single) && pair==(single&isa(x86_feature::fma)));
+  static_assert(pair>x86_feature::avx2 && x86_feature::fma<pair && pair>=single);
+  static_assert(x86_feature::avx2<=single && single>=x86_feature::avx2);
   constexpr isa edited=[] {
-    isa a=feature::avx2;
+    isa a=x86_feature::avx2;
     a.fma=true;
     a.avx2=false;
     return a;
   }();
-  static_assert(edited==isa(feature::fma) && single==isa(feature::avx2));
+  static_assert(edited==isa(x86_feature::fma) && single==isa(x86_feature::avx2));
   // Clang's Itanium mangler cannot encode properties directly in a function
   // constraint. Keep property evaluation here and exercise the portable form.
   template<isa A> concept has_fields=A.avx2 && A.fma;
   template<isa A> requires has_fields<A>
-  constexpr bool fields() { return A.has(feature::avx2&feature::fma); }
+  constexpr bool fields() { return A.has(x86_feature::avx2&x86_feature::fma); }
   static_assert(fields<pair>());
   static_assert(!has_fields<single> && !has_fields<isa{}>);
-  template<isa A> requires(A.has(feature::avx2&feature::fma))
+  template<isa A> requires(A.has(x86_feature::avx2&x86_feature::fma))
   constexpr bool flags();
-  template<isa A> requires(A.has(feature::avx2&feature::fma))
+  template<isa A> requires(A.has(x86_feature::avx2&x86_feature::fma))
   constexpr bool flags() { return A.avx2 && A.fma; }
   static_assert(flags<pair>());
   template<class T> concept alternatives=requires(T a) { a|a; };
-  static_assert(!alternatives<isa> && !alternatives<feature>);
+  static_assert(!alternatives<isa> && !alternatives<x86_feature> && !alternatives<arm_feature>);
 }

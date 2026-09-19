@@ -5,6 +5,10 @@ import simd.cpu;
 // Both feature families are available through the CPU-only umbrella.
 template<simd::isa A> struct requirement {};
 static_assert(!__is_same(requirement<simd::avx2>, requirement<simd::neon>));
+static_assert(!__is_same(requirement<simd::x86_feature::aes>, requirement<simd::arm_feature::aes>));
+static_assert(simd::isa(simd::x86_feature::aes).has(simd::x86_feature::aes));
+static_assert(simd::isa(simd::arm_feature::aes).has(simd::arm_feature::aes));
+static_assert(simd::x86_feature_count>0 && simd::arm_feature_count>0);
 
 int main() {
 #if defined(__x86_64__) || defined(_M_X64)

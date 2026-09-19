@@ -79,7 +79,7 @@ namespace {
     auto cpu = full; cpu.xcr0_observed = false;
     auto unread = simd::classify_isa(cpu, profile);
     if (unread.admitted() || !unread.missing_xcr0_observation || unread.missing_xcr0 != expected_xcr0) return false;
-    auto result = simd::classify_isa(full, simd::isa(simd::feature::invalid_features));
+    auto result = simd::classify_isa(full, simd::isa(static_cast<simd::x86_feature>(-1)));
     return result.invalid_features && !result.admitted();
   }
   static_assert(synthetic(simd::avx2));

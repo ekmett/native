@@ -163,7 +163,7 @@ int main() {
   EXP_CALLER_CASES(RUN_RAW_CALLER)
 #undef RUN_RAW_CALLER
   std::printf("%u raw-scope caller cases executed, %u skipped\n",raw_executed,raw_skipped);
-  constexpr auto extra=simd::feature_closure(simd::avx2&simd::feature::aes);
+  constexpr auto extra=simd::feature_closure(simd::avx2&simd::x86_feature::aes);
   if(simd::classify_isa(cpu,extra,SIMD_TARGET_MINIMUM).admitted()) {
     if(!refinement_test::compare_case<extra>() || !refinement_test::compare_case<extra,true>()) return 2;
     std::puts("AVX2 caller with extra AES tag: original type retained, outputs exact");

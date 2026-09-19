@@ -51,7 +51,7 @@ namespace {
     if(simd::classify_isa(empty,simd::neon_bf16).admitted()) return false;
     simd::arm_capabilities all{true,true,true,true,true,true,true,true,true,true};
     if(!simd::classify_isa(all,simd::neon_bf16).admitted()) return false;
-    if(!simd::classify_isa(all,simd::isa(simd::feature::invalid_features)).invalid_features) return false;
+    if(!simd::classify_isa(all,simd::isa(static_cast<simd::x86_feature>(-1))).invalid_features) return false;
     auto baseline=all; baseline.bf16_observed=baseline.bf16=false;
     if(!simd::classify_isa(baseline,simd::neon).admitted() ||
         !simd::classify_isa(baseline,simd::neon_fp16).admitted() ||
@@ -71,7 +71,7 @@ namespace {
       }
       auto rejected=simd::classify_isa(c,simd::neon_bf16);
       if(rejected.admitted()) return false;
-      if(missing>=3 && !rejected.missing_features.has(simd::feature::neon_bf16)) return false;
+      if(missing>=3 && !rejected.missing_features.has(simd::arm_feature::neon_bf16)) return false;
     }
     return true;
   }

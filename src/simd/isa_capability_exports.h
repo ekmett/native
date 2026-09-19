@@ -3,8 +3,10 @@
 #pragma once
 // Include after a named-module declaration; isa.h definitions belong to the GMF.
 export namespace simd {
-  using ::simd::feature;
-  using ::simd::feature_count;
+  using ::simd::x86_feature;
+  using ::simd::arm_feature;
+  using ::simd::x86_feature_count;
+  using ::simd::arm_feature_count;
   using ::simd::feature_closure;
   using ::simd::isa;
   using ::simd::scalar;

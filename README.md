@@ -29,8 +29,8 @@ An AVX-512 profile can also use 128-bit and 256-bit registers. Comparisons retur
 Feature requirements compose with `&` and compare by inclusion:
 
 ```cpp
-constexpr simd::isa needs = simd::feature::avx2 & simd::feature::fma;
-static_assert(needs.has(simd::feature::fma));
+constexpr simd::isa needs = simd::x86_feature::avx2 & simd::x86_feature::fma;
+static_assert(needs.has(simd::x86_feature::fma));
 static_assert(needs <= simd::avx2);
 static_assert(simd::target<simd::avx2, simd::avx512, simd::avx2> == 1);
 

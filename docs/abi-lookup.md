@@ -3,19 +3,19 @@
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-`isa` is a structural feature set that can be a template argument. `feature`
-names instruction features; `&` combines their requirements by union:
+`isa` is a structural feature set that can be a template argument.
+`x86_feature` and `arm_feature` name the respective instruction features; `&` combines their requirements by union:
 
 ```cpp
 using namespace simd;
 
 constexpr isa needs = [] {
-  using enum feature;
+  using enum x86_feature;
   return avx2 & fma & f16c;
 }();
 
-static_assert(needs.has(feature::fma));
-static_assert(feature::avx2 <= needs);
+static_assert(needs.has(x86_feature::fma));
+static_assert(x86_feature::avx2 <= needs);
 static_assert(needs <= avx512);
 
 constexpr isa adjusted = [] {
@@ -27,6 +27,17 @@ constexpr isa adjusted = [] {
 static_assert(adjusted.f16c && !adjusted.bmi2);
 ```
 
+The two enums have independent ordinals: `x86_feature::aes` and
+`arm_feature::aes` map to different bits in `isa`. ARM names omit the redundant
+`arm_` prefix; existing ISA properties such as `a.arm_aes` retain it to
+distinguish the two architectures. `x86_feature_count` and `arm_feature_count`
+bound the respective enum ranges. Ordinals and the shared storage layout are
+not a stable serialization format.
+
+An out-of-range enum value reads as absent. Requiring it, through construction
+or `set(value, true)`, records an invalid requirement so admission fails closed.
+`set(value, false)` leaves the set unchanged for an out-of-range value.
+
 The properties read and update the set's bits; they store no additional state.
 `a.has(b)` accepts a feature or another `isa`. `a <= b` means every bit of `a`
 occurs in `b`, and `<` means strict inclusion. The reverse comparisons have the
@@ -34,7 +45,7 @@ corresponding meanings. This is a partial order: distinct singleton features
 are incomparable. `&` works for every feature/ISA pairing; there is no `|`
 operator.
 
-For function constraints, use `requires(A.has(feature::avx2 & feature::fma))`
+For function constraints, use `requires(A.has(x86_feature::avx2 & x86_feature::fma))`
 or the `target` selector below. Clang 23's Linux/macOS mangler rejects direct
 property expressions such as `requires(A.avx2 && A.fma)`; see the
 [tooling limits](validation.md).
@@ -43,7 +54,7 @@ Default construction gives the empty set, equal to `scalar`. Construction from
 one feature sets exactly one bit. It never adds implied features:
 
 ```cpp
-constexpr isa one = feature::avx2;
+constexpr isa one = x86_feature::avx2;
 static_assert(one.avx2 && !one.avx && !one.fma);
 constexpr isa compiler_features = feature_closure(one);
 static_assert(compiler_features.avx);
@@ -56,7 +67,7 @@ and CPU admission apply that closure. The existing `scalar`, `avx2`, `avx512`,
 example, the `avx2` preset also requests FMA and BMI2. CPU-model bundles remain
 future work.
 
-The feature enumerators `feature::avx512bf16` and `feature::avx512fp16` name single
+The feature enumerators `x86_feature::avx512bf16` and `x86_feature::avx512fp16` name single
 bits. The presets `avx512_bf16` and `avx512_fp16` include the broader AVX-512
 requirements.
 
@@ -64,7 +75,7 @@ requirements.
 
 `target<A, Choices...>` is an `int`: the zero-based index of the first choice
 contained in `A`, or `-1` when none matches. An empty choice pack also returns
-`-1`. The `arch` concept admits either a `feature` or an `isa`; generic value
+`-1`. The `arch` concept admits `x86_feature`, `arm_feature`, or `isa`; generic value
 parameters can use `template<arch auto A>`. Vector algorithms normally use
 `template<isa A>`:
 
@@ -75,7 +86,7 @@ inline constexpr int operation_target = target<A, avx512, avx2>;
 static_assert(operation_target<avx512_bf16> == 0);
 static_assert(operation_target<avx2> == 1);
 static_assert(operation_target<scalar> == -1);
-static_assert(target<feature::avx2, feature::avx2> == 0);
+static_assert(target<x86_feature::avx2, x86_feature::avx2> == 0);
 
 template<isa A> requires(target<A, avx512, avx2> == 1)
 void operation(float const * input, float * output);
@@ -127,7 +138,7 @@ template<isa A> requires(target<A, avx512, avx2> == 1)
 void double16(float * out, float const * in);
 
 #elif SIMD_HOST_NEON
-template<isa A> requires(A.has(feature::neon))
+template<isa A> requires(A.has(arm_feature::neon))
 void double16(float * out, float const * in);
 #endif
 ```
@@ -144,7 +155,7 @@ additional target scope:
 
 ```cpp
 template<isa A>
-  requires(A.has(feature::neon) && requires { sizeof(vec<float, 4, A>); })
+  requires(A.has(arm_feature::neon) && requires { sizeof(vec<float, 4, A>); })
 void double16(float * out, float const * in) {
   using V = vec<float, 4, A>;
   for (unsigned i = 0; i < 16; i += 4) {
@@ -163,7 +174,7 @@ constraint removes a candidate; an error inside an instantiated body does not.
 The NEON case is an ARM implementation of the same interface, not another
 variant emitted into an x86 binary. Since the x86 overloads are absent from
 the ARM build, its constraint needs no reference to the x86 choice pack.
-At the metadata level, `A.has(feature::neon) && target<A, avx512, avx2> == -1`
+At the metadata level, `A.has(arm_feature::neon) && target<A, avx512, avx2> == -1`
 expresses disjointness even for synthetic mixed feature sets; that expression
 does not replace a host guard or CPU/OS admission.
 
@@ -188,12 +199,12 @@ for ordinary target selection. A structural `target_entry{architecture, minimum}
 records an ISA and its inherited compiler minimum:
 
 ```cpp
-constexpr auto inherited = target_entry{avx2, feature::avx512vl};
+constexpr auto inherited = target_entry{avx2, x86_feature::avx512vl};
 using choices = isa_list<inherited, avx2>;
 using picked = abi_lookup<avx512, choices>;
 static_assert(picked::index == 0);
 static_assert(picked::architecture == avx2);
-static_assert(picked::minimum == feature::avx512vl);
+static_assert(picked::minimum == x86_feature::avx512vl);
 ```
 
 The lookup exposes `matched`, an `int index`, and `isa` values `architecture`,

@@ -165,7 +165,7 @@ PCMs are compiler-specific artifacts.
 LLVM 23 can emit `-Wmodules-ambiguous-internal-linkage` at feature-property use
 when the declarations occur in several module global fragments. Focused
 constexpr reads, writes and constraint checks pass; the warning remains.
-Consumers that treat it as an error can use `A.has(simd::feature::fma)` for
+Consumers that treat it as an error can use `A.has(simd::x86_feature::fma)` for
 feature checks. See the [tooling limits](validation.md).
 
 Link `simd::simd` and import `simd`. The [target-list guide](omnibus.md) shows

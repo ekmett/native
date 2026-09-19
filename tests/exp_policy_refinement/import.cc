@@ -31,7 +31,7 @@ SIMD_TARGET_POP()
 #define EMIT_HALF_TAG_IMPORT(name) \
   SIMD_TARGET_PUSH(name) \
   bool check_half_tag_##name() { \
-    constexpr auto A=simd::feature_closure(SIMD_TARGET_ISA(name)&simd::feature::avx512bf16&simd::feature::avx512fp16); \
+    constexpr auto A=simd::feature_closure(SIMD_TARGET_ISA(name)&simd::x86_feature::avx512bf16&simd::x86_feature::avx512fp16); \
     using V=simd::vec<float,8,A>; \
     using W=simd::wide<V,2>; \
     using F=W (*)(W const &); \

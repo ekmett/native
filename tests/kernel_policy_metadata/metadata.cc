@@ -36,42 +36,42 @@ namespace {
   // Independent description of the original declaration boundaries. Checking
   // every subset catches priority mistakes hidden by the named presets.
   consteval unsigned original_scope(isa bits) {
-    constexpr auto base=feature_closure(avx2&feature::avx512f&feature::avx512dq);
+    constexpr auto base=feature_closure(avx2&x86_feature::avx512f&x86_feature::avx512dq);
     if(bits.has(base))
-      return 2+(bits.has(feature::avx512bw)?1:0)+
-        (bits.has(feature::avx512vl)?2:0)+
-        (bits.has(feature::avx512bf16)?4:0)+
-        (bits.has(feature::avx512fp16)?8:0);
+      return 2+(bits.has(x86_feature::avx512bw)?1:0)+
+        (bits.has(x86_feature::avx512vl)?2:0)+
+        (bits.has(x86_feature::avx512bf16)?4:0)+
+        (bits.has(x86_feature::avx512fp16)?8:0);
     if(bits.has(avx2)) return 1;
-    if(bits.has(feature::neon))
-      return 20+(bits.has(feature::neon_bf16)?1:0)+
-        (bits.has(feature::neon_fp16)?2:0);
+    if(bits.has(arm_feature::neon))
+      return 20+(bits.has(arm_feature::neon_bf16)?1:0)+
+        (bits.has(arm_feature::neon_fp16)?2:0);
     return 0;
   }
   constexpr std::array<unsigned,16> original_scopes{17,9,13,5,15,7,11,3,4,2,1,23,21,22,20,0};
   template<isa A> consteval bool check() {
     using choice=abi_lookup<A,wide_kernel_policies>;
-    constexpr auto base=feature_closure(avx2&feature::avx512f&feature::avx512dq);
+    constexpr auto base=feature_closure(avx2&x86_feature::avx512f&x86_feature::avx512dq);
     constexpr auto raw=abi_lookup<A,raw_kernel_policies>::index;
     return wide_kernel_refinement::agrees<A>() && choice::matched &&
       original_scopes[choice::index]==original_scope(A) &&
       (raw==6 && A==scalar) == (A==scalar) &&
       (raw==4) == (A.has(avx2) && !A.has(base)) &&
-      (raw==3) == (A.has(base) && !A.has(feature::avx512bw) && !A.has(feature::avx512vl)) &&
-      (raw==1) == (A.has(base) && A.has(feature::avx512bw) && !A.has(feature::avx512vl)) &&
-      (raw==2) == (A.has(base) && !A.has(feature::avx512bw) && A.has(feature::avx512vl)) &&
+      (raw==3) == (A.has(base) && !A.has(x86_feature::avx512bw) && !A.has(x86_feature::avx512vl)) &&
+      (raw==1) == (A.has(base) && A.has(x86_feature::avx512bw) && !A.has(x86_feature::avx512vl)) &&
+      (raw==2) == (A.has(base) && !A.has(x86_feature::avx512bw) && A.has(x86_feature::avx512vl)) &&
       (raw==0) == A.has(avx512) &&
       (raw==5) == A.has(neon);
   }
   template<std::size_t K> consteval bool x86_boundary() {
     constexpr isa A=feature_closure(((K&1)?avx2:scalar) &
-      ((K&2)?isa(feature::avx512f):scalar) &
-      ((K&4)?isa(feature::avx512dq):scalar) &
-      ((K&8)?isa(feature::avx512bw):scalar) &
-      ((K&16)?isa(feature::avx512vl):scalar) &
-      ((K&32)?isa(feature::avx512bf16):scalar) &
-      ((K&64)?isa(feature::avx512fp16):scalar) &
-      ((K&128)?isa(feature::aes):scalar));
+      ((K&2)?isa(x86_feature::avx512f):scalar) &
+      ((K&4)?isa(x86_feature::avx512dq):scalar) &
+      ((K&8)?isa(x86_feature::avx512bw):scalar) &
+      ((K&16)?isa(x86_feature::avx512vl):scalar) &
+      ((K&32)?isa(x86_feature::avx512bf16):scalar) &
+      ((K&64)?isa(x86_feature::avx512fp16):scalar) &
+      ((K&128)?isa(x86_feature::aes):scalar));
     return check<A>();
   }
   // Evaluate each boundary once, with its own constexpr step budget.
@@ -82,8 +82,8 @@ namespace {
   static_assert(x86_boundaries(std::make_index_sequence<256>{}));
   static_assert(check<scalar>() && check<neon>() && check<neon_bf16>() &&
     check<neon_fp16>() && check<kernel_neon_half>());
-  static_assert(isa(feature::bmi1)!=scalar);
-  static_assert(abi_lookup<isa(feature::bmi1),wide_kernel_policies>::index == 15);
+  static_assert(isa(x86_feature::bmi1)!=scalar);
+  static_assert(abi_lookup<isa(x86_feature::bmi1),wide_kernel_policies>::index == 15);
   static_assert(abi_lookup<avx2,wide_kernel_policies>::index != -1);
 }
 int main() {}

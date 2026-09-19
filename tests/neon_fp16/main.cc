@@ -64,7 +64,7 @@ namespace {
     simd::arm_capabilities all{true,true,true,true,true,true};
     if(!simd::classify_isa(all,simd::neon).admitted() ||
         !simd::classify_isa(all,simd::neon_fp16).admitted()) return false;
-    if(!simd::classify_isa(all,simd::isa(simd::feature::invalid_features)).invalid_features) return false;
+    if(!simd::classify_isa(all,simd::isa(static_cast<simd::x86_feature>(-1))).invalid_features) return false;
     auto baseline=all; baseline.fp16_observed=baseline.scalar_fp16=baseline.vector_fp16=false;
     if(!simd::classify_isa(baseline,simd::neon).admitted() ||
         simd::classify_isa(baseline,simd::neon_fp16).admitted()) return false;

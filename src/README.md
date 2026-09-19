@@ -33,7 +33,7 @@ storage; literal Clang attributes are checked against those requirements.
 `abi_lookup` retains compiler-prerequisite closure for those internal lists.
 Scalar raw vectors still require the empty `scalar` value.
 
-`feature` enumerators are ordinal bit indices. `isa` owns one public `flags`
+`x86_feature` and `arm_feature` enumerators are architecture-local bit indices. `isa` owns one public `flags`
 array; feature properties read and update that storage. `&` unions requirements,
 `has` checks containment, and comparisons use set inclusion. Construction from
 one feature is exact. Presets and compiler admission apply `feature_closure`

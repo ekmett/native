@@ -91,7 +91,7 @@ namespace simd {
     result.scalar_fp16=result.vector_fp16=half;
     result.bf16_observed=query("hw.optional.arm.FEAT_BF16",result.bf16)==1;
     result.ebf16_observed=query("hw.optional.arm.FEAT_EBF16",result.ebf16)==1;
-    auto extra=[&](feature f,char const * first,char const * second=nullptr) {
+    auto extra=[&](arm_feature f,char const * first,char const * second=nullptr) {
       bool a=false,b=true;
       auto observed=query(first,a)==1;
       if(second) observed=(query(second,b)==1)&&observed;
@@ -100,18 +100,18 @@ namespace simd {
     };
     // Clang AES includes PMULL, SHA2 includes SHA1/SHA256, and SHA3 includes
     // SHA512. Query every component rather than assuming one implies another.
-    extra(feature::arm_aes,"hw.optional.arm.FEAT_AES","hw.optional.arm.FEAT_PMULL");
-    extra(feature::arm_sha2,"hw.optional.arm.FEAT_SHA1","hw.optional.arm.FEAT_SHA256");
-    extra(feature::arm_sha3,"hw.optional.arm.FEAT_SHA3","hw.optional.arm.FEAT_SHA512");
-    extra(feature::arm_crc,"hw.optional.armv8_crc32");
-    extra(feature::arm_lse,"hw.optional.arm.FEAT_LSE");
-    extra(feature::arm_rdm,"hw.optional.arm.FEAT_RDM");
-    extra(feature::arm_fp16fml,"hw.optional.arm.FEAT_FHM");
-    extra(feature::arm_dotprod,"hw.optional.arm.FEAT_DotProd");
-    extra(feature::arm_complxnum,"hw.optional.arm.FEAT_FCMA");
-    extra(feature::arm_jsconv,"hw.optional.arm.FEAT_JSCVT");
-    extra(feature::arm_rcpc,"hw.optional.arm.FEAT_LRCPC");
-    extra(feature::arm_pauth,"hw.optional.arm.FEAT_PAuth");
+    extra(arm_feature::aes,"hw.optional.arm.FEAT_AES","hw.optional.arm.FEAT_PMULL");
+    extra(arm_feature::sha2,"hw.optional.arm.FEAT_SHA1","hw.optional.arm.FEAT_SHA256");
+    extra(arm_feature::sha3,"hw.optional.arm.FEAT_SHA3","hw.optional.arm.FEAT_SHA512");
+    extra(arm_feature::crc,"hw.optional.armv8_crc32");
+    extra(arm_feature::lse,"hw.optional.arm.FEAT_LSE");
+    extra(arm_feature::rdm,"hw.optional.arm.FEAT_RDM");
+    extra(arm_feature::fp16fml,"hw.optional.arm.FEAT_FHM");
+    extra(arm_feature::dotprod,"hw.optional.arm.FEAT_DotProd");
+    extra(arm_feature::complxnum,"hw.optional.arm.FEAT_FCMA");
+    extra(arm_feature::jsconv,"hw.optional.arm.FEAT_JSCVT");
+    extra(arm_feature::rcpc,"hw.optional.arm.FEAT_LRCPC");
+    extra(arm_feature::pauth,"hw.optional.arm.FEAT_PAuth");
 #elif defined(__linux__)
     errno=0;
     auto hwcap=getauxval(AT_HWCAP);
@@ -121,37 +121,37 @@ namespace simd {
     result.asimd=(hwcap&HWCAP_ASIMD)!=0;
     result.scalar_fp16=(hwcap&HWCAP_FPHP)!=0;
     result.vector_fp16=(hwcap&HWCAP_ASIMDHP)!=0;
-    auto extra=[&](feature f,unsigned long mask) {
+    auto extra=[&](arm_feature f,unsigned long mask) {
       result.extra_observed.set(f,true);
       if((hwcap&mask)==mask) result.extra_features.set(f,true);
     };
-    extra(feature::arm_aes,HWCAP_AES|HWCAP_PMULL);
-    extra(feature::arm_sha2,HWCAP_SHA1|HWCAP_SHA2);
-    extra(feature::arm_crc,HWCAP_CRC32);
-    extra(feature::arm_lse,HWCAP_ATOMICS);
+    extra(arm_feature::aes,HWCAP_AES|HWCAP_PMULL);
+    extra(arm_feature::sha2,HWCAP_SHA1|HWCAP_SHA2);
+    extra(arm_feature::crc,HWCAP_CRC32);
+    extra(arm_feature::lse,HWCAP_ATOMICS);
 #ifdef HWCAP_ASIMDRDM
-    extra(feature::arm_rdm,HWCAP_ASIMDRDM);
+    extra(arm_feature::rdm,HWCAP_ASIMDRDM);
 #endif
 #ifdef HWCAP_ASIMDFHM
-    extra(feature::arm_fp16fml,HWCAP_ASIMDFHM);
+    extra(arm_feature::fp16fml,HWCAP_ASIMDFHM);
 #endif
 #ifdef HWCAP_ASIMDDP
-    extra(feature::arm_dotprod,HWCAP_ASIMDDP);
+    extra(arm_feature::dotprod,HWCAP_ASIMDDP);
 #endif
 #ifdef HWCAP_FCMA
-    extra(feature::arm_complxnum,HWCAP_FCMA);
+    extra(arm_feature::complxnum,HWCAP_FCMA);
 #endif
 #ifdef HWCAP_JSCVT
-    extra(feature::arm_jsconv,HWCAP_JSCVT);
+    extra(arm_feature::jsconv,HWCAP_JSCVT);
 #endif
 #ifdef HWCAP_LRCPC
-    extra(feature::arm_rcpc,HWCAP_LRCPC);
+    extra(arm_feature::rcpc,HWCAP_LRCPC);
 #endif
 #if defined(HWCAP_SHA3) && defined(HWCAP_SHA512)
-    extra(feature::arm_sha3,HWCAP_SHA3|HWCAP_SHA512);
+    extra(arm_feature::sha3,HWCAP_SHA3|HWCAP_SHA512);
 #endif
 #if defined(HWCAP_PACA) && defined(HWCAP_PACG)
-    extra(feature::arm_pauth,HWCAP_PACA|HWCAP_PACG);
+    extra(arm_feature::pauth,HWCAP_PACA|HWCAP_PACG);
 #endif
     errno=0;
     auto hwcap2=getauxval(AT_HWCAP2);
@@ -177,20 +177,20 @@ namespace simd {
     result.bf16_observed=result.ebf16_observed=true;
     result.bf16=IsProcessorFeaturePresent(bf16_feature)!=0;
     result.ebf16=IsProcessorFeaturePresent(ebf16_feature)!=0;
-    auto extra=[&](feature f,DWORD selector) {
+    auto extra=[&](arm_feature f,DWORD selector) {
       result.extra_observed.set(f,true);
       if(IsProcessorFeaturePresent(selector)) result.extra_features.set(f,true);
     };
-    extra(feature::arm_aes,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
-    extra(feature::arm_sha2,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
-    extra(feature::arm_crc,PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE);
-    extra(feature::arm_lse,PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE);
-    extra(feature::arm_dotprod,43); // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
-    extra(feature::arm_jsconv,44); // PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE
-    extra(feature::arm_rcpc,45); // PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
-    result.extra_observed.set(feature::arm_sha3,true);
+    extra(arm_feature::aes,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
+    extra(arm_feature::sha2,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
+    extra(arm_feature::crc,PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE);
+    extra(arm_feature::lse,PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE);
+    extra(arm_feature::dotprod,43); // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
+    extra(arm_feature::jsconv,44); // PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE
+    extra(arm_feature::rcpc,45); // PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
+    result.extra_observed.set(arm_feature::sha3,true);
     if(IsProcessorFeaturePresent(64) && IsProcessorFeaturePresent(65))
-      result.extra_features.set(feature::arm_sha3,true); // SHA3 and SHA512
+      result.extra_features.set(arm_feature::sha3,true); // SHA3 and SHA512
     // Windows exposes no selectors for the remaining catalog entries here;
     // leave them unobserved, even if a CPU model is usually known to have them.
 #endif
