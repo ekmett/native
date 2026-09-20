@@ -211,26 +211,38 @@ namespace wide {
   NATIVE_WIDE_UNARY_API(bits,encode)
   NATIVE_WIDE_UNARY_API(from_bits,decode)
 #undef NATIVE_WIDE_UNARY_API
+  /// Compute a*b+c with fused rounding in each SIMD lane of the result array.
+  /// Array operands have equal lengths; a SIMD operand is shared across them.
   template<class P,class Q,class R> requires detail::liftable<detail::fused,P,Q,R>
   native_nodiscard native_inline auto fma(P const & a, Q const & b, R const & c) noexcept {
     return detail::lift(detail::fused{},a,b,c);
   }
+  /// Scale active lanes of a by 2^floor(n), writing positive zero elsewhere.
+  /// Apply the native masked scaling operation at each array position.
   template<class P,class Q,class R> requires detail::liftable<detail::scale,P,Q,R>
   native_nodiscard native_inline auto masked_scaleb_zero(P const & m, Q const & a, R const & n) noexcept {
     return detail::lift(detail::scale{},m,a,n);
   }
+  /// Choose lanes from a where m is true and b elsewhere, at each array position.
+  /// Array operands have equal lengths; a SIMD operand is shared across them.
   template<class M,class P,class Q> requires detail::liftable<detail::choose,M,P,Q>
   native_nodiscard native_inline auto select(M const & m,P const & a,Q const & b) noexcept {
     return detail::lift(detail::choose{},m,a,b);
   }
+  /// Scale active lanes of a by 2^floor(n), preserving prior in inactive lanes.
+  /// Apply the native masked scaling operation at each array position.
   template<class M,class P,class Q,class R> requires detail::liftable<detail::scale_merge,M,P,Q,R>
   native_nodiscard native_inline auto masked_scaleb(M const & m,P const & prior,Q const & a,R const & n) noexcept {
     return detail::lift(detail::scale_merge{},m,prior,a,n);
   }
+  /// Shift each integer lane left by Shift bits, preserving the array shape.
+  /// Participation follows the SIMD element's compile-time shift constraints.
   template<unsigned Shift,class P> requires detail::liftable<detail::shift_left<Shift>,P>
   native_nodiscard native_inline auto left(P const & a) noexcept {
     return detail::lift(detail::shift_left<Shift>{},a);
   }
+  /// Expand each mask lane to an unsigned integer zero/all-one word for T.
+  /// Preserve the array shape and each SIMD element's lane count.
   template<class T,class P> requires detail::liftable<detail::mask_words<T>,P>
   native_nodiscard native_inline auto mask_bits(P const & a) noexcept {
     return detail::lift(detail::mask_words<T>{},a);

@@ -39,14 +39,20 @@ export namespace wide {
   using ::wide::ceil;
   using ::wide::trunc;
   using ::wide::round_even;
+  /// Export pointwise fused multiply-add for arrays of SIMD values.
   using ::wide::fma;
+  /// Export pointwise lane selection for arrays and shared SIMD operands.
   using ::wide::select;
   using ::wide::scaleb;
+  /// Export pointwise masked power-of-two scaling that preserves inactive lanes.
   using ::wide::masked_scaleb;
+  /// Export pointwise masked power-of-two scaling that clears inactive lanes.
   using ::wide::masked_scaleb_zero;
   using ::wide::bits;
   using ::wide::from_bits;
+  /// Export pointwise conversion of mask lanes to unsigned zero/all-one words.
   using ::wide::mask_bits;
+  /// Export compile-time left shifts of each integer lane in an array.
   using ::wide::left;
   using ::wide::exp;
   using ::wide::sin;
