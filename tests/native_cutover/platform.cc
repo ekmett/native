@@ -24,6 +24,19 @@ static_assert(has_bmi2<requirements, std::uint64_t>);
 static_assert(!has_bmi2<native::scalar, std::uint32_t>);
 static_assert(!has_bmi2<native::scalar, std::uint64_t>);
 
+#define NATIVE_TARGET_platform_lzcnt "lzcnt"
+constexpr auto lzcnt_requirements = NATIVE_TARGET_ISA(platform_lzcnt);
+static_assert(lzcnt_requirements == native::isa(native::x86_feature::lzcnt));
+
+NATIVE_TARGET_PUSH(platform_lzcnt)
+static bool check_lzcnt(std::uint64_t value) {
+  return native::lzcnt<lzcnt_requirements>(value | (std::uint64_t(1) << 63)) == 0 &&
+         native::lzcnt<lzcnt_requirements>(std::uint16_t(0)) == 16 &&
+         native::lzcnt<lzcnt_requirements>(std::uint32_t(0)) == 32 &&
+         native::lzcnt<lzcnt_requirements>(std::uint64_t(0)) == 64;
+}
+NATIVE_TARGET_POP()
+
 #define NATIVE_TARGET_platform_popcnt "popcnt"
 constexpr auto popcnt_requirements = NATIVE_TARGET_ISA(platform_popcnt);
 static_assert(popcnt_requirements == native::isa(native::x86_feature::popcnt));
@@ -76,6 +89,8 @@ int main(int argc, char **) {
       !check_bmi1(std::uint64_t(seed) ^ 0x100000016ull)) return 3;
   if (native::classify_isa(cpu, popcnt_requirements).admitted() &&
       !check_popcnt(std::uint64_t(seed) ^ 0x100000016ull)) return 4;
+  if (native::classify_isa(cpu, lzcnt_requirements).admitted() &&
+      !check_lzcnt(std::uint64_t(seed) ^ 0x100000016ull)) return 5;
   return 0;
 }
 

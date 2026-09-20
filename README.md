@@ -87,6 +87,7 @@ custom element types and application dispatch.
 | `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
 | `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
+| `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
 | `native.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |

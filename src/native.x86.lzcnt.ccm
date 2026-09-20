@@ -1,0 +1,15 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/x86/lzcnt.h"
+export module native.x86.lzcnt;
+export import native.x86.features;
+export namespace native {
+  /// \addtogroup x86_lzcnt
+  /// \{
+
+  /// Export the LZCNT operation for unsigned 16-, 32- and 64-bit values.
+  /// See the \ref x86_lzcnt group for the operation's feature and value contract.
+  using ::native::lzcnt;
+  /// \}
+}
