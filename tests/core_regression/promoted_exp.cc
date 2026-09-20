@@ -61,6 +61,23 @@ template<class P> concept has_pack_product = requires(P const & p) { p * p; };
 static_assert(!has_pack_product<wide::array<float, 1>>);
 static_assert(has_pack_product<scalar_pack>);
 
+template<class A, class B, class C> concept can_fma = requires(A const & a, B const & b, C const & c) {
+  wide::fma(a, b, c);
+};
+using scalar_pair = wide::array<scalar, 2>;
+using scalar_tuple = wide::tuple<scalar, scalar>;
+static_assert(can_fma<scalar_pair, scalar, scalar>);
+static_assert(can_fma<scalar, scalar_pair, scalar>);
+static_assert(can_fma<scalar, scalar, scalar_tuple>);
+static_assert(!can_fma<scalar_pair, scalar, float>);
+static_assert(!can_fma<scalar, scalar_pair, float>);
+static_assert(!can_fma<float, scalar, scalar_tuple>);
+static_assert(!can_fma<scalar_pair, wide::array<scalar, 1>, scalar>);
+static_assert(!can_fma<scalar_pair, wide::tuple<scalar>, scalar>);
+static_assert(!can_fma<scalar_tuple, scalar, wide::array<scalar, 3>>);
+static_assert(!can_fma<scalar_pair, simd::vec<double, 1, simd::scalar>, scalar>);
+static_assert(std::same_as<decltype(wide::constant_like(wide::tuple<>{}, 1.f)), wide::tuple<>>);
+
 static void require(bool value, char const * message) {
   if (!value) {
     std::fprintf(stderr, "%s\n", message);
@@ -157,6 +174,118 @@ static void shapes_and_masks() {
   check_word(0.f, wide::get<0>(math::exp(wide::tuple<float>{0.f})), 1.f);
 }
 
+template<bool Packed, class P, class V>
+static auto const & fma_argument(P const & pack, V const & value) {
+  if constexpr (Packed) return pack;
+  else return value;
+}
+
+template<class P, class V> static P two_values(V a, V b) {
+  if constexpr (std::same_as<P, wide::array<V, 2>>) return {{a, b}};
+  else return P{a, b};
+}
+
+// Each broadcast is an entire SIMD value: distinct lanes and distinct outer
+// elements catch scalar splats, reordered arguments, and whole-pack broadcasts.
+template<class V, class P> static void fma_broadcasts() {
+  using lanes = std::array<float, V::lanes>;
+  std::array<lanes, 2> a{}, b{}, c{};
+  for (std::size_t lane = 0; lane < V::lanes; ++lane) {
+    float step = static_cast<float>(lane + 1);
+    // On even lanes a*b rounds to 1, but fused a*b-1 is exactly -2^-46.
+    a[0][lane] = lane % 2 == 0 ? 0x1.000002p0f : 0.25f * step;
+    b[0][lane] = lane % 2 == 0 ? 0x1.fffffcp-1f : -0.5f * step;
+    c[0][lane] = lane % 2 == 0 ? -1.f : 0.125f * step;
+    a[1][lane] = -3.25f + 0.5f * step;
+    b[1][lane] = 2.f + 0.25f * step;
+    c[1][lane] = 7.f - 0.125f * step;
+  }
+  V av = V::loadu(a[0].data()), bv = V::loadu(b[0].data()), cv = V::loadu(c[0].data());
+  P ap = two_values<P>(av, V::loadu(a[1].data()));
+  P bp = two_values<P>(bv, V::loadu(b[1].data()));
+  P cp = two_values<P>(cv, V::loadu(c[1].data()));
+  auto check = [&]<unsigned Packed>(auto const & result) {
+    auto element = [&]<std::size_t I> {
+      lanes actual{};
+      wide::get<I>(result).storeu(actual.data());
+      for (std::size_t lane = 0; lane < V::lanes; ++lane) {
+        float expected = std::fma(a[(Packed & 1) ? I : 0][lane],
+          b[(Packed & 2) ? I : 0][lane], c[(Packed & 4) ? I : 0][lane]);
+        require(equal_bits(std::bit_cast<std::uint32_t>(actual[lane]),
+          std::bit_cast<std::uint32_t>(expected)), "wide fma broadcast lost a lane, element, or fused rounding");
+      }
+    };
+    element.template operator()<0>();
+    element.template operator()<1>();
+  };
+  auto evaluate = [&]<unsigned Packed> {
+    auto result = wide::fma(fma_argument<(Packed & 1) != 0>(ap, av),
+      fma_argument<(Packed & 2) != 0>(bp, bv), fma_argument<(Packed & 4) != 0>(cp, cv));
+    static_assert(std::same_as<decltype(result), P>);
+    check.template operator()<Packed>(result);
+  };
+  // Every nonempty subset of argument positions is a pack.
+  [&]<std::size_t... I>(std::index_sequence<I...>) {
+    (evaluate.template operator()<static_cast<unsigned>(I + 1)>(), ...);
+  }(std::make_index_sequence<7>{});
+
+  if constexpr (std::same_as<P, wide::array<V, 2>>) {
+    auto at = two_values<wide::tuple<V, V>>(av, V::loadu(a[1].data()));
+    auto bt = two_values<wide::tuple<V, V>>(bv, V::loadu(b[1].data()));
+    auto ct = two_values<wide::tuple<V, V>>(cv, V::loadu(c[1].data()));
+    auto tuple_first = wide::fma(av, bt, cp);
+    auto array_first = wide::fma(av, bp, ct);
+    static_assert(std::same_as<decltype(tuple_first), wide::tuple<V, V>>);
+    static_assert(std::same_as<decltype(array_first), wide::array<V, 2>>);
+    check.template operator()<6>(tuple_first);
+    check.template operator()<6>(array_first);
+    auto tuple_left = wide::fma(at, bp, cv);
+    auto array_left = wide::fma(ap, bt, cv);
+    static_assert(std::same_as<decltype(tuple_left), wide::tuple<V, V>>);
+    static_assert(std::same_as<decltype(array_left), wide::array<V, 2>>);
+    check.template operator()<3>(tuple_left);
+    check.template operator()<3>(array_left);
+
+    auto empty_array = wide::fma(wide::array<V, 0>{}, bv, cv);
+    auto empty_tuple = wide::fma(av, bv, wide::tuple<>{});
+    static_assert(std::same_as<decltype(empty_array), wide::array<V, 0>>);
+    static_assert(std::same_as<decltype(empty_tuple), wide::tuple<>>);
+    require(empty_array.values.empty(), "broadcast fma changed empty array shape");
+    (void)empty_tuple;
+  }
+
+  if constexpr (!std::same_as<V, scalar>) {
+    using mixed = wide::tuple<scalar, V>;
+    static_assert(std::same_as<decltype(wide::constant_like(std::declval<mixed const &>(), 1.f)), mixed>);
+    static_assert(can_fma<mixed, mixed, mixed>);
+    static_assert(!can_fma<mixed, V, V>);
+    static_assert(!can_fma<V, mixed, V>);
+    static_assert(!can_fma<scalar, scalar, mixed>);
+    static_assert(!can_fma<wide::array<V, 2>, scalar, V>);
+    auto result = wide::fma(mixed{scalar(a[0][0]), av},
+      mixed{scalar(b[0][0]), bv}, mixed{scalar(c[0][0]), cv});
+    static_assert(std::same_as<decltype(result), mixed>);
+    float first{};
+    lanes second{};
+    wide::get<0>(result).storeu(&first);
+    wide::get<1>(result).storeu(second.data());
+    require(first == -0x1p-46f, "heterogeneous fma lost scalar fused rounding");
+    for (std::size_t lane = 0; lane < V::lanes; ++lane)
+      check_word(a[0][lane], second[lane], std::fma(a[0][lane], b[0][lane], c[0][lane]));
+  }
+}
+
+template<class V> static void check_fma_broadcasts() {
+  static_assert(std::same_as<decltype(wide::constant_like(
+    std::declval<wide::array<V, 2> const &>(), 1.f)), V>);
+  static_assert(std::same_as<decltype(wide::constant_like(
+    std::declval<wide::tuple<V, V> const &>(), 1.f)), V>);
+  static_assert(std::same_as<decltype(wide::constant_like(
+    std::declval<wide::array<V, 0> const &>(), 1.f)), V>);
+  fma_broadcasts<V, wide::array<V, 2>>();
+  fma_broadcasts<V, wide::tuple<V, V>>();
+}
+
 template<bool Flush, class V> static void samples(std::vector<std::uint32_t> const & words) {
   using standard_mixed = std::tuple<float, scalar, V>;
   using wide_mixed = wide::tuple<float, scalar, V>;
@@ -213,12 +342,15 @@ int main() {
   for (auto mode : {simd::test::fp_mode::gradual, simd::test::fp_mode::flush}) {
     simd::test::fp_scope scope(mode);
     shapes_and_masks();
+    check_fma_broadcasts<scalar>();
     samples<false, scalar>(words);
     samples<true, scalar>(words);
 #if defined(__AVX2__)
+    check_fma_broadcasts<simd::vec<float, 8, simd::avx2>>();
     samples<false, simd::vec<float, 8, simd::avx2>>(words);
     samples<true, simd::vec<float, 8, simd::avx2>>(words);
 #elif defined(__ARM_NEON)
+    check_fma_broadcasts<simd::vec<float, 4, simd::neon>>();
     samples<false, simd::vec<float, 4, simd::neon>>(words);
     samples<true, simd::vec<float, 4, simd::neon>>(words);
 #endif

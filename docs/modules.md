@@ -225,6 +225,45 @@ while retaining transformed element types: a scalar comparison demotes to
 elementwise stage and preserves the first pack's family. The native arithmetic
 operations used by `exp` operate on promoted SIMD elements.
 
+Lifted arithmetic accepts a SIMD operand alongside packs and reuses it for every
+chain. Pack operands must have equal lengths, and the result uses the first
+pack's container family. SIMD operands must match the corresponding leaf types;
+there is no implicit conversion between register widths or ISAs.
+
+```cpp
+// r and y are wide::array<V, 3> values.
+y = fma(r, y, V(0x1.555555c673724p-3f));
+```
+
+For a homogeneous batch, `wide::constant_like(batch, value)` returns one SIMD
+value. A heterogeneous tuple instead receives a tuple of coefficients in its
+respective leaf types. Arithmetic, comparisons, bitwise operations, selection,
+`min`/`max`, `abs`, `sqrt`, rounding, `fma`, and exponent scaling use the same
+lifting rule. They use compile-time pack expansion; no runtime iteration is
+introduced.
+
+`math::sin`, `math::cos`, and `math::sincos` also promote and restore the input
+shape. Their reducer and polynomial advance stage by stage across the pack.
+They retain the native approximation's domain: every lane must be finite with
+absolute value below 8192 radians. `sincos` shares the reducer and returns a pair
+of results, each in the original shape; it retains the original paired kernel's
+signed-zero behavior.
+
+```cpp
+auto [s, c] = math::sincos(wide::tuple{0.25f, V(0.5f)});
+// s and c are each wide::tuple<float, V>.
+```
+
+`math::flush_to_zero` clears subnormal mantissas using integer operations,
+preserving the sign of zero and the exact bits of normal values, infinities,
+and NaNs. It leaves floating-point controls unchanged. `math::abs`, `sqrt`,
+`floor`, `ceil`, `trunc`, and `round_even` use the same shape-preserving unary
+interface and retain the native leaf operation's semantics. The staged kernels
+are also available through ADL on `wide::array` and `wide::tuple`.
+
+The legacy `log`, `log1p`, `expm1`, and `tanh` adapters delegate to an element
+library; this interface does not introduce native approximations for them.
+
 `math::exp<true>` uses the existing early underflow cutoff. Both variants retain
 the original polynomial, NaN behavior, and floating-point environment policy.
 The generic algorithm carries `native_inline`; targeted operation helpers use

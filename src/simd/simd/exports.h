@@ -6,16 +6,56 @@
 
 export namespace math {
   using ::math::exp;
+  using ::math::sin;
+  using ::math::cos;
+  using ::math::sincos;
+  using ::math::flush_to_zero;
+  using ::math::abs;
+  using ::math::sqrt;
+  using ::math::floor;
+  using ::math::ceil;
+  using ::math::trunc;
+  using ::math::round_even;
 }
 export namespace wide {
   using ::wide::constant_like;
+  using ::wide::operator+;
+  using ::wide::operator-;
   using ::wide::operator*;
+  using ::wide::operator/;
+  using ::wide::operator&;
+  using ::wide::operator|;
+  using ::wide::operator^;
+  using ::wide::operator~;
+  using ::wide::operator==;
+  using ::wide::operator!=;
   using ::wide::operator<;
+  using ::wide::operator<=;
+  using ::wide::operator>;
+  using ::wide::operator>=;
   using ::wide::operator!;
   using ::wide::min;
+  using ::wide::max;
+  using ::wide::abs;
+  using ::wide::sqrt;
+  using ::wide::floor;
+  using ::wide::ceil;
+  using ::wide::trunc;
   using ::wide::round_even;
   using ::wide::fma;
+  using ::wide::select;
+  using ::wide::scaleb;
+  using ::wide::masked_scaleb;
   using ::wide::masked_scaleb_zero;
+  using ::wide::bits;
+  using ::wide::from_bits;
+  using ::wide::mask_bits;
+  using ::wide::left;
+  using ::wide::exp;
+  using ::wide::sin;
+  using ::wide::cos;
+  using ::wide::sincos;
+  using ::wide::flush_to_zero;
 }
 
 export namespace simd {
