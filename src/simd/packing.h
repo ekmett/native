@@ -9,6 +9,13 @@ namespace simd {
   std::uint64_t pdep(std::uint64_t value, std::uint64_t mask) noexcept {
     return _pdep_u64(value, mask);
   }
+
+  /// Parallel bit extract (PEXT): gather mask's selected bits into the low bits, in order.
+  template<isa Arch> requires(Arch.has(x86_feature::bmi2))
+  simd_nodiscard simd_inline simd_const __attribute__((target("bmi2")))
+  std::uint64_t pext(std::uint64_t value, std::uint64_t mask) noexcept {
+    return _pext_u64(value, mask);
+  }
 }
 #endif
 

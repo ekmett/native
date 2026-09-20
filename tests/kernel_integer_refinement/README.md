@@ -19,7 +19,7 @@ integer vector; its absence is checked at compile time.
 Packing checks each available unsigned 64→32, 32→16 and 16→8 shape against
 scalar truncation, with lane-order and high-bit inputs. Result types retain the
 original architecture value and public `noexcept` guarantees. The core packing
-fixture separately checks `pdep` with a BMI2-only target, empty/full masks and a
+fixture separately checks `pdep` and `pext` with a BMI2-only target, empty/full masks and a
 deterministic mixed bank.
 
 The shape audit is:
