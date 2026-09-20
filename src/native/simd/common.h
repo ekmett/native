@@ -1,6 +1,7 @@
 #pragma once
 #include "native/attributes.h"
 #include "native/isa.h"
+#include "native/mask_traits.h"
 #include "native/value_traits.h"
 #include <array>
 #include <span>
@@ -170,6 +171,26 @@ namespace native {
   /// A compact predicate for a shape supported by the selected architecture.
   /// Bit `i` describes lane `i`; bits above the logical lane count are cleared.
   template<std::size_t N, isa Arch> struct predicate;
+
+  /// \ingroup masks
+  /// Use the vector's selected full-vector or compact comparison mask.
+  template<class T, std::size_t N, isa Arch>
+    requires requires { typename vec<T, N, Arch>::mask_type; }
+  struct mask_traits<vec<T, N, Arch>> {
+    using type = typename vec<T, N, Arch>::mask_type;
+  };
+
+  /// \ingroup masks
+  /// A supported compact predicate is already a logical mask.
+  template<std::size_t N, isa Arch>
+    requires requires { typename predicate<N, Arch>::native_type; }
+  struct mask_traits<predicate<N, Arch>> { using type = predicate<N, Arch>; };
+
+  /// \ingroup masks
+  /// Keep the logical lane's zero/all-one representation.
+  template<class U> requires requires { typename mask_lane<U>; }
+  struct mask_traits<mask_lane<U>> { using type = mask_lane<U>; };
+
   namespace detail { template<class T,std::size_t N,isa Arch> struct swizzle_access {}; }
 
   // Native-register conversions must not make different architectures mix.

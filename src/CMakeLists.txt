@@ -136,4 +136,4 @@ export(EXPORT nativeHostTargets NAMESPACE native:: CXX_MODULES_DIRECTORY cxx-mod
 install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/native/"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/native/include/native"
   FILES_MATCHING PATTERN "*.h" PATTERN "attributes.h" EXCLUDE PATTERN "config.h" EXCLUDE
-    PATTERN "isa.h" EXCLUDE PATTERN "targets.h" EXCLUDE)
+    PATTERN "isa.h" EXCLUDE PATTERN "targets.h" EXCLUDE PATTERN "mask_traits.h" EXCLUDE)

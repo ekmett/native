@@ -98,9 +98,22 @@ masks; the AVX-512 profile uses compact predicates where the declared feature
 set supports the lane width. Masks for custom numerical elements use the raw
 storage register's representation.
 
+`native::mask<T>` names the associated mask after removing `T`'s cv/ref
+qualifiers. Arithmetic scalars, `fp16` and `bf16` map to `bool`; SIMD values map
+to `V::mask_type`; mask lanes and predicates map to themselves. Standard arrays
+preserve their shape: `mask<std::array<T,N>>` is `std::array<mask<T>,N>`, including
+nested and empty arrays. This type mapping does not change array comparison
+operators.
+
+Import `native.types` or include `<native/mask_traits.h>` for the scalar and
+array trait. SIMD and numerical imports add their type specializations. A
+consumer can specialize `native::mask_traits<MyType>` with a `type` member to
+define its own mask. Unsupported types have no `type`, so generic code can test
+`requires { typename native::mask<T>; }` without assuming every type has a mask.
+
 ```cpp
 using V = native::simd<float, 8, native::avx2>;
-using M = V::mask;
+using M = native::mask<V>;
 M active = x < y;
 auto chosen = select(active,x,y);
 ```

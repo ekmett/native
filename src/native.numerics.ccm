@@ -184,6 +184,10 @@ public:
 
 };
 
+/// \ingroup types
+/// Scalar binary16 comparisons have a Boolean mask.
+template<> struct mask_traits<fp16> { using type = bool; };
+
 /// Round a literal through binary32 to fp16.
 native_nodiscard native_inline native_artificial native_const
 constexpr fp16 operator""_fp16(long double v) noexcept {
@@ -423,6 +427,10 @@ public:
     return std::bit_cast<uint16_t>(self.content);
   }
 };
+
+/// \ingroup types
+/// Scalar bfloat16 comparisons have a Boolean mask.
+template<> struct mask_traits<bf16> { using type = bool; };
 
 /// Round a literal through binary32 to bf16.
 native_nodiscard native_inline native_artificial

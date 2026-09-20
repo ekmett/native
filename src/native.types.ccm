@@ -11,6 +11,7 @@ module;
 #include <cxxabi.h>
 #endif
 #include "native/attributes.h"
+#include "native/mask_traits.h"
 
 export module native.types;
 
@@ -21,6 +22,10 @@ export module native.types;
 /// Native arithmetic requires an explicit architecture and its instruction-set
 /// preconditions. Common utilities do not select or admit a runtime CPU profile.
 export namespace native {
+/// Export the customizable association between a value and its logical mask.
+using ::native::mask_traits;
+/// Export mask lookup after removing the value type's cv/ref qualifiers.
+using ::native::mask;
 /// \defgroup types Types
 /// \{
 

@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/isa.h>
+#include <native/mask_traits.h>
 #include <native/targets.h>
+
+static_assert(std::is_same_v<native::mask<float const&>, bool>);
+static_assert(std::is_same_v<native::mask<std::array<float, 3>>, std::array<bool, 3>>);
 
 static_assert(NATIVE_TARGET_ISA(avx2) == native::avx2);
 static_assert(NATIVE_TARGET_ISA(neon) == native::neon);

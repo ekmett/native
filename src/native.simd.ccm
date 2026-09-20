@@ -19,6 +19,8 @@ export import native.wide;
 export import native.static_string;
 export import native.types;
 export import native.memory;
+// Keep the GMF partial specializations reachable to module consumers.
+export namespace native { using ::native::mask_traits; }
 #include "native/simd/exports.h"
 #if NATIVE_HOST_X86
 #include "native/simd/avx512_bf16_body.h"

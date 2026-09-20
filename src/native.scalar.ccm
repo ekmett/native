@@ -5,7 +5,10 @@ module;
 #include <native/packing.h>
 #include <native/simd/math/bits.h>
 export module native.scalar;
+export import native.types;
 export import native.wide;
+// Keep the GMF partial specializations reachable to module consumers.
+export namespace native { using ::native::mask_traits; }
 #include "native/simd/exports.h"
 
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>

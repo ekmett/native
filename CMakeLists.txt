@@ -53,7 +53,8 @@ target_compile_options(native_headers INTERFACE
   "$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<NOT:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>>>:-fms-extensions>")
 target_sources(native_headers INTERFACE
   FILE_SET headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  FILES src/native/config.h src/native/attributes.h src/native/isa.h src/native/targets.h)
+  FILES src/native/config.h src/native/attributes.h src/native/isa.h src/native/targets.h
+    src/native/mask_traits.h)
 target_include_directories(native_headers INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -96,6 +97,7 @@ if(NATIVE_BUILD_HOST AND NATIVE_BUILD_TESTS)
   add_subdirectory(tests/compaction)
   add_subdirectory(tests/source_targets)
   add_subdirectory(tests/native_cutover)
+  add_subdirectory(tests/native_mask_traits)
   add_subdirectory(tests/abi_lookup)
   add_subdirectory(tests/wide_construction)
   add_subdirectory(tests/exp_policy_refinement)

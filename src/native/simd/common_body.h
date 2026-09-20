@@ -27,6 +27,7 @@ namespace detail {
     native_inline constexpr vec() = default;
     static constexpr isa architecture=Arch;
     using mask = typename vec<typename simd_traits<T>::storage_type,N,Arch>::mask;
+    using mask_type = mask;
     using predicate_type = predicate<N,Arch>;
     template<class U> using rebind = vec<U,N,Arch>;
   };
