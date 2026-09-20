@@ -260,9 +260,12 @@ namespace wide {
     template<class T> inline constexpr bool binary32_register = false;
     template<std::size_t N, ::simd::isa A>
     inline constexpr bool binary32_register<::simd::vec<float, N, A>> = true;
+    template<class P> inline constexpr bool binary32_array = false;
+    template<class V, std::size_t N>
+    inline constexpr bool binary32_array<array<V, N>> = binary32_register<V>;
     template<class P> inline constexpr bool binary32_pack = false;
     template<class V, std::size_t N>
-    inline constexpr bool binary32_pack<array<V, N>> = binary32_register<V>;
+    inline constexpr bool binary32_pack<array<V, N>> = binary32_array<array<V, N>>;
     template<class... V>
     inline constexpr bool binary32_pack<tuple<V...>> = (binary32_register<V> && ...);
   }
@@ -271,8 +274,9 @@ namespace wide {
 namespace math {
   namespace detail {
     // The single polynomial body, shared by generic and targeted entry points.
-    template<bool Flush, ::wide::pack P>
-    simd_nodiscard native_inline auto exp_reduced(P const & x) noexcept {
+    template<bool Flush, class V, std::size_t N>
+      requires (::wide::detail::binary32_register<V>)
+    simd_nodiscard native_inline auto exp_reduced(::wide::array<V, N> const & x) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(x, value); };
       auto const active = !(x < c(Flush ? -87.33654022216796875f : -104.f));
       // Keep x second: the ordered minimum preserves NaNs.
@@ -293,9 +297,10 @@ namespace math {
     }
   }
 
-  /// Evaluate exp through the canonical SIMD pack and restore the input shape.
+  /// Evaluate exp through a homogeneous SIMD array and restore the input shape.
+  /// Scalar and SIMD inputs promote to singleton arrays; tuples are unsupported.
   template<bool Flush = false, ::wide::promotable T>
-    requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
+    requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
   simd_nodiscard native_inline auto exp(T const & input) noexcept {
     // MSVC's array<T,0> may construct a dummy T; an empty batch needs no work.
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {

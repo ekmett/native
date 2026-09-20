@@ -209,13 +209,16 @@ using V = simd::vec<float,8,simd::avx2>;
 
 auto scalar_result = math::exp(1.f);                   // float
 auto vector_result = math::exp(V(1.f));                // V
-auto mixed_result = math::exp(wide::tuple{1.f, V(2.f)}); // wide::tuple<float,V>
+auto batch_result = math::exp(wide::array<V,2>{{V(1.f), V(2.f)}});
+// batch_result is wide::array<V,2>.
 ```
 
-The caller must provide the selected vector target as usual. `std::array`,
-`std::tuple`, and the existing `simd::wide` are also accepted. Each polynomial
-stage advances all independent chains; batching does not call unary `exp`
-separately for every element. The result preserves the input container family,
+The caller must provide the selected vector target as usual. `math::exp` accepts
+floats, SIMD values, `std::array`, `wide::array`, and the existing `simd::wide`;
+their canonical form must be a homogeneous `wide::array`. Both `std::tuple` and
+`wide::tuple` are rejected, including homogeneous, singleton, and empty tuples.
+Each polynomial stage advances all independent chains; batching does not call
+unary `exp` separately for every element. The result preserves the input container family,
 including empty and one-element containers. This graph supports binary32
 elements; no half-precision approximation is implied.
 
@@ -258,8 +261,9 @@ auto [s, c] = math::sincos(wide::tuple{0.25f, V(0.5f)});
 preserving the sign of zero and the exact bits of normal values, infinities,
 and NaNs. It leaves floating-point controls unchanged. `math::abs`, `sqrt`,
 `floor`, `ceil`, `trunc`, and `round_even` use the same shape-preserving unary
-interface and retain the native leaf operation's semantics. The staged kernels
-are also available through ADL on `wide::array` and `wide::tuple`.
+interface and retain the native leaf operation's semantics. These kernels are
+also available through ADL on `wide::array` and `wide::tuple`; `exp` accepts
+`wide::array` through ADL and rejects `wide::tuple` there too.
 
 The legacy `log`, `log1p`, `expm1`, and `tanh` adapters delegate to an element
 library; this interface does not introduce native approximations for them.

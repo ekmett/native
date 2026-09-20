@@ -38,12 +38,32 @@ static_assert(std::same_as<decltype(math::exp(0.f)), float>);
 static_assert(std::same_as<decltype(math::exp(scalar{})), scalar>);
 static_assert(std::same_as<decltype(math::exp(std::array<float, 1>{})), std::array<float, 1>>);
 static_assert(std::same_as<decltype(math::exp(wide::array<float, 1>{})), wide::array<float, 1>>);
-static_assert(std::same_as<decltype(math::exp(std::tuple<float>{})), std::tuple<float>>);
-static_assert(std::same_as<decltype(math::exp(wide::tuple<float>{})), wide::tuple<float>>);
 static_assert(std::same_as<decltype(math::exp(std::array<float, 0>{})), std::array<float, 0>>);
 static_assert(std::same_as<decltype(math::exp(wide::array<float, 0>{})), wide::array<float, 0>>);
-static_assert(std::same_as<decltype(math::exp(std::tuple<>{})), std::tuple<>>);
-static_assert(std::same_as<decltype(math::exp(wide::tuple<>{})), wide::tuple<>>);
+
+template<class T> concept has_math_exp = requires(T const & x) { math::exp(x); };
+template<class T> concept has_math_flush_exp = requires(T const & x) { math::exp<true>(x); };
+template<class T> concept has_wide_exp = requires(T const & x) { wide::exp(x); };
+template<class T> concept has_wide_flush_exp = requires(T const & x) { wide::exp<true>(x); };
+template<class T> concept has_adl_exp = requires(T const & x) { exp(x); };
+template<class T> concept has_adl_flush_exp = requires(T const & x) { exp<true>(x); };
+template<class T> constexpr bool rejected_exp_tuple =
+  !has_math_exp<T> && !has_math_flush_exp<T> && !has_wide_exp<T> &&
+  !has_wide_flush_exp<T> && !has_adl_exp<T> && !has_adl_flush_exp<T>;
+static_assert(rejected_exp_tuple<std::tuple<>>);
+static_assert(rejected_exp_tuple<wide::tuple<>>);
+static_assert(rejected_exp_tuple<std::tuple<float>>);
+static_assert(rejected_exp_tuple<wide::tuple<float>>);
+static_assert(rejected_exp_tuple<std::tuple<float, float>>);
+static_assert(rejected_exp_tuple<wide::tuple<float, float>>);
+static_assert(rejected_exp_tuple<std::tuple<scalar, scalar>>);
+static_assert(rejected_exp_tuple<wide::tuple<scalar, scalar>>);
+static_assert(rejected_exp_tuple<std::tuple<float, scalar>>);
+static_assert(rejected_exp_tuple<wide::tuple<float, scalar>>);
+static_assert(has_math_exp<float> && has_math_flush_exp<float>);
+static_assert(has_wide_exp<scalar> && has_wide_flush_exp<scalar>);
+static_assert(has_math_exp<std::array<float, 0>> && has_math_flush_exp<std::array<float, 0>>);
+static_assert(has_adl_exp<wide::array<float, 0>> && has_adl_flush_exp<wide::array<float, 0>>);
 
 template<class F, class... P> concept can_map = requires(F f, P... p) { wide::map(f, p...); };
 struct no_arguments { int operator()() const; };
@@ -166,12 +186,8 @@ static void shapes_and_masks() {
 
   require(math::exp(std::array<float, 0>{}).empty(), "empty array acquired an element");
   require(math::exp(wide::array<float, 0>{}).values.empty(), "empty wide array acquired an element");
-  (void)math::exp(std::tuple<>{});
-  (void)math::exp(wide::tuple<>{});
   check_word(0.f, math::exp(std::array{0.f})[0], 1.f);
   check_word(0.f, wide::get<0>(math::exp(wide::array<float, 1>{{0.f}})), 1.f);
-  check_word(0.f, std::get<0>(math::exp(std::tuple{0.f})), 1.f);
-  check_word(0.f, wide::get<0>(math::exp(wide::tuple<float>{0.f})), 1.f);
 }
 
 template<bool Packed, class P, class V>
@@ -287,39 +303,40 @@ template<class V> static void check_fma_broadcasts() {
 }
 
 template<bool Flush, class V> static void samples(std::vector<std::uint32_t> const & words) {
-  using standard_mixed = std::tuple<float, scalar, V>;
-  using wide_mixed = wide::tuple<float, scalar, V>;
-  static_assert(std::same_as<decltype(math::exp<Flush>(std::declval<standard_mixed>())), standard_mixed>);
-  static_assert(std::same_as<decltype(math::exp<Flush>(std::declval<wide_mixed>())), wide_mixed>);
+  static_assert(rejected_exp_tuple<std::tuple<V, V>>);
+  static_assert(rejected_exp_tuple<wide::tuple<V, V>>);
+  static_assert(rejected_exp_tuple<std::tuple<float, scalar, V>>);
+  static_assert(rejected_exp_tuple<wide::tuple<float, scalar, V>>);
   static_assert(std::same_as<wide::canonical_t<V>, wide::array<V, 1>>);
-  static_assert(std::same_as<decltype(math::exp<Flush>(simd::wide<V, 2>{})), simd::wide<V, 2>>);
+  static_assert(std::same_as<decltype(math::exp<Flush>(std::array<V, 3>{})), std::array<V, 3>>);
+  static_assert(std::same_as<decltype(math::exp<Flush>(wide::array<V, 3>{})), wide::array<V, 3>>);
+  static_assert(std::same_as<decltype(math::exp<Flush>(simd::wide<V, 3>{})), simd::wide<V, 3>>);
   for (std::size_t base = 0; base < words.size(); base += V::lanes) {
-    std::array<float, V::lanes> input{};
-    for (std::size_t lane = 0; lane < V::lanes; ++lane)
-      input[lane] = std::bit_cast<float>(words[(base + lane) % words.size()]);
-    float x = input[0];
+    std::array<std::array<float, V::lanes>, 3> input{};
+    for (std::size_t chain = 0; chain < input.size(); ++chain)
+      for (std::size_t lane = 0; lane < V::lanes; ++lane)
+        input[chain][lane] = std::bit_cast<float>(words[(base + chain * (V::lanes + 7) + lane) % words.size()]);
+    std::array<V, 3> registers{V::loadu(input[0].data()), V::loadu(input[1].data()), V::loadu(input[2].data())};
+    float x = input[0][0];
     scalar s(x);
-    V v = V::loadu(input.data());
     float expected = reference<Flush>(x);
     check_word(x, math::exp<Flush>(x), expected);
     check_vector<Flush>(math::exp<Flush>(s), std::array{x});
-    check_vector<Flush>(math::exp<Flush>(v), input);
+    check_vector<Flush>(math::exp<Flush>(registers[0]), input[0]);
 
-    auto standard = math::exp<Flush>(standard_mixed{x, s, v});
-    check_word(x, std::get<0>(standard), expected);
-    check_vector<Flush>(std::get<1>(standard), std::array{x});
-    check_vector<Flush>(std::get<2>(standard), input);
-    auto packed = math::exp<Flush>(wide_mixed{x, s, v});
-    check_word(x, wide::get<0>(packed), expected);
-    check_vector<Flush>(wide::get<1>(packed), std::array{x});
-    check_vector<Flush>(wide::get<2>(packed), input);
-
-    auto array = math::exp<Flush>(std::array{x, x});
-    for (float result : array) check_word(x, result, expected);
-    auto wide_array = math::exp<Flush>(wide::array<V, 2>{{v, v}});
-    for (auto result : wide_array.values) check_vector<Flush>(result, input);
-    auto legacy = math::exp<Flush>(simd::wide<V, 2>{v, v});
-    for (auto result : legacy.registers) check_vector<Flush>(result, input);
+    std::array<float, 3> scalar_input{input[0][0], input[1][0], input[2][0]};
+    auto scalar_array = math::exp<Flush>(scalar_input);
+    auto scalar_wide = math::exp<Flush>(wide::array<float, 3>{scalar_input});
+    auto standard = math::exp<Flush>(registers);
+    auto packed = math::exp<Flush>(wide::array<V, 3>{registers});
+    auto legacy = math::exp<Flush>(simd::wide<V, 3>{registers[0], registers[1], registers[2]});
+    for (std::size_t chain = 0; chain < input.size(); ++chain) {
+      check_word(scalar_input[chain], scalar_array[chain], reference<Flush>(scalar_input[chain]));
+      check_word(scalar_input[chain], scalar_wide.values[chain], reference<Flush>(scalar_input[chain]));
+      check_vector<Flush>(standard[chain], input[chain]);
+      check_vector<Flush>(packed.values[chain], input[chain]);
+      check_vector<Flush>(legacy.registers[chain], input[chain]);
+    }
   }
 }
 
