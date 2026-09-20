@@ -71,8 +71,6 @@ namespace wide {
 
 namespace math {
   namespace detail {
-    template<class M, class P> struct exp_state { M active; P value, exponent; };
-
     // The single polynomial body, shared by generic and targeted entry points.
     template<bool Flush, ::wide::pack P>
     simd_nodiscard native_inline auto exp_reduced(P const & x) noexcept {
@@ -92,7 +90,7 @@ namespace math {
       auto const one = c(1.f);
       y = fma(r, y, one);
       y = fma(r, y, one);
-      return exp_state{active, y, n};
+      return std::tuple{active, y, n};
     }
   }
 
