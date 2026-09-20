@@ -7,3 +7,7 @@
 #include <cstdio>
 #include <limits>
 #include <type_traits>
+
+#if defined(__BMI__) || defined(__BMI2__) || defined(__AVX__) || defined(__AVX2__) || defined(__FMA__)
+#error BMI2 admission must run in a baseline translation unit
+#endif

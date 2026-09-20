@@ -41,7 +41,8 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 
 add_library(native_test_x86_lzcnt_codegen OBJECT codegen.cc)
-target_link_libraries(native_test_x86_lzcnt_codegen PRIVATE native::minimal)
+target_link_libraries(native_test_x86_lzcnt_codegen PRIVATE native::headers)
+target_compile_features(native_test_x86_lzcnt_codegen PRIVATE cxx_std_26)
 set_target_properties(native_test_x86_lzcnt_codegen PROPERTIES
   CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
 set(disabled_features -mno-popcnt -mno-lzcnt -mno-bmi -mno-bmi2

@@ -18,19 +18,20 @@ foreach(suite IN ITEMS header module main)
 endforeach()
 
 add_library(native_test_x86_bmi2_codegen OBJECT codegen.cc)
-target_link_libraries(native_test_x86_bmi2_codegen PRIVATE native::minimal)
+target_link_libraries(native_test_x86_bmi2_codegen PRIVATE native::headers)
+target_compile_features(native_test_x86_bmi2_codegen PRIVATE cxx_std_26)
 set_target_properties(native_test_x86_bmi2_codegen PROPERTIES
-  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
 
-foreach(suite IN ITEMS header module main codegen)
-  set(target native_test_x86_bmi2_${suite})
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE
-      /clang:-mno-bmi /clang:-mno-bmi2 /clang:-mno-avx /clang:-mno-avx2 /clang:-mno-fma)
-  else()
-    target_compile_options(${target} PRIVATE -mno-bmi -mno-bmi2 -mno-avx -mno-avx2 -mno-fma)
-  endif()
-endforeach()
+# Keep module consumers on the provider's baseline flags so CMake shares BMIs.
+# The independent textual probe can explicitly disable optional ISA features.
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_x86_bmi2_codegen PRIVATE
+    /clang:-mno-bmi /clang:-mno-bmi2 /clang:-mno-avx /clang:-mno-avx2 /clang:-mno-fma)
+else()
+  target_compile_options(native_test_x86_bmi2_codegen PRIVATE
+    -mno-bmi -mno-bmi2 -mno-avx -mno-avx2 -mno-fma)
+endif()
 if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
   target_compile_options(native_test_x86_bmi2_codegen PRIVATE /O2)
 else()

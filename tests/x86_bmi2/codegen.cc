@@ -2,6 +2,10 @@
 // Compile at -O2 -S without a global ISA flag to inspect per-function lowering.
 #include <native/x86/bmi2.h>
 
+#if defined(__BMI__) || defined(__BMI2__) || defined(__AVX__) || defined(__AVX2__) || defined(__FMA__)
+#error BMI2 must be supplied by the function target, not translation-unit flags
+#endif
+
 constexpr native::isa bmi2_codegen_arch{native::x86_feature::bmi2};
 #define BMI2_CODEGEN __attribute__((target("bmi2"), noinline))
 
