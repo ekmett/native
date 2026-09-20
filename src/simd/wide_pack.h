@@ -244,6 +244,33 @@ namespace wide {
     simd_inline constexpr decltype(auto) map_element(F& function,P&&... value) {
       return std::invoke(function,::wide::get<I>(std::forward<P>(value))...);
     }
+    template<std::size_t I,class F,class... P> consteval bool map_invocable() {
+      return std::is_invocable_v<F&,element_argument_t<P,I>...>;
+    }
+    template<class F,class P,class... Rest,std::size_t... I>
+    consteval bool map_compatible(std::index_sequence<I...>) {
+      if constexpr (shape_t<P>::kind==family::array) {
+        // An empty tuple has no element contract from which to infer an
+        // empty array's result type. Empty array operands do have one.
+        if constexpr (sizeof...(I)==0 && !(is_array<Rest> && ...)) return false;
+        else if constexpr (!map_invocable<0,F,P,Rest...>() ||
+                           !(map_invocable<I,F,P,Rest...>() && ...)) return false;
+        else {
+          using R=mapped_t<0,F,P,Rest...>;
+          if constexpr (!std::is_object_v<R> ||
+                        !(std::same_as<R,mapped_t<I,F,P,Rest...>> && ...)) return false;
+          else return requires(F& function,P&& first,Rest&&... rest) {
+            array<R,sizeof...(I)>{{map_element<I>(function,
+              std::forward<P>(first),std::forward<Rest>(rest)...)...}};
+          };
+        }
+      } else if constexpr (!(map_invocable<I,F,P,Rest...>() && ...)) return false;
+      else if constexpr (!(std::is_object_v<mapped_t<I,F,P,Rest...>> && ...)) return false;
+      else return requires(F& function,P&& first,Rest&&... rest) {
+        tuple<mapped_t<I,F,P,Rest...>...>{map_element<I>(function,
+          std::forward<P>(first),std::forward<Rest>(rest)...)...};
+      };
+    }
     template<class F,class P,class... Rest,std::size_t... I>
     simd_inline constexpr auto map_pack(F&& function,std::index_sequence<I...>,P&& first,Rest&&... rest) {
       // Tuple construction keeps distinct result types. An empty homogeneous
@@ -261,7 +288,8 @@ namespace wide {
 
   /// Advance every element through one operation, preserving the first pack's family.
   template<class F,pack P,pack... Rest>
-    requires ((detail::shape_t<P>::size==detail::shape_t<Rest>::size) && ...)
+    requires ((detail::shape_t<P>::size==detail::shape_t<Rest>::size) && ...) &&
+      (detail::map_compatible<F,P,Rest...>(std::make_index_sequence<detail::shape_t<P>::size>{}))
   simd_inline constexpr auto map(F&& function,P&& first,Rest&&... rest) {
     return detail::map_pack(std::forward<F>(function),
       std::make_index_sequence<detail::shape_t<P>::size>{},
