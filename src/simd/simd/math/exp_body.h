@@ -3,7 +3,16 @@ namespace SIMD_BACKEND_NAMESPACE::native {
   // Compatibility entry points share the promoted pack graph.
   template<bool Flush = false, float_register V, std::size_t N>
   simd_nodiscard simd_flatten native_inline simd_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
-    return ::math::exp<Flush>(input);
+    if constexpr (N == 0) return input;
+    else {
+      auto const state = ::math::detail::exp_reduced<Flush>(::wide::promote(input));
+      auto const & [...active] = state.active.values;
+      auto const & [...y] = state.value.values;
+      auto const & [...n] = state.exponent.values;
+      // Finish in this entry's target scope: the generic scaling bridge can
+      // exceed Clang's inline-cost budget for AVX-512 without VL.
+      return {{masked_scaleb_zero(active, y, n)...}};
+    }
   }
   template<bool Flush = false, float_register V>
   simd_nodiscard simd_inline simd_pure V exp(V x) noexcept {

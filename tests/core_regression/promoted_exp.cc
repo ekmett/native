@@ -45,6 +45,22 @@ static_assert(std::same_as<decltype(math::exp(wide::array<float, 0>{})), wide::a
 static_assert(std::same_as<decltype(math::exp(std::tuple<>{})), std::tuple<>>);
 static_assert(std::same_as<decltype(math::exp(wide::tuple<>{})), wide::tuple<>>);
 
+template<class F, class... P> concept can_map = requires(F f, P... p) { wide::map(f, p...); };
+struct no_arguments { int operator()() const; };
+struct void_result { void operator()(int) const; };
+struct increment { constexpr int operator()(int x) const { return x + 1; } };
+struct second_value { template<class T> T operator()(int, T x) const { return x; } };
+static_assert(!can_map<no_arguments, wide::array<int, 1>>);
+static_assert(!can_map<void_result, wide::array<int, 1>>);
+static_assert(can_map<no_arguments, wide::tuple<>>);
+static_assert(can_map<increment, wide::array<int, 0>>);
+static_assert(!can_map<second_value, wide::array<int, 2>, wide::tuple<int, float>>);
+static_assert(!can_map<second_value, wide::array<int, 2>, wide::array<int, 1>>);
+static_assert(wide::get<0>(wide::map(increment{}, wide::array<int, 1>{{4}})) == 5);
+template<class P> concept has_pack_product = requires(P const & p) { p * p; };
+static_assert(!has_pack_product<wide::array<float, 1>>);
+static_assert(has_pack_product<scalar_pack>);
+
 static void require(bool value, char const * message) {
   if (!value) {
     std::fprintf(stderr, "%s\n", message);

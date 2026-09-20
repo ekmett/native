@@ -70,18 +70,12 @@ namespace wide {
 }
 
 namespace math {
-  /// Evaluate the binary32 polynomial across all independent chains per stage.
-  /// The result retains the input's scalar, SIMD, array, or tuple shape.
-  template<bool Flush = false, ::wide::promotable T>
-    requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  simd_nodiscard native_inline auto exp(T const & input) noexcept {
-    // Empty packs have no chains to adapt. In particular, MSVC's array<T,0>
-    // may default-construct a dummy T in T's target scope; copying the input
-    // avoids introducing such a constructor in this generic algorithm.
-    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
-      return std::remove_cvref_t<T>(input);
-    } else {
-      auto const x = ::wide::promote(input);
+  namespace detail {
+    template<class M, class P> struct exp_state { M active; P value, exponent; };
+
+    // The single polynomial body, shared by generic and targeted entry points.
+    template<bool Flush, ::wide::pack P>
+    simd_nodiscard native_inline auto exp_reduced(P const & x) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(x, value); };
       auto const active = !(x < c(Flush ? -87.33654022216796875f : -104.f));
       // Keep x second: the ordered minimum preserves NaNs.
@@ -98,6 +92,20 @@ namespace math {
       auto const one = c(1.f);
       y = fma(r, y, one);
       y = fma(r, y, one);
+      return exp_state{active, y, n};
+    }
+  }
+
+  /// Evaluate exp through the canonical SIMD pack and restore the input shape.
+  template<bool Flush = false, ::wide::promotable T>
+    requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
+  simd_nodiscard native_inline auto exp(T const & input) noexcept {
+    // MSVC's array<T,0> may construct a dummy T; an empty batch needs no work.
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
+      return std::remove_cvref_t<T>(input);
+    } else {
+      auto const x = ::wide::promote(input);
+      auto const [active, y, n] = detail::exp_reduced<Flush>(x);
       return ::wide::demote<T>(masked_scaleb_zero(active, y, n));
     }
   }

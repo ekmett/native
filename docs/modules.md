@@ -130,8 +130,8 @@ Consumer feature macros do not change a module's definitions.
 
 `simd.wide` owns the container, tuple protocol and composed operations. Native
 element families select matching target overloads, while custom elements keep
-their ADL array-kernel preference and generic fallback. Raw array math kernels
-do not depend on `wide`.
+their ADL array-kernel preference and generic fallback. The binary32 exponential
+uses the shared canonical pack graph described below.
 
 Common string, type, memory and numerical utilities retain independent named
 modules with one provider each. `simd.numerics` owns fp16/bf16 storage and scalar
@@ -194,6 +194,42 @@ Raw approximate math retains each function's stated domain and operation
 graph; wrapping it in `wide` does not strengthen its accuracy or floating-point
 environment contract. The [validation record](validation.md) distinguishes
 compiler fixtures, numerical tests and native execution results.
+
+## Promoted exponential batches
+
+`import simd;` also provides `math::exp`, `wide::array`, `wide::tuple`, and
+`wide::promote`/`wide::demote<Original>`. A float promotes to
+`wide::array<simd::vec<float,1,simd::scalar>,1>`; a SIMD value promotes to a
+one-element array retaining its lane count and ISA. Arrays and tuples adapt
+their elements without adding another outer dimension.
+
+```cpp
+import simd;
+using V = simd::vec<float,8,simd::avx2>;
+
+auto scalar_result = math::exp(1.f);                   // float
+auto vector_result = math::exp(V(1.f));                // V
+auto mixed_result = math::exp(wide::tuple{1.f, V(2.f)}); // wide::tuple<float,V>
+```
+
+The caller must provide the selected vector target as usual. `std::array`,
+`std::tuple`, and the existing `simd::wide` are also accepted. Each polynomial
+stage advances all independent chains; batching does not call unary `exp`
+separately for every element. The result preserves the input container family,
+including empty and one-element containers. This graph supports binary32
+elements; no half-precision approximation is implied.
+
+Promotion owns its values. Demotion uses the original type to restore shape,
+while retaining transformed element types: a scalar comparison demotes to
+`bool`, whereas a SIMD comparison retains its mask. `wide::map` performs one
+elementwise stage and preserves the first pack's family. The native arithmetic
+operations used by `exp` operate on promoted SIMD elements.
+
+`math::exp<true>` uses the existing early underflow cutoff. Both variants retain
+the original polynomial, NaN behavior, and floating-point environment policy.
+The generic algorithm carries `native_inline`; targeted operation helpers use
+ordinary inlining. Inlining is an optimization, not a compile-time proof of ISA
+admission.
 
 ## Stable compaction and expansion
 

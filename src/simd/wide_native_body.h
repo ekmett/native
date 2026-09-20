@@ -13,6 +13,6 @@ namespace wide::detail {
     static inline auto round(V a) noexcept { return round_even(a); }
     static inline auto fused(V a, V b, V c) noexcept { return fma(a, b, c); }
     template<class M>
-    static simd_hot inline auto scale(M m, V a, V n) noexcept { return masked_scaleb_zero(m, a, n); }
+    static inline auto scale(M m, V a, V n) noexcept { return masked_scaleb_zero(m, a, n); }
   };
 }
