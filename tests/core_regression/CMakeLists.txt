@@ -61,6 +61,16 @@ add_test(NAME simd.consumer.exact
 set_tests_properties(simd.consumer.exact PROPERTIES
   FIXTURES_REQUIRED "simd_header_capture;simd_import_capture" LABELS "host;math;modules;exact")
 
+foreach(kind IN ITEMS header import)
+  add_executable(simd_test_promoted_exp_${kind} promoted_exp.cc)
+  target_link_libraries(simd_test_promoted_exp_${kind} PRIVATE simd::simd)
+  if(kind STREQUAL "import")
+    target_compile_definitions(simd_test_promoted_exp_${kind} PRIVATE SIMD_TEST_IMPORT=1)
+  endif()
+  add_test(NAME simd.promoted_exp.${kind} COMMAND simd_test_promoted_exp_${kind})
+  set_tests_properties(simd.promoted_exp.${kind} PROPERTIES LABELS "host;math;modules;exact" TIMEOUT 180)
+endforeach()
+
 add_executable(simd_test_numerics_import numerics_contract.cc)
 add_executable(simd_test_numerics_api numerics_api.cc)
 add_executable(simd_test_numerics_scalef numerics_scalef.cc)

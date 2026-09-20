@@ -11,8 +11,6 @@
 #include <type_traits>
 #include <utility>
 
-namespace simd { template<class T,std::size_t N> struct wide; }
-
 namespace wide {
   /// An owning, homogeneous collection of independent computation chains.
   template<class T,std::size_t N> struct array {
@@ -77,9 +75,6 @@ namespace wide {
     };
     template<class... T> struct shape<std::tuple<T...>> : tuple_shape<T...> {
       static constexpr auto kind=family::std_tuple;
-    };
-    template<class T,std::size_t N> struct shape<simd::wide<T,N>> : array_shape<T,N> {
-      static constexpr auto kind=family::legacy;
     };
     template<class T> using shape_t=shape<std::remove_cvref_t<T>>;
     template<class T> inline constexpr bool is_array=
@@ -200,7 +195,7 @@ namespace wide {
           return array<R,S::size>{{restore_element<E>(::wide::get<I>(std::forward<P>(value)))...}};
         else if constexpr (S::kind==family::std_array)
           return std::array<R,S::size>{{restore_element<E>(::wide::get<I>(std::forward<P>(value)))...}};
-        else return simd::wide<R,S::size>{std::array<R,S::size>{{
+        else return typename S::template rebind<R>{std::array<R,S::size>{{
           restore_element<E>(::wide::get<I>(std::forward<P>(value)))...}}};
       } else if constexpr (S::kind==family::tuple)
         return tuple{restore_element<typename S::template element_type<I>>(

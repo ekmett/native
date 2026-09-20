@@ -1,35 +1,9 @@
 
-#if !defined(__cpp_structured_bindings) || __cpp_structured_bindings < 202411L
-#error "Array exp requires C++26 structured-binding packs. Use a compiler with C++26 structured-binding packs."
-#endif
-
 namespace SIMD_BACKEND_NAMESPACE::native {
-  // Sollya degree 7. Every line advances all independent register chains.
-  // The FTZ cutoff skips the entire subnormal tail; the polynomial needs no FTZ.
+  // Compatibility entry points share the promoted pack graph.
   template<bool Flush = false, float_register V, std::size_t N>
-  simd_nodiscard simd_flatten simd_inline simd_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
-    if constexpr (N == 0) return {};
-    else {
-      auto const & [...x] = input;
-      alignas(typename V::mask_type) auto const [...active] = std::array{
-        (~(x < V(Flush ? -87.33654022216796875f : -104.f)))...};
-      // Put x second: the ordered min keeps NaNs, while clamping positive overflow.
-      auto [...r] = std::array{min(V(88.72283935546875f), x)...};
-      auto const [...n] = std::array{round_even(r * V(1.4426950408889634f))...};
-      ((r = fma(n, V(-0x1.62e400p-1f), r)), ...);
-      ((r = fma(n, V(-0x1.7f7d1cp-20f), r)), ...);
-
-      auto [...y] = std::array{
-        fma(r, V(0x1.a1d714d7b1510dp-13f), V(0x1.6da756e670ea6p-10f))...};
-      ((y = fma(r, y, V(0x1.11105b3161a6fp-7f))), ...);
-      ((y = fma(r, y, V(0x1.5554649b7487fp-5f))), ...);
-      ((y = fma(r, y, V(0x1.555555c673724p-3f))), ...);
-      ((y = fma(r, y, V(0x1.0000005c8dd89p-1f))), ...);
-      V const one{1.0f};
-      ((y = fma(r, y, one)), ...);
-      ((y = fma(r, y, one)), ...);
-      return {{masked_scaleb_zero(active, y, n)...}};
-    }
+  simd_nodiscard simd_flatten native_inline simd_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
+    return ::math::exp<Flush>(input);
   }
   template<bool Flush = false, float_register V>
   simd_nodiscard simd_inline simd_pure V exp(V x) noexcept {

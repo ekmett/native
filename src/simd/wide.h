@@ -4,6 +4,7 @@
 #include "simd/attributes.h"
 #include "simd/isa.h"
 #include "simd/value_traits.h"
+#include "simd/wide_pack.h"
 
 #include <array>
 #include <concepts>
@@ -432,4 +433,12 @@ namespace std {
   struct tuple_size<simd::wide<T, N>> : integral_constant<size_t, N> {};
   template<size_t I, class T, size_t N>
   struct tuple_element<I, simd::wide<T, N>> : tuple_element<I, array<T, N>> {};
+}
+namespace wide::detail {
+  // The legacy class belongs to simd.wide. Specialize its adapter here rather
+  // than forward-declaring that class in a global module fragment.
+  template<class T,std::size_t N> struct shape<simd::wide<T,N>> : array_shape<T,N> {
+    static constexpr auto kind=family::legacy;
+    template<class R> using rebind=simd::wide<R,N>;
+  };
 }

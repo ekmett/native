@@ -196,6 +196,9 @@
   #define simd_inline inline
 #endif
 
+/// Force inline a generic native algorithm into its caller's target scope.
+#define native_inline simd_inline
+
 /** \def simd_flatten
 
       \brief portable `[[flatten]]`

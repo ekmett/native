@@ -4,6 +4,20 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
+export namespace math {
+  using ::math::exp;
+}
+export namespace wide {
+  using ::wide::constant_like;
+  using ::wide::operator*;
+  using ::wide::operator<;
+  using ::wide::operator!;
+  using ::wide::min;
+  using ::wide::round_even;
+  using ::wide::fma;
+  using ::wide::masked_scaleb_zero;
+}
+
 export namespace simd {
   using std::int8_t;
   using std::int16_t;

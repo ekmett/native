@@ -4,6 +4,7 @@ module;
 #include "simd/attributes.h"
 #include "simd/isa.h"
 #include "simd/value_traits.h"
+#include "simd/wide_pack.h"
 
 #include <array>
 #include <concepts>
@@ -16,6 +17,19 @@ module;
 
 
 export module simd.wide;
+
+export namespace wide {
+  using ::wide::array;
+  using ::wide::tuple;
+  using ::wide::get;
+  using ::wide::pack;
+  using ::wide::promotable;
+  using ::wide::traits;
+  using ::wide::canonical_t;
+  using ::wide::promote;
+  using ::wide::demote;
+  using ::wide::map;
+}
 
 export {
 #include "simd/wide.h"
