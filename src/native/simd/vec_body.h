@@ -3129,7 +3129,7 @@ namespace native {
   };
 #endif
 #if NATIVE_HAS_ARM_NEON
-  template <::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct native_empty_bases vec<float, 4,Arch> : ::NATIVE_BACKEND_NAMESPACE::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
+  template <::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct alignas(float32x4_t) native_empty_bases vec<float, 4,Arch> : ::NATIVE_BACKEND_NAMESPACE::register_memory<vec<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
     static constexpr isa architecture=Arch;
     template <class T> using rebind = vec<T,4,Arch>;
     using vector_mask_type=vec<mask32,4,Arch>;
@@ -3262,7 +3262,7 @@ namespace native {
       else
 #endif
 #if NATIVE_HAS_ARM_NEON
-      if constexpr(N==4) return vec<float,N,Arch>(vrndmq_f32(x.value));
+      if constexpr(N==4) return vec<float,N,Arch>(__builtin_elementwise_floor(x.value));
       else
 #endif
       return vec<float,N,Arch>(std::floor(x.value));
@@ -3629,7 +3629,7 @@ namespace native {
           else if constexpr (Direction == rounding_direction::up) return V::from_native(vget_lane_f32(vrndp_f32(a),0));
           else return V::from_native(vget_lane_f32(vrnd_f32(a),0));
         } else {
-          if constexpr (Direction == rounding_direction::down) return V::from_native(vrndmq_f32(x.to_native()));
+          if constexpr (Direction == rounding_direction::down) return V::from_native(__builtin_elementwise_floor(x.to_native()));
           else if constexpr (Direction == rounding_direction::up) return V::from_native(vrndpq_f32(x.to_native()));
           else return V::from_native(vrndq_f32(x.to_native()));
         }
