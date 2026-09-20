@@ -9,6 +9,16 @@ export module native.x86.wait;
 import native.x86.features;
 
 export namespace native {
+  /// \defgroup x86_mwaitx MWAITX
+  /// \ingroup wait
+  /// MONITORX and MWAITX require x86_feature::mwaitx, reported by extended
+  /// CPUID leaf 0x80000001 ECX bit 29. No vector-state feature is required.
+
+  /// \defgroup x86_waitpkg WAITPKG
+  /// \ingroup wait
+  /// UMONITOR and UMWAIT require x86_feature::waitpkg, reported by
+  /// CPUID leaf 7 subleaf 0 ECX bit 5. No vector-state feature is required.
+
   /// \defgroup wait Waiting
   /// \{
 
@@ -44,8 +54,10 @@ export namespace native {
   /// \ref waiter using the MONITORX/MWAITX instruction feature
   struct mwaitx {
     using timer_t = std::uint64_t;
+    /// \ingroup x86_mwaitx
     /// Arm MONITORX for p; call only when supported is true.
     [[gnu::target("mwaitx")]] static void monitor(volatile void * p) noexcept;
+    /// \ingroup x86_mwaitx
     /// Issue MWAITX with the supplied timer operand; monitor must already be armed.
     [[gnu::target("mwaitx")]] static void mwait(std::uint32_t timer = 0) noexcept native_blocking;
     /// \hideinitializer \hideinlinesource
@@ -56,8 +68,10 @@ export namespace native {
   /// \ref waiter using the WAITPKG instruction feature
   struct umwait {
     using timer_t = std::uint64_t;
+    /// \ingroup x86_waitpkg
     /// Arm UMONITOR for p; call only when supported is true.
     [[gnu::target("waitpkg")]] static void monitor(volatile void * p) noexcept;
+    /// \ingroup x86_waitpkg
     /// Issue UMWAIT with this absolute deadline operand; return the intrinsic status.
     [[gnu::target("waitpkg")]] static std::uint8_t mwait(std::uint32_t timer = 0) noexcept native_blocking;
     /// \hideinlinesource

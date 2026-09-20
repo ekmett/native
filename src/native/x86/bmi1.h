@@ -12,6 +12,7 @@ namespace native {
   /// \defgroup x86_bmi1 BMI1
   /// Integer bit operations requiring x86_feature::bmi1 and compiler target "bmi".
   /// \{
+
   /// ANDN: complement the first operand, then AND with the second.
   template<isa Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))

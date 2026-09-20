@@ -25,9 +25,12 @@ set(DOXYGEN_SEARCH_INCLUDES NO)
 set(DOXYGEN_EXPAND_ONLY_PREDEF YES)
 # Doxygen misparses conditional explicit constructors; keep their actual
 # contracts in the comments while rendering the ordinary constructor signature.
+# Select the representative x86 host and omit raw compiler attributes so the
+# feature headers and their constrained function declarations remain visible.
 set(DOXYGEN_PREDEFINED
+  "NATIVE_HOST_X86:=1" "NATIVE_HOST_NEON:=0"
   "NATIVE_HAS_NATIVE_FP16=1" "NATIVE_HAS_NATIVE_BF16=1"
-  "explicit(...):=explicit" "__declspec(x):=" "__cplusplus=202600L" "NATIVE_PROFILE=512" "NATIVE_BACKEND:=avx512_backend" "NATIVE_ARCH:=::native::avx512"
+  "explicit(...):=explicit" "__declspec(x):=" "__attribute__(x):=" "__cplusplus=202600L" "NATIVE_PROFILE=512" "NATIVE_BACKEND:=avx512_backend" "NATIVE_ARCH:=::native::avx512"
   "NATIVE_BACKEND_NAMESPACE:=native::detail::avx512_backend"
   "NATIVE_ARCH_REQUIRES(Arch):=(::native::avx512 <= Arch)"
   "NATIVE_WIDE_FAMILY:=0" "NATIVE_WIDE_DETAIL:=detail::wide_generic_detail"

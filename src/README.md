@@ -32,7 +32,9 @@ Custom numerical elements use one common extension, independent of the ISA.
 `native` re-exports `native.simd`, `native.features`, and the host's `native.x86`
 or `native.arm` umbrella. `native.x86.features` and `native.arm.features` retain
 architecture-specific observation APIs; `native.features` adds `observe_cpu()`
-for portable callers. `native.x86.bmi2` supplies `pdep`/`pext` and
+for portable callers. The `native.x86.bmi1`, `native.x86.bmi2`,
+`native.x86.popcnt` and `native.x86.lzcnt` modules expose independently constrained
+integer instructions; their Doxygen groups use the corresponding feature names.
 `native.x86.wait` supplies wait operations. The main hub does not re-export
 `native.math`; numerical consumers import it explicitly.
 
