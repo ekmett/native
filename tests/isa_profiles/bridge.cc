@@ -10,20 +10,23 @@
 #include <memory>
 #include "support/guarded_pages.h"
 
-#define SIMD_TEST_IMPORT SIMD_TEST_INTERFACE
+#define NATIVE_TEST_IMPORT NATIVE_TEST_INTERFACE
 #include "support/profile.h"
-import simd.wide;
+import native.wide;
+#if NATIVE_TEST_IMPORT
+import native.math;
+#endif
 
 namespace {
-  constexpr std::size_t lanes = SIMD_TEST_PROFILE / 32;
+  constexpr std::size_t lanes = NATIVE_TEST_PROFILE / 32;
   using F = test_vec<float, lanes>;
   static_assert(sizeof(F) == sizeof(float) * lanes);
   static_assert(std::is_trivially_copyable_v<F>);
-  using packed_values = simd::wide<F,3>;
-  static_assert(std::same_as<decltype(simd::exp(std::declval<packed_values const &>())), packed_values>);
+  using packed_values = native::wide<F,3>;
+  static_assert(std::same_as<decltype(native::exp(std::declval<packed_values const &>())), packed_values>);
   template<std::size_t N> bool tails() {
     using R = test_vec<float, N>;
-    simd::test::guarded_pages input_page, output_page;
+    native::test::guarded_pages input_page, output_page;
     for (std::size_t n = 0; n <= N; ++n) {
       auto * input = reinterpret_cast<float *>(input_page.end()) - n;
       auto * output = reinterpret_cast<float *>(output_page.end()) - n;
@@ -53,14 +56,14 @@ namespace {
 }
 
 
-extern "C" std::size_t SIMD_TEST_ENTRY(std::uint32_t * out, std::size_t capacity) {
+extern "C" std::size_t NATIVE_TEST_ENTRY(std::uint32_t * out, std::size_t capacity) {
   if (capacity < profile_test::words || !out || !tails<4>() || !tails<lanes>()) return 0;
   std::array<float, profile_test::count> input;
   for (std::size_t i=0; i<input.size(); ++i) input[i] = float(int(i)-48)*.25f;
-  simd::wide<F,profile_test::count/lanes> packed;
+  native::wide<F,profile_test::count/lanes> packed;
   for (std::size_t i=0; i<packed.registers.size(); ++i)
     packed.registers[i] = F::loadu(input.data()+i*lanes);
-  auto exponential = simd::exp(packed);
+  auto exponential = native::exp(packed);
   for (std::size_t i=0; i<packed.registers.size(); ++i) {
     auto offset=i*lanes; auto x=packed.registers[i];
     auto put=[&](std::size_t column,F value) {value.store_bits(out+column*profile_test::count+offset);};

@@ -30,7 +30,7 @@ namespace half_conversion_test {
     std::array<std::uint32_t, 65536> decoded;
     std::vector<sample> bank;
     {
-      simd::test::fp_scope scope(simd::test::fp_mode::gradual);
+      native::test::fp_scope scope(native::test::fp_mode::gradual);
       for (unsigned word = 0; word < decoded.size(); ++word)
         decoded[word] = reference_decode<Fraction, Bias>(word);
       unsigned infinity = (0x7fffu >> Fraction) << Fraction;
@@ -53,9 +53,9 @@ namespace half_conversion_test {
         bank.push_back({(sign<<16)|(overflow+1), std::uint16_t(sign|infinity)});
       }
     }
-    auto before = simd::test::read_fp_state();
-    for (auto mode : {simd::test::fp_mode::gradual, simd::test::fp_mode::flush}) {
-      simd::test::fp_scope scope(mode);
+    auto before = native::test::read_fp_state();
+    for (auto mode : {native::test::fp_mode::gradual, native::test::fp_mode::flush}) {
+      native::test::fp_scope scope(mode);
       for (int rounding : {FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, FE_TOWARDZERO}) {
         if (std::fesetround(rounding)) return false;
         for (unsigned word = 0; word < decoded.size(); ++word) {
@@ -91,12 +91,12 @@ namespace half_conversion_test {
         }
       }
     }
-    if (before != simd::test::read_fp_state()) return false;
+    if (before != native::test::read_fp_state()) return false;
     std::printf("half conversion fraction=%u decode=65536 encode_boundaries=%zu modes=8 exact\n",Fraction,bank.size());
     return true;
   }
-  static_assert(simd::fp16(0x1.002p0f).to_bits() == 0x3c00);
-  static_assert(simd::fp16(0x1.006p0f).to_bits() == 0x3c02);
-  static_assert(simd::bf16(0x1.01p0f).to_bits() == 0x3f80);
-  static_assert(simd::bf16(0x1.03p0f).to_bits() == 0x3f82);
+  static_assert(native::fp16(0x1.002p0f).to_bits() == 0x3c00);
+  static_assert(native::fp16(0x1.006p0f).to_bits() == 0x3c02);
+  static_assert(native::bf16(0x1.01p0f).to_bits() == 0x3f80);
+  static_assert(native::bf16(0x1.03p0f).to_bits() == 0x3f82);
 }

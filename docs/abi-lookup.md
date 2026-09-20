@@ -7,7 +7,7 @@
 `x86_feature` and `arm_feature` name the respective instruction features; `&` combines their requirements by union:
 
 ```cpp
-using namespace simd;
+using namespace native;
 
 constexpr isa needs = [] {
   using enum x86_feature;
@@ -64,7 +64,7 @@ static_assert(compiler_features.avx);
 and CPU admission apply that closure. The existing `scalar`, `avx2`, `avx512`,
 `avx512_bf16`, `avx512_fp16`, `neon`, `neon_fp16` and `neon_bf16` presets are
 `constexpr isa` values whose prerequisite closure is already included. For
-example, the `avx2` preset also requests FMA and BMI2. CPU-model bundles remain
+example, the `avx2` preset also requests FMA. CPU-model bundles remain
 future work.
 
 The feature enumerators `x86_feature::avx512bf16` and `x86_feature::avx512fp16` name single
@@ -132,7 +132,7 @@ choice already matched or the supplied `A` matches nothing:
 ```
 
 Incomparable choices may appear in either order; the first matching one wins.
-The helper is available through `<simd/isa.h>` in C++20 or `import simd;`.
+The helper is available through `<native/isa.h>` in C++20 or `import native;`.
 It performs compile-time selection only. Give native implementations their
 required Clang target attributes, and use `with_isa` for CPU/OS admission before
 execution. See the [source-target guide](omnibus.md).
@@ -144,21 +144,21 @@ use its own disjoint constraint without changing the existing choice pack.
 Across CPU families, select the native definitions with preprocessing first:
 
 ```cpp
-#include <simd/config.h>
-import simd;
-using namespace simd;
+#include <native/config.h>
+import native;
+using namespace native;
 
 template<isa A>
 void double16(float * out, float const * in) = delete;
 
-#if SIMD_HOST_X86
+#if NATIVE_HOST_X86
 template<isa A> requires(target<A, avx512, avx2> == 0)
 void double16(float * out, float const * in);
 
 template<isa A> requires(target<A, avx512, avx2> == 1)
 void double16(float * out, float const * in);
 
-#elif SIMD_HOST_NEON
+#elif NATIVE_HOST_NEON
 template<isa A> requires(A.has(arm_feature::neon))
 void double16(float * out, float const * in);
 #endif
@@ -166,7 +166,7 @@ void double16(float * out, float const * in);
 
 These are constrained function overloads. The deleted primary rejects ISAs
 with no implementation. The ISA metadata is available on every host, but
-`import simd` exposes native vectors for the compilation target. Guard native
+`import native` exposes native vectors for the compilation target. Guard native
 headers and target-attribute scopes by CPU family. Constraints cannot hide a
 foreign header or defer Clang's processing of a target attribute.
 

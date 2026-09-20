@@ -4,16 +4,16 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdint>
-import simd.cpu.x86;
-#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+import native.x86.features;
+#if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
 extern "C" int backend_avx2(float const*,float const*,float*);
 extern "C" int backend_avx512(float const*,float const*,float*);
 extern "C" __declspec(dllexport) __declspec(noinline) unsigned supported_backends(){
- auto cpu=simd::observe_x86_capabilities();
- auto avx2=simd::classify_isa(cpu,simd::avx2);
- auto avx512=simd::classify_isa(cpu,simd::avx512);
+ auto cpu=native::observe_x86_capabilities();
+ auto avx2=native::classify_isa(cpu,native::avx2);
+ auto avx512=native::classify_isa(cpu,native::avx512);
  unsigned result=unsigned(avx2.admitted())|(unsigned(avx512.admitted())<<1);
  std::printf("AVX2: %s; AVX512: %s; supported=%u\n",avx2.reason(),avx512.reason(),result);
  return result;

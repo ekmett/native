@@ -3,37 +3,37 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 cmake_minimum_required(VERSION 4.4)
-project(simd VERSION 0.0.1 LANGUAGES NONE)
+project(native VERSION 0.0.1 LANGUAGES NONE)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(SIMD_BUILD_HOST "Build the C++26 SIMD/module library" ON)
-option(SIMD_BUILD_TESTS "Build focused new-core tests" ${PROJECT_IS_TOP_LEVEL})
-option(SIMD_BUILD_DOCS "Build API documentation (requires Doxygen)" OFF)
+option(NATIVE_BUILD_HOST "Build the C++26 SIMD/module library" ON)
+option(NATIVE_BUILD_TESTS "Build focused new-core tests" ${PROJECT_IS_TOP_LEVEL})
+option(NATIVE_BUILD_DOCS "Build API documentation (requires Doxygen)" OFF)
 # Retained as a compatibility setting; single-module providers build BMIs directly.
-option(SIMD_ENABLE_PCH "Compatibility setting (module providers do not use PCH)" OFF)
-option(SIMD_ENABLE_EXCEPTIONS "Enable C++ exceptions in the new core and its consumers" OFF)
-option(SIMD_ENABLE_IPO "Enable supported host interprocedural optimization" OFF)
-option(SIMD_ENABLE_ASAN "Instrument host targets with AddressSanitizer" OFF)
+option(NATIVE_ENABLE_PCH "Compatibility setting (module providers do not use PCH)" OFF)
+option(NATIVE_ENABLE_EXCEPTIONS "Enable C++ exceptions in the new core and its consumers" OFF)
+option(NATIVE_ENABLE_IPO "Enable supported host interprocedural optimization" OFF)
+option(NATIVE_ENABLE_ASAN "Instrument host targets with AddressSanitizer" OFF)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-  set(simd_default_isa NEON)
+  set(native_default_isa NEON)
 else()
-  set(simd_default_isa AVX2)
+  set(native_default_isa AVX2)
 endif()
-set(SIMD_TEST_ISA "${simd_default_isa}" CACHE STRING "ISA used by the native regression tests")
-set_property(CACHE SIMD_TEST_ISA PROPERTY STRINGS AVX2 AVX512 NEON)
-if(simd_default_isa STREQUAL "NEON")
-  set(simd_default_profiles "NEON;NEON_FP16;NEON_BF16")
+set(NATIVE_TEST_ISA "${native_default_isa}" CACHE STRING "ISA used by the native regression tests")
+set_property(CACHE NATIVE_TEST_ISA PROPERTY STRINGS AVX2 AVX512 NEON)
+if(native_default_isa STREQUAL "NEON")
+  set(native_default_profiles "NEON;NEON_FP16;NEON_BF16")
 else()
-  set(simd_default_profiles "AVX2;AVX512;AVX512_BF16;AVX512_FP16")
+  set(native_default_profiles "AVX2;AVX512;AVX512_BF16;AVX512_FP16")
 endif()
-set(SIMD_PROFILES "${simd_default_profiles}" CACHE STRING "Profiles exercised by the regression tests; the hub exposes all supported host profiles")
-list(REMOVE_DUPLICATES SIMD_PROFILES)
-foreach(profile IN LISTS SIMD_PROFILES)
+set(NATIVE_PROFILES "${native_default_profiles}" CACHE STRING "Profiles exercised by the regression tests; the hub exposes all supported host profiles")
+list(REMOVE_DUPLICATES NATIVE_PROFILES)
+foreach(profile IN LISTS NATIVE_PROFILES)
   if(NOT profile MATCHES "^(AVX2|AVX512|AVX512_BF16|AVX512_FP16|NEON|NEON_FP16|NEON_BF16)$")
-    message(FATAL_ERROR "SIMD_PROFILES entries must be AVX2, AVX512, AVX512_BF16, AVX512_FP16, NEON, NEON_FP16, or NEON_BF16.")
+    message(FATAL_ERROR "NATIVE_PROFILES entries must be AVX2, AVX512, AVX512_BF16, AVX512_FP16, NEON, NEON_FP16, or NEON_BF16.")
   endif()
 endforeach()
-if(SIMD_BUILD_HOST)
+if(NATIVE_BUILD_HOST)
   enable_language(CXX)
 else()
   # GNUInstallDirs cannot infer an architecture in this language-free package.
@@ -44,28 +44,28 @@ include(CMakePackageConfigHelpers)
 
 # Configuration, attributes and source-level target generation are textual.
 # Downstream libraries can consume them without enabling the host module build.
-add_library(simd_headers INTERFACE)
-add_library(simd::headers ALIAS simd_headers)
-set_target_properties(simd_headers PROPERTIES EXPORT_NAME headers)
+add_library(native_headers INTERFACE)
+add_library(native::headers ALIAS native_headers)
+set_target_properties(native_headers PROPERTIES EXPORT_NAME headers)
 # Named swizzle properties use Clang's Microsoft property extension. Carry this
 # requirement with the headers as well as modules, including relocated consumers.
-target_compile_options(simd_headers INTERFACE
+target_compile_options(native_headers INTERFACE
   "$<$<AND:$<COMPILE_LANG_AND_ID:CXX,Clang,AppleClang>,$<NOT:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>>>:-fms-extensions>")
-target_sources(simd_headers INTERFACE
+target_sources(native_headers INTERFACE
   FILE_SET headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src"
-  FILES src/simd/config.h src/simd/attributes.h src/simd/isa.h src/simd/targets.h)
-target_include_directories(simd_headers INTERFACE
+  FILES src/native/config.h src/native/attributes.h src/native/isa.h src/native/targets.h)
+target_include_directories(native_headers INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
-install(TARGETS simd_headers EXPORT simdHeaderTargets
+install(TARGETS native_headers EXPORT nativeHeaderTargets
   FILE_SET headers DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")
 
-install(EXPORT simdHeaderTargets NAMESPACE simd:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
-export(EXPORT simdHeaderTargets NAMESPACE simd:: FILE "${CMAKE_CURRENT_BINARY_DIR}/simdHeaderTargets.cmake")
+install(EXPORT nativeHeaderTargets NAMESPACE native:: DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
+export(EXPORT nativeHeaderTargets NAMESPACE native:: FILE "${CMAKE_CURRENT_BINARY_DIR}/nativeHeaderTargets.cmake")
 
-if(SIMD_BUILD_HOST)
+if(NATIVE_BUILD_HOST)
   include(etc/cmake/Compiler.cmake)
-  if(SIMD_BUILD_TESTS)
+  if(NATIVE_BUILD_TESTS)
     enable_testing()
     # Boundary tests inspect provider commands as well as test executables.
     # Enable the database before creating the module targets.
@@ -73,14 +73,14 @@ if(SIMD_BUILD_HOST)
   endif()
   add_subdirectory(src)
 endif()
-if(SIMD_BUILD_DOCS)
+if(NATIVE_BUILD_DOCS)
   add_subdirectory(doc)
 endif()
-if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
+if(NATIVE_BUILD_HOST AND NATIVE_BUILD_TESTS)
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/core_regression/CMakeLists.txt")
     add_subdirectory(tests/core_regression)
   else()
-    message(FATAL_ERROR "SIMD_BUILD_TESTS requires the new tests/core_regression source checkpoint.")
+    message(FATAL_ERROR "NATIVE_BUILD_TESTS requires the new tests/core_regression source checkpoint.")
   endif()
   if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/isa_profiles/CMakeLists.txt")
     add_subdirectory(tests/isa_profiles)
@@ -95,6 +95,7 @@ if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
   add_subdirectory(tests/rounding)
   add_subdirectory(tests/compaction)
   add_subdirectory(tests/source_targets)
+  add_subdirectory(tests/native_cutover)
   add_subdirectory(tests/abi_lookup)
   add_subdirectory(tests/wide_construction)
   add_subdirectory(tests/exp_policy_refinement)
@@ -104,15 +105,15 @@ if(SIMD_BUILD_HOST AND SIMD_BUILD_TESTS)
   add_subdirectory(tests/kernel_policy_refinement)
 endif()
 
-configure_file(etc/cmake/simdProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/simdProfile.cmake" COPYONLY)
-configure_package_config_file(etc/cmake/simdConfig.cmake.in
-  "${CMAKE_CURRENT_BINARY_DIR}/simdConfig.cmake"
-  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
-write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/simdConfigVersion.cmake"
+configure_file(etc/cmake/nativeProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/nativeProfile.cmake" COPYONLY)
+configure_package_config_file(etc/cmake/nativeConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/nativeConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
+write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/nativeConfigVersion.cmake"
   VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/simdProfile.cmake"
-  "${CMAKE_CURRENT_BINARY_DIR}/simdConfig.cmake"
-  "${CMAKE_CURRENT_BINARY_DIR}/simdConfigVersion.cmake"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/nativeProfile.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/nativeConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/nativeConfigVersion.cmake"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
 
-install(FILES LICENSE.md DESTINATION "${CMAKE_INSTALL_DATADIR}/simd")
+install(FILES LICENSE.md DESTINATION "${CMAKE_INSTALL_DATADIR}/native")

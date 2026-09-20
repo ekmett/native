@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <simd/simd/math/sincos.h>
+#include <native/simd/math/sincos.h>
 #include <array>
 #include <cstdlib>
 
 // Keep the historical array kernels in a separate header-only consumer. The
-// promoted tests can import simd without exposing private backend declarations,
+// promoted tests can import native without exposing private backend declarations,
 // and their reference does not call the new promoted polynomial graph.
 #define DEFINE_TRIG_REFERENCE(Name, Backend, Type) \
   static void Name(float const * input, float * sine, float * cosine, \
@@ -18,12 +18,12 @@
     s[0].storeu(sine); c[0].storeu(cosine); \
     pair.first[0].storeu(paired_sine); pair.second[0].storeu(paired_cosine); \
   }
-DEFINE_TRIG_REFERENCE(scalar_reference, simd::detail::scalar_backend::native, fp32x1)
+DEFINE_TRIG_REFERENCE(scalar_reference, native::detail::scalar_backend::native, fp32x1)
 #if defined(__AVX2__)
-DEFINE_TRIG_REFERENCE(native_reference, simd::detail::avx2_backend::native, fp32x8)
-DEFINE_TRIG_REFERENCE(narrow_reference, simd::detail::avx2_backend::native, fp32x4)
+DEFINE_TRIG_REFERENCE(native_reference, native::detail::avx2_backend::native, fp32x8)
+DEFINE_TRIG_REFERENCE(narrow_reference, native::detail::avx2_backend::native, fp32x4)
 #elif defined(__ARM_NEON)
-DEFINE_TRIG_REFERENCE(native_reference, simd::detail::neon_backend::native, fp32x4)
+DEFINE_TRIG_REFERENCE(native_reference, native::detail::neon_backend::native, fp32x4)
 #endif
 #undef DEFINE_TRIG_REFERENCE
 

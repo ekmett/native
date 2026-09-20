@@ -9,8 +9,8 @@
 #if defined(_MSC_VER)
 #include <intrin.h>
 #endif
-import simd.cpu.arm;
-import simd.scalar;
+import native.arm.features;
+import native.scalar;
 // FP16 feature macros can remain set via FP16FML after -fullfp16. The
 // baseline_features test compiles native intrinsics with this exact command
 // and checks availability against the producer's minimum feature probe.
@@ -58,16 +58,16 @@ namespace {
     ~environment() {set_fpcr(control);set_fpsr(status);}
   };
   constexpr bool classification() {
-    simd::arm_capabilities::raw_observations empty;
-    if(simd::classify_isa(empty,simd::neon).admitted() ||
-        simd::classify_isa(empty,simd::neon_fp16).admitted()) return false;
-    simd::arm_capabilities::raw_observations all{true,true,true,true,true,true};
-    if(!simd::classify_isa(all,simd::neon).admitted() ||
-        !simd::classify_isa(all,simd::neon_fp16).admitted()) return false;
-    if(!simd::classify_isa(all,simd::isa(static_cast<simd::x86_feature>(-1))).invalid_features) return false;
+    native::arm_capabilities::raw_observations empty;
+    if(native::classify_isa(empty,native::neon).admitted() ||
+        native::classify_isa(empty,native::neon_fp16).admitted()) return false;
+    native::arm_capabilities::raw_observations all{true,true,true,true,true,true};
+    if(!native::classify_isa(all,native::neon).admitted() ||
+        !native::classify_isa(all,native::neon_fp16).admitted()) return false;
+    if(!native::classify_isa(all,native::isa(static_cast<native::x86_feature>(-1))).invalid_features) return false;
     auto baseline=all; baseline.fp16_observed=baseline.scalar_fp16=baseline.vector_fp16=false;
-    if(!simd::classify_isa(baseline,simd::neon).admitted() ||
-        simd::classify_isa(baseline,simd::neon_fp16).admitted()) return false;
+    if(!native::classify_isa(baseline,native::neon).admitted() ||
+        native::classify_isa(baseline,native::neon_fp16).admitted()) return false;
     for(unsigned missing=0;missing!=6;++missing) {
       auto c=all;
       switch(missing) {
@@ -78,7 +78,7 @@ namespace {
         case 4:c.scalar_fp16=false;break;
         case 5:c.vector_fp16=false;break;
       }
-      if(simd::classify_isa(c,simd::neon_fp16).admitted()) return false;
+      if(native::classify_isa(c,native::neon_fp16).admitted()) return false;
     }
     return true;
   }
@@ -173,12 +173,12 @@ int main(int argc,char **argv) {
   if(argc!=2)return 2;
   if(!std::strcmp(argv[1],"none")) {std::puts("No optional FP16 profile entered.");return 0;}
   if(!std::strcmp(argv[1],"admission")) {
-    auto cpu=simd::observe_arm_capabilities();
-    std::puts(simd::classify_isa(cpu,simd::neon_fp16).reason());
+    auto cpu=native::observe_arm_capabilities();
+    std::puts(native::classify_isa(cpu,native::neon_fp16).reason());
     return classification()?0:3;
   }
   if(std::strcmp(argv[1],"native"))return 2;
-  auto admission=simd::classify_isa(simd::observe_arm_capabilities(),simd::neon_fp16);
+  auto admission=native::classify_isa(native::observe_arm_capabilities(),native::neon_fp16);
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;

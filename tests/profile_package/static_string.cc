@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-import simd.static_string;
-using namespace simd;
+import native.static_string;
+using namespace native;
 // No textual includes: the installed module owns definitions and literal storage.
 void const * static_string_peer(unsigned width);
 static_string static_string_peer_value();

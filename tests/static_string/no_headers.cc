@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-import simd.static_string;
-using namespace simd;
+import native.static_string;
+using namespace native;
 static_assert("literal"_ss.size() == 7);
 static_assert("literal"_ss == "literal"_ss);
 static_assert("literal"_ss != "other"_ss);

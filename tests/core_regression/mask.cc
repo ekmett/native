@@ -60,7 +60,7 @@ template<class T,std::size_t N> void full() {
     require(all(m)==((bits&low)==low) && any(m)==((bits&low)!=0) && none(m)==((bits&low)==0),"full reductions");
     require(all(m==m) && none(m!=m),"full equality");
     require(select(m,M(true),M(false)).to_bitset()==m.to_bitset(),"full select");
-    std::array<T,N> values{};m.store(values.data());auto again=simd::load_simd<test_vec<T,N>>(values.data());
+    std::array<T,N> values{};m.store(values.data());auto again=native::load_simd<test_vec<T,N>>(values.data());
     require(again.to_bitset()==m.to_bitset() && deduce(again)==N,"mask typed memory/deduction");
     for(std::size_t i=0;i<N;++i) require(values[i].to_bits()==(((bits>>i)&1)?U(~U(0)):U(0)),"mask stored canonical");
 #if defined(__AVX512F__)
@@ -82,7 +82,7 @@ template<class T,std::size_t N> void full() {
 #endif
 template<std::size_t N,int Case> simd_mask_test_noinline bool compact_case(std::uint64_t input) {
 #if defined(__AVX512F__)
-  using P=simd::predicate<N,test_arch>;using U=typename P::native_type;constexpr auto low=test_backend::mask_low_bits<N>;
+  using P=native::predicate<N,test_arch>;using U=typename P::native_type;constexpr auto low=test_backend::mask_low_bits<N>;
   auto a=P::from_bitset(input),b=P::from_bitset(input>>1);
   if constexpr(Case==0) return P::from_native(U(~U(0))).to_bitset()==low;
   else if constexpr(Case==1) return P::unsafe_from_native(U(~U(0))).to_bitset()==low;
@@ -102,7 +102,7 @@ template<std::size_t N,int Case> simd_mask_test_noinline bool compact_case(std::
 #undef simd_mask_test_noinline
 template<std::size_t N> void compact() {
 #if defined(__AVX512F__)
-  using P=simd::predicate<N,test_arch>;
+  using P=native::predicate<N,test_arch>;
   constexpr auto constant=P::from_bitset(~std::uint64_t(0));
   static_assert(all(constant)&&none(~constant));
   static_assert(std::is_trivially_copyable_v<P> && !implicit_truth<P> && !plusable<P>);
@@ -121,7 +121,7 @@ template<std::size_t N> void booleans() {
   static_assert(!implicit_truth<B> && !plusable<B> && std::is_trivially_copyable_v<B>);
   static_assert(sizeof(B)==N);
   std::array<bool,N> values{};for(std::size_t i=0;i<N;++i) values[i]=(i&1)!=0;
-  auto a=simd::load_simd<test_vec<bool,N>>(values.data());auto n=a.to_native();std::array<std::uint8_t,N> bytes{};std::memcpy(bytes.data(),&n,sizeof(n));
+  auto a=native::load_simd<test_vec<bool,N>>(values.data());auto n=a.to_native();std::array<std::uint8_t,N> bytes{};std::memcpy(bytes.data(),&n,sizeof(n));
   for(std::size_t i=0;i<N;++i) require(bytes[i]==(values[i]?1:0),"Boolean bytes 0/1");
   require(all(a==a)&&none(a!=a)&&all(a|!a)&&none(a&!a),"Boolean logic");
   auto selected=select(a==B(true),B(true),B(false));std::array<bool,N> result{};selected.store(result.data());require(result==values,"Boolean select");
@@ -131,8 +131,8 @@ template<std::size_t N> void booleans() {
 #endif
   require(none(B::load_partial(nullptr,0)),"zero Boolean load");a.store_partial(nullptr,0);
   for(std::size_t count=0;count<=N;++count) {
-    auto partial=simd::load_simd_partial<test_vec<bool,N>>(values.data(),count,true);std::array<bool,N+2> out{};
-    simd::store_simd_partial(out.data()+1,partial,count);require(!out[0]&&!out[count+1],"Boolean tail guards");
+    auto partial=native::load_simd_partial<test_vec<bool,N>>(values.data(),count,true);std::array<bool,N+2> out{};
+    native::store_simd_partial(out.data()+1,partial,count);require(!out[0]&&!out[count+1],"Boolean tail guards");
     for(std::size_t i=0;i<count;++i) require(out[i+1]==values[i],"Boolean partial prefix");
   }
   bytes.fill(255);std::memcpy(&n,bytes.data(),sizeof(n));auto safe=B::from_native(n).to_native();std::memcpy(bytes.data(),&safe,sizeof(safe));

@@ -3,23 +3,23 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#if SIMD_WINDOWS_HEADER_FIRST
+#if NATIVE_WINDOWS_HEADER_FIRST
 #include <windows.h>
-import simd;
+import native;
 #else
-import simd;
+import native;
 #include <windows.h>
 #endif
 
 #if defined(__aarch64__) || defined(_M_ARM64)
-constexpr auto test_architecture = simd::neon;
+constexpr auto test_architecture = native::neon;
 __attribute__((target("neon"),noinline))
 #else
-constexpr auto test_architecture = simd::avx2;
-__attribute__((target("avx2,fma,bmi2"),noinline))
+constexpr auto test_architecture = native::avx2;
+__attribute__((target("avx2,fma"),noinline))
 #endif
 bool vector_operation(float value) {
-  using V = simd::vec<float,4,test_architecture>;
+  using V = native::vec<float,4,test_architecture>;
   float input[4]{value,2.f,3.f,4.f}, output[4]{};
   auto a = V::load(input);
   (a+a).store(output);
@@ -32,9 +32,9 @@ int main() {
   GetSystemInfo(&info);
   if(!info.dwPageSize) return 1;
 #if defined(__aarch64__) || defined(_M_ARM64)
-  auto admitted = simd::classify_isa(simd::observe_arm_capabilities(),simd::neon);
+  auto admitted = native::classify_isa(native::observe_arm_capabilities(),native::neon);
 #else
-  auto admitted = simd::classify_isa(simd::observe_x86_capabilities(),simd::avx2);
+  auto admitted = native::classify_isa(native::observe_x86_capabilities(),native::avx2);
 #endif
   if(!admitted.admitted()) return 77;
   return vector_operation(static_cast<float>(info.dwPageSize)) ? 0 : 2;

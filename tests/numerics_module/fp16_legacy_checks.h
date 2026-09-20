@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Moved verbatim from the pre-module header; retained Catch test reference only.
-#if defined(SIMD_TESTING) || defined(SIMD_TESTING_FP16)
+#if defined(NATIVE_TESTING) || defined(NATIVE_TESTING_FP16)
 TEST_CASE("fp16","[fp16]") {
-  using namespace simd;
+  using namespace native;
   using Catch::Approx;
 
   SECTION("fp16 default constructors and conversion") {

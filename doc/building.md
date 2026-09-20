@@ -1,4 +1,4 @@
-# Building and consuming simd
+# Building and consuming native
 
 Use Clang 23, CMake 4.4 and Ninja. On Windows use `clang-cl` with a configured
 MSVC SDK environment; on macOS select an LLVM toolchain explicitly instead of
@@ -6,20 +6,20 @@ the system compiler. Configuration compiles the required language features.
 
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_IPO=ON
+  -DCMAKE_BUILD_TYPE=Release -DNATIVE_ENABLE_IPO=ON
 cmake --build build/core --parallel 2
 ctest --test-dir build/core --output-on-failure
-cmake --install build/core --prefix /path/to/simd
+cmake --install build/core --prefix /path/to/native
 ```
 
-`SIMD_MINIMAL_COMPILE_OPTIONS` selects the project minimum using native compiler
-options. Defaults are AVX2/FMA/BMI2 on x86 and NEON on ARM. The hub and common
-modules compile at that minimum; stronger implementations carry Clang function
-target attributes. `SIMD_PROFILES` selects test coverage and `SIMD_TEST_ISA`
+`NATIVE_MINIMAL_COMPILE_OPTIONS` selects the project minimum using native compiler
+options. The default is empty, retaining the toolchain's baseline. The hub and
+common modules compile at that minimum; stronger implementations carry Clang function
+target attributes. `NATIVE_PROFILES` selects test coverage and `NATIVE_TEST_ISA`
 selects the primary regression implementation. Neither changes the hub API.
 
-`SIMD_ENABLE_EXCEPTIONS` defaults to OFF. Producer and consumer compiler,
-standard-library and exception modes must agree. `SIMD_ENABLE_ASAN` enables
+`NATIVE_ENABLE_EXCEPTIONS` defaults to OFF. Producer and consumer compiler,
+standard-library and exception modes must agree. `NATIVE_ENABLE_ASAN` enables
 host-memory checks. ISA properties and named swizzles require Clang's property
 extension; exported targets supply `-fms-extensions` for `clang++`, and `clang-cl`
 accepts it directly.
@@ -29,19 +29,23 @@ accepts it directly.
 ```cmake
 cmake_minimum_required(VERSION 4.4)
 project(example LANGUAGES CXX)
-find_package(simd CONFIG REQUIRED COMPONENTS simd)
+find_package(native CONFIG REQUIRED COMPONENTS native)
 add_executable(example example.cc)
-target_link_libraries(example PRIVATE simd::simd)
+target_link_libraries(example PRIVATE native::native)
 ```
 
 ```cpp
-import simd;
-using V = simd::vec<float, 8, simd::avx2>;
+import native;
+using V = native::simd<float, 8, native::avx2>;
 ```
 
-`simd::simd` owns the hub module and links `simd::minimal`, which owns the common
-utilities. `simd::common` aliases minimal. Old native-profile target names alias
-the hub, with no extra archive, BMI or feature flags. Use `import simd;` in place
+Add `import native.math;` to consumers that use promoted numerical kernels
+such as `math::exp` or `math::sincos`. The main module supplies primitive SIMD
+operations and CPU capability detection without importing those kernels.
+
+`native::native` owns the hub module and links `native::minimal`, which owns the common
+utilities. `native::common` aliases minimal. Old native-profile target names alias
+the hub, with no extra archive, BMI or feature flags. Use `import native;` in place
 of the former `simd.avx2`, `simd.avx512` and native-half module imports.
 
 The package installs module sources instead of compiler-specific PCMs. CMake
@@ -58,34 +62,34 @@ The [source target-list helper](../docs/omnibus.md) generates selected kernel
 overloads under Clang target pragmas in one source file. CPU/OS admission uses
 the same feature descriptions. No per-variant CMake target is required.
 The body macro receives an ISA value and declares a constrained
-`template<simd::isa A>` function. `with_isa` selects its value argument through
-a `[]<simd::isa A> { ... }` callback; that callback retains the compiler target
+`template<native::isa A>` function. `with_isa` selects its value argument through
+a `[]<native::isa A> { ... }` callback; that callback retains the compiler target
 of its definition.
-`simd_target_profile(target profile)` remains an optional convenience for older
+`native_target_profile(target profile)` remains an optional convenience for older
 applications that compile kernels in separate translation units.
-`simd_target_omnibus(target)` is now a compatibility no-op.
+`native_target_omnibus(target)` is now a compatibility no-op.
 
 ## Headers and downstream libraries
 
-Imports do not export macros. `simd::headers` supplies `config.h`, `attributes.h`,
-`isa.h` and `targets.h` under the `simd/` include directory. Native implementation
-headers are installed privately under `lib/simd/include` for BMI regeneration.
+Imports do not export macros. `native::headers` supplies `config.h`, `attributes.h`,
+`isa.h` and `targets.h` under the `native/` include directory. Native implementation
+headers are installed privately under `lib/native/include` for BMI regeneration.
 The ISA metadata header requires C++20 and the Clang property extension; the host
-modules require C++26. `SIMD_TARGET_ISA(name)` yields a checked ISA value for a
+modules require C++26. `NATIVE_TARGET_ISA(name)` yields a checked ISA value for a
 registered source target.
 
 ```sh
-cmake -S . -B build/headers -G Ninja -DSIMD_BUILD_HOST=OFF
-cmake --install build/headers --prefix /path/to/simd-headers
+cmake -S . -B build/headers -G Ninja -DNATIVE_BUILD_HOST=OFF
+cmake --install build/headers --prefix /path/to/native-headers
 ```
 
 A shader-only or tooling consumer can use `project(... LANGUAGES NONE)` and
-`find_package(simd CONFIG REQUIRED COMPONENTS headers)` without a C++ compiler.
+`find_package(native CONFIG REQUIRED COMPONENTS headers)` without a C++ compiler.
 FTZ's shader wrapper and arithmetic contract belong to its own `ftz::hlsl` target.
 
 ## PCH and LTO
 
-Module providers compile directly without a PCH; `SIMD_ENABLE_PCH` remains a
+Module providers compile directly without a PCH; `NATIVE_ENABLE_PCH` remains a
 compatibility setting. A consumer may own a PCH with standard headers and the
 textual macro headers. Its compiler, exception mode, feature flags and macros
 must agree with its translation unit. The package does not export a PCH.
@@ -200,7 +204,7 @@ execution lane in this workflow.
 `make`, `make test` and `make install` wrap the `clang-release` preset. Override
 `PRESET=clang-cl-release` when using clang-cl, or pass explicit configure options
 through `CMAKE_ARGS`. The preset takes the test ISA from the host default.
-For example, `make test CMAKE_ARGS=-DSIMD_TEST_ISA=AVX512` requires a matching CPU
+For example, `make test CMAKE_ARGS=-DNATIVE_TEST_ISA=AVX512` requires a matching CPU
 and OS vector state. Runtime tests must not be used as feature probes.
 
 `Dockerfile` is an optional Ubuntu 24.04 / LLVM 23 build environment. It installs
@@ -213,8 +217,8 @@ Doxygen 1.18 generates the guides, individual API contracts and compiled
 examples. A documentation-only build does not require the host library:
 
 ```sh
-cmake -S . -B build/docs -G Ninja -DSIMD_BUILD_HOST=OFF -DSIMD_BUILD_DOCS=ON
-cmake --build build/docs --target simd_docs
+cmake -S . -B build/docs -G Ninja -DNATIVE_BUILD_HOST=OFF -DNATIVE_BUILD_DOCS=ON
+cmake --build build/docs --target native_docs
 ```
 
 Open `build/docs/docs/html/index.html`. Warnings fail the build. With Python
@@ -237,9 +241,9 @@ python doc/test_links.py
 python doc/check_links.py build/docs/docs/html
 ```
 
-The minimal target exports `SIMD_MINIMAL_HAS_AVX2`, `SIMD_MINIMAL_HAS_AVX512`,
-`SIMD_MINIMAL_HAS_AVX512_BF16`, `SIMD_MINIMAL_HAS_AVX512_FP16`, `SIMD_MINIMAL_HAS_NEON_FP16` and
-`SIMD_MINIMAL_HAS_NEON_BF16` as 0/1 compile
+The minimal target exports `NATIVE_MINIMAL_HAS_AVX2`, `NATIVE_MINIMAL_HAS_AVX512`,
+`NATIVE_MINIMAL_HAS_AVX512_BF16`, `NATIVE_MINIMAL_HAS_AVX512_FP16`, `NATIVE_MINIMAL_HAS_NEON_FP16` and
+`NATIVE_MINIMAL_HAS_NEON_BF16` as 0/1 compile
 definitions from feature probes using the selected options. The NEON FP16 probe
 compiles native arithmetic intrinsics because feature macros alone can survive
 an explicit target-feature disable. Admission tests can distinguish the

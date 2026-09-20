@@ -6,10 +6,10 @@ are unchanged. Native operations require an attributed or separately compiled
 function with the matching ISA support.
 
 ```cpp
-import simd;
-using B = simd::vec<simd::bf16,32,simd::avx512_bf16>;
-using F = simd::vec<float,16,simd::avx512_bf16>;
-F result = simd::dot2(B::load(a), B::load(b), accumulator);
+import native;
+using B = native::simd<native::bf16,32,native::avx512_bf16>;
+using F = native::simd<float,16,native::avx512_bf16>;
+F result = native::dot2(B::load(a), B::load(b), accumulator);
 ```
 
 `B` occupies one 512-bit register. The same API also provides 8 and 16 BF16
@@ -35,7 +35,7 @@ profile admission and scalar conversions are unchanged.
 ## Build and admission
 
 The producer checks actual BF16 intrinsic compilation. The fixture compiles
-its native kernel with `simd_target_profile(kernel AVX512_BF16)`; applications
+its native kernel with `native_target_profile(kernel AVX512_BF16)`; applications
 can instead use the [source target helper](../../docs/omnibus.md). Keep the
 caller at the configured minimum and pass pointers/scalars across the entry.
 
@@ -67,7 +67,7 @@ The same sources are an installed-package fixture:
 cmake --install build --prefix "build/relocated package"
 cmake -S tests/bf16_profile -B build/bf16-package -G Ninja \
   -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release \
-  -Dsimd_DIR="/absolute/path/to/relocated package/lib/cmake/simd"
+  -Dnative_DIR="/absolute/path/to/relocated package/lib/cmake/native"
 cmake --build build/bf16-package --parallel 2
 ctest --test-dir build/bf16-package --output-on-failure
 ```

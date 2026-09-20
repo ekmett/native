@@ -19,17 +19,17 @@ namespace {
   template<class T,std::size_t N> constexpr bool original_layout =
     sizeof(test_vec<T,N>)==sizeof(T)*N && alignof(test_vec<T,N>)==sizeof(T)*N;
   static_assert(original_layout<float,1> && original_layout<std::int32_t,1> &&
-    original_layout<std::uint32_t,1> && original_layout<simd::mask32,1>);
+    original_layout<std::uint32_t,1> && original_layout<native::mask32,1>);
   static_assert(sizeof(test_vec<bool,1>)==1 && alignof(test_vec<bool,1>)==1);
   static_assert(original_layout<float,4> && original_layout<std::int32_t,4> &&
-    original_layout<std::uint32_t,4> && original_layout<simd::mask32,4>);
+    original_layout<std::uint32_t,4> && original_layout<native::mask32,4>);
 #if defined(__AVX2__)
   static_assert(original_layout<float,8> && original_layout<std::int32_t,8> &&
-    original_layout<std::uint32_t,8> && original_layout<simd::mask32,8>);
+    original_layout<std::uint32_t,8> && original_layout<native::mask32,8>);
 #endif
 #if defined(__AVX512F__)
   static_assert(original_layout<float,16> && original_layout<std::int32_t,16> &&
-    original_layout<std::uint32_t,16> && original_layout<simd::mask32,16>);
+    original_layout<std::uint32_t,16> && original_layout<native::mask32,16>);
 #endif
   template<class A,class B> constexpr bool unequal_shapes_rejected =
     !requires(A a,B b){a+b;} && !requires(A a,B b){a-b;} &&
@@ -67,7 +67,7 @@ namespace {
   template<class T> word<T> bits(T value) { return std::bit_cast<word<T>>(value); }
   template<class V> auto lanes(V const & value) {
     std::array<typename V::value_type,V::lanes> result{};
-    simd::store_simd(result.data(),value);
+    native::store_simd(result.data(),value);
     return result;
   }
   template<class V,std::size_t N> void expect(V const & actual,std::array<typename V::value_type,N> const & expected,char const * message) {
@@ -117,9 +117,9 @@ namespace {
 
   template<std::size_t N> void masks() {
     using V=test_vec<float,N>;using M=typename V::mask;
-    using Full=test_vec<simd::mask32,N>;
+    using Full=test_vec<native::mask32,N>;
     static_assert(std::is_trivially_copyable_v<M>);
-    static_assert(M::compact==(test_arch==simd::avx512));
+    static_assert(M::compact==(test_arch==native::avx512));
     static_assert(sizeof(Full)==16 && std::is_trivially_copyable_v<Full>);
     constexpr auto low=(std::uint64_t(1)<<N)-1;
     auto full=Full::from_bitset(~std::uint64_t(0));
@@ -183,8 +183,8 @@ namespace {
     constexpr std::array<std::uint32_t,14> bank{0u,0x80000000u,1u,0x007fffffu,
       0x00800000u,0x3f000001u,0x3f800000u,0xbf800000u,0x40000000u,
       0x7f7fffffu,0x7f800000u,0xff800000u,0x7fc12345u,0xffa12345u};
-    for(auto mode:{simd::test::fp_mode::gradual,simd::test::fp_mode::flush}) {
-      simd::test::fp_scope controls(mode);
+    for(auto mode:{native::test::fp_mode::gradual,native::test::fp_mode::flush}) {
+      native::test::fp_scope controls(mode);
       for(std::size_t row=0;row<bank.size();++row) {
         std::array<float,N> a{},b{},c{};
         std::array<float,4> pa{1.f,1.f,1.f,1.f},pb=pa,pc=pa;
@@ -197,7 +197,7 @@ namespace {
         auto compare=[&](auto operation,char const * message) {
           auto actual=lanes(operation(x,y,z));auto expected=lanes(operation(px,py,pz));
           for(std::size_t i=0;i<N;++i)
-            require(simd::math_test::equivalent_fp32(bits(actual[i]),bits(expected[i])),message);
+            require(native::math_test::equivalent_fp32(bits(actual[i]),bits(expected[i])),message);
         };
         compare([](auto x,auto y,auto){return x+y;},"short add matches active physical lanes");
         compare([](auto x,auto y,auto){return x-y;},"short subtract matches active physical lanes");
@@ -212,9 +212,9 @@ namespace {
       std::array<float,N> a{},b{};
       for(std::size_t i=0;i<N;++i){a[i]=numerators[i];b[i]=denominators[i];}
       V x(a),y(b);
-      auto state=simd::test::read_fp_state();state.status=0;simd::test::write_fp_state(state);
+      auto state=native::test::read_fp_state();state.status=0;native::test::write_fp_state(state);
       auto quotient=lanes(x/y);
-      auto status=simd::test::read_fp_state().status;
+      auto status=native::test::read_fp_state().status;
 #if defined(__x86_64__) || defined(_M_X64)
       constexpr std::uint64_t invalid_or_divzero=5;
 #else
@@ -251,33 +251,33 @@ namespace {
 
   template<class T,std::size_t N> void memory() {
     using V=test_vec<T,N>;
-    simd::test::guarded_pages source,destination;
+    native::test::guarded_pages source,destination;
     std::array<T,N> bank{};
     for(std::size_t i=0;i<N;++i) bank[i]=T(i+1);
     auto * input=reinterpret_cast<T *>(source.end())-N;
     auto * output=reinterpret_cast<T *>(destination.end())-N;
     for(std::size_t i=0;i<N;++i) {std::construct_at(input+i,bank[i]);std::construct_at(output+i,T(19));}
-    auto value=simd::load_simd<V>(input);
+    auto value=native::load_simd<V>(input);
     expect(value,bank,"full short load touches exactly its logical lanes");
     expect(V::loadu(input),bank,"native short loadu touches exactly its logical lanes");
     V::loadu(input).storeu(output);
     for(std::size_t i=0;i<N;++i) require(bits(output[i])==bits(bank[i]),"native short storeu touches exactly its logical lanes");
-    simd::store_simd(output,value);
+    native::store_simd(output,value);
     for(std::size_t i=0;i<N;++i) require(bits(output[i])==bits(bank[i]),"full short store touches exactly its logical lanes");
-    expect(simd::load_simd<V>(std::span<T const,N>(input,N)),bank,"short span load");
-    expect(simd::load_simd<V>(bank),bank,"short array load");
+    expect(native::load_simd<V>(std::span<T const,N>(input,N)),bank,"short span load");
+    expect(native::load_simd<V>(bank),bank,"short array load");
     for(std::size_t count=0;count<=N;++count) {
       auto * tail=reinterpret_cast<T *>(source.end())-count;
       auto * target=reinterpret_cast<T *>(destination.end())-count;
       for(std::size_t i=0;i<count;++i) {std::construct_at(tail+i,bank[i]);std::construct_at(target+i,T(19));}
-      auto partial=simd::load_simd_partial<V>(tail,count,T(7));
+      auto partial=native::load_simd_partial<V>(tail,count,T(7));
       auto expected=bank;for(std::size_t i=count;i<N;++i)expected[i]=T(7);
       expect(partial,expected,"short partial load and fill");
-      simd::store_simd_partial(target,partial,count);
+      native::store_simd_partial(target,partial,count);
       for(std::size_t i=0;i<count;++i)require(bits(target[i])==bits(bank[i]),"short partial store");
     }
-    auto empty=simd::load_simd_partial<V>(static_cast<T const *>(nullptr),0,T(7));
-    simd::store_simd_partial(static_cast<T *>(nullptr),empty,0);
+    auto empty=native::load_simd_partial<V>(static_cast<T const *>(nullptr),0,T(7));
+    native::store_simd_partial(static_cast<T *>(nullptr),empty,0);
     auto expected=bank;expected.fill(T(7));expect(empty,expected,"empty null short memory");
   }
 }
@@ -293,8 +293,8 @@ int main() {
   memory<float,2>();memory<float,3>();
   memory<std::int32_t,2>();memory<std::int32_t,3>();
   memory<std::uint32_t,2>();memory<std::uint32_t,3>();
-  constexpr char const * arch=test_arch==simd::avx512?"avx512":
-    test_arch==simd::avx2?"avx2":"neon";
+  constexpr char const * arch=test_arch==native::avx512?"avx512":
+    test_arch==native::avx2?"avx2":"neon";
   using M2=typename test_vec<float,2>::mask;
   using M3=typename test_vec<float,3>::mask;
   std::printf("swizzle passed: arch=%s, float/int32/uint32 logical lanes=2,3, compact masks=%d,%d; owning snapshots, exact word scatter and guarded memory\n",

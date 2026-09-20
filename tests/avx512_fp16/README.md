@@ -1,6 +1,6 @@
 # Native AVX-512 half profile
 
-The x86 hub exposes this API through `import simd;` at the configured minimum.
+The x86 hub exposes this API through `import native;` at the configured minimum.
 The `avx512_fp16` tag selects
 `vec<fp16,32,avx512_fp16>`: one 512-bit register, unsigned bit bridges, exact
 representation loads/stores, bounded partial memory, native add/sub/mul/div/FMA and `sqrt(x)` (found by ADL),
@@ -8,10 +8,10 @@ ordered comparisons, bitwise sign negation and representation-preserving select.
 Its mask is `predicate<32,avx512_fp16>`. Only the 32-lane half shape is provided;
 numeric conversion operations remain absent.
 
-This fixture compiles the optional kernel with `simd_target_profile(kernel AVX512_FP16)`.
+This fixture compiles the optional kernel with `native_target_profile(kernel AVX512_FP16)`.
 Its pointer/scalar entry and dispatcher are separate targets; it admits
-`avx512_fp16` using `simd.cpu.x86` before entering the optional kernel.
-Admission requires AVX2/FMA/BMI2 and compiler-implied features, AVX512F/DQ/BW/VL,
+`avx512_fp16` using `native.x86.features` before entering the optional kernel.
+Admission requires AVX2/FMA and compiler-implied features, AVX512F/DQ/BW/VL,
 CPUID.7.0.EDX[23], OSXSAVE and XCR0 XMM/YMM/opmask/ZMM state. Leaf availability
 is checked before interpreting stored feature bits. The application's configured
 minimum still applies before any dispatcher executes. The capability record
@@ -59,7 +59,7 @@ all finite encodings and all adjacent finite midpoint boundaries. Division uses
 exact rational quotients; square root uses integer roots and midpoint-square
 comparisons, with no host floating-point square root.
 
-`simd.avx512_fp16.admission` runs the baseline synthetic-negative matrix even
+`native.avx512_fp16.admission` runs the baseline synthetic-negative matrix even
 without FP16 hardware. `none` enters no optional kernel. `codegen` requires one
 native 512-bit half instruction per arithmetic entry and native half comparison
 and masked selection, rejecting widening and out-of-line calls. The package
@@ -68,15 +68,15 @@ provider for the hub and each common module.
 
 ```sh
 cmake -S . -B build/fp16 -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=Release -DSIMD_BUILD_TESTS=ON \
-  '-DSIMD_PROFILES=AVX2;AVX512;AVX512_BF16;AVX512_FP16'
-cmake --build build/fp16 --target simd simd_test_avx512_fp16 --parallel 2
-ctest --test-dir build/fp16 -R 'simd[.]avx512_fp16[.]' --output-on-failure
+  -DCMAKE_BUILD_TYPE=Release -DNATIVE_BUILD_TESTS=ON \
+  '-DNATIVE_PROFILES=AVX2;AVX512;AVX512_BF16;AVX512_FP16'
+cmake --build build/fp16 --target native native_test_avx512_fp16 --parallel 2
+ctest --test-dir build/fp16 -R 'native[.]avx512_fp16[.]' --output-on-failure
 cmake --install build/fp16 --prefix 'build/install'
 cmake -E rename build/install 'build/relocated package'
 cmake -S tests/avx512_fp16 -B build/package-fp16 -G Ninja \
   -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release \
-  '-Dsimd_DIR=/absolute/path/build/relocated package/lib/cmake/simd'
+  '-Dnative_DIR=/absolute/path/build/relocated package/lib/cmake/native'
 cmake --build build/package-fp16 --parallel 2
 ctest --test-dir build/package-fp16 --output-on-failure
 ```

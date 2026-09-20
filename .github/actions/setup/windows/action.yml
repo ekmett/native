@@ -56,7 +56,7 @@ runs:
           $ninjaName = 'ninja-win'
           $ninjaHash = '07fc8261b42b20e71d1720b39068c2e14ffcee6396b76fb7a795fb460b78dc65'
         }
-        $tools = Join-Path $env:RUNNER_TEMP 'simd-windows-tools'
+        $tools = Join-Path $env:RUNNER_TEMP 'native-windows-tools'
         New-Item -ItemType Directory -Force -Path $tools | Out-Null
         function Get-VerifiedArchive($url, $file, $expected) {
           Write-Host "Downloading $url"

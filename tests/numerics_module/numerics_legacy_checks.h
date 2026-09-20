@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Moved verbatim from the pre-module header; retained Catch test reference only.
-#if defined(SIMD_TESTING) || defined(SIMD_TESTING_NUMERICS)
+#if defined(NATIVE_TESTING) || defined(NATIVE_TESTING_NUMERICS)
 TEST_CASE("numerics","[numerics]") {
-  using namespace simd;
+  using namespace native;
   using Catch::Approx;
 
   SECTION("Concepts: one_of and not_one_of") {

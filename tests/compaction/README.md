@@ -24,7 +24,7 @@ relationships, floating-point control-state preservation, every bounded output
 capacity, null zero-access cases, and writes ending immediately before a guard
 page. Test bodies receive profile flags; common-baseline drivers perform
 admission before entering the body. Every executable requires the configured
-minimum before startup: by default AVX2/FMA/BMI2 on x86 or NEON on ARM. Driver
+minimum before startup, which defaults to the toolchain's baseline. Driver
 guards permit AVX-512 only when minimal feature probes report it as configured;
 the guards do not provide a launcher for hardware below the minimum. The hosted Linux ARM job passed 39/39 core tests, including 37,021 checks
 in each NEON header/import compaction executable, plus the relocated public
@@ -33,13 +33,13 @@ header and omnibus fixtures. Its native lowering and measurements are below.
 After configuring the project normally, build the compaction targets and run:
 
 ```sh
-ctest --test-dir build -R '^simd[.]compaction[.]' --output-on-failure
-build/tests/compaction/simd_compaction_avx2_header --bench
-build/tests/compaction/simd_compaction_avx512_header --bench
+ctest --test-dir build -R '^native[.]compaction[.]' --output-on-failure
+build/tests/compaction/native_compaction_avx2_header --bench
+build/tests/compaction/native_compaction_avx512_header --bench
 ```
 
 Use the executable suffix/layout appropriate to the generator. Configure a
-separate build with `SIMD_ENABLE_ASAN=ON` for the sanitizer run. The installed
+separate build with `NATIVE_ENABLE_ASAN=ON` for the sanitizer run. The installed
 `tests/api` fixture also compiles public compaction calls after package relocation.
 
 ## Local selection measurements

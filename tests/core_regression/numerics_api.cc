@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Module-only counterparts of the former embedded half/numerics checks.
-import simd.numerics;
-using namespace simd;
+import native.numerics;
+using namespace native;
 
 static_assert(one_of<4, 2, 4, 8> && not_one_of<3, 2, 4, 8>);
 static_assert(one_of_t<int, int, double> && not_one_of_t<char, int, double>);

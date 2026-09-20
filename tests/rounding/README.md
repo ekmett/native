@@ -1,6 +1,6 @@
 # Directed rounding
 
-`simd::floor`, `simd::ceil` and `simd::trunc` retain the raw float vector type.
+`native::floor`, `native::ceil` and `native::trunc` retain the raw float vector type.
 Their array overloads accept only raw float vectors. The generic `wide` lift
 uses the element operation through ADL and retains its type, construction and
 exception behavior. Empty packs do not evaluate an element operation.
@@ -26,17 +26,17 @@ A focused installed check (Clang 23 and CMake 4.4) is:
 
 ```sh
 cmake -S tests/rounding -B build/rounding -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -Dsimd_DIR=/installed/lib/cmake/simd -DSIMD_ROUNDING_PROFILES="AVX2;AVX512"
+  -Dnative_DIR=/installed/lib/cmake/native -DNATIVE_ROUNDING_PROFILES="AVX2;AVX512"
 cmake --build build/rounding --parallel 2
 ctest --test-dir build/rounding --output-on-failure
 ```
 
-The default follows `SIMD_TEST_ISA`, or AVX2/NEON for a standalone x86/ARM64
+The default follows `NATIVE_TEST_ISA`, or AVX2/NEON for a standalone x86/ARM64
 consumer. Archiving additional profiles does not enable their runtime tests.
 Native test executables require their explicitly selected ISA;
 CPU/OS admission is the runner's responsibility. The regular top-level test
 build also registers these checks. For the focused exception test, configure
-`tests/wide_module` with `SIMD_WIDE_EXCEPTIONS=ON` and run `wide_rounding`.
+`tests/wide_module` with `NATIVE_WIDE_EXCEPTIONS=ON` and run `wide_rounding`.
 
 On Windows, `check_codegen.py --objdump <llvm-objdump> --build build/rounding
 --output build/rounding/codegen` inspects the ordinary (non-LTO) consumer objects.

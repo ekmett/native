@@ -1,6 +1,6 @@
 # Half storage consumer
 
-This installed-package test imports `simd.numerics` and the omnibus in separate
+This installed-package test imports `native.numerics` and the omnibus in separate
 translation units. It checks all 65,536 encodings of each half format, finite
 encode/decode round trips, comparisons, exact bit transport, and every finite
 adjacent-value midpoint plus its binary32 neighbors, both signs and overflow.
@@ -20,11 +20,11 @@ Configure with CMake 4.4 and the same target toolchain as the installed package:
 
 ```sh
 cmake -S tests/half_storage -B build/half-storage -G Ninja \
-  -Dsimd_DIR="/path/to/relocated/package/lib/cmake/simd"
+  -Dnative_DIR="/path/to/relocated/package/lib/cmake/native"
 cmake --build build/half-storage --parallel 2
 ctest --test-dir build/half-storage --output-on-failure
 ```
 
 For Emscripten, pass its CMake toolchain to both producer and consumer, and configure
-the producer with `SIMD_PROFILES` empty and `SIMD_BUILD_TESTS=OFF`. CTest uses the
+the producer with `NATIVE_PROFILES` empty and `NATIVE_BUILD_TESTS=OFF`. CTest uses the
 toolchain's Node emulator. Consumer PCH is enabled by default; IPO is optional.

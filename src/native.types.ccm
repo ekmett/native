@@ -1,0 +1,72 @@
+// SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <typeinfo>
+#if !defined(_MSC_VER) && __has_include(<cxxabi.h>)
+#include <cxxabi.h>
+#endif
+#include "native/attributes.h"
+
+export module native.types;
+
+/// \ingroup types
+
+/// \namespace native
+/// \brief Architecture-tagged vectors, register packs and supporting value types.
+/// Native arithmetic requires an explicit architecture and its instruction-set
+/// preconditions. Common utilities do not select or admit a runtime CPU profile.
+export namespace native {
+/// \defgroup types Types
+/// \{
+
+/// Return a cached display name for T with static lifetime.
+/// Demangle where the platform exposes that facility; otherwise retain typeid's
+/// spelling. This is a diagnostic label, not a stable persistence identifier.
+/// Initialization owns a string and may allocate.
+/// \snippet api.cc common_utilities
+/// \details Ideally this would be fully `constexpr`, but I'm not building my own demangler.
+/// \hideinitializer \hideinlinesource
+template <typename T>
+inline std::string_view const type = [] native_nodiscard static -> std::string_view {
+  // nb: copying into string is necessary because the demangled name is ephemeral
+  static std::string const body = [] native_nodiscard static -> std::string {
+    #if !defined(_MSC_VER) && __has_include(<cxxabi.h>)
+    int status = 0;
+    std::unique_ptr<char, decltype(&std::free)> demangled(
+      abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, &status),
+      &std::free
+    );
+    if (status != 0 || !demangled) {
+      return typeid(T).name();
+    }
+    return demangled.get();
+    #else
+    // MSVC ABI has no __cxa_demangle; the string still owns the returned name.
+    return typeid(T).name();
+    #endif
+  }();
+  return body;
+}();
+
+/// Return the cached display name of the argument's cv/ref-stripped static type.
+/// The argument is not inspected. This does not perform dynamic type discovery.
+/// \hideinlinesource
+native_nodiscard
+std::string_view type_of(auto const & t) {
+  return type<std::remove_cvref_t<decltype(t)>>;
+}
+
+/// \brief type \p T is one of the \p candidates
+template <typename T, typename ... candidates>
+concept one_of_t = (std::is_same_v<T,candidates> || ... || false);
+
+/// \brief type \p T is not one of the \p candidates
+template <typename T, typename ... candidates>
+concept not_one_of_t = (!one_of_t<T,candidates...>);
+/// \}
+}

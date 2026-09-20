@@ -19,11 +19,11 @@ import sccache_launcher as launcher
 class ParserTests(unittest.TestCase):
     def test_generated_producer_and_import_map(self):
         source = ('-x c++-module\n-fmodule-output="src/foo.pcm"\n'
-                  '-fmodule-file="simd.wide=src/common@synth_0/a.bmi"\n'
-                  '-fmodule-file="simd.part:detail=../module.pcm"\n')
+                  '-fmodule-file="native.wide=src/common@synth_0/a.bmi"\n'
+                  '-fmodule-file="native.part:detail=../module.pcm"\n')
         expected = ['-x', 'c++-module', '-fmodule-output=src/foo.pcm',
-                    '-fmodule-file=simd.wide=src/common@synth_0/a.bmi',
-                    '-fmodule-file=simd.part:detail=../module.pcm']
+                    '-fmodule-file=native.wide=src/common@synth_0/a.bmi',
+                    '-fmodule-file=native.part:detail=../module.pcm']
         self.assertEqual(launcher.parse_modmap(source), expected)
         self.assertEqual(launcher.parse_modmap(source.replace('\n', '\r\n')), expected)
         self.assertEqual(launcher.parse_modmap(source.rstrip('\n')), expected)
@@ -68,14 +68,14 @@ class LauncherTests(PosixLauncherTests):
         self.root = Path(self.directory.name)
         # The response filename itself can contain a space: argv already keeps it whole.
         self.path = self.root / 'with space.modmap'
-        self.path.write_text('-fmodule-file="simd=src/simd.pcm"\n')
+        self.path.write_text('-fmodule-file="native=src/native.pcm"\n')
         self.arguments = ['/toolchain/clang++', '-c', 'source with space.cc',
                           '@' + str(self.path), '-o', 'output with space.o']
 
     def test_expansion_preserves_other_argv_and_file(self):
         before = self.path.read_bytes()
         result = launcher.normalize(self.arguments)
-        self.assertEqual(result, [*self.arguments[:3], '-fmodule-file=simd=src/simd.pcm',
+        self.assertEqual(result, [*self.arguments[:3], '-fmodule-file=native=src/native.pcm',
                                   *self.arguments[4:]])
         self.assertEqual(self.path.read_bytes(), before)
 
@@ -223,9 +223,9 @@ class PchTests(PosixLauncherTests):
 
     def test_e2big_keeps_original_response_and_pch_arguments(self):
         modmap = self.pch.with_suffix('.modmap')
-        modmap.write_text('-fmodule-file="simd=src/simd.pcm"\n')
+        modmap.write_text('-fmodule-file="native=src/native.pcm"\n')
         arguments = [*self.arguments, '-include-pch', str(self.pch), '@' + str(modmap)]
-        expected = ['sccache', *arguments[:-1], '-fmodule-file=simd=src/simd.pcm']
+        expected = ['sccache', *arguments[:-1], '-fmodule-file=native=src/native.pcm']
         with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': '/existing/file'}):
             with patch.object(launcher.os, 'execvp', side_effect=[OSError(errno.E2BIG, 'long'), None]) as execute:
                 launcher.main(arguments)

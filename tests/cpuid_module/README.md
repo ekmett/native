@@ -1,8 +1,8 @@
 # CPUID and wait modules
 
-The x86-only `simd.cpu.x86` and `simd.wait` module definitions belong to
-`simd::minimal` (also named `simd::common`), whose default x86 minimum is
-AVX2/FMA/BMI2 and is configurable at project setup. All intrinsic and system
+The x86-only `native.x86.features` and `native.x86.wait` module definitions belong to
+`native::minimal` (also named `native::common`), whose minimum defaults to the
+toolchain baseline and is configurable at project setup. All intrinsic and system
 headers are in the global module fragment; the public types, templates and
 function definitions are below the module declaration. There is no remaining
 CPUID or wait implementation header.
@@ -21,7 +21,7 @@ Optional instruction methods are ordinary module-owned definitions with target
 attributes. Baseline callers cross a function boundary. Generic wait adapters
 retain the exception specifications of their callback expressions.
 
-The standalone CMake fixture builds the real `simd::common` provider and imports
+The standalone CMake fixture builds the real `native::common` provider and imports
 both modules without implementation includes. It compares CPUID registers and
 vendor to direct native CPUID, checks feature admission, and runs the maintained
 `noexcept_wait` control using mock waiters and callbacks. The four optional wait
@@ -31,7 +31,7 @@ UMONITOR or UMWAIT instruction is executed by a test, regardless of CPUID bits.
 With the initialized compiler environment and the established CPU build gate:
 
 ```powershell
-cmake -S tests/cpuid_module -B build/cpuid-check -G Ninja -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_EXCEPTIONS=OFF
+cmake -S tests/cpuid_module -B build/cpuid-check -G Ninja -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DNATIVE_ENABLE_EXCEPTIONS=OFF
 cmake --build build/cpuid-check --parallel 1
 ctest --test-dir build/cpuid-check --output-on-failure
 ```
@@ -47,7 +47,7 @@ records the separate optional-instruction probe object.
 
 ## Baseline profile admission
 
-Import `simd.cpu.x86` and link `simd::common` for baseline module metadata and
+Import `native.x86.features` and link `native::common` for baseline module metadata and
 the common archive's compiled observer and raw CPUID definitions. This is the
 same target in build-tree and installed consumers. No aggregate target, ISA
 module import or profile selection is needed. `observe_x86_capabilities()`
@@ -61,21 +61,27 @@ performs no hardware queries, and returns missing ISA features and XCR0 state pl
 is the target spelling of a missing feature or an OS-state description. Unknown
 or foreign-architecture features reject. Vendor names are not inputs.
 
-The contract matches `simd_target_profile`: AVX2, FMA and BMI2, and for AVX512
+The contract matches `native_target_profile`: AVX2 and FMA, and for AVX512
 the F, DQ, BW and VL subsets. It also checks Clang's implied SSE3, SSSE3,
 SSE4.1/4.2 and POPCNT requirements, MMX/SSE/SSE2 baseline bits, and F16C for
 AVX512. XCR0 must enable XMM/YMM and, for AVX512, opmask and both ZMM components.
 Custom ISA flags can impose additional requirements outside this contract.
+BMI2 is independent: PDEP/PEXT require it, while SIMD profile admission does not.
+MWAITX and WAITPKG are also independent typed features. The observer records
+their leaf validity and support, and the wait module uses the same admission
+checks for its cached `supported` flags. These features need no SIMD or XCR0
+state. Tests check synthetic missing bits and stale leaves without executing
+any wait instructions.
 An observation describes the executing logical CPU; callers remain responsible
 for affinity or a suitable common capability set on heterogeneous systems.
 
 `admission.cc` independently removes every required CPU/state bit, checks
 unavailable-leaf snapshots, unread state, invalid features, and CPU/OS reasons.
 It is a configured-minimum module consumer with compile-time ISA guards, linked
-only to the build-tree `simd::common` archive; both the standalone fixture and
+only to the build-tree `native::common` archive; both the standalone fixture and
 ordinary x86 CTest suite run it. The `tests/cpuid_package` fixture reuses the
 same caller against an installed/relocated package and links only
-`simd::common`, proving its runtime definitions are independently usable. Its compilation guards and exported compile commands check that this
-common consumer inherits no AVX-512 flags unless `SIMD_MINIMAL_HAS_AVX512`
+`native::common`, proving its runtime definitions are independently usable. Its compilation guards and exported compile commands check that this
+common consumer inherits no AVX-512 flags unless `NATIVE_MINIMAL_HAS_AVX512`
 reports them in the configured minimum. The executable already requires that
 minimum; an admission query cannot make it safe on weaker hardware. No test enters a native SIMD kernel based on a synthetic snapshot.

@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <type_traits>
 #include <utility>
-import simd.wide;
+import native.wide;
 
 namespace sample {
   inline int element_calls = 0;
@@ -67,21 +67,21 @@ namespace sample {
     }
   };
 }
-static_assert(noexcept(simd::sincos(std::declval<simd::wide<sample::value,3> const &>())));
-static_assert(!noexcept(simd::sincos(std::declval<simd::wide<sample::lvalue_assignment,3> const &>())));
-static_assert(noexcept(std::declval<simd::wide<sample::value,3> &>() += std::declval<sample::noncopy const &>()));
+static_assert(noexcept(native::sincos(std::declval<native::wide<sample::value,3> const &>())));
+static_assert(!noexcept(native::sincos(std::declval<native::wide<sample::lvalue_assignment,3> const &>())));
+static_assert(noexcept(std::declval<native::wide<sample::value,3> &>() += std::declval<sample::noncopy const &>()));
 
 template<std::size_t N> bool check() {
-  using W = simd::wide<sample::value,N>;
+  using W = native::wide<sample::value,N>;
   W a(sample::value{2}), b(sample::value{3});
   sample::batch_calls = sample::element_calls = 0;
   auto sum = a+b;
   auto difference = b-a;
   auto product = a*b;
-  auto fused = simd::fma(a,b,a);
-  auto exponential = simd::exp(a);
-  auto angle = simd::atan2(a,b);
-  auto [s,c] = simd::sincos(a);
+  auto fused = native::fma(a,b,a);
+  auto exponential = native::exp(a);
+  auto angle = native::atan2(a,b);
+  auto [s,c] = native::sincos(a);
   a += b; a -= b; a *= b;
   sample::noncopy increment(4);
   a += increment;

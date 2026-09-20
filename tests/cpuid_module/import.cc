@@ -9,9 +9,9 @@
 #else
 #include <cpuid.h>
 #endif
-import simd.cpu.x86;
-import simd.wait;
-#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))) || defined(__WAITPKG__) || defined(__MWAITX__)
+import native.x86.features;
+import native.x86.wait;
+#if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))) || defined(__WAITPKG__) || defined(__MWAITX__)
 #error Common consumer inherited AVX-512 or optional wait ISA flags
 #endif
 namespace {
@@ -27,7 +27,7 @@ namespace {
   bool same(std::uint32_t leaf, std::uint32_t subleaf = 0) {
     for (unsigned attempt = 0; attempt != 100; ++attempt) {
       auto before = native(leaf, subleaf);
-      auto r = simd::cpuid(static_cast<std::int32_t>(leaf), static_cast<std::int32_t>(subleaf));
+      auto r = native::cpuid(static_cast<std::int32_t>(leaf), static_cast<std::int32_t>(subleaf));
       auto after = native(leaf, subleaf);
       // Retry an observed CPU migration or other varying native observation.
       if (before != after) continue;
@@ -37,7 +37,7 @@ namespace {
   }
 }
 int main() {
-  static_assert(noexcept(simd::cpuid(0, 0)));
+  static_assert(noexcept(native::cpuid(0, 0)));
   auto basic = native(0);
   auto maximum = static_cast<std::uint32_t>(basic[0]);
   auto extended = static_cast<std::uint32_t>(native(0x80000000u)[0]);
@@ -49,11 +49,18 @@ int main() {
   if (maximum < 0x7fffffffu && !same(maximum + 1)) return 5;
   char vendor[13]{};
   std::memcpy(vendor, &basic[1], 4); std::memcpy(vendor + 4, &basic[3], 4); std::memcpy(vendor + 8, &basic[2], 4);
-  auto expected = std::strcmp(vendor, "GenuineIntel") == 0 ? simd::cpu_vendor::intel :
-    std::strcmp(vendor, "AuthenticAMD") == 0 ? simd::cpu_vendor::amd : simd::cpu_vendor::unknown;
-  if (simd::cpu_vendor != expected) return 6;
+  auto expected = std::strcmp(vendor, "GenuineIntel") == 0 ? native::cpu_vendor::intel :
+    std::strcmp(vendor, "AuthenticAMD") == 0 ? native::cpu_vendor::amd : native::cpu_vendor::unknown;
+  if (native::cpu_vendor != expected) return 6;
   bool mwaitx = extended >= 0x80000001u && (native(0x80000001u)[2] & (1 << 29)) != 0;
   bool waitpkg = maximum >= 7 && (native(7)[2] & (1 << 5)) != 0;
-  if (simd::mwaitx::supported != mwaitx || simd::umwait::supported != waitpkg) return 7;
+  if (native::mwaitx::supported != mwaitx || native::umwait::supported != waitpkg) return 7;
+  auto cpu = native::observe_x86_capabilities();
+  if (cpu.present.has(native::x86_feature::mwaitx) != mwaitx ||
+      cpu.present.has(native::x86_feature::waitpkg) != waitpkg) return 8;
+  if (cpu.observed.has(native::x86_feature::mwaitx) != (extended >= 0x80000001u) ||
+      cpu.observed.has(native::x86_feature::waitpkg) != (maximum >= 7)) return 9;
+  if (native::classify_isa(cpu, native::x86_feature::mwaitx).admitted() != native::mwaitx::supported ||
+      native::classify_isa(cpu, native::x86_feature::waitpkg).admitted() != native::umwait::supported) return 10;
   std::printf("vendor=%s max=%08x extended=%08x mwaitx=%d waitpkg=%d; no wait instructions executed\n", vendor, maximum, extended, mwaitx, waitpkg);
 }

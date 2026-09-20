@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "refinement.h"
-#include "../../src/simd/exp_policies.h"
-#define SIMD_TARGET_exp_bw_bf16 SIMD_KERNEL_TARGET_7
-#define SIMD_TARGET_exp_bw_fp16 SIMD_KERNEL_TARGET_11
-#define SIMD_TARGET_exp_bw_half SIMD_KERNEL_TARGET_15
-#define SIMD_TARGET_exp_full_half SIMD_KERNEL_TARGET_17
+#include "../../src/native/exp_policies.h"
+#define NATIVE_TARGET_exp_bw_bf16 NATIVE_KERNEL_TARGET_7
+#define NATIVE_TARGET_exp_bw_fp16 NATIVE_KERNEL_TARGET_11
+#define NATIVE_TARGET_exp_bw_half NATIVE_KERNEL_TARGET_15
+#define NATIVE_TARGET_exp_full_half NATIVE_KERNEL_TARGET_17
 
 // Test inputs: case number, caller tag, expected one of five FP32 exp cells.
 // Extra half features must leave that selected FP32 implementation unchanged.
@@ -24,16 +24,16 @@
   X(10,avx2,4)
 
 namespace refinement_test {
-  using exp_policies=simd::detail::x86_kernel_policies;
-  using simd::detail::exp_target;
+  using exp_policies=native::detail::x86_kernel_policies;
+  using native::detail::exp_target;
   // Only the test entry points are repeated for each caller tag.
-#define CALLER_TARGET(i,name,raw) + simd::isa_list<SIMD_TARGET_ISA(name)>{}
-  using caller_targets=decltype(simd::isa_list<>{} EXP_CALLER_CASES(CALLER_TARGET));
+#define CALLER_TARGET(i,name,raw) + native::isa_list<NATIVE_TARGET_ISA(name)>{}
+  using caller_targets=decltype(native::isa_list<>{} EXP_CALLER_CASES(CALLER_TARGET));
 #undef CALLER_TARGET
 }
 
 #define CHECK_EXP_CALLER(i,name,raw) \
-  static_assert((simd::abi_lookup<SIMD_TARGET_ISA(name),refinement_test::caller_targets>::index == i)); \
-  static_assert((simd::detail::exp_target<SIMD_TARGET_ISA(name)> == raw));
+  static_assert((native::abi_lookup<NATIVE_TARGET_ISA(name),refinement_test::caller_targets>::index == i)); \
+  static_assert((native::detail::exp_target<NATIVE_TARGET_ISA(name)> == raw));
 EXP_CALLER_CASES(CHECK_EXP_CALLER)
 #undef CHECK_EXP_CALLER

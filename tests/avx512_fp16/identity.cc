@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <concepts>
 #include <cstdint>
-import simd;
-using old = simd::vec<float,16,simd::avx512>;
-using next = simd::vec<float,16,simd::avx512_fp16>;
+import native;
+using old = native::vec<float,16,native::avx512>;
+using next = native::vec<float,16,native::avx512_fp16>;
 static_assert(!std::same_as<old,next>);
 static_assert(old::mask::compact && next::mask::compact);
-static_assert(sizeof(next)==64 && sizeof(simd::vec<float,3,simd::avx512_fp16>)==16);
+static_assert(sizeof(next)==64 && sizeof(native::vec<float,3,native::avx512_fp16>)==16);
 template<class A,class B> concept addable=requires(A a,B b) { a+b; };
 static_assert(!addable<old,next>);
 template<class T> concept complete=requires { sizeof(T); };
-static_assert(!complete<simd::vec<simd::fp16,32,simd::avx512>>);
-static_assert(!complete<simd::vec<simd::fp16,4,simd::avx512_fp16>>);
-static_assert(!complete<simd::vec<simd::bf16,32,simd::avx512_fp16>>);
+static_assert(!complete<native::vec<native::fp16,32,native::avx512>>);
+static_assert(!complete<native::vec<native::fp16,4,native::avx512_fp16>>);
+static_assert(!complete<native::vec<native::bf16,32,native::avx512_fp16>>);
 template<class T> concept divisible=requires(T a) { a/a; };
-static_assert(divisible<simd::vec<simd::fp16,32,simd::avx512_fp16>>);
+static_assert(divisible<native::vec<native::fp16,32,native::avx512_fp16>>);

@@ -7,12 +7,12 @@
 #include <cstdio>
 #include <cstring>
 #include <xmmintrin.h>
-import simd.cpu.x86;
-import simd.scalar;
-#if !SIMD_MINIMAL_HAS_AVX512_BF16 && defined(__AVX512BF16__)
+import native.x86.features;
+import native.scalar;
+#if !NATIVE_MINIMAL_HAS_AVX512_BF16 && defined(__AVX512BF16__)
 #error Optional BF16 flags leaked into the minimum dispatcher
 #endif
-#if !SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))
+#if !NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))
 #error Optional AVX512 flags leaked into the minimum dispatcher
 #endif
 extern "C" bool bf16_storage();
@@ -102,7 +102,7 @@ int main(int argc,char **argv) {
   if(argc!=2)return 2;
   if(!std::strcmp(argv[1],"none")) {std::puts("No BF16 profile entered.");return 0;}
   if(std::strcmp(argv[1],"native"))return 2;
-  auto admission=simd::classify_isa(simd::observe_x86_capabilities(),simd::avx512_bf16);
+  auto admission=native::classify_isa(native::observe_x86_capabilities(),native::avx512_bf16);
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   if(!bf16_storage()) {std::puts("BF16 storage failure");return 3;}
   if(!contract())return 4;

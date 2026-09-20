@@ -1,6 +1,6 @@
 # Native NEON BF16 profile
 
-The AArch64 hub exposes the `neon_bf16` API through `import simd;` at the
+The AArch64 hub exposes the `neon_bf16` API through `import native;` at the
 configured minimum. Native operations carry their Clang target requirements.
 Use the [source target helper](../../docs/omnibus.md) to generate selected
 variants in one translation unit, or keep a separate targeted kernel as this
@@ -43,7 +43,7 @@ before the call and restore their own environment when appropriate.
 
 ## Admission and validation
 
-A baseline caller imports `simd.cpu.arm`, observes capabilities, and requires
+A baseline caller imports `native.arm.features`, observes capabilities, and requires
 `classify_isa(cpu, neon_bf16).admitted()` before optional
 entry. NEON_BF16 requires baseline FP/Advanced SIMD and an observed BF16 feature;
 it does not require FP16 or EBF16. Unknown/failed observations reject. The capability record includes typed `present` and `observed` sets, so stale
@@ -73,7 +73,7 @@ not advertised. EBF=1 is exercised only when EBF16 is observed; AH/FIZ nonzero
 states are exercised only when those controls read back as writable.
 
 Install, physically relocate the prefix, then configure this directory with
-`simd_DIR` pointing into the moved package. It builds hub consumers with and
+`native_DIR` pointing into the moved package. It builds hub consumers with and
 without a PCH, and verifies one BMI for the hub and each common module. Native
 execution, compile-only checks, and software-oracle checks are distinct evidence.
 M1 does not implement BF16; compiling there and seeing skip 77 is not native BF16

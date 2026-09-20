@@ -3,7 +3,7 @@
 
 # Integer intermediate shapes
 
-The same source runs from headers and `import simd`, with scalar, AVX2,
+The same source runs from headers and `import native`, with scalar, AVX2,
 AVX-512 F/DQ, F/DQ/VL, F/DQ/BW and full F/DQ/BW/VL tags. Native calls are
 admitted by CPU and OS state; their arguments cross only pointer/scalar
 boundaries. ARM builds exercise scalar and NEON, without claiming x86 execution.

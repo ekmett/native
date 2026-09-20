@@ -3,7 +3,7 @@
 #include <utility>
 #include <unistd.h>
 #include <sys/mman.h>
-import simd.memory;
+import native.memory;
 
 int main() {
   auto page = ::sysconf(_SC_PAGESIZE);
@@ -12,7 +12,7 @@ int main() {
   void * raw = ::mmap(nullptr, size, PROT_READ | PROT_WRITE,
     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (raw == MAP_FAILED) return 2;
-  auto owned = simd::make_mmap_ptr(raw, size);
+  auto owned = native::make_mmap_ptr(raw, size);
   static_cast<unsigned char *>(owned.get())[size - 1] = 42;
   auto moved = std::move(owned);
   if (owned || moved.get() != raw || moved.get_deleter().size != size) return 3;

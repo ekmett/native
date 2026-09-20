@@ -4,7 +4,7 @@
 #include <bit>
 
 namespace refinement_test {
-  using namespace simd;
+  using namespace native;
   constexpr isa small=feature_closure(x86_feature::bmi1);
   constexpr isa large=feature_closure(x86_feature::aes);
   constexpr isa combined=small&large;

@@ -5,7 +5,7 @@
 #include <type_traits>
 #include <utility>
 #include "support/profile.h"
-import simd.wide;
+import native.wide;
 
 namespace {
   struct converted {

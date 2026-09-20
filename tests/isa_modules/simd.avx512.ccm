@@ -3,10 +3,10 @@
 
 module;
 #include "avx512-header.h"
-export module simd.avx512;
+export module native.avx512;
 export import fixture.engine;
-export namespace simd {
- using ::simd::vec;
- using ::simd::avx512;
- using ::simd::avx512_lanes;
+export namespace native {
+ using ::native::vec;
+ using ::native::avx512;
+ using ::native::avx512_lanes;
 }

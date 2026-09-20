@@ -13,14 +13,15 @@
 #include <vector>
 #include "support/fp_environment.h"
 #include "support/profile.h"
-#if SIMD_TEST_IMPORT
-import simd.wide;
+#if NATIVE_TEST_IMPORT
+import native.wide;
+import native.math;
 #else
-#include <simd/wide.h>
-#include <simd/wide_math.h>
+#include <native/wide.h>
+#include <native/wide_math.h>
 #endif
 
-using scalar = simd::vec<float, 1, simd::scalar>;
+using scalar = native::vec<float, 1, native::scalar>;
 extern "C" void promoted_trig_reference(unsigned, float const *, float *, float *, float *, float *);
 
 template<class P, class T> concept can_constant = requires(P const & p, T value) {
@@ -75,9 +76,9 @@ static_assert(rejects_tuple_math<std::tuple<float, scalar>>);
 
 template<class Operation> static void empty_shapes(Operation operation) {
   auto a = operation(std::array<float, 0>{});
-  auto b = operation(simd::wide<scalar, 0>{std::array<scalar, 0>{}});
+  auto b = operation(native::wide<scalar, 0>{std::array<scalar, 0>{}});
   static_assert(std::same_as<decltype(a), std::array<float, 0>>);
-  static_assert(std::same_as<decltype(b), simd::wide<scalar, 0>>);
+  static_assert(std::same_as<decltype(b), native::wide<scalar, 0>>);
   require(a.empty() && b.registers.empty(), "unary operation changed empty shape");
 }
 
@@ -99,10 +100,10 @@ template<class V, class Operation> static void unary_shapes(Operation operation,
   exact_vector(vector_result, expected, name);
   auto array_result = operation(std::array{x, input[0]});
   auto vector_array = operation(std::array<V, 2>{{v, V(x)}});
-  auto legacy = operation(simd::wide<V, 2>{v, V(x)});
+  auto legacy = operation(native::wide<V, 2>{v, V(x)});
   static_assert(std::same_as<decltype(array_result), std::array<float, 2>>);
   static_assert(std::same_as<decltype(vector_array), std::array<V, 2>>);
-  static_assert(std::same_as<decltype(legacy), simd::wide<V, 2>>);
+  static_assert(std::same_as<decltype(legacy), native::wide<V, 2>>);
   exact(array_result[0], expected_x, name);
   exact(array_result[1], expected[0], name);
   std::array<float, V::lanes> broadcast_expected{};
@@ -145,7 +146,7 @@ static constexpr std::uint32_t flushed(std::uint32_t word) {
   return (word & 0x7fffffffu) < 0x00800000u ? word & 0x80000000u : word;
 }
 template<class V> static void flush_samples(std::vector<std::uint32_t> const & words) {
-  auto before = simd::test::read_fp_state();
+  auto before = native::test::read_fp_state();
   for (std::size_t base = 0; base < words.size(); base += V::lanes) {
     std::array<float, V::lanes> input{}, expected{};
     for (std::size_t lane = 0; lane < V::lanes; ++lane) {
@@ -157,7 +158,7 @@ template<class V> static void flush_samples(std::vector<std::uint32_t> const & w
     unary_shapes<V>(flush, "flush_to_zero", std::bit_cast<float>(x), input,
       std::bit_cast<float>(flushed(x)), expected);
   }
-  require(simd::test::read_fp_state() == before, "bitwise flushing changed FP flags or controls");
+  require(native::test::read_fp_state() == before, "bitwise flushing changed FP flags or controls");
 }
 
 template<class V, class Operation, class Reference> static void primitive_samples(Operation operation,
@@ -247,7 +248,7 @@ template<class V> static void bit_helpers_and_aliases() {
     0x80000000u, 0x7f800001u, 0xffc12345u, 0x01000001u, 0x00000001u, 0x7f800000u};
   std::array<std::uint32_t, V::lanes> words{};
   for (std::size_t lane = 0; lane < V::lanes; ++lane) words[lane] = bank[lane % bank.size()];
-  auto before = simd::test::read_fp_state();
+  auto before = native::test::read_fp_state();
   V v = V::from_bits(U::load(words.data()));
   auto encoded = wide::bits(P{{v, v}});
   static_assert(std::same_as<decltype(encoded), std::array<U, 2>>);
@@ -277,7 +278,7 @@ template<class V> static void bit_helpers_and_aliases() {
       require(masks[lane] == 0xffffffffu, "wide mask_bits failed full true lanes");
     }
   }
-  require(simd::test::read_fp_state() == before, "wide bit helpers changed FP state");
+  require(native::test::read_fp_state() == before, "wide bit helpers changed FP state");
 
   std::array<V, 1> zeros{{V(-0.f)}};
   auto aliased_sine = wide::sin(zeros);
@@ -328,21 +329,21 @@ int main() {
   }
   // Exclude the reducer's strict boundary, which the random sampler can hit.
   for (float & value : trig) if (value == -8192.f) value = -8191.75f;
-  auto saved = simd::test::read_fp_state();
-  for (auto mode : {simd::test::fp_mode::gradual, simd::test::fp_mode::flush}) {
-    simd::test::fp_scope scope(mode);
+  auto saved = native::test::read_fp_state();
+  for (auto mode : {native::test::fp_mode::gradual, native::test::fp_mode::flush}) {
+    native::test::fp_scope scope(mode);
     empty_shapes(sine); empty_shapes(cosine); empty_shapes(paired_sine); empty_shapes(paired_cosine); empty_shapes(flush);
     check_width<scalar>(trig, words);
 #if defined(__AVX2__)
-    check_width<simd::vec<float, 2, simd::avx2>>(trig, words);
-    check_width<simd::vec<float, 3, simd::avx2>>(trig, words);
-    check_width<simd::vec<float, 4, simd::avx2>>(trig, words);
-    check_width<simd::vec<float, 8, simd::avx2>>(trig, words);
+    check_width<native::vec<float, 2, native::avx2>>(trig, words);
+    check_width<native::vec<float, 3, native::avx2>>(trig, words);
+    check_width<native::vec<float, 4, native::avx2>>(trig, words);
+    check_width<native::vec<float, 8, native::avx2>>(trig, words);
 #elif defined(__ARM_NEON)
-    check_width<simd::vec<float, 4, simd::neon>>(trig, words);
+    check_width<native::vec<float, 4, native::neon>>(trig, words);
 #endif
     require(scope.controls_match(), "promoted math changed FP controls");
   }
-  require(simd::test::read_fp_state() == saved, "promoted math fixture failed to restore FP state");
+  require(native::test::read_fp_state() == saved, "promoted math fixture failed to restore FP state");
   std::printf("promoted trig/unary shapes passed; %zu trig inputs, %zu flush words per width/mode\n", trig.size(), words.size());
 }

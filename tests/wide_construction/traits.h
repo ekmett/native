@@ -11,7 +11,7 @@ template<class T,std::size_t N> struct old_wide {
   constexpr old_wide() = default;
 };
 template<class T,std::size_t N> consteval bool same_traits() {
-  using W=simd::wide<T,N>;
+  using W=native::wide<T,N>;
   using O=old_wide<T,N>;
   static_assert(sizeof(W)==sizeof(O) && alignof(W)==alignof(O));
   static_assert(offsetof(W,registers)==offsetof(O,registers));

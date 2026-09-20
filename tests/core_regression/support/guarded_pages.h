@@ -15,7 +15,7 @@
 #include <unistd.h>
 #endif
 
-namespace simd::test {
+namespace native::test {
   // Test-only storage: one read/write page between two inaccessible pages.
   // The caller establishes typed object lifetimes in [begin(), end()).
   struct guarded_pages {
@@ -26,21 +26,21 @@ namespace simd::test {
       page_size_ = info.dwPageSize;
 #else
       long const size = sysconf(_SC_PAGESIZE);
-      if (size <= 0) simd::test::fail(std::runtime_error("Unable to query page size"));
+      if (size <= 0) native::test::fail(std::runtime_error("Unable to query page size"));
       page_size_ = static_cast<std::size_t>(size);
 #endif
       if (page_size_ == 0 || page_size_ > std::numeric_limits<std::size_t>::max() / 3)
-        simd::test::fail(std::runtime_error("Invalid guarded allocation page size"));
+        native::test::fail(std::runtime_error("Invalid guarded allocation page size"));
 #if defined(_WIN32)
       base_ = static_cast<std::byte *>(VirtualAlloc(nullptr, page_size_ * 3,
         MEM_RESERVE | MEM_COMMIT, PAGE_NOACCESS));
-      if (!base_) simd::test::fail(std::system_error(static_cast<int>(GetLastError()),
+      if (!base_) native::test::fail(std::system_error(static_cast<int>(GetLastError()),
         std::system_category(), "VirtualAlloc guarded pages"));
       DWORD old_protection{};
       if (!VirtualProtect(base_ + page_size_, page_size_, PAGE_READWRITE, &old_protection)) {
         auto const error = GetLastError();
         VirtualFree(base_, 0, MEM_RELEASE);
-        simd::test::fail(std::system_error(static_cast<int>(error), std::system_category(),
+        native::test::fail(std::system_error(static_cast<int>(error), std::system_category(),
           "VirtualProtect middle page"));
       }
 #else
@@ -51,13 +51,13 @@ namespace simd::test {
 #endif
       void * mapping = mmap(nullptr, page_size_ * 3, PROT_NONE,
         MAP_PRIVATE | anonymous, -1, 0);
-      if (mapping == MAP_FAILED) simd::test::fail(std::system_error(errno, std::generic_category(),
+      if (mapping == MAP_FAILED) native::test::fail(std::system_error(errno, std::generic_category(),
         "mmap guarded pages"));
       base_ = static_cast<std::byte *>(mapping);
       if (mprotect(base_ + page_size_, page_size_, PROT_READ | PROT_WRITE) != 0) {
         int const error = errno;
         munmap(base_, page_size_ * 3);
-        simd::test::fail(std::system_error(error, std::generic_category(), "mprotect middle page"));
+        native::test::fail(std::system_error(error, std::generic_category(), "mprotect middle page"));
       }
 #endif
     }

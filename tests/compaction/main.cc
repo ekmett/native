@@ -14,7 +14,7 @@
 #include "../core_regression/support/guarded_pages.h"
 #include "../core_regression/support/fp_environment.h"
 template<class V> concept has_compaction = requires(V value, typename V::mask mask) {
-  simd::compress(mask,value);simd::expand(mask,value,value);
+  native::compress(mask,value);native::expand(mask,value,value);
 };
 static_assert(!has_compaction<test_vec<std::uint16_t,1>>);
 static_assert(!has_compaction<test_vec<std::uint64_t,1>>);
@@ -38,10 +38,10 @@ template<class V> V from_words(std::array<std::uint32_t,V::lanes> const & bits) 
 }
 template<class T,std::size_t N> void test_shape() {
   using V=test_vec<T,N>; using M=typename V::mask;
-  static_assert(std::same_as<decltype(simd::compress(M{},V{})),simd::compaction_result<V>>);
-  static_assert(std::same_as<decltype(simd::expand(M{},V{},V{})),V>);
-  static_assert(noexcept(simd::compress(M{},V{})) && noexcept(simd::expand(M{},V{},V{})));
-  simd::test::guarded_pages pages;
+  static_assert(std::same_as<decltype(native::compress(M{},V{})),native::compaction_result<V>>);
+  static_assert(std::same_as<decltype(native::expand(M{},V{},V{})),V>);
+  static_assert(noexcept(native::compress(M{},V{})) && noexcept(native::expand(M{},V{},V{})));
+  native::test::guarded_pages pages;
   auto * storage=::new (pages.end()-(N+1)*sizeof(T)) T[N+1];
   constexpr std::uint32_t sentinel=0xabcdef12;
   auto rotations=N<=8 ? bank.size() : std::size_t(5);
@@ -67,15 +67,15 @@ template<class T,std::size_t N> void test_shape() {
       std::array<std::uint32_t,N> packed{},expanded=prior;
       packed.fill(fill); std::size_t count=0;
       for(std::size_t lane=0;lane<N;++lane) if(mask&(1u<<lane)) packed[count++]=input[lane];
-      auto compact=simd::compress(active,value,std::bit_cast<T>(fill));
+      auto compact=native::compress(active,value,std::bit_cast<T>(fill));
       require(compact.count==count && words(compact.value)==packed);
-      auto default_compact=simd::compress(active,value);
+      auto default_compact=native::compress(active,value);
       auto default_packed=packed;
       for(std::size_t lane=count;lane<N;++lane) default_packed[lane]=0;
       require(default_compact.count==count && words(default_compact.value)==default_packed);
       std::size_t rank=0;
       for(std::size_t lane=0;lane<N;++lane) if(mask&(1u<<lane)) expanded[lane]=packed[rank++];
-      auto restored=simd::expand(active,compact.value,merge);
+      auto restored=native::expand(active,compact.value,merge);
       require(words(restored)==expanded);
       require(words(restored)==words(select(active,value,merge)));
       if constexpr(N==2 || N==3) {
@@ -83,13 +83,13 @@ template<class T,std::size_t N> void test_shape() {
         auto e=std::bit_cast<std::array<std::uint32_t,4>>(restored);
         for(std::size_t lane=N;lane<4;++lane) require(c[lane]==0 && e[lane]==0);
       }
-      require(simd::compress_store(static_cast<T*>(nullptr),0,active,value)==0);
-      if(!count) require(simd::compress_store(static_cast<T*>(nullptr),N+5,active,value)==0);
+      require(native::compress_store(static_cast<T*>(nullptr),0,active,value)==0);
+      if(!count) require(native::compress_store(static_cast<T*>(nullptr),N+5,active,value)==0);
       for(std::size_t capacity=1;capacity<=N+1;++capacity) {
         auto written=std::min(capacity,count);
         for(std::size_t lane=0;lane<N+1;++lane) storage[lane]=std::bit_cast<T>(sentinel);
         auto * destination=storage+N+1-written;
-        require(simd::compress_store(destination,capacity,active,value)==written);
+        require(native::compress_store(destination,capacity,active,value)==written);
         require(std::bit_cast<std::uint32_t>(destination[-1])==sentinel);
         for(std::size_t lane=0;lane<written;++lane)
           require(std::bit_cast<std::uint32_t>(destination[lane])==packed[lane]);
@@ -99,23 +99,23 @@ template<class T,std::size_t N> void test_shape() {
 }
 template<class T> void test_type() {
   test_shape<T,1>();
-#if SIMD_TEST_PROFILE != 0
+#if NATIVE_TEST_PROFILE != 0
   test_shape<T,2>();test_shape<T,3>();test_shape<T,4>();
-#if SIMD_TEST_PROFILE == 256 || SIMD_TEST_PROFILE == 512
+#if NATIVE_TEST_PROFILE == 256 || NATIVE_TEST_PROFILE == 512
   test_shape<T,8>();
 #endif
-#if SIMD_TEST_PROFILE == 512
+#if NATIVE_TEST_PROFILE == 512
   test_shape<T,16>();
 #endif
 #endif
 }
 
 // Stable external wrappers make the actual register lowering easy to inspect.
-#if SIMD_TEST_PROFILE == 512
+#if NATIVE_TEST_PROFILE == 512
 constexpr std::size_t native_lanes=16;
-#elif SIMD_TEST_PROFILE == 256
+#elif NATIVE_TEST_PROFILE == 256
 constexpr std::size_t native_lanes=8;
-#elif SIMD_TEST_PROFILE == 128
+#elif NATIVE_TEST_PROFILE == 128
 constexpr std::size_t native_lanes=4;
 #else
 constexpr std::size_t native_lanes=1;
@@ -123,14 +123,14 @@ constexpr std::size_t native_lanes=1;
 using native_v=test_vec<std::uint32_t,native_lanes>;
 using native_m=typename native_v::mask;
 extern "C" __attribute__((noinline)) std::size_t compaction_codegen(std::uint32_t * out,std::uint32_t const * input,std::uint32_t mask) {
-  auto result=simd::compress(native_m::from_bitset(mask),native_v::load(input));
+  auto result=native::compress(native_m::from_bitset(mask),native_v::load(input));
   result.value.store(out);return result.count;
 }
 extern "C" __attribute__((noinline)) void expansion_codegen(std::uint32_t * out,std::uint32_t const * input,std::uint32_t mask) {
-  simd::expand(native_m::from_bitset(mask),native_v::load(input),native_v(0xabcdef12u)).store(out);
+  native::expand(native_m::from_bitset(mask),native_v::load(input),native_v(0xabcdef12u)).store(out);
 }
 extern "C" __attribute__((noinline)) std::size_t compaction_store_codegen(std::uint32_t * out,std::uint32_t const * input,std::uint32_t mask,std::size_t capacity) {
-  return simd::compress_store(out,capacity,native_m::from_bitset(mask),native_v::load(input));
+  return native::compress_store(out,capacity,native_m::from_bitset(mask),native_v::load(input));
 }
 template<bool Native,unsigned Operation> __attribute__((noinline)) std::uint64_t batch(std::uint32_t * out,std::uint32_t const * input,std::uint32_t const * masks,std::size_t blocks) {
   std::uint64_t checksum=0;
@@ -140,12 +140,12 @@ template<bool Native,unsigned Operation> __attribute__((noinline)) std::uint64_t
       auto value=native_v::load(input+block*native_lanes);
       auto active=native_m::from_bitset(mask);
       if constexpr(Operation==0) {
-        auto result=simd::compress(active,value);
+        auto result=native::compress(active,value);
         result.value.store(out+block*native_lanes);count=result.count;
       } else if constexpr(Operation==1) {
-        simd::expand(active,value,native_v(0u)).store(out+block*native_lanes);
+        native::expand(active,value,native_v(0u)).store(out+block*native_lanes);
         count=std::popcount(mask);
-      } else count=simd::compress_store(out+block*native_lanes,native_lanes,active,value);
+      } else count=native::compress_store(out+block*native_lanes,native_lanes,active,value);
     } else if constexpr(Operation==1) {
       for(std::size_t lane=0;lane<native_lanes;++lane)
         out[block*native_lanes+lane]=(mask&(1u<<lane)) ? input[block*native_lanes+count++] : 0;
@@ -193,17 +193,17 @@ static void benchmark() {
     for(std::size_t pair=0;pair<a.size();++pair) {
       if(pair&1) { b[pair]=time(false);a[pair]=time(true); }
       else { a[pair]=time(true);b[pair]=time(false); }
-      std::printf("pair profile=%d operation=%u lanes=%zu masks=%s index=%zu native_ns=%.3f reference_ns=%.3f\n",SIMD_TEST_PROFILE,operation,native_lanes,density,pair,a[pair],b[pair]);
+      std::printf("pair profile=%d operation=%u lanes=%zu masks=%s index=%zu native_ns=%.3f reference_ns=%.3f\n",NATIVE_TEST_PROFILE,operation,native_lanes,density,pair,a[pair],b[pair]);
     }
     std::sort(a.begin(),a.end());std::sort(b.begin(),b.end());
-    std::printf("median profile=%d operation=%u lanes=%zu masks=%s native_ns=%.3f reference_ns=%.3f\n",SIMD_TEST_PROFILE,operation,native_lanes,density,a[3],b[3]);
+    std::printf("median profile=%d operation=%u lanes=%zu masks=%s native_ns=%.3f reference_ns=%.3f\n",NATIVE_TEST_PROFILE,operation,native_lanes,density,a[3],b[3]);
   }
 }
 int compaction_entry(int argc,char ** argv) {
   if(argc==2 && std::strcmp(argv[1],"--bench")==0) { benchmark(); return 0; }
-  auto before=simd::test::read_fp_state();
+  auto before=native::test::read_fp_state();
   test_type<float>();test_type<std::int32_t>();test_type<std::uint32_t>();
-  require(simd::test::read_fp_state()==before);
-  std::printf("profile=%d compaction checks=%llu\n",SIMD_TEST_PROFILE,(unsigned long long)checks);
+  require(native::test::read_fp_state()==before);
+  std::printf("profile=%d compaction checks=%llu\n",NATIVE_TEST_PROFILE,(unsigned long long)checks);
   return 0;
 }

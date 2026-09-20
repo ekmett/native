@@ -19,7 +19,7 @@ if a.config: command.extend(['--config',a.config])
 r=subprocess.run(command,text=True,capture_output=True)
 text=r.stdout+r.stderr
 a.log.write_text(text,encoding='utf-8')
-if 'SIMD_TARGET_NEGATIVE_UNAVAILABLE' in text:
+if 'NATIVE_TARGET_NEGATIVE_UNAVAILABLE' in text:
     print('The configured project minimum already includes this target; negative is inapplicable.')
     sys.exit(77)
 if r.returncode==0 or not re.search(a.diagnostic,text,re.I):

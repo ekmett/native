@@ -2,4 +2,4 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 #include "avx2-header.h"
-namespace simd { int avx2_lanes() noexcept { return 8; } }
+namespace native { int avx2_lanes() noexcept { return 8; } }

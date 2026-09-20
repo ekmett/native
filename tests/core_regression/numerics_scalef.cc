@@ -7,9 +7,9 @@
 #include <cstdio>
 #include <limits>
 #include "support/fp_environment.h"
-import simd.numerics;
+import native.numerics;
 
-template<class T> using word_t = simd::uint_t<T>;
+template<class T> using word_t = native::uint_t<T>;
 template<class T> consteval bool fixed_boundaries() {
   using U = word_t<T>;
   constexpr int p = std::numeric_limits<T>::digits - 1;
@@ -18,7 +18,7 @@ template<class T> consteval bool fixed_boundaries() {
   constexpr U sign = U(1) << (sizeof(T) * 8 - 1);
   constexpr U infinity = U(2 * bias + 1) << p;
   auto check = [](U x, T y, U expected) {
-    return std::bit_cast<U>(simd::scalef(std::bit_cast<T>(x), y)) == expected;
+    return std::bit_cast<U>(native::scalef(std::bit_cast<T>(x), y)) == expected;
   };
   for (U s : {U(0), sign}) {
     if (!check(s | (U(bias) << p), T(1 - bias), s | hidden)) return false;
@@ -60,7 +60,7 @@ template<class T> consteval auto make_samples() {
   std::size_t i = 0;
   for (U s : {U(0), sign}) for (auto word : words) for (auto y : scales) {
     T x = std::bit_cast<T>(s | word);
-    result[i++] = {x, y, std::bit_cast<U>(simd::scalef(x, y))};
+    result[i++] = {x, y, std::bit_cast<U>(native::scalef(x, y))};
   }
   return result;
 }
@@ -70,7 +70,7 @@ template<class T> bool runtime_agrees() {
   for (auto const &sample : samples) {
     volatile T x = sample.x;
     volatile T y = sample.y;
-    T actual = simd::scalef(x, y);
+    T actual = native::scalef(x, y);
     bool same = std::isnan(sample.x) ? std::isnan(actual) :
       std::bit_cast<word_t<T>>(actual) == sample.expected;
     if (!same) {
@@ -84,7 +84,7 @@ template<class T> bool runtime_agrees() {
   return true;
 }
 int main() {
-  simd::test::fp_scope nearest_gradual(simd::test::fp_mode::gradual);
+  native::test::fp_scope nearest_gradual(native::test::fp_mode::gradual);
   if (!runtime_agrees<float>() || !runtime_agrees<double>()) return 1;
   std::puts("1176 public-module constexpr/runtime scalef cases agree in nearest-even gradual mode.");
 }

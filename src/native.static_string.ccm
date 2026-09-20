@@ -1,0 +1,491 @@
+module;
+#include <native/attributes.h>
+#include <concepts>
+#include <cstddef>
+#include <functional>
+#include <iterator>
+#include <ostream>
+#include <ranges>
+#include <string>
+#include <string_view>
+#include <type_traits>
+#include <utility>
+
+/** \file
+
+      \license
+        SPDX-FileType: Source
+        SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+        SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+      \endlicense */
+
+export module native.static_string;
+
+export namespace native {
+
+namespace detail {
+  template<class T>
+  concept static_character = std::same_as<T, char> || std::same_as<T, wchar_t> ||
+    std::same_as<T, char8_t> || std::same_as<T, char16_t> || std::same_as<T, char32_t>;
+
+  template<class CharT, std::size_t N>
+  struct static_string_literal {
+    using char_type = CharT;
+    static constexpr std::size_t size = N;
+    CharT value[N];
+    consteval static_string_literal(CharT const (&text)[N]) noexcept {
+      for (std::size_t i = 0; i != N; ++i) value[i] = text[i];
+    }
+  };
+}
+
+
+/// Store a compile-time sequence followed by one value-initialized terminator.
+template <typename T, T...xs>
+struct reify {
+  static constexpr const T value[sizeof...(xs)+1] = {xs..., T() };
+};
+
+// forward declaration
+class static_c_string;
+
+/** \defgroup static_strings Interned static strings
+ * Literal-backed storage has program lifetime and no allocation. With standard
+ * character traits, equality and hashing use the interned storage address.
+ * \snippet api.cc common_utilities
+ */
+/** \ingroup static_strings
+ * \brief A view of one complete interned string, with its length retained.
+ * The five standard character widths are supported by the _ss literal. Embedded
+ * NUL characters remain part of its length. Default construction selects the
+ * canonical empty string. The view constructor is a compatibility escape hatch,
+ * not a runtime interning operation: arbitrary string_view storage violates the
+ * lifetime and pointer-equality/hash contract.
+ *
+ * Custom Traits can change equality to a character comparison, but the supplied
+ * hash remains pointer-based. Do not use it for traits that equate distinct
+ * interned byte strings; supply a matching equality/hash pair yourself.
+ */
+template <
+  typename CharT,
+  typename Traits = std::char_traits<CharT>
+>
+class basic_static_string {
+  std::basic_string_view<CharT,Traits> view{reify<CharT>::value, 0};
+
+public:
+  /// Adopt an existing interned view without copying or allocating.
+  /// \pre value is the complete null-terminated interned storage produced by _ss,
+  /// with its original length. A substring or arbitrary string_view is not enough.
+  native_inline constexpr
+  basic_static_string(std::basic_string_view<CharT,Traits> value) noexcept
+  : view(value) {}
+
+  /// Allow the pointer-sized view to share this interned storage.
+  friend class static_c_string;
+  using traits_type = Traits;
+  using value_type = CharT;
+  using pointer = CharT *;
+  using const_pointer = CharT const *;
+  using reference = CharT &;
+  using const_reference = CharT const &;
+  using const_iterator = CharT const *;
+  using iterator = const_iterator;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using reverse_iterator = const_reverse_iterator;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+
+  /// \name constructors
+  /// \{
+
+  /// Intern a compile-time character sequence; append one terminator outside its length.
+  template <CharT...xs>
+  consteval explicit basic_static_string(std::integer_sequence<CharT,xs...>) noexcept
+  : view(reify<CharT,xs...>::value,sizeof...(xs)) {}
+
+  /// Select the canonical empty interned string.
+  native_inline constexpr
+  basic_static_string() noexcept = default;
+
+  /// Copy the interned view without copying characters.
+  native_inline constexpr
+  basic_static_string(basic_static_string const &) noexcept = default;
+
+  /// Copy the interned view; the source remains valid and unchanged.
+  native_inline constexpr
+  basic_static_string(basic_static_string &&) noexcept = default;
+
+  /// \}
+  /// \name assignments
+  /// \{
+
+  /// Replace this view with the source view without allocation; the source is unchanged.
+  native_reinitializes native_inline constexpr
+  basic_static_string & operator = (basic_static_string const & that) noexcept = default;
+
+  /// Replace this view with the source view without allocation; the source is unchanged.
+  native_reinitializes native_inline constexpr
+  basic_static_string & operator = (basic_static_string && that) noexcept = default;
+
+
+  /// \}
+  /// \name conversions
+  /// \{
+
+  /// Borrow the null-terminated storage; embedded NULs still stop C-string consumers.
+  native_nodiscard native_inline native_pure constexpr
+  operator CharT const * () const noexcept {
+    return view.data(); // an extra invariant that its null terminated is maintained
+  }
+
+  /// Borrow the full view, including any embedded NUL characters.
+  native_nodiscard native_inline native_pure constexpr
+  operator std::basic_string_view<CharT,Traits>() const noexcept {
+    return view;
+  }
+
+  /// Allocate an independent standard string containing the full view.
+  native_nodiscard native_inline constexpr
+  operator std::basic_string<CharT,Traits>() const {
+    return std::basic_string<CharT,Traits>(view);
+  }
+
+  /// \}
+  /// \name element access
+  /// \{
+
+  /// Access character i. Requires i < size().
+  native_nodiscard native_inline native_pure constexpr
+  CharT const & operator [](size_type i) const noexcept { return view[i]; }
+
+  /// access the specified character with bounds checking
+  native_nodiscard native_inline constexpr
+  CharT const & at(size_type i) const { return view.at(i); }
+
+  /// Returns the first character. Requires !empty().
+  native_nodiscard native_inline native_pure constexpr
+  const_reference front() const noexcept { return view.front(); }
+
+  /// Return the last character.
+  /// \pre !empty()
+  native_nodiscard native_inline native_pure constexpr
+  const_reference back() const noexcept { return view.back(); }
+
+  /// Borrow the canonical storage; the terminator is at data()[size()].
+  native_nodiscard native_inline native_pure constexpr
+  const_pointer data() const noexcept { return view.data(); }
+
+  /// \}
+  /// \name capacity
+  /// \{
+
+  /// Return the stored number of characters, excluding the final terminator.
+  native_nodiscard native_inline native_pure constexpr
+  size_type size() const noexcept { return view.size(); }
+
+  /// Synonym for size().
+  native_nodiscard native_inline native_pure constexpr
+  size_type length() const noexcept { return view.length(); }
+
+  /// Return the underlying string_view capacity bound, not the current length.
+  native_nodiscard native_inline native_pure constexpr
+  size_type max_size() const noexcept { return view.max_size(); }
+
+  /// Return whether the stored length is zero.
+  native_nodiscard native_inline native_pure constexpr
+  bool empty() const noexcept { return view.empty(); }
+
+  /// Return whether the string is nonempty.
+  native_nodiscard native_inline native_pure
+  explicit constexpr operator bool () const noexcept { return !view.empty(); }
+
+  /// \}
+  /// \name comparisons
+  /// \{
+
+  /// Compare interned addresses with standard traits, otherwise compare addresses or character values.
+  /// \pre `Traits::eq` is assumed reflexive even if overloaded
+  native_nodiscard native_inline native_artificial friend constexpr
+  bool operator == (basic_static_string self, basic_static_string that) noexcept {
+    if constexpr (std::is_same_v<Traits,std::char_traits<CharT>> && detail::static_character<CharT>) {
+      return self.view.data() == that.view.data();
+    } else {
+      return (self.view.data() == that.view.data()) || (self.view == that.view); // fallback required
+    }
+  }
+
+  /// Negate equality, using the same address or custom-traits comparison.
+  /// \pre `Traits::eq` is assumed reflexive
+  native_nodiscard native_inline native_artificial friend constexpr
+  bool operator != (basic_static_string self, basic_static_string that) noexcept {
+    if constexpr (std::is_same_v<Traits,std::char_traits<CharT>> && detail::static_character<CharT>) {
+      return self.view.data() != that.view.data();
+    } else {
+      return (self.view.data() != that.view.data()) && (self.view != that.view);
+    }
+  }
+
+  /// \}
+  /// input/output
+  /// \{
+
+  /// Write the complete view, including embedded NULs.
+  /// \throws std::ios_base::failure if an exception is thrown during output.
+  friend constexpr
+  std::basic_ostream<CharT, Traits> & operator<<(std::basic_ostream<CharT, Traits>& os, basic_static_string<CharT, Traits> v) {
+    return os << v.view;
+  }
+
+
+  /// \}
+  /// \name iterators
+  /// \{
+
+  /// Return the first character iterator.
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  auto begin() const noexcept { return view.data(); }
+
+  /// Return the one-past-last character iterator; C-string form scans to its NUL.
+  native_nodiscard native_inline native_pure constexpr
+  auto end() const noexcept { return view.data() + view.size(); }
+
+  /// Return the first const character iterator.
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  auto cbegin() const noexcept { return begin(); }
+
+  /// Return the const end iterator; C-string form scans to its NUL.
+  native_nodiscard native_inline native_pure constexpr
+  auto cend() const noexcept { return end(); }
+
+  /// Return the first reverse iterator; C-string form first finds its end.
+  native_nodiscard native_inline native_pure constexpr
+  auto rbegin() const noexcept { return const_reverse_iterator(end()); }
+
+  /// Return the reverse end iterator.
+  native_nodiscard native_inline native_pure constexpr
+  auto rend() const noexcept { return const_reverse_iterator(begin()); }
+
+  /// Return the first const reverse iterator.
+  native_nodiscard native_inline native_pure constexpr
+  auto crbegin() const noexcept { return rbegin(); }
+
+  /// Return the const reverse end iterator.
+  native_nodiscard native_inline native_pure constexpr
+  auto crend() const noexcept { return rend(); }
+
+  /// \}
+
+  /// Exchange views without moving characters.
+  native_inline constexpr friend
+  void swap(basic_static_string & x, basic_static_string & y) noexcept {
+    using std::swap;
+    swap(x.view,y.view);
+  }
+
+  static constexpr size_type npos = std::basic_string_view<CharT,Traits>::npos;
+};
+
+/// \cond
+template <typename CharT, CharT...xs>
+basic_static_string(std::integer_sequence<CharT,xs...>) -> basic_static_string<CharT,std::char_traits<CharT>>;
+/// \endcond
+
+using static_string = basic_static_string<char>;
+using static_wstring = basic_static_string<wchar_t>;
+using static_u8string = basic_static_string<char8_t>;
+using static_u16string = basic_static_string<char16_t>;
+using static_u32string = basic_static_string<char32_t>;
+
+/** \ingroup static_strings
+ * \brief A pointer-sized view of a complete interned char string.
+ * Length is recovered from the first NUL. Use static_string when embedded NULs
+ * matter or repeated end/length scans are undesirable. Default construction
+ * selects the canonical empty string; equality compares addresses.
+ */
+class static_c_string {
+  char const * p = reify<char>::value;
+public:
+
+  using traits_type = std::char_traits<char>;
+  using value_type = char;
+  using pointer = char *;
+  using const_pointer = char const *;
+  using reference = char &;
+  using const_reference = char const &;
+  using const_iterator = char const *;
+  using iterator = const_iterator;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using reverse_iterator = const_reverse_iterator;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+
+  /// \name constructors
+  /// \{
+
+  /// Select the canonical empty C string.
+  native_inline constexpr
+  static_c_string() noexcept = default;
+
+  /// Copy the interned view without copying characters.
+  native_inline constexpr
+  static_c_string(static_c_string const &) noexcept = default;
+
+  /// Copy the interned view; the source remains valid and unchanged.
+  native_inline constexpr
+  static_c_string(static_c_string &&) noexcept = default;
+
+  /// Borrow the interned storage, dropping the separately stored length.
+  /// \pre x has no embedded NUL before x.size().
+  native_inline constexpr
+  static_c_string(static_string x) noexcept : p(x.data()) {}
+
+  /// \}
+  /// \name assignment
+  /// \{
+
+  /// Replace this view with the source view without allocation; the source is unchanged.
+  native_reinitializes native_inline constexpr
+  static_c_string & operator = (static_c_string const &) noexcept = default;
+
+  /// Replace this view with the source view without allocation; the source is unchanged.
+  native_reinitializes native_inline constexpr
+  static_c_string & operator = (static_c_string &&) noexcept = default;
+
+  /// \}
+  /// \name conversion
+  /// \{
+
+  /// Borrow the interned null-terminated character pointer.
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  operator const char * () const noexcept { return p; }
+
+  /// Recover a static_string by scanning to the first NUL; O(length).
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  operator static_string () const noexcept { return static_string(std::string_view(p)); }
+
+  /// Return the borrowed interned pointer.
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  const char * data() const noexcept { return p; }
+
+  /// \}
+  /// \name comparison
+  /// \{
+
+  /// Return whether both views refer to the same interned address.
+  native_nodiscard native_inline native_pure native_artificial constexpr friend
+  bool operator == (static_c_string x, static_c_string y) noexcept { return x.p == y.p; }
+
+  /// Return whether the interned addresses differ.
+  native_nodiscard native_inline native_pure native_artificial constexpr friend
+  bool operator != (static_c_string x, static_c_string y) noexcept { return x.p != y.p; }
+
+  /// \}
+  /// \name iterators
+  /// \{
+
+  /// O(1)
+  /// Return the first character iterator.
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  auto begin() const noexcept { return p; }
+
+  /// Return the one-past-last character iterator; C-string form scans to its NUL.
+  native_nodiscard native_inline native_pure constexpr
+  auto end() const noexcept { return p + std::char_traits<char>::length(p); }
+
+  /// O(1)
+  /// Return the first const character iterator.
+  native_nodiscard native_inline native_pure native_artificial constexpr
+  auto cbegin() const noexcept { return p; }
+
+  /// O(n)
+  /// Return the const end iterator; C-string form scans to its NUL.
+  native_nodiscard native_inline native_pure constexpr
+  auto cend() const noexcept { return p + std::char_traits<char>::length(p); }
+
+  /// O(n)
+  /// Return the first reverse iterator; C-string form first finds its end.
+  native_nodiscard native_inline native_pure constexpr
+  auto rbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
+
+  /// O(1)
+  /// Return the reverse end iterator.
+  native_nodiscard native_inline native_pure constexpr
+  auto rend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
+
+  /// O(n)
+  /// Return the first const reverse iterator.
+  native_nodiscard native_inline native_pure constexpr
+  auto crbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
+
+  /// O(1)
+  /// Return the const reverse end iterator.
+  native_nodiscard native_inline native_pure constexpr
+  auto crend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
+
+  /// \}
+
+  /// Exchange the interned pointers without touching characters.
+  native_inline friend
+  void swap(static_c_string & x, static_c_string & y) noexcept {
+    using std::swap;
+    swap(x.p,y.p);
+  }
+};
+
+/// \ingroup static_strings
+/// Intern a standard-width literal, retaining embedded NUL characters in its length.
+/// \snippet api.cc common_utilities
+// Structural string-literal NTTPs are standard C++; no GNU pack extension.
+template <detail::static_string_literal Text>
+consteval auto operator""_ss() noexcept {
+  using CharT = typename decltype(Text)::char_type;
+  return []<std::size_t... I>(std::index_sequence<I...>) {
+    return basic_static_string<CharT>(std::integer_sequence<CharT, Text.value[I]...>{});
+  }(std::make_index_sequence<Text.size - 1>{});
+}
+
+/// \ingroup static_strings
+/// Intern a char literal as a pointer-sized C string.
+/// \pre No embedded NUL occurs before the literal's final terminator.
+template <detail::static_string_literal Text>
+  requires std::same_as<typename decltype(Text)::char_type, char>
+consteval static_c_string operator""_scs() noexcept {
+  return static_c_string(operator""_ss<Text>());
+}
+
+} // namespace native
+
+export namespace std {
+  using ::std::hash;
+  template <typename CharT, typename Traits>
+  struct hash<::native::basic_static_string<CharT,Traits>> {
+    /// Hash the interned storage address, not the characters; stable only within this process.
+    size_t operator()(::native::basic_static_string<CharT,Traits> const & s) const noexcept {
+      return reinterpret_cast<size_t>(s.data());
+    }
+  };
+  template <>
+  struct hash<::native::static_c_string> {
+    /// Hash the interned storage address, not the characters; stable only within this process.
+    size_t operator()(::native::static_c_string s) const noexcept {
+      return reinterpret_cast<size_t>(s.data());
+    }
+  };
+  namespace ranges {
+
+    /// \cond external specializations
+    template< class CharT, class Traits >
+    inline constexpr bool enable_borrowed_range<::native::basic_static_string<CharT, Traits>> = true;
+
+    template< class CharT, class Traits >
+    inline constexpr bool enable_view<::native::basic_static_string<CharT, Traits>> = true;
+
+    template <>
+    inline constexpr bool enable_borrowed_range<::native::static_c_string> = true;
+
+    template <>
+    inline constexpr bool enable_view<::native::static_c_string> = true;
+    /// \endcond
+  }
+}  // namespace std

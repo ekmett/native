@@ -72,8 +72,8 @@ This validates actual downstream module linkage rather than only imports inside
 the producer project.
 
 Run the maintained suite with the build recipe in [building](../doc/building.md).
-Use `SIMD_TEST_ISA` to select a native test profile and run AVX-512 tests only on
-an admitted CPU. Enable `SIMD_ENABLE_ASAN` for sanitizer builds; use a separate
+Use `NATIVE_TEST_ISA` to select a native test profile and run AVX-512 tests only on
+an admitted CPU. Enable `NATIVE_ENABLE_ASAN` for sanitizer builds; use a separate
 build directory with IPO disabled when inspecting sanitizer behavior. The
 bounded M3 runner is `tests/neon/run.py`; the caller supplies any host resource
 gate and toolchain paths.
@@ -145,7 +145,7 @@ On the same Apple M3 and toolchain, source
 `53d9a44910b7f3e504e72e94ed7d01fe655764ad` passes 30 core tests,
 one granular relocated-package test and three omnibus consumer tests. The
 consumer tests cover archive-only linkage, baseline granular imports and
-`import simd;` with NEON vectors. No tests were skipped.
+`import native;` with NEON vectors. No tests were skipped.
 
 Exceptions and PCH are enabled. Native kernels use ThinLTO; baseline executables
 keep IPO disabled. All 215 source files and both tracked symlinks are unchanged.
@@ -174,7 +174,7 @@ compile; this CPU admits AVX2 only.
 
 The root-suite correction changes tests only. The original in-tree
 static-string fixture selected an AVX-512-flavored common BMI for its baseline
-translation units. It now takes module metadata from `simd::common` and links
+translation units. It now takes module metadata from `native::common` and links
 the archive file through an explicit build dependency. Public package metadata
 and arithmetic sources are unchanged. The portable mixed-profile dispatcher
 also passes its focused clang-cl Windows check against the existing installed
@@ -398,7 +398,7 @@ reads, writes and named-concept constraints pass. A small unrelated property
 example with two global fragments reproduces the warning. A single-owner experiment still warns
 when a consumer includes the header before importing the module. The library
 retains header interoperability and does not suppress the diagnostic.
-`A.has(simd::x86_feature::fma)` avoids property syntax for feature checks when a
+`A.has(native::x86_feature::fma)` avoids property syntax for feature checks when a
 consumer treats that warning as an error. These observations describe the
 tested cases, not a general guarantee about Clang's property implementation.
 
@@ -413,7 +413,7 @@ test-local concept and matching declarations/definitions using `has`.
 
 ## Shared ISA admission and architecture modules
 
-The platform observers now live in `simd.cpu.x86` and `simd.cpu.arm`. Both expose the
+The platform observers now live in `native.x86.features` and `native.arm.features`. Both expose the
 same value-based `classify_isa` and finite-list `with_isa` API; the duplicate
 fixed-profile classifiers are removed. Native observation definitions are
 unchanged. See [the migration](omnibus.md) for the
@@ -435,5 +435,5 @@ representation are introduced here.
 The CPU umbrella checkpoint also passes all 84 local ARM SIMD tests and all 21
 FTZ tests against the updated installed package. A fresh install, physically
 relocated before consumer configuration, passes seven source-target/admission
-checks including a consumer that imports only `simd.cpu` and links only
-`simd::common`. Hosted checks qualify the final module names separately.
+checks including a consumer that imports only `native.features` and links only
+`native::common`. Hosted checks qualify the final module names separately.

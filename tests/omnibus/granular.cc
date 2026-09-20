@@ -2,22 +2,22 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #if TEST_AVX2
-import simd;
-constexpr auto Arch = simd::avx2;
+import native;
+constexpr auto Arch = native::avx2;
 #elif TEST_AVX512
-import simd;
-constexpr auto Arch = simd::avx512;
+import native;
+constexpr auto Arch = native::avx512;
 #elif TEST_NEON_BF16
-import simd;
-constexpr auto Arch = simd::neon_bf16;
+import native;
+constexpr auto Arch = native::neon_bf16;
 #elif TEST_NEON_FP16
-import simd;
-constexpr auto Arch = simd::neon_fp16;
+import native;
+constexpr auto Arch = native::neon_fp16;
 #else
-import simd;
-constexpr auto Arch = simd::neon;
+import native;
+constexpr auto Arch = native::neon;
 #endif
 extern "C" void granular_kernel(float const *input,float *output) {
-  using V=simd::vec<float,4,Arch>;
-  simd::store_simd(output,fma(simd::load_simd<V>(input),V(2.f),V(1.f)));
+  using V=native::vec<float,4,Arch>;
+  native::store_simd(output,fma(native::load_simd<V>(input),V(2.f),V(1.f)));
 }

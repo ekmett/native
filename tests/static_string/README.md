@@ -1,10 +1,10 @@
 # Static strings as a named module
 
-`import simd.static_string;` provides the existing `simd::basic_static_string`,
+`import native.static_string;` provides the existing `native::basic_static_string`,
 standard character-width aliases, `static_c_string`, `_ss` and `_scs` literals.
 Definitions belong to this module; there is no textual implementation facade.
 The module and its compiled definitions belong to the configured-minimum
-`simd::minimal` archive; `simd::common` is a compatibility alias. Linking that target supplies both metadata and runtime definitions.
+`native::minimal` archive; `native::common` is a compatibility alias. Linking that target supplies both metadata and runtime definitions.
 
 The standard structural string-literal template maps every literal into the
 same `reify<CharT, characters...>::value` storage used by the retained
@@ -13,8 +13,8 @@ translation units. Default objects refer to canonical, null-terminated empty
 storage. The old JSON helpers and their dependency are removed.
 
 ```cpp
-import simd.static_string;
-using namespace simd;
+import native.static_string;
+using namespace native;
 constexpr auto name = "interned"_ss;
 static_assert(name == "interned"_ss);
 static_assert(name.size() == 8);
@@ -40,9 +40,9 @@ copy/move/swap, all five character widths, stream/string conversions and empty
 objects. With exceptions enabled, invalid `at` access must reach the catch.
 
 Standalone CMake target: `static_string_import`; test: `static_string.import`.
-Use C++26-capable Clang and Ninja, with `SIMD_ENABLE_EXCEPTIONS=OFF/ON` and
-`SIMD_ENABLE_ASAN=ON` for the sanitizer control. The normal project enables this
-test through `SIMD_BUILD_TESTS`.
+Use C++26-capable Clang and Ninja, with `NATIVE_ENABLE_EXCEPTIONS=OFF/ON` and
+`NATIVE_ENABLE_ASAN=ON` for the sanitizer control. The normal project enables this
+test through `NATIVE_BUILD_TESTS`.
 
 Windows validation: Clang 23.1.1, MSVC STL 14.44, CMake 4.4.3, Release,
 exceptions OFF, ON, and ASan/OFF: one test passed in each configuration.

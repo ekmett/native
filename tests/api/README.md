@@ -10,7 +10,7 @@ helper aborts on a failed example assertion, including in Release builds.
 
 ```sh
 cmake -S tests/api -B build/api -G Ninja -DCMAKE_CXX_COMPILER=clang-cl \
-  -DCMAKE_BUILD_TYPE=Release -Dsimd_DIR=/prefix/lib/cmake/simd \
+  -DCMAKE_BUILD_TYPE=Release -Dnative_DIR=/prefix/lib/cmake/native \
   '-DAPI_PROFILES=AVX2;AVX512'
 cmake --build build/api --parallel 2
 ctest --test-dir build/api --output-on-failure
@@ -26,7 +26,7 @@ It de-duplicates IDs across namespace/class/struct/group pages, excludes friend
 class declarations, ignores stale XML and private/detail entities,
 and fails for missing descriptions or an empty result. A documented overload-set
 alias is counted separately when Doxygen emits a distinct ID. For a focused
-native-header review, use `--source-prefix src/simd/`; omit that option for the
+native-header review, use `--source-prefix src/native/`; omit that option for the
 whole public source surface. Run the check for each documentation profile used to
 expose conditional declarations; a clean warning log alone is not coverage.
 

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <simd/isa.h>
-using namespace simd;
+#include <native/isa.h>
+using namespace native;
 #if INVALID_ORDER == 0
 constexpr int chosen=target<avx512,avx2,avx512>;
 #elif INVALID_ORDER == 1

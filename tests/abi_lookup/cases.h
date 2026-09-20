@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 namespace abi_lookup_test {
-  using namespace simd;
+  using namespace native;
   constexpr auto base=feature_closure(avx2&x86_feature::avx512f&x86_feature::avx512dq);
   constexpr auto bw=base&x86_feature::avx512bw;
   constexpr auto vl=base&x86_feature::avx512vl;

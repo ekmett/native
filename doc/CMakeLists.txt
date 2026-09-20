@@ -26,19 +26,19 @@ set(DOXYGEN_EXPAND_ONLY_PREDEF YES)
 # Doxygen misparses conditional explicit constructors; keep their actual
 # contracts in the comments while rendering the ordinary constructor signature.
 set(DOXYGEN_PREDEFINED
-  "SIMD_HAS_NATIVE_FP16=1" "SIMD_HAS_NATIVE_BF16=1"
-  "explicit(...):=explicit" "__declspec(x):=" "__cplusplus=202600L" "SIMD_PROFILE=512" "SIMD_BACKEND:=avx512_backend" "SIMD_ARCH:=::simd::avx512"
-  "SIMD_BACKEND_NAMESPACE:=simd::detail::avx512_backend"
-  "SIMD_ARCH_REQUIRES(Arch):=(::simd::avx512 <= Arch)"
-  "SIMD_WIDE_FAMILY:=0" "SIMD_WIDE_DETAIL:=detail::wide_generic_detail"
-  "SIMD_WIDE_TARGET:="
-  "SIMD_HAS_AVX2:=1" "SIMD_HAS_AVX512F:=1" "SIMD_HAS_AVX512DQ:=1"
-  "SIMD_HAS_AVX512BW:=1" "SIMD_HAS_AVX512VL:=1" "SIMD_HAS_ARM_NEON:=0"
-  "simd_inline:=inline" "simd_flatten:=" "simd_noinline:="
-  "simd_const:=" "simd_pure:=" "simd_nodiscard:=" "simd_lifetimebound:="
-  "simd_artificial:=" "simd_noescape:=" "simd_reinitializes:="
-  "simd_empty_bases:=" "simd_restrict:=" "simd_hidden:="
-  "simd_nonnull(x):=" "simd_null_terminated_string_arg(x):=")
+  "NATIVE_HAS_NATIVE_FP16=1" "NATIVE_HAS_NATIVE_BF16=1"
+  "explicit(...):=explicit" "__declspec(x):=" "__cplusplus=202600L" "NATIVE_PROFILE=512" "NATIVE_BACKEND:=avx512_backend" "NATIVE_ARCH:=::native::avx512"
+  "NATIVE_BACKEND_NAMESPACE:=native::detail::avx512_backend"
+  "NATIVE_ARCH_REQUIRES(Arch):=(::native::avx512 <= Arch)"
+  "NATIVE_WIDE_FAMILY:=0" "NATIVE_WIDE_DETAIL:=detail::wide_generic_detail"
+  "NATIVE_WIDE_TARGET:="
+  "NATIVE_HAS_AVX2:=1" "NATIVE_HAS_AVX512F:=1" "NATIVE_HAS_AVX512DQ:=1"
+  "NATIVE_HAS_AVX512BW:=1" "NATIVE_HAS_AVX512VL:=1" "NATIVE_HAS_ARM_NEON:=0"
+  "native_inline:=inline" "native_flatten:=" "native_noinline:="
+  "native_const:=" "native_pure:=" "native_nodiscard:=" "native_lifetimebound:="
+  "native_artificial:=" "native_noescape:=" "native_reinitializes:="
+  "native_empty_bases:=" "native_restrict:=" "native_hidden:="
+  "native_nonnull(x):=" "native_null_terminated_string_arg(x):=")
 # The compiler includes wide's fragments once per target family. Doxygen scans
 # input headers independently and cannot reconstruct their class context. Stage
 # one expansion in the actual owning header, retaining signatures and comments;
@@ -47,8 +47,8 @@ set(docs_source_root "${CMAKE_CURRENT_BINARY_DIR}/source")
 # Doxygen's symbol exclusions leave class members in XML. Stage isa with its
 # named property hooks removed, retaining generic get/set/has and the properties.
 # Describe the generated property declarations here to keep the source compact.
-set(docs_isa "${docs_source_root}/src/simd/isa.h")
-file(READ "${PROJECT_SOURCE_DIR}/src/simd/isa.h" docs_isa_text)
+set(docs_isa "${docs_source_root}/src/native/isa.h")
+file(READ "${PROJECT_SOURCE_DIR}/src/native/isa.h" docs_isa_text)
 string(REGEX REPLACE
   "    constexpr (bool get_[a-z0-9_]+\\(\\) const noexcept|void set_[a-z0-9_]+\\(bool value\\) noexcept) \\{[^\r\n]*\\}[\r\n]*"
   "" docs_isa_text "${docs_isa_text}")
@@ -56,18 +56,18 @@ string(REGEX REPLACE
   "(__declspec\\(property\\(get=get_([a-z0-9_]+),put=set_[a-z0-9_]+\\)\\) bool [a-z0-9_]+;)"
   "\\1 ///< Read or update the \\2 feature bit through flags."
   docs_isa_text "${docs_isa_text}")
-file(MAKE_DIRECTORY "${docs_source_root}/src/simd")
+file(MAKE_DIRECTORY "${docs_source_root}/src/native")
 file(WRITE "${docs_isa}" "${docs_isa_text}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-  "${PROJECT_SOURCE_DIR}/src/simd/isa.h")
-list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/simd/isa.h")
-set(docs_wide "${docs_source_root}/src/simd/wide.h")
-file(READ "${PROJECT_SOURCE_DIR}/src/simd/wide.h" docs_wide_text)
+  "${PROJECT_SOURCE_DIR}/src/native/isa.h")
+list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/native/isa.h")
+set(docs_wide "${docs_source_root}/src/native/wide.h")
+file(READ "${PROJECT_SOURCE_DIR}/src/native/wide.h" docs_wide_text)
 foreach(fragment IN ITEMS wide_members wide_operations)
-  set(fragment_path "${PROJECT_SOURCE_DIR}/src/simd/${fragment}.h")
+  set(fragment_path "${PROJECT_SOURCE_DIR}/src/native/${fragment}.h")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${fragment_path}")
   file(READ "${fragment_path}" fragment_text)
-  set(include_line "#include \"simd/${fragment}.h\"")
+  set(include_line "#include \"native/${fragment}.h\"")
   string(FIND "${docs_wide_text}" "${include_line}" include_offset)
   if(include_offset EQUAL -1)
     message(FATAL_ERROR "Doxygen wide staging could not find ${include_line}")
@@ -81,15 +81,15 @@ foreach(fragment IN ITEMS wide_members wide_operations)
   list(APPEND DOXYGEN_EXCLUDE "${fragment_path}")
 endforeach()
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-  "${PROJECT_SOURCE_DIR}/src/simd/wide.h")
-file(MAKE_DIRECTORY "${docs_source_root}/src/simd")
+  "${PROJECT_SOURCE_DIR}/src/native/wide.h")
+file(MAKE_DIRECTORY "${docs_source_root}/src/native")
 # Parenthesize the compound assignment constraints for Doxygen's requires parser.
 # This changes grouping only, not the represented participation condition.
 string(REPLACE
-  "requires ::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
-    (SIMD_WIDE_DETAIL::wide_batch_assignable"
-  "requires (::simd::detail::wide_family_is<SIMD_WIDE_FAMILY,T,B> && SIMD_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
-    (SIMD_WIDE_DETAIL::wide_batch_assignable"
+  "requires ::native::detail::wide_family_is<NATIVE_WIDE_FAMILY,T,B> && NATIVE_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+    (NATIVE_WIDE_DETAIL::wide_batch_assignable"
+  "requires (::native::detail::wide_family_is<NATIVE_WIDE_FAMILY,T,B> && NATIVE_WIDE_DETAIL::wide_arguments<wide<T, N>, B> &&
+    (NATIVE_WIDE_DETAIL::wide_batch_assignable"
   docs_wide_text "${docs_wide_text}")
 foreach(operation IN ITEMS + - *)
   string(REPLACE "{ a ${operation}= b; }))" "{ a ${operation}= b; })))"
@@ -100,16 +100,16 @@ string(REPLACE "This does not repartition a pack or choose a different architect
   "This does not repartition a pack or choose a different architecture. The reference shows one representative target-family overload per signature; internal family constraints select the matching implementation for scalar, AVX2, AVX-512 or NEON elements."
   docs_wide_text "${docs_wide_text}")
 file(WRITE "${docs_wide}" "${docs_wide_text}")
-list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/simd/wide.h")
+list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/native/wide.h")
 # Preserve the module entry while avoiding a second parse of the unexpanded
 # original owning header through the module adapter.
-file(READ "${PROJECT_SOURCE_DIR}/src/simd.wide.ccm" docs_wide_module)
-string(REPLACE "#include \"simd/wide.h\"" "" docs_wide_module "${docs_wide_module}")
-set(docs_wide_adapter "${docs_source_root}/src/simd.wide.ccm")
+file(READ "${PROJECT_SOURCE_DIR}/src/native.wide.ccm" docs_wide_module)
+string(REPLACE "#include \"native/wide.h\"" "" docs_wide_module "${docs_wide_module}")
+set(docs_wide_adapter "${docs_source_root}/src/native.wide.ccm")
 file(WRITE "${docs_wide_adapter}" "${docs_wide_module}")
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-  "${PROJECT_SOURCE_DIR}/src/simd.wide.ccm")
-list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/simd.wide.ccm")
+  "${PROJECT_SOURCE_DIR}/src/native.wide.ccm")
+list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/native.wide.ccm")
 
 set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
   "CPUID=@c CPUID" "PAUSE=@c PAUSE" "MONITOR=@c MONITOR" "MWAIT=@c MWAIT"
@@ -161,15 +161,15 @@ set(DOXYGEN_WARN_IF_UNDOC_ENUM_VAL NO)
 set(DOXYGEN_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/docs")
 set(DOXYGEN_WARN_LOGFILE "${PROJECT_BINARY_DIR}/docs/warnings.log")
 set(DOXYGEN_PROJECT_BRIEF "Vectors, masks and wide register packs for C++26")
-doxygen_add_docs(simd_docs
+doxygen_add_docs(native_docs
   "${PROJECT_SOURCE_DIR}/src"
   "${docs_isa}" "${docs_wide}" "${docs_wide_adapter}"
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
-  COMMENT "Build simd API documentation and examples")
+  COMMENT "Build native API documentation and examples")
 
 # Module summaries need aliases for Doxygen 1.18 crawler/navigation destinations.
-add_custom_command(TARGET simd_docs POST_BUILD
+add_custom_command(TARGET native_docs POST_BUILD
   COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/fix_module_anchors.py"
     "${PROJECT_BINARY_DIR}/docs/html"
   VERBATIM)

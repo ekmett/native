@@ -1,8 +1,8 @@
-#include <simd/config.h>
-#include <simd/attributes.h>
+#include <native/config.h>
+#include <native/attributes.h>
 
-#if __has_include(<simd/vec.h>) || __has_include(<simd/simd/config.h>)
-#error Module implementation headers must not leak through simd::headers
+#if __has_include(<native/vec.h>) || __has_include(<native/simd/config.h>)
+#error Module implementation headers must not leak through native::headers
 #endif
 
 int main() { return 0; }

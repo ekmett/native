@@ -1,0 +1,12 @@
+module;
+#define NATIVE_PROFILE 0
+#include <native/vec.h>
+#include <native/integer.h>
+#include <native/packing.h>
+#include <native/simd/math/bits.h>
+export module native.scalar;
+export import native.wide;
+#include "native/simd/exports.h"
+
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0

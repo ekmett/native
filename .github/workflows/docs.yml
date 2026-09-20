@@ -39,9 +39,9 @@ jobs:
         run: |
           set -o pipefail
           cmake -S . -B build/docs -G Ninja \
-            -DSIMD_BUILD_HOST=OFF -DSIMD_BUILD_TESTS=OFF -DSIMD_BUILD_DOCS=ON \
+            -DNATIVE_BUILD_HOST=OFF -DNATIVE_BUILD_TESTS=OFF -DNATIVE_BUILD_DOCS=ON \
             2>&1 | tee configure-docs.log
-          cmake --build build/docs --target simd_docs --parallel 2 2>&1 | tee build-docs.log
+          cmake --build build/docs --target native_docs --parallel 2 2>&1 | tee build-docs.log
           python doc/test_module_anchors.py
           python doc/test_links.py
           python tests/api/audit_docs.py build/docs/docs/xml

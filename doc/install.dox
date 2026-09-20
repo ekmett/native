@@ -16,9 +16,9 @@ is not a compatibility guarantee. Windows uses clang-cl and a configured MSVC
 SDK environment. On macOS use LLVM Clang rather than the system Apple Clang.
 
 The maintained configure, build, test and installed-package commands are in
-<a href="building.md">Building and consuming simd</a>. CMake owns the build;
+<a href="building.md">Building and consuming native</a>. CMake owns the build;
 GNUmakefile is an optional wrapper around the current presets.
 
-Documentation is optional: enable SIMD_BUILD_DOCS and build simd_docs with
+Documentation is optional: enable NATIVE_BUILD_DOCS and build native_docs with
 Doxygen 1.12 or newer. Neither Doxygen nor Graphviz is required for the library.
 */

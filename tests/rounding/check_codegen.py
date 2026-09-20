@@ -17,7 +17,7 @@ a.output.mkdir(parents=True, exist_ok=True)
 report = []
 for profile, widths in (("avx2", (1, 3, 4, 8)), ("avx512", (1, 3, 4, 8, 16))):
     for kind in ("header", "import"):
-        obj = a.build / "CMakeFiles" / f"simd_rounding_{profile}_{kind}.dir" / "rounding.cc.obj"
+        obj = a.build / "CMakeFiles" / f"native_rounding_{profile}_{kind}.dir" / "rounding.cc.obj"
         symbols = [f"round_{op}_{n}" for op in ("floor", "ceil", "trunc") for n in widths]
         command = [a.objdump, "-d", "--no-show-raw-insn", "--disassemble-symbols=" + ",".join(symbols), str(obj)]
         result = subprocess.run(command, capture_output=True, text=True, check=True)

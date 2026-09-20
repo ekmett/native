@@ -13,14 +13,15 @@
 #include <vector>
 #include "support/fp_environment.h"
 #include "support/profile.h"
-#if SIMD_TEST_IMPORT
-import simd.wide;
+#if NATIVE_TEST_IMPORT
+import native.wide;
+import native.math;
 #else
-#include <simd/wide.h>
-#include <simd/wide_math.h>
+#include <native/wide.h>
+#include <native/wide_math.h>
 #endif
 
-using scalar = simd::vec<float, 1, simd::scalar>;
+using scalar = native::vec<float, 1, native::scalar>;
 using scalar_mask = typename scalar::mask_type;
 using scalar_pack = std::array<scalar, 1>;
 
@@ -32,7 +33,7 @@ static_assert(!wide::promotable<std::tuple<>> && !wide::promotable<std::tuple<fl
 static_assert(std::same_as<wide::canonical_t<float const &>, scalar_pack>);
 static_assert(std::same_as<wide::canonical_t<scalar>, scalar_pack>);
 static_assert(std::same_as<wide::canonical_t<std::array<float, 2>>, std::array<scalar, 2>>);
-static_assert(std::same_as<wide::canonical_t<simd::wide<scalar, 2>>, std::array<scalar, 2>>);
+static_assert(std::same_as<wide::canonical_t<native::wide<scalar, 2>>, std::array<scalar, 2>>);
 static_assert(std::same_as<decltype(math::exp(0.f)), float>);
 static_assert(std::same_as<decltype(math::exp(scalar{})), scalar>);
 static_assert(std::same_as<decltype(math::exp(std::array<float, 1>{})), std::array<float, 1>>);
@@ -90,7 +91,7 @@ static_assert(!can_fma<float, scalar, scalar_pair>);
 static_assert(!can_fma<scalar_pair, std::array<scalar, 1>, scalar>);
 static_assert(!can_fma<scalar_pair, std::tuple<scalar, scalar>, scalar>);
 static_assert(!can_fma<scalar_pair, scalar, std::array<scalar, 3>>);
-static_assert(!can_fma<scalar_pair, simd::vec<double, 1, simd::scalar>, scalar>);
+static_assert(!can_fma<scalar_pair, native::vec<double, 1, native::scalar>, scalar>);
 
 static void require(bool value, char const * message) {
   if (!value) {
@@ -271,7 +272,7 @@ template<bool Flush, class V> static void samples(std::vector<std::uint32_t> con
   static_assert(rejected_exp_tuple<std::tuple<float, scalar, V>>);
   static_assert(std::same_as<wide::canonical_t<V>, std::array<V, 1>>);
   static_assert(std::same_as<decltype(math::exp<Flush>(std::array<V, 3>{})), std::array<V, 3>>);
-  static_assert(std::same_as<decltype(math::exp<Flush>(simd::wide<V, 3>{})), simd::wide<V, 3>>);
+  static_assert(std::same_as<decltype(math::exp<Flush>(native::wide<V, 3>{})), native::wide<V, 3>>);
   for (std::size_t base = 0; base < words.size(); base += V::lanes) {
     std::array<std::array<float, V::lanes>, 3> input{};
     for (std::size_t chain = 0; chain < input.size(); ++chain)
@@ -290,7 +291,7 @@ template<bool Flush, class V> static void samples(std::vector<std::uint32_t> con
     auto scalar_wide = wide::exp<Flush>(scalar_input);
     auto standard = math::exp<Flush>(registers);
     auto packed = wide::exp<Flush>(registers);
-    auto legacy = math::exp<Flush>(simd::wide<V, 3>{registers[0], registers[1], registers[2]});
+    auto legacy = math::exp<Flush>(native::wide<V, 3>{registers[0], registers[1], registers[2]});
     for (std::size_t chain = 0; chain < input.size(); ++chain) {
       check_word(scalar_input[chain], scalar_array[chain], reference<Flush>(scalar_input[chain]));
       check_word(scalar_input[chain], scalar_wide[chain], reference<Flush>(scalar_input[chain]));
@@ -316,36 +317,36 @@ int main() {
     // Supplement random bit patterns with ordinary polynomial inputs.
     words.push_back(std::bit_cast<std::uint32_t>(float(int(seed & 0xffffu) - 32768) * 0x1p-8f));
   }
-  auto saved = simd::test::read_fp_state();
-  for (auto mode : {simd::test::fp_mode::gradual, simd::test::fp_mode::flush}) {
-    simd::test::fp_scope scope(mode);
+  auto saved = native::test::read_fp_state();
+  for (auto mode : {native::test::fp_mode::gradual, native::test::fp_mode::flush}) {
+    native::test::fp_scope scope(mode);
     shapes_and_masks();
     check_fma_broadcasts<scalar>();
     samples<false, scalar>(words);
     samples<true, scalar>(words);
 #if defined(__AVX2__)
-    check_fma_broadcasts<simd::vec<float, 2, simd::avx2>>();
-    check_fma_broadcasts<simd::vec<float, 3, simd::avx2>>();
-    check_fma_broadcasts<simd::vec<float, 8, simd::avx2>>();
-    samples<false, simd::vec<float, 2, simd::avx2>>(words);
-    samples<true, simd::vec<float, 2, simd::avx2>>(words);
-    samples<false, simd::vec<float, 3, simd::avx2>>(words);
-    samples<true, simd::vec<float, 3, simd::avx2>>(words);
-    samples<false, simd::vec<float, 8, simd::avx2>>(words);
-    samples<true, simd::vec<float, 8, simd::avx2>>(words);
+    check_fma_broadcasts<native::vec<float, 2, native::avx2>>();
+    check_fma_broadcasts<native::vec<float, 3, native::avx2>>();
+    check_fma_broadcasts<native::vec<float, 8, native::avx2>>();
+    samples<false, native::vec<float, 2, native::avx2>>(words);
+    samples<true, native::vec<float, 2, native::avx2>>(words);
+    samples<false, native::vec<float, 3, native::avx2>>(words);
+    samples<true, native::vec<float, 3, native::avx2>>(words);
+    samples<false, native::vec<float, 8, native::avx2>>(words);
+    samples<true, native::vec<float, 8, native::avx2>>(words);
 #elif defined(__ARM_NEON)
-    check_fma_broadcasts<simd::vec<float, 2, simd::neon>>();
-    check_fma_broadcasts<simd::vec<float, 3, simd::neon>>();
-    check_fma_broadcasts<simd::vec<float, 4, simd::neon>>();
-    samples<false, simd::vec<float, 2, simd::neon>>(words);
-    samples<true, simd::vec<float, 2, simd::neon>>(words);
-    samples<false, simd::vec<float, 3, simd::neon>>(words);
-    samples<true, simd::vec<float, 3, simd::neon>>(words);
-    samples<false, simd::vec<float, 4, simd::neon>>(words);
-    samples<true, simd::vec<float, 4, simd::neon>>(words);
+    check_fma_broadcasts<native::vec<float, 2, native::neon>>();
+    check_fma_broadcasts<native::vec<float, 3, native::neon>>();
+    check_fma_broadcasts<native::vec<float, 4, native::neon>>();
+    samples<false, native::vec<float, 2, native::neon>>(words);
+    samples<true, native::vec<float, 2, native::neon>>(words);
+    samples<false, native::vec<float, 3, native::neon>>(words);
+    samples<true, native::vec<float, 3, native::neon>>(words);
+    samples<false, native::vec<float, 4, native::neon>>(words);
+    samples<true, native::vec<float, 4, native::neon>>(words);
 #endif
     require(scope.controls_match(), "promoted exp changed FP controls");
   }
-  require(simd::test::read_fp_state() == saved, "promoted exp fixture failed to restore FP state");
+  require(native::test::read_fp_state() == saved, "promoted exp fixture failed to restore FP state");
   std::printf("promoted exp shapes, masks, and %zu inputs per width/cutoff/FP mode passed\n", words.size());
 }
