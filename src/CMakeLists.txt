@@ -90,7 +90,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.x86.features.ccm native.x86.wait.ccm native.x86.bmi1.ccm native.x86.bmi2.ccm
-      native.x86.ccm)
+      native.x86.popcnt.ccm native.x86.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"

@@ -3,4 +3,5 @@ export module native.x86;
 export import native.x86.features;
 export import native.x86.bmi1;
 export import native.x86.bmi2;
+export import native.x86.popcnt;
 export import native.x86.wait;
