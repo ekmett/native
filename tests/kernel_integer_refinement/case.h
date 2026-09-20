@@ -98,18 +98,6 @@ namespace integer_test::INTEGER_CASE_NAME {
     if constexpr(integer_test::has_shape<std::uint32_t,2,arch>)
       if(!integer_shape<std::uint32_t,2>() || !integer_shape<std::uint32_t,3>()) return false;
     if(!register_shape<16>() || !register_shape<32>() || !register_shape<64>()) return false;
-    std::uint64_t state=0x123456789abcdef0ull;
-    for(unsigned round=0;round<1024;++round) {
-      state^=state<<13;state^=state>>7;state^=state<<17;
-      auto value=state;
-      state^=state<<13;state^=state>>7;state^=state<<17;
-      auto mask=round==0?0ull:round==1?~0ull:state;
-      std::uint64_t expected=0;
-      unsigned source=0;
-      for(unsigned bit=0;bit<64;++bit)
-        if((mask>>bit)&1) expected|=((value>>source++)&1)<<bit;
-      if(simd::deposit_bits<arch>(value,mask)!=expected) return false;
-    }
     return true;
   }
 }

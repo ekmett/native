@@ -234,7 +234,9 @@ export namespace simd {
 }
 
 export namespace simd {
-  using ::simd::deposit_bits;
+#if SIMD_HOST_X86 && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
+  using ::simd::pdep;
+#endif
 #if (SIMD_HOST_X86 || SIMD_HOST_NEON) && (!defined(SIMD_PROFILE) || SIMD_PROFILE != 0)
   using ::simd::narrow_concat;
 #endif
