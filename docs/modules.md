@@ -363,7 +363,7 @@ and OS-state checks determine which requirements the host can execute.
 `x86_capabilities` or `arm_capabilities` record for the current platform, ready
 for `native::classify_isa(cpu, requirements)` or `native::with_isa`.
 Architecture-specific observers remain available from their feature modules.
-On x86, `native.x86` also imports the [BMI1](x86-bmi1.md), BMI2 and wait operations; the feature-only
+On x86, `native.x86` also imports the [BMI1](x86-bmi1.md), [BMI2](x86-bmi2.md) and wait operations; the feature-only
 umbrella does not import those operations.
 
 Native capability records contain `present` and `observed` typed sets:

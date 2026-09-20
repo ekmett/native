@@ -15,6 +15,9 @@ static_assert(!requirements.has(native::x86_feature::avx2));
 template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
   { native::pdep<A>(value, mask) } noexcept -> std::same_as<T>;
   { native::pext<A>(value, mask) } noexcept -> std::same_as<T>;
+  { native::bzhi<A>(value, 9u) } noexcept -> std::same_as<T>;
+  { native::mulx<A>(value, mask, &mask) } noexcept -> std::same_as<T>;
+  { native::rorx<A, 13>(value) } noexcept -> std::same_as<T>;
 };
 static_assert(has_bmi2<requirements, std::uint32_t>);
 static_assert(has_bmi2<requirements, std::uint64_t>);
@@ -39,8 +42,14 @@ static bool round_trip(std::uint32_t source32, std::uint64_t source64) {
   constexpr std::uint64_t mask64 = 0x8000000100010102;
   auto deposited32 = native::pdep<requirements>(source32, mask32);
   auto deposited64 = native::pdep<requirements>(source64, mask64);
+  std::uint64_t high;
+  auto product = native::mulx<requirements>(source64, std::uint64_t(3), &high);
   return native::pext<requirements>(deposited32, mask32) == (source32 & 0xf) &&
-         native::pext<requirements>(deposited64, mask64) == (source64 & 0x1f);
+         native::pext<requirements>(deposited64, mask64) == (source64 & 0x1f) &&
+         native::bzhi<requirements>(source32, 256u) == 0 &&
+         native::shrx<requirements>(source64, 64u) == source64 &&
+         native::rorx<requirements, 0>(source64) == source64 &&
+         product == source64 * 3 && high == 0;
 }
 NATIVE_TARGET_POP()
 

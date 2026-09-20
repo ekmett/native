@@ -4,6 +4,17 @@ module;
 export module native.x86.bmi2;
 export import native.x86.features;
 export namespace native {
+  /// \addtogroup x86_bmi2
+  /// \{
+
+  using ::native::bzhi;
+  using ::native::mulx;
   using ::native::pdep;
   using ::native::pext;
+  using ::native::shlx;
+  using ::native::shrx;
+  using ::native::sarx;
+  using ::native::rorx;
+
+  /// \}
 }
