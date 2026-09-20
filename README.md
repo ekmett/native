@@ -82,8 +82,9 @@ custom element types and application dispatch.
 | `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
 | `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
 | `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `native.x86` | x86 feature detection, BMI2 operations and wait utilities |
+| `native.x86` | x86 feature detection, bit operations and wait utilities |
 | `native.arm` | AArch64 feature detection and admission |
+| `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | ISA-constrained 32-bit and 64-bit `pdep` and `pext` |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
 | `native.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |

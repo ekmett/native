@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 export module native.x86;
 export import native.x86.features;
+export import native.x86.bmi1;
 export import native.x86.bmi2;
 export import native.x86.wait;
