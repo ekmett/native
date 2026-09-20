@@ -7,9 +7,9 @@ namespace SIMD_BACKEND_NAMESPACE::native {
     else {
       auto const [masks, values, exponents] =
         ::math::detail::exp_reduced<Flush>(::wide::promote(input));
-      auto const & [...active] = masks.values;
-      auto const & [...y] = values.values;
-      auto const & [...n] = exponents.values;
+      auto const & [...active] = masks;
+      auto const & [...y] = values;
+      auto const & [...n] = exponents;
       // Finish in this entry's target scope: the generic scaling bridge can
       // exceed Clang's inline-cost budget for AVX-512 without VL.
       return {{masked_scaleb_zero(active, y, n)...}};

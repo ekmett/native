@@ -195,75 +195,81 @@ graph; wrapping it in `wide` does not strengthen its accuracy or floating-point
 environment contract. The [validation record](validation.md) distinguishes
 compiler fixtures, numerical tests and native execution results.
 
-## Promoted exponential batches
+## Promoted math batches
 
-`import simd;` also provides `math::exp`, `wide::array`, `wide::tuple`, and
-`wide::promote`/`wide::demote<Original>`. A float promotes to
-`wide::array<simd::vec<float,1,simd::scalar>,1>`; a SIMD value promotes to a
-one-element array retaining its lane count and ISA. Arrays and tuples adapt
-their elements without adding another outer dimension.
+`import simd;` provides `math::exp` and `wide::promote`/`wide::demote<Original>`.
+Canonical batches use `std::array`. A float promotes to
+`std::array<simd::vec<float,1,simd::scalar>,1>`; a SIMD value promotes to a
+one-element array retaining its lane count and ISA. An array adapts its elements
+without adding another outer dimension. The existing `simd::wide` also adapts
+to a standard array. Tuples are not accepted by promotion or promoted math.
 
 ```cpp
+#include <array>
 import simd;
 using V = simd::vec<float,8,simd::avx2>;
 
-auto scalar_result = math::exp(1.f);                   // float
-auto vector_result = math::exp(V(1.f));                // V
-auto batch_result = math::exp(wide::array<V,2>{{V(1.f), V(2.f)}});
-// batch_result is wide::array<V,2>.
+auto scalar_result = math::exp(1.f);                // float
+auto vector_result = math::exp(V(1.f));             // V
+auto batch_result = math::exp(std::array{V(1.f), V(2.f)});
+// batch_result is std::array<V,2>.
 ```
 
-The caller must provide the selected vector target as usual. `math::exp` accepts
-floats, SIMD values, `std::array`, `wide::array`, and the existing `simd::wide`;
-their canonical form must be a homogeneous `wide::array`. Both `std::tuple` and
-`wide::tuple` are rejected, including homogeneous, singleton, and empty tuples.
-Each polynomial stage advances all independent chains; batching does not call
-unary `exp` separately for every element. The result preserves the input container family,
-including empty and one-element containers. This graph supports binary32
-elements; no half-precision approximation is implied.
+The caller must provide the selected vector target as usual. Each polynomial
+stage advances all independent chains; batching does not call unary `exp`
+separately for every element. Results preserve the input scalar, SIMD, array,
+or legacy `simd::wide` shape, including empty and one-element containers.
+The staged kernels support binary32 elements.
 
 Promotion owns its values. Demotion uses the original type to restore shape,
 while retaining transformed element types: a scalar comparison demotes to
 `bool`, whereas a SIMD comparison retains its mask. `wide::map` performs one
-elementwise stage and preserves the first pack's family. The native arithmetic
-operations used by `exp` operate on promoted SIMD elements.
+elementwise stage over equal-length standard arrays. Access their elements
+with ordinary indexing or `std::get`.
 
-Lifted arithmetic accepts a SIMD operand alongside packs and reuses it for every
-chain. Pack operands must have equal lengths, and the result uses the first
-pack's container family. SIMD operands must match the corresponding leaf types;
-there is no implicit conversion between register widths or ISAs.
+Pointwise operations use named functions. `std::array` arithmetic and comparison
+operators are not changed: container equality still returns one `bool`, and
+ordering remains lexicographic. Use `wide::cmp_lt`, `cmp_eq`, and the other
+`cmp_*` functions for an array of element masks, and `wide::mask_not` to
+complement those masks.
 
 ```cpp
-// r and y are wide::array<V, 3> values.
-y = fma(r, y, V(0x1.555555c673724p-3f));
+// r and y are std::array<V,3> values.
+y = wide::fma(r, y, V(0x1.555555c673724p-3f));
+auto active = wide::cmp_lt(r, V(0.f));
+auto doubled = wide::mul(r, V(2.f));
 ```
 
-For a homogeneous batch, `wide::constant_like(batch, value)` returns one SIMD
-value. A heterogeneous tuple instead receives a tuple of coefficients in its
-respective leaf types. Arithmetic, comparisons, bitwise operations, selection,
-`min`/`max`, `abs`, `sqrt`, rounding, `fma`, and exponent scaling use the same
-lifting rule. They use compile-time pack expansion; no runtime iteration is
-introduced.
+Lifted operations accept a SIMD operand alongside arrays and reuse it for every
+chain. Array operands must have equal lengths. SIMD operands must match the
+array element types; no implicit conversion occurs between register widths or
+ISAs. `wide::constant_like(batch, value)` returns one SIMD value, with the
+coefficient's scalar type matching its SIMD element type exactly.
+
+`wide::add`, `sub`, `mul`, `div`, and `negate` provide arithmetic; `bit_and`,
+`bit_or`, `bit_xor`, and `bit_not` provide bitwise operations. Comparisons,
+selection, `min`/`max`, `abs`, `sqrt`, rounding, `fma`, and exponent scaling use
+the same lifting rule. These stages use compile-time pack expansion.
 
 `math::sin`, `math::cos`, and `math::sincos` also promote and restore the input
-shape. Their reducer and polynomial advance stage by stage across the pack.
+shape. Their reducer and polynomial advance stage by stage across the array.
 They retain the native approximation's domain: every lane must be finite with
 absolute value below 8192 radians. `sincos` shares the reducer and returns a pair
 of results, each in the original shape; it retains the original paired kernel's
 signed-zero behavior.
 
 ```cpp
-auto [s, c] = math::sincos(wide::tuple{0.25f, V(0.5f)});
-// s and c are each wide::tuple<float, V>.
+auto [s, c] = math::sincos(std::array{V(0.25f), V(0.5f)});
+// s and c are each std::array<V,2>.
 ```
 
 `math::flush_to_zero` clears subnormal mantissas using integer operations,
 preserving the sign of zero and the exact bits of normal values, infinities,
 and NaNs. It leaves floating-point controls unchanged. `math::abs`, `sqrt`,
-`floor`, `ceil`, `trunc`, and `round_even` use the same shape-preserving unary
-interface and retain the native leaf operation's semantics. These kernels are
-also available through ADL on `wide::array` and `wide::tuple`; `exp` accepts
-`wide::array` through ADL and rejects `wide::tuple` there too.
+`floor`, `ceil`, `trunc`, and `round_even` retain the native leaf operation's
+semantics through the same shape-preserving interface. Qualified aliases
+`wide::exp`, `sin`, `cos`, `sincos`, and `flush_to_zero` are also available;
+standard arrays do not acquire `wide` as an associated namespace for ADL.
 
 The legacy `log`, `log1p`, `expm1`, and `tanh` adapters delegate to an element
 library; this interface does not introduce native approximations for them.

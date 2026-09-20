@@ -19,9 +19,6 @@ module;
 export module simd.wide;
 
 export namespace wide {
-  using ::wide::array;
-  using ::wide::tuple;
-  using ::wide::get;
   using ::wide::pack;
   using ::wide::promotable;
   using ::wide::traits;

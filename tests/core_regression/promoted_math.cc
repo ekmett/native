@@ -26,18 +26,18 @@ extern "C" void promoted_trig_reference(unsigned, float const *, float *, float 
 template<class P, class T> concept can_constant = requires(P const & p, T value) {
   wide::constant_like(p, value);
 };
-template<class P> concept has_pack_not = requires(P const & p) { !p; };
+template<class P> concept has_pack_not = requires(P const & p) { wide::mask_not(p); };
 using scalar_bits = typename scalar::bits_type;
-static_assert(can_constant<wide::array<scalar, 2>, float>);
-static_assert(!can_constant<wide::array<scalar, 2>, double>);
-static_assert(!can_constant<wide::array<scalar, 2>, std::uint32_t>);
-static_assert(can_constant<wide::array<scalar_bits, 2>, std::uint32_t>);
-static_assert(!can_constant<wide::array<scalar_bits, 2>, float>);
-static_assert(!can_constant<wide::tuple<scalar, scalar_bits>, float>);
-static_assert(!can_constant<wide::tuple<scalar, scalar_bits>, std::uint32_t>);
-static_assert(!has_pack_not<wide::array<scalar, 2>>);
-static_assert(!has_pack_not<wide::tuple<scalar, scalar>>);
-static_assert(has_pack_not<wide::array<typename scalar::mask_type, 2>>);
+static_assert(can_constant<std::array<scalar, 2>, float>);
+static_assert(!can_constant<std::array<scalar, 2>, double>);
+static_assert(!can_constant<std::array<scalar, 2>, std::uint32_t>);
+static_assert(can_constant<std::array<scalar_bits, 2>, std::uint32_t>);
+static_assert(!can_constant<std::array<scalar_bits, 2>, float>);
+static_assert(!can_constant<std::tuple<scalar, scalar_bits>, float>);
+static_assert(!can_constant<std::tuple<scalar, scalar_bits>, std::uint32_t>);
+static_assert(!has_pack_not<std::array<scalar, 2>>);
+static_assert(!has_pack_not<std::tuple<scalar, scalar>>);
+static_assert(has_pack_not<std::array<typename scalar::mask_type, 2>>);
 
 static void require(bool value, char const * message) {
   if (!value) { std::fprintf(stderr, "%s\n", message); std::abort(); }
@@ -56,21 +56,33 @@ template<class V> static void exact_vector(V value, std::array<float, V::lanes> 
   for (std::size_t i = 0; i < V::lanes; ++i) exact(actual[i], expected[i], operation);
 }
 
+// Tuples are not promoted, including homogeneous and empty tuples.
+template<class T> constexpr bool rejects_tuple_math =
+  !requires(T const & x) { math::sin(x); } &&
+  !requires(T const & x) { math::cos(x); } &&
+  !requires(T const & x) { math::sincos(x); } &&
+  !requires(T const & x) { math::flush_to_zero(x); } &&
+  !requires(T const & x) { math::abs(x); } &&
+  !requires(T const & x) { math::sqrt(x); } &&
+  !requires(T const & x) { math::floor(x); } &&
+  !requires(T const & x) { math::ceil(x); } &&
+  !requires(T const & x) { math::trunc(x); } &&
+  !requires(T const & x) { math::round_even(x); };
+static_assert(rejects_tuple_math<std::tuple<>>);
+static_assert(rejects_tuple_math<std::tuple<float>>);
+static_assert(rejects_tuple_math<std::tuple<float, float>>);
+static_assert(rejects_tuple_math<std::tuple<float, scalar>>);
+
 template<class Operation> static void empty_shapes(Operation operation) {
   auto a = operation(std::array<float, 0>{});
-  auto b = operation(wide::array<float, 0>{});
-  auto c = operation(std::tuple<>{});
-  auto d = operation(wide::tuple<>{});
+  auto b = operation(simd::wide<scalar, 0>{std::array<scalar, 0>{}});
   static_assert(std::same_as<decltype(a), std::array<float, 0>>);
-  static_assert(std::same_as<decltype(b), wide::array<float, 0>>);
-  static_assert(std::same_as<decltype(c), std::tuple<>>);
-  static_assert(std::same_as<decltype(d), wide::tuple<>>);
-  require(a.empty() && b.values.empty(), "unary operation changed empty shape");
-  (void)c; (void)d;
+  static_assert(std::same_as<decltype(b), simd::wide<scalar, 0>>);
+  require(a.empty() && b.registers.empty(), "unary operation changed empty shape");
 }
 
-// Scalar values deliberately differ from the vector's first lane. Every
-// operation must restore both outer family and each heterogeneous leaf shape.
+// The two array chains have different inputs, so duplication or reordering is
+// observable independently of the operation's scalar/SIMD return shape.
 template<class V, class Operation> static void unary_shapes(Operation operation, char const * name,
     float x, std::array<float, V::lanes> const & input, float expected_x,
     std::array<float, V::lanes> const & expected) {
@@ -85,22 +97,20 @@ template<class V, class Operation> static void unary_shapes(Operation operation,
   exact(scalar_result, expected_x, name);
   exact_vector(one_lane, std::array{expected_x}, name);
   exact_vector(vector_result, expected, name);
-  auto array_result = operation(std::array{x, x});
-  auto wide_result = operation(wide::array<V, 2>{{v, v}});
+  auto array_result = operation(std::array{x, input[0]});
+  auto vector_array = operation(std::array<V, 2>{{v, V(x)}});
+  auto legacy = operation(simd::wide<V, 2>{v, V(x)});
   static_assert(std::same_as<decltype(array_result), std::array<float, 2>>);
-  static_assert(std::same_as<decltype(wide_result), wide::array<V, 2>>);
-  for (float value : array_result) exact(value, expected_x, name);
-  for (V value : wide_result.values) exact_vector(value, expected, name);
-  auto tuple_result = operation(std::tuple{x, s, v});
-  auto wide_tuple = operation(wide::tuple<float, scalar, V>{x, s, v});
-  static_assert(std::same_as<decltype(tuple_result), std::tuple<float, scalar, V>>);
-  static_assert(std::same_as<decltype(wide_tuple), wide::tuple<float, scalar, V>>);
-  exact(std::get<0>(tuple_result), expected_x, name);
-  exact_vector(std::get<1>(tuple_result), std::array{expected_x}, name);
-  exact_vector(std::get<2>(tuple_result), expected, name);
-  exact(wide::get<0>(wide_tuple), expected_x, name);
-  exact_vector(wide::get<1>(wide_tuple), std::array{expected_x}, name);
-  exact_vector(wide::get<2>(wide_tuple), expected, name);
+  static_assert(std::same_as<decltype(vector_array), std::array<V, 2>>);
+  static_assert(std::same_as<decltype(legacy), simd::wide<V, 2>>);
+  exact(array_result[0], expected_x, name);
+  exact(array_result[1], expected[0], name);
+  std::array<float, V::lanes> broadcast_expected{};
+  broadcast_expected.fill(expected_x);
+  exact_vector(vector_array[0], expected, name);
+  exact_vector(vector_array[1], broadcast_expected, name);
+  exact_vector(legacy.registers[0], expected, name);
+  exact_vector(legacy.registers[1], broadcast_expected, name);
 }
 
 static constexpr auto sine = [](auto const & x) { return math::sin(x); };
@@ -110,10 +120,10 @@ static constexpr auto paired_cosine = [](auto const & x) { return math::sincos(x
 static constexpr auto flush = [](auto const & x) { return math::flush_to_zero(x); };
 
 template<class V> static void trig_samples(std::vector<float> const & inputs) {
-  using mixed = std::tuple<float, scalar, V>;
+  static_assert(rejects_tuple_math<std::tuple<V, V>>);
   static_assert(std::same_as<decltype(math::sincos(0.f)), std::pair<float, float>>);
-  static_assert(std::same_as<decltype(math::sincos(std::declval<mixed const &>())), std::pair<mixed, mixed>>);
-  static_assert(std::same_as<decltype(math::sincos(wide::tuple<>{})), std::pair<wide::tuple<>, wide::tuple<>>>);
+  static_assert(std::same_as<decltype(math::sincos(std::declval<std::array<V, 2> const &>())), std::pair<std::array<V, 2>, std::array<V, 2>>>);
+
   static_assert(std::same_as<decltype(math::sincos(std::array<float, 0>{})),
     std::pair<std::array<float, 0>, std::array<float, 0>>>);
   for (std::size_t base = 0; base < inputs.size(); base += V::lanes) {
@@ -171,19 +181,25 @@ template<class V, class Operation, class Reference> static void primitive_sample
 template<class A, class B> concept can_max = requires(A a, B b) { wide::max(a, b); };
 template<class M, class A, class B> concept can_select = requires(M m, A a, B b) { wide::select(m, a, b); };
 template<class V> static void primitive_broadcasts() {
-  using P = wide::array<V, 2>;
+  using P = std::array<V, 2>;
   using M = typename V::mask_type;
-  static_assert(!can_max<P, wide::array<V, 1>>);
+  static_assert(!can_max<P, std::array<V, 1>>);
   static_assert(!can_max<P, float>);
-  static_assert(!can_select<wide::array<M, 1>, P, V>);
+  static_assert(!can_select<std::array<M, 1>, P, V>);
   std::array<float, V::lanes> input{};
   for (std::size_t i = 0; i < V::lanes; ++i) input[i] = static_cast<float>(i) - 3.f;
   V x = V::loadu(input.data());
   P p{{x, -x}};
   auto low = wide::min(V(0.f), p), high = wide::max(p, V(0.f));
-  auto mask = p < V(0.f);
+  auto mask = wide::cmp_lt(p, V(0.f));
+  auto inverted = wide::mask_not(mask);
+  std::array comparisons{wide::cmp_eq(p, V(0.f)), wide::cmp_ne(p, V(0.f)), mask,
+    wide::cmp_le(p, V(0.f)), wide::cmp_gt(p, V(0.f)), wide::cmp_ge(p, V(0.f))};
+  auto both = wide::bit_and(mask, inverted), either = wide::bit_or(mask, inverted);
+  static_assert(std::same_as<decltype(mask), std::array<M, 2>>);
   auto selected = wide::select(mask, V(8.f), p);
-  auto sum = V(2.f) + p, difference = p - V(2.f), divided = p / V(2.f);
+  auto sum = wide::add(V(2.f), p), difference = wide::sub(p, V(2.f)), divided = wide::div(p, V(2.f));
+  auto product = wide::mul(p, V(2.f)), negated = wide::negate(p);
   auto scaled = wide::scaleb(p, V(2.f));
   auto merged = wide::masked_scaleb(mask, V(77.f), p, V(2.f));
   auto cleared = wide::masked_scaleb_zero(mask, p, V(2.f));
@@ -191,19 +207,32 @@ template<class V> static void primitive_broadcasts() {
   for (std::size_t element = 0; element < 2; ++element) {
     std::array<float, V::lanes> lo{}, hi{}, choice{}, plus{}, minus{}, quotient{};
     std::array<float, V::lanes> scale{}, merge{}, clear{};
-    low.values[element].storeu(lo.data()); high.values[element].storeu(hi.data());
-    selected.values[element].storeu(choice.data()); sum.values[element].storeu(plus.data());
-    difference.values[element].storeu(minus.data()); divided.values[element].storeu(quotient.data());
-    scaled.values[element].storeu(scale.data()); merged.values[element].storeu(merge.data());
-    cleared.values[element].storeu(clear.data());
+    std::array<float, V::lanes> times{}, negative{};
+    low[element].storeu(lo.data()); high[element].storeu(hi.data());
+    selected[element].storeu(choice.data()); sum[element].storeu(plus.data());
+    difference[element].storeu(minus.data()); divided[element].storeu(quotient.data());
+    scaled[element].storeu(scale.data()); merged[element].storeu(merge.data());
+    cleared[element].storeu(clear.data());
+    product[element].storeu(times.data()); negated[element].storeu(negative.data());
     for (std::size_t lane = 0; lane < V::lanes; ++lane) {
       float value = element == 0 ? input[lane] : -input[lane];
+      std::array expected_comparisons{value == 0.f, value != 0.f, value < 0.f,
+        value <= 0.f, value > 0.f, value >= 0.f};
+      for (std::size_t comparison = 0; comparison < expected_comparisons.size(); ++comparison)
+        require(((comparisons[comparison][element].to_bitset() >> lane) & 1u) == expected_comparisons[comparison],
+          "named comparison reduced or reordered array masks");
+      require(((inverted[element].to_bitset() >> lane) & 1u) == !(value < 0.f),
+        "named mask complement changed a lane");
+      require(((both[element].to_bitset() >> lane) & 1u) == 0 &&
+        ((either[element].to_bitset() >> lane) & 1u) == 1, "named mask bit operations changed a lane");
       exact(lo[lane], 0.f < value ? 0.f : value, "min broadcast");
       exact(hi[lane], value > 0.f ? value : 0.f, "max broadcast");
       exact(choice[lane], value < 0.f ? 8.f : value, "select broadcast");
       exact(plus[lane], 2.f + value, "addition broadcast");
       exact(minus[lane], value - 2.f, "subtraction broadcast");
       exact(quotient[lane], value / 2.f, "division broadcast");
+      exact(times[lane], value * 2.f, "multiplication broadcast");
+      exact(negative[lane], -value, "negation pointwise");
       exact(scale[lane], value * 4.f, "scaleb broadcast");
       exact(merge[lane], value < 0.f ? value * 4.f : 77.f, "masked_scaleb inactive prior");
       exact(clear[lane], value < 0.f ? value * 4.f : 0.f, "masked_scaleb_zero inactive zero");
@@ -213,7 +242,7 @@ template<class V> static void primitive_broadcasts() {
 
 template<class V> static void bit_helpers_and_aliases() {
   using U = typename V::bits_type;
-  using P = wide::array<V, 2>;
+  using P = std::array<V, 2>;
   constexpr std::array<std::uint32_t, 6> bank{
     0x80000000u, 0x7f800001u, 0xffc12345u, 0x01000001u, 0x00000001u, 0x7f800000u};
   std::array<std::uint32_t, V::lanes> words{};
@@ -221,43 +250,47 @@ template<class V> static void bit_helpers_and_aliases() {
   auto before = simd::test::read_fp_state();
   V v = V::from_bits(U::load(words.data()));
   auto encoded = wide::bits(P{{v, v}});
-  static_assert(std::same_as<decltype(encoded), wide::array<U, 2>>);
+  static_assert(std::same_as<decltype(encoded), std::array<U, 2>>);
   auto integer_constant = wide::constant_like(encoded, std::uint32_t(0xfffffffeu));
   static_assert(std::same_as<decltype(integer_constant), U>);
-  auto flipped = (encoded & integer_constant) ^ U(1u);
+  auto flipped = wide::bit_xor(wide::bit_and(encoded, integer_constant), U(1u));
+  auto sign_set = wide::bit_or(encoded, U(0x80000000u));
+  auto complemented = wide::bit_not(encoded);
   auto shifted = wide::left<1>(flipped);
   auto roundtrip = wide::from_bits(encoded);
-  auto equality = encoded == encoded;
+  auto equality = wide::cmp_eq(encoded, encoded);
   auto mask_words = wide::mask_bits<std::uint32_t>(equality);
   for (std::size_t element = 0; element < 2; ++element) {
     std::array<std::uint32_t, V::lanes> constants{}, altered{}, shift{}, restored{}, masks{};
-    integer_constant.storeu(constants.data()); flipped.values[element].storeu(altered.data());
-    shifted.values[element].storeu(shift.data()); roundtrip.values[element].store_bits(restored.data());
-    mask_words.values[element].storeu(masks.data());
+    std::array<std::uint32_t, V::lanes> signed_words{}, complements{};
+    integer_constant.storeu(constants.data()); flipped[element].storeu(altered.data());
+    shifted[element].storeu(shift.data()); roundtrip[element].store_bits(restored.data());
+    mask_words[element].storeu(masks.data());
+    sign_set[element].storeu(signed_words.data()); complemented[element].storeu(complements.data());
     for (std::size_t lane = 0; lane < V::lanes; ++lane) {
       auto expected = (words[lane] & 0xfffffffeu) ^ 1u;
       require(constants[lane] == 0xfffffffeu, "uint32 constant was narrowed through float");
       require(altered[lane] == expected && shift[lane] == (expected << 1), "wide integer bit helper changed bits");
       require(restored[lane] == words[lane], "wide bit roundtrip changed a payload or sign");
+      require(signed_words[lane] == (words[lane] | 0x80000000u) && complements[lane] == ~words[lane],
+        "named bitwise operations changed an integer word");
       require(masks[lane] == 0xffffffffu, "wide mask_bits failed full true lanes");
     }
   }
   require(simd::test::read_fp_state() == before, "wide bit helpers changed FP state");
 
-  wide::array<V, 1> zeros{{V(-0.f)}};
-  auto adl_sine = sin(zeros);
+  std::array<V, 1> zeros{{V(-0.f)}};
   auto aliased_sine = wide::sin(zeros);
   auto aliased_cosine = wide::cos(zeros);
   auto aliased_pair = wide::sincos(zeros);
   auto aliased_flush = wide::flush_to_zero(zeros);
   std::array<float, V::lanes> negative_zero{}, one{};
   negative_zero.fill(-0.f); one.fill(1.f);
-  exact_vector(adl_sine.values[0], negative_zero, "ADL sin signed zero");
-  exact_vector(aliased_sine.values[0], negative_zero, "wide::sin alias");
-  exact_vector(aliased_cosine.values[0], one, "wide::cos alias");
-  exact_vector(aliased_pair.first.values[0], negative_zero, "wide::sincos sine alias");
-  exact_vector(aliased_pair.second.values[0], one, "wide::sincos cosine alias");
-  exact_vector(aliased_flush.values[0], negative_zero, "wide::flush_to_zero alias");
+  exact_vector(aliased_sine[0], negative_zero, "wide::sin alias");
+  exact_vector(aliased_cosine[0], one, "wide::cos alias");
+  exact_vector(aliased_pair.first[0], negative_zero, "wide::sincos sine alias");
+  exact_vector(aliased_pair.second[0], one, "wide::sincos cosine alias");
+  exact_vector(aliased_flush[0], negative_zero, "wide::flush_to_zero alias");
 }
 
 template<class V> static void check_width(std::vector<float> const & trig, std::vector<std::uint32_t> const & words) {

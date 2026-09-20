@@ -19,21 +19,22 @@ export namespace math {
 }
 export namespace wide {
   using ::wide::constant_like;
-  using ::wide::operator+;
-  using ::wide::operator-;
-  using ::wide::operator*;
-  using ::wide::operator/;
-  using ::wide::operator&;
-  using ::wide::operator|;
-  using ::wide::operator^;
-  using ::wide::operator~;
-  using ::wide::operator==;
-  using ::wide::operator!=;
-  using ::wide::operator<;
-  using ::wide::operator<=;
-  using ::wide::operator>;
-  using ::wide::operator>=;
-  using ::wide::operator!;
+  using ::wide::add;
+  using ::wide::sub;
+  using ::wide::negate;
+  using ::wide::mul;
+  using ::wide::div;
+  using ::wide::bit_and;
+  using ::wide::bit_or;
+  using ::wide::bit_xor;
+  using ::wide::bit_not;
+  using ::wide::cmp_eq;
+  using ::wide::cmp_ne;
+  using ::wide::cmp_lt;
+  using ::wide::cmp_le;
+  using ::wide::cmp_gt;
+  using ::wide::cmp_ge;
+  using ::wide::mask_not;
   using ::wide::min;
   using ::wide::max;
   using ::wide::abs;

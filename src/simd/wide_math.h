@@ -3,6 +3,7 @@
 #pragma once
 #include "simd/vec.h"
 #include "simd/wide_pack.h"
+#include <tuple>
 
 namespace wide::detail {
   template<class V> struct native_ops;
@@ -14,59 +15,52 @@ namespace wide::detail {
 namespace wide::detail {
   template<class P> inline constexpr bool native_pack = false;
   template<class V, std::size_t N>
-  inline constexpr bool native_pack<array<V, N>> = requires { sizeof(native_ops<V>); };
-  template<class... V>
-  inline constexpr bool native_pack<tuple<V...>> = (requires { sizeof(native_ops<V>); } && ...);
+  inline constexpr bool native_pack<std::array<V, N>> = requires { sizeof(native_ops<V>); };
   template<class P> concept native_pack_argument = native_pack<std::remove_cvref_t<P>>;
   template<class V> concept native_leaf_argument = (!pack<V>) &&
     requires { sizeof(native_ops<std::remove_cvref_t<V>>); };
 
-  // Bind native operands once, then let map expand only the actual packs.
-  // A broadcast is a const reference, never a value moved once per chain.
-  template<class A> native_inline auto pack_operand(A const & value) noexcept {
-    if constexpr (pack<A>) return std::tuple<A const &>{value};
-    else return std::tuple<>{};
+  // Every batch is homogeneous. Select each array's element directly and
+  // broadcast native operands by reference, without tuple argument binding.
+  template<class A> struct lift_argument { using type=std::remove_cvref_t<A>; };
+  template<class V,std::size_t N> struct lift_argument<std::array<V,N>> { using type=V; };
+  template<class A> using lift_argument_t=typename lift_argument<std::remove_cvref_t<A>>::type;
+  template<class A,class... Rest> consteval std::size_t lift_size() {
+    if constexpr (pack<A>) return shape_t<A>::size;
+    else return lift_size<Rest...>();
   }
-  template<std::size_t I,class... A> consteval std::size_t pack_position() {
-    constexpr bool packed[]{pack<A>...};
-    std::size_t position=0;
-    for(std::size_t j=0;j<I;++j) position+=packed[j];
-    return position;
+  template<std::size_t N,class A> consteval bool lift_size_matches() {
+    if constexpr (pack<A>) return shape_t<A>::size==N;
+    else return true;
   }
-  template<std::size_t I,class... A,class... V>
-  native_inline decltype(auto) bound_operand(std::tuple<A const &...> const & arguments,
-                                             std::tuple<V const &...> const & elements) noexcept {
-    if constexpr (pack<std::tuple_element_t<I,std::tuple<A...>>>)
-      return std::get<pack_position<I,A...>()>(elements);
-    else return std::get<I>(arguments);
-  }
-  template<class F,class... A,class... V,std::size_t... I>
-  native_inline auto invoke_bound(F const & function,std::tuple<A const &...> const & arguments,
-      std::tuple<V const &...> const & elements,std::index_sequence<I...>)
-      -> decltype(std::invoke(function,bound_operand<I>(arguments,elements)...)) {
-    return std::invoke(function,bound_operand<I>(arguments,elements)...);
-  }
-  template<class F,class... A> struct bound_operation {
-    F function;
-    std::tuple<A const &...> arguments;
-    template<class... V>
-    native_inline auto operator()(V const &... value) const
-      -> decltype(invoke_bound(function,arguments,std::tie(value...),std::index_sequence_for<A...>{})) {
-      return invoke_bound(function,arguments,std::tie(value...),std::index_sequence_for<A...>{});
+  template<class F,class... A> consteval bool lift_result_valid() {
+    if constexpr (!std::is_invocable_v<F const &,lift_argument_t<A> const &...>) return false;
+    else {
+      using R=std::invoke_result_t<F const &,lift_argument_t<A> const &...>;
+      return std::is_object_v<std::remove_cvref_t<R>> &&
+        std::is_constructible_v<std::remove_cvref_t<R>,R>;
     }
-  };
-  template<class F,class... A,class... P>
-  consteval bool accepts_map(std::type_identity<std::tuple<P...>>) {
-    return requires(bound_operation<F,A...> operation,P... value) { map(operation,value...); };
   }
   template<class F,class... A> concept liftable = (pack<A> || ...) &&
     ((native_pack_argument<A> || native_leaf_argument<A>) && ...) &&
-    accepts_map<F,A...>(std::type_identity<decltype(std::tuple_cat(pack_operand(std::declval<A const &>())...))>{});
+    (lift_size_matches<lift_size<A...>(),A>() && ...) && lift_result_valid<F,A...>();
+  template<std::size_t I,class A>
+  native_inline decltype(auto) lift_operand(A const & value) {
+    if constexpr (pack<A>) return std::get<I>(value);
+    else return (value);
+  }
+  template<std::size_t I,class F,class... A>
+  native_inline auto lift_element(F const & function,A const &... arguments) {
+    return function(lift_operand<I>(arguments)...);
+  }
+  template<class F,class... A,std::size_t... I>
+  native_inline auto lift_array(F const & function,std::index_sequence<I...>,A const &... arguments) {
+    using R=std::remove_cvref_t<std::invoke_result_t<F const &,lift_argument_t<A> const &...>>;
+    return std::array<R,sizeof...(I)>{{lift_element<I>(function,arguments...)...}};
+  }
   template<class F,class... A> requires liftable<F,A...>
   native_inline auto lift(F function,A const &... arguments) {
-    auto operation=bound_operation<F,A...>{function,std::tie(arguments...)};
-    return std::apply([&](auto const &... packed) { return map(operation,packed...); },
-      std::tuple_cat(pack_operand(arguments)...));
+    return lift_array(function,std::make_index_sequence<lift_size<A...>()>{},arguments...);
   }
 
 #define SIMD_WIDE_BINARY_OPERATION(name,bridge,op) \
@@ -168,48 +162,34 @@ namespace wide::detail {
   template<class P> requires liftable<trig_float_operation,P>
   native_inline auto trig_float(P const & a) noexcept { return lift(trig_float_operation{},a); }
 
-  template<class P> struct constant_type {};
-  template<class V,std::size_t N> struct constant_type<array<V,N>> { using type=V; };
-  template<class V,class... Rest> requires (std::same_as<V,Rest> && ...)
-  struct constant_type<tuple<V,Rest...>> { using type=V; };
-  template<class P,class T> inline constexpr bool matching_coefficient=false;
-  template<class V,std::size_t N,class T>
-  inline constexpr bool matching_coefficient<array<V,N>,T> = std::same_as<typename V::value_type,T>;
-  template<class... V,class T>
-  inline constexpr bool matching_coefficient<tuple<V...>,T> = (std::same_as<typename V::value_type,T> && ...);
 }
 
 namespace wide {
-  /// Share one SIMD coefficient for homogeneous chains; retain a coefficient
-  /// pack only when the chains require different computation types.
-  template<detail::native_pack_argument P,class T>
-    requires (std::same_as<T,float> || std::same_as<T,std::uint32_t>) &&
-      detail::matching_coefficient<std::remove_cvref_t<P>,T>
-  simd_nodiscard native_inline auto constant_like(P const & shape, T value) noexcept {
-    using S=std::remove_cvref_t<P>;
-    if constexpr (requires { typename detail::constant_type<S>::type; }) {
-      using V=typename detail::constant_type<S>::type;
-      return detail::native_ops<V>::constant(value);
-    } else return map([value]<class V>(V const &) { return detail::native_ops<V>::constant(value); }, shape);
+  /// Construct one SIMD coefficient shared by every register in the array.
+  template<class V,std::size_t N,class T>
+    requires detail::native_leaf_argument<V> &&
+      (std::same_as<T,float> || std::same_as<T,std::uint32_t>) && std::same_as<typename V::value_type,T>
+  simd_nodiscard native_inline V constant_like(std::array<V,N> const &, T value) noexcept {
+    return detail::native_ops<V>::constant(value);
   }
 #define SIMD_WIDE_BINARY_API(name,operation) \
   template<class P,class Q> requires detail::liftable<detail::operation,P,Q> \
   simd_nodiscard native_inline auto name(P const & a,Q const & b) noexcept { \
     return detail::lift(detail::operation{},a,b); \
   }
-  SIMD_WIDE_BINARY_API(operator+,add)
-  SIMD_WIDE_BINARY_API(operator-,subtract)
-  SIMD_WIDE_BINARY_API(operator*,multiply)
-  SIMD_WIDE_BINARY_API(operator/,divide)
-  SIMD_WIDE_BINARY_API(operator&,bit_and)
-  SIMD_WIDE_BINARY_API(operator|,bit_or)
-  SIMD_WIDE_BINARY_API(operator^,bit_xor)
-  SIMD_WIDE_BINARY_API(operator==,equal)
-  SIMD_WIDE_BINARY_API(operator!=,unequal)
-  SIMD_WIDE_BINARY_API(operator<,less)
-  SIMD_WIDE_BINARY_API(operator<=,less_equal)
-  SIMD_WIDE_BINARY_API(operator>,greater)
-  SIMD_WIDE_BINARY_API(operator>=,greater_equal)
+  SIMD_WIDE_BINARY_API(add,add)
+  SIMD_WIDE_BINARY_API(sub,subtract)
+  SIMD_WIDE_BINARY_API(mul,multiply)
+  SIMD_WIDE_BINARY_API(div,divide)
+  SIMD_WIDE_BINARY_API(bit_and,bit_and)
+  SIMD_WIDE_BINARY_API(bit_or,bit_or)
+  SIMD_WIDE_BINARY_API(bit_xor,bit_xor)
+  SIMD_WIDE_BINARY_API(cmp_eq,equal)
+  SIMD_WIDE_BINARY_API(cmp_ne,unequal)
+  SIMD_WIDE_BINARY_API(cmp_lt,less)
+  SIMD_WIDE_BINARY_API(cmp_le,less_equal)
+  SIMD_WIDE_BINARY_API(cmp_gt,greater)
+  SIMD_WIDE_BINARY_API(cmp_ge,greater_equal)
   SIMD_WIDE_BINARY_API(min,minimum)
   SIMD_WIDE_BINARY_API(max,maximum)
   SIMD_WIDE_BINARY_API(scaleb,scale_all)
@@ -219,9 +199,9 @@ namespace wide {
   simd_nodiscard native_inline auto name(P const & a) noexcept { \
     return detail::lift(detail::operation{},a); \
   }
-  SIMD_WIDE_UNARY_API(operator-,negate)
-  SIMD_WIDE_UNARY_API(operator~,bit_not)
-  SIMD_WIDE_UNARY_API(operator!,logical_not)
+  SIMD_WIDE_UNARY_API(negate,negate)
+  SIMD_WIDE_UNARY_API(bit_not,bit_not)
+  SIMD_WIDE_UNARY_API(mask_not,logical_not)
   SIMD_WIDE_UNARY_API(abs,absolute)
   SIMD_WIDE_UNARY_API(sqrt,root)
   SIMD_WIDE_UNARY_API(floor,downward)
@@ -262,12 +242,8 @@ namespace wide {
     inline constexpr bool binary32_register<::simd::vec<float, N, A>> = true;
     template<class P> inline constexpr bool binary32_array = false;
     template<class V, std::size_t N>
-    inline constexpr bool binary32_array<array<V, N>> = binary32_register<V>;
-    template<class P> inline constexpr bool binary32_pack = false;
-    template<class V, std::size_t N>
-    inline constexpr bool binary32_pack<array<V, N>> = binary32_array<array<V, N>>;
-    template<class... V>
-    inline constexpr bool binary32_pack<tuple<V...>> = (binary32_register<V> && ...);
+    inline constexpr bool binary32_array<std::array<V, N>> = binary32_register<V>;
+    template<class P> inline constexpr bool binary32_pack = binary32_array<P>;
   }
 }
 
@@ -276,23 +252,23 @@ namespace math {
     // The single polynomial body, shared by generic and targeted entry points.
     template<bool Flush, class V, std::size_t N>
       requires (::wide::detail::binary32_register<V>)
-    simd_nodiscard native_inline auto exp_reduced(::wide::array<V, N> const & x) noexcept {
+    simd_nodiscard native_inline auto exp_reduced(std::array<V, N> const & x) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(x, value); };
-      auto const active = !(x < c(Flush ? -87.33654022216796875f : -104.f));
+      auto const active = ::wide::mask_not(::wide::cmp_lt(x, c(Flush ? -87.33654022216796875f : -104.f)));
       // Keep x second: the ordered minimum preserves NaNs.
-      auto r = min(c(88.72283935546875f), x);
-      auto const n = round_even(r * c(1.4426950408889634f));
-      r = fma(n, c(-0x1.62e400p-1f), r);
-      r = fma(n, c(-0x1.7f7d1cp-20f), r);
+      auto r = ::wide::min(c(88.72283935546875f), x);
+      auto const n = ::wide::round_even(::wide::mul(r, c(1.4426950408889634f)));
+      r = ::wide::fma(n, c(-0x1.62e400p-1f), r);
+      r = ::wide::fma(n, c(-0x1.7f7d1cp-20f), r);
 
-      auto y = fma(r, c(0x1.a1d714d7b1510dp-13f), c(0x1.6da756e670ea6p-10f));
-      y = fma(r, y, c(0x1.11105b3161a6fp-7f));
-      y = fma(r, y, c(0x1.5554649b7487fp-5f));
-      y = fma(r, y, c(0x1.555555c673724p-3f));
-      y = fma(r, y, c(0x1.0000005c8dd89p-1f));
+      auto y = ::wide::fma(r, c(0x1.a1d714d7b1510dp-13f), c(0x1.6da756e670ea6p-10f));
+      y = ::wide::fma(r, y, c(0x1.11105b3161a6fp-7f));
+      y = ::wide::fma(r, y, c(0x1.5554649b7487fp-5f));
+      y = ::wide::fma(r, y, c(0x1.555555c673724p-3f));
+      y = ::wide::fma(r, y, c(0x1.0000005c8dd89p-1f));
       auto const one = c(1.f);
-      y = fma(r, y, one);
-      y = fma(r, y, one);
+      y = ::wide::fma(r, y, one);
+      y = ::wide::fma(r, y, one);
       return std::tuple{active, y, n};
     }
   }
@@ -308,7 +284,7 @@ namespace math {
     } else {
       auto const x = ::wide::promote(input);
       auto const [active, y, n] = detail::exp_reduced<Flush>(x);
-      return ::wide::demote<T>(masked_scaleb_zero(active, y, n));
+      return ::wide::demote<T>(::wide::masked_scaleb_zero(active, y, n));
     }
   }
 }

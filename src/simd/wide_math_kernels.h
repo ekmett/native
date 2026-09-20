@@ -5,7 +5,7 @@
 #pragma once
 // Included by wide_math.h after the lifted native operations.
 // Altered source: the original trig reducer and polynomials now operate on
-// canonical array/tuple packs, preserving each binary32 dependency stage.
+// standard arrays, preserving each binary32 dependency stage.
 
 namespace math {
   namespace detail {
@@ -17,42 +17,42 @@ namespace math {
       auto const encoded = ::wide::bits(original);
       auto const c = [&](float value) { return ::wide::constant_like(original, value); };
       auto const i = [&](std::uint32_t value) { return ::wide::constant_like(encoded, value); };
-      auto sign_sine = encoded & i(0x80000000u);
-      auto x = ::wide::from_bits(encoded & i(0x7fffffffu));
-      auto y = x * c(1.27323954473516f);
-      auto const j = (::wide::detail::trig_integer(y) + i(1)) & i(0xfffffffeu);
+      auto sign_sine = ::wide::bit_and(encoded, i(0x80000000u));
+      auto x = ::wide::from_bits(::wide::bit_and(encoded, i(0x7fffffffu)));
+      auto y = ::wide::mul(x, c(1.27323954473516f));
+      auto const j = ::wide::bit_and(::wide::add(::wide::detail::trig_integer(y), i(1)), i(0xfffffffeu));
       y = ::wide::detail::trig_float(j);
-      sign_sine = sign_sine ^ ::wide::left<29>(j & i(4));
-      auto const sign_cosine = ::wide::left<29>(((j - i(2)) ^ i(0xffffffffu)) & i(4));
+      sign_sine = ::wide::bit_xor(sign_sine, ::wide::left<29>(::wide::bit_and(j, i(4))));
+      auto const sign_cosine = ::wide::left<29>(::wide::bit_and(::wide::bit_xor(::wide::sub(j, i(2)), i(0xffffffffu)), i(4)));
       auto quadrant = j;
-      if constexpr (K == trig_kind::cosine) quadrant = quadrant - i(2);
-      auto const mask = ::wide::mask_bits<std::uint32_t>((quadrant & i(2)) == i(0));
-      x = fma(y, c(-0.78515625f), x);
-      x = fma(y, c(-2.4187564849853515625e-4f), x);
-      x = fma(y, c(-3.77489497744594108e-8f), x);
-      auto const z = x * x;
-      auto cosine = fma(c(2.443315711809948e-5f), z, c(-1.388731625493765e-3f));
-      cosine = fma(cosine, z, c(4.166664568298827e-2f));
-      cosine = cosine * z;
-      cosine = cosine * z;
-      cosine = cosine - z * c(0.5f);
-      cosine = cosine + c(1.f);
-      auto sine = fma(c(-1.9515295891e-4f), z, c(8.3321608736e-3f));
-      sine = fma(sine, z, c(-1.6666654611e-1f));
-      sine = sine * z;
-      sine = fma(sine, x, x);
-      auto selected_sine = ::wide::from_bits(mask & ::wide::bits(sine));
-      auto selected_cosine = ::wide::from_bits((mask ^ i(0xffffffffu)) & ::wide::bits(cosine));
+      if constexpr (K == trig_kind::cosine) quadrant = ::wide::sub(quadrant, i(2));
+      auto const mask = ::wide::mask_bits<std::uint32_t>(::wide::cmp_eq(::wide::bit_and(quadrant, i(2)), i(0)));
+      x = ::wide::fma(y, c(-0.78515625f), x);
+      x = ::wide::fma(y, c(-2.4187564849853515625e-4f), x);
+      x = ::wide::fma(y, c(-3.77489497744594108e-8f), x);
+      auto const z = ::wide::mul(x, x);
+      auto cosine = ::wide::fma(c(2.443315711809948e-5f), z, c(-1.388731625493765e-3f));
+      cosine = ::wide::fma(cosine, z, c(4.166664568298827e-2f));
+      cosine = ::wide::mul(cosine, z);
+      cosine = ::wide::mul(cosine, z);
+      cosine = ::wide::sub(cosine, ::wide::mul(z, c(0.5f)));
+      cosine = ::wide::add(cosine, c(1.f));
+      auto sine = ::wide::fma(c(-1.9515295891e-4f), z, c(8.3321608736e-3f));
+      sine = ::wide::fma(sine, z, c(-1.6666654611e-1f));
+      sine = ::wide::mul(sine, z);
+      sine = ::wide::fma(sine, x, x);
+      auto selected_sine = ::wide::from_bits(::wide::bit_and(mask, ::wide::bits(sine)));
+      auto selected_cosine = ::wide::from_bits(::wide::bit_and(::wide::bit_xor(mask, i(0xffffffffu)), ::wide::bits(cosine)));
       if constexpr (K == trig_kind::paired) {
         // Preserve subtraction selection, including its signed-zero effects.
-        sine = sine - selected_sine;
-        cosine = cosine - selected_cosine;
-        selected_sine = ::wide::from_bits(::wide::bits(selected_cosine + selected_sine) ^ sign_sine);
-        selected_cosine = ::wide::from_bits(::wide::bits(cosine + sine) ^ sign_cosine);
+        sine = ::wide::sub(sine, selected_sine);
+        cosine = ::wide::sub(cosine, selected_cosine);
+        selected_sine = ::wide::from_bits(::wide::bit_xor(::wide::bits(::wide::add(selected_cosine, selected_sine)), sign_sine));
+        selected_cosine = ::wide::from_bits(::wide::bit_xor(::wide::bits(::wide::add(cosine, sine)), sign_cosine));
         return std::pair{selected_sine, selected_cosine};
       } else if constexpr (K == trig_kind::sine)
-        return ::wide::from_bits(::wide::bits(selected_cosine + selected_sine) ^ sign_sine);
-      else return ::wide::from_bits(::wide::bits(selected_cosine + selected_sine) ^ sign_cosine);
+        return ::wide::from_bits(::wide::bit_xor(::wide::bits(::wide::add(selected_cosine, selected_sine)), sign_sine));
+      else return ::wide::from_bits(::wide::bit_xor(::wide::bits(::wide::add(selected_cosine, selected_sine)), sign_cosine));
     }
 
     template<trig_kind K, ::wide::promotable T>
@@ -93,10 +93,10 @@ namespace math {
     else {
       auto bits = ::wide::bits(::wide::promote(input));
       auto const i = [&](std::uint32_t value) { return ::wide::constant_like(bits, value); };
-      auto const exponent = bits & i(0x7f800000u);
-      auto const zero = ::wide::mask_bits<std::uint32_t>(exponent == i(0));
-      auto const clear = zero & i(0x007fffffu);
-      bits = bits & (clear ^ i(0xffffffffu));
+      auto const exponent = ::wide::bit_and(bits, i(0x7f800000u));
+      auto const zero = ::wide::mask_bits<std::uint32_t>(::wide::cmp_eq(exponent, i(0)));
+      auto const clear = ::wide::bit_and(zero, i(0x007fffffu));
+      bits = ::wide::bit_and(bits, ::wide::bit_xor(clear, i(0xffffffffu)));
       return ::wide::demote<T>(::wide::from_bits(bits));
     }
   }
@@ -119,7 +119,7 @@ namespace math {
 }
 
 namespace wide {
-  // Make the staged kernels available to ADL on both canonical pack families.
+  // Qualified convenience aliases; standard arrays keep their ordinary ADL.
   using ::math::exp;
   using ::math::sin;
   using ::math::cos;

@@ -23,7 +23,9 @@ namespace simd {
   /// \snippet api.cc swizzles
   template<SIMD_BACKEND_NAMESPACE::short_element T,std::size_t N,::simd::isa Arch>
     requires SIMD_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && requires { typename vec<T,4,Arch>::native_type; }
-  struct vec<T,N,Arch> : detail::swizzle_access<T,N,Arch> {
+  // Make the register alignment explicit: MSVC's packed standard-library
+  // aggregates can otherwise cap an ext_vector_type member's implicit alignment.
+  struct alignas(typename vec<T,4,Arch>::native_type) vec<T,N,Arch> : detail::swizzle_access<T,N,Arch> {
     using value_type=T;
     static constexpr isa architecture=Arch;
     using storage_type=vec<T,4,Arch>;
