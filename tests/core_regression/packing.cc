@@ -52,55 +52,61 @@ namespace {
 #if defined(__x86_64__) || defined(_M_X64)
 #define SIMD_TARGET_bmi2 "bmi2"
   constexpr auto bmi2_arch = SIMD_TARGET_ISA(bmi2);
-  template<simd::isa Arch> concept can_pdep = requires(std::uint64_t value) {
-    { simd::pdep<Arch>(value,value) } noexcept -> std::same_as<std::uint64_t>;
+  template<simd::isa Arch, class T> concept can_pdep = requires(T value) {
+    { simd::pdep<Arch>(value,value) } noexcept -> std::same_as<T>;
   };
-  template<simd::isa Arch> concept can_pext = requires(std::uint64_t value) {
-    { simd::pext<Arch>(value,value) } noexcept -> std::same_as<std::uint64_t>;
+  template<simd::isa Arch, class T> concept can_pext = requires(T value) {
+    { simd::pext<Arch>(value,value) } noexcept -> std::same_as<T>;
   };
-  static_assert(can_pdep<bmi2_arch>);
-  static_assert(can_pdep<simd::avx2>);
-  static_assert(!can_pdep<simd::scalar>);
-  static_assert(!can_pdep<simd::isa(simd::x86_feature::avx2)>);
-  static_assert(can_pext<bmi2_arch>);
-  static_assert(can_pext<simd::avx2>);
-  static_assert(!can_pext<simd::scalar>);
-  static_assert(!can_pext<simd::isa(simd::x86_feature::avx2)>);
+  static_assert(can_pdep<bmi2_arch,std::uint32_t> && can_pdep<bmi2_arch,std::uint64_t>);
+  static_assert(can_pdep<simd::avx2,std::uint32_t> && can_pdep<simd::avx2,std::uint64_t>);
+  static_assert(!can_pdep<simd::scalar,std::uint32_t> && !can_pdep<simd::scalar,std::uint64_t>);
+  static_assert(!can_pdep<simd::isa(simd::x86_feature::avx2),std::uint32_t> &&
+                !can_pdep<simd::isa(simd::x86_feature::avx2),std::uint64_t>);
+  static_assert(can_pext<bmi2_arch,std::uint32_t> && can_pext<bmi2_arch,std::uint64_t>);
+  static_assert(can_pext<simd::avx2,std::uint32_t> && can_pext<simd::avx2,std::uint64_t>);
+  static_assert(!can_pext<simd::scalar,std::uint32_t> && !can_pext<simd::scalar,std::uint64_t>);
+  static_assert(!can_pext<simd::isa(simd::x86_feature::avx2),std::uint32_t> &&
+                !can_pext<simd::isa(simd::x86_feature::avx2),std::uint64_t>);
   static_assert(!bmi2_arch.has(simd::x86_feature::avx2));
 
-  std::uint64_t pdep_oracle(std::uint64_t value, std::uint64_t mask) {
-    std::uint64_t result = 0;
+  template<class T> T pdep_oracle(T value, T mask) {
+    T result = 0;
     unsigned source = 0;
-    for (unsigned bit = 0; bit != 64; ++bit)
+    for (unsigned bit = 0; bit != std::numeric_limits<T>::digits; ++bit)
       if ((mask >> bit) & 1) result |= ((value >> source++) & 1) << bit;
     return result;
   }
 
-  std::uint64_t pext_oracle(std::uint64_t value, std::uint64_t mask) {
-    std::uint64_t result = 0;
+  template<class T> T pext_oracle(T value, T mask) {
+    T result = 0;
     unsigned destination = 0;
-    for (unsigned bit = 0; bit != 64; ++bit)
+    for (unsigned bit = 0; bit != std::numeric_limits<T>::digits; ++bit)
       if ((mask >> bit) & 1) result |= ((value >> bit) & 1) << destination++;
     return result;
   }
 
   SIMD_TARGET_PUSH(bmi2)
+  template<class T>
   __attribute__((noinline)) void bit_permutation_test() {
-    constexpr std::array<std::uint64_t,8> edge_masks{
-      0, ~std::uint64_t{0}, 1, std::uint64_t{1} << 63,
-      0x5555555555555555ull, 0xaaaaaaaaaaaaaaaaull,
-      0x8000000000000001ull, 0x0123456789abcdefull
+    constexpr auto width = std::numeric_limits<T>::digits;
+    constexpr T all_bits = std::numeric_limits<T>::max();
+    constexpr T high_bit = T{1} << (width-1);
+    constexpr std::array<T,8> edge_masks{
+      0, all_bits, 1, high_bit,
+      T(0x5555555555555555ull), T(0xaaaaaaaaaaaaaaaaull),
+      high_bit | T{1}, T(0x0123456789abcdefull)
     };
-    constexpr std::array<std::uint64_t,6> edge_values{
-      0, ~std::uint64_t{0}, 1, std::uint64_t{1} << 63,
-      0x0123456789abcdefull, 0xfedcba9876543210ull
+    constexpr std::array<T,6> edge_values{
+      0, all_bits, 1, high_bit,
+      T(0x0123456789abcdefull), T(0xfedcba9876543210ull)
     };
     std::uint64_t state = 0x123456789abcdef0ull;
     for (unsigned round = 0; round != 8192; ++round) {
       state ^= state << 13; state ^= state >> 7; state ^= state << 17;
-      auto value = state;
+      T value = T(state);
       state ^= state << 13; state ^= state >> 7; state ^= state << 17;
-      auto mask = state;
+      T mask = T(state);
       if (round < edge_masks.size() * edge_values.size()) {
         value = edge_values[round / edge_masks.size()];
         mask = edge_masks[round % edge_masks.size()];
@@ -110,14 +116,14 @@ namespace {
       check(deposited == pdep_oracle(value,mask));
       check(extracted == pext_oracle(value,mask));
       auto count = unsigned(std::popcount(mask));
-      auto low_bits = count == 64 ? ~std::uint64_t{0} : (std::uint64_t{1} << count)-1;
+      T low_bits = count == width ? all_bits : (T{1} << count)-1;
       check(simd::pext<bmi2_arch>(deposited,mask) == (value & low_bits));
       check(simd::pdep<bmi2_arch>(extracted,mask) == (value & mask));
       for (unsigned j = 0; j != count; ++j) {
-        auto bit = simd::pdep<bmi2_arch>(std::uint64_t{1} << j,mask);
+        auto bit = simd::pdep<bmi2_arch>(T{1} << j,mask);
         check(std::has_single_bit(bit) && (bit & mask) != 0);
         check(unsigned(std::popcount(mask & (bit-1))) == j);
-        check(simd::pext<bmi2_arch>(bit,mask) == (std::uint64_t{1} << j));
+        check(simd::pext<bmi2_arch>(bit,mask) == (T{1} << j));
       }
     }
   }
@@ -155,7 +161,8 @@ int main() {
 #if defined(__x86_64__) || defined(_M_X64)
   auto cpu = simd::observe_x86_capabilities();
   if (simd::classify_isa(cpu,bmi2_arch,SIMD_TARGET_MINIMUM).admitted()) {
-    bit_permutation_test();
+    bit_permutation_test<std::uint32_t>();
+    bit_permutation_test<std::uint64_t>();
     std::puts("PDEP/PEXT BMI2-only: executed");
   } else {
     std::puts("PDEP/PEXT BMI2-only: skipped (not admitted)");
