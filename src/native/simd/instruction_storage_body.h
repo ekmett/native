@@ -90,12 +90,16 @@ export namespace native {
     explicit constexpr predicate(bool value) noexcept : value_(value?native_type(active):0) {}
     /// Read one bit per lane and clear bits above the logical lane count.
     static constexpr predicate from_bits(std::uint64_t bits) noexcept { predicate p; p.value_=native_type(bits&active); return p; }
+    /// Construct from the logical lane bitset.
+    static constexpr predicate from_bitset(std::uint64_t bits) noexcept { return from_bits(bits); }
     /// Adopt the compact representation, clearing unused bits.
     static constexpr predicate from_native(native_type bits) noexcept { return from_bits(bits); }
     /// Return the compact implementation representation.
     constexpr native_type to_native() const noexcept { return value_; }
     /// Return one bit per logical lane.
     constexpr std::uint64_t bits() const noexcept { return value_; }
+    /// Return the logical lane bitset.
+    constexpr std::uint64_t to_bitset() const noexcept { return value_; }
     /// Test whether any logical lane is set.
     friend constexpr bool any(predicate p) noexcept { return p.value_!=0; }
     /// Test whether every logical lane is set.
