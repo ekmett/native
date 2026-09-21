@@ -52,8 +52,6 @@ if args.kind == "immediate":
 count = 0
 operations = ['sha1rnds4', 'sha1nexte', 'sha1msg1', 'sha1msg2', 'sha256rnds2', 'sha256msg1', 'sha256msg2']
 for name in operations:
-    if args.kind == "mask" and not name.startswith("mask", "storage", "immediate"):
-        continue
     if args.kind == "feature":
         diagnostic = rf"error: call to deleted function '{name}'"
     elif args.kind == "target":

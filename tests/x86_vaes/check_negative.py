@@ -12,7 +12,7 @@ parser.add_argument("--build", required=True)
 parser.add_argument("--positive", required=True)
 parser.add_argument("--negative", required=True)
 parser.add_argument("--config", default="")
-parser.add_argument("--kind", choices=("feature", "target", "weak", "shape", "storage", "immediate"), required=True)
+parser.add_argument("--kind", choices=("feature", "target", "weak", "shape", "storage"), required=True)
 parser.add_argument("--log", required=True, type=Path)
 args = parser.parse_args()
 
@@ -43,17 +43,9 @@ if args.kind == "storage":
         raise SystemExit("Missing storage rejection.")
     print("Positive storage control compiled; unavailable storage rejected.")
     raise SystemExit(0)
-if args.kind == "immediate":
-    if not re.search(r"error:.*(?:deleted function|no matching function).*sha1rnds4", negative_text):
-        print(negative_text)
-        raise SystemExit("Missing immediate rejection.")
-    print("Positive immediate control compiled; invalid selector rejected.")
-    raise SystemExit(0)
 count = 0
 operations = ['vaesenc', 'vaesenclast', 'vaesdec', 'vaesdeclast']
 for name in operations:
-    if args.kind == "mask" and not name.startswith("mask", "storage", "immediate"):
-        continue
     if args.kind == "feature":
         diagnostic = rf"error: call to deleted function '{name}'"
     elif args.kind == "target":
@@ -62,8 +54,7 @@ for name in operations:
         diagnostic = rf"error: call to consteval function 'native::{name}<.*is not a constant expression"
     else:
         diagnostic = rf"error: call to deleted function '{name}'"
-    expected_count = 4 if name == "sha1rnds4" else 1
-    if len(re.findall(diagnostic, negative_text)) < expected_count:
+    if not re.search(diagnostic, negative_text):
         print(negative_text)
         raise SystemExit(f"Missing {args.kind} rejection for {name}.")
     count += 1
