@@ -149,7 +149,7 @@ them leaves the ordinary caller's target unchanged.
 `NATIVE_BASELINE` from `<native/targets.h>` captures the current translation
 unit's enabled features as a constant `isa` value. It uses Clang's resolved
 flags, including explicit feature disables, and is separate from runtime CPU
-detection. See [compiler baseline](docs/abi-lookup.md#compiler-baseline).
+detection. See the [compiler baseline guide](docs/abi-lookup.md).
 
 Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
 you choose. `native::observe_cpu()` supplies the current platform's capability
