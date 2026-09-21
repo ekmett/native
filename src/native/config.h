@@ -14,26 +14,24 @@
 #endif
 
 namespace native {
-  /// The compilation target belongs to the ARM family, independently of SIMD support.
-  inline constexpr bool is_arm =
+  /// Instruction-set families; an ISA value belongs to exactly one family.
+  enum class architecture { x86, arm, wasm, unknown };
+  /// Select x86 feature metadata independently of the compilation target.
+  inline constexpr architecture x86=architecture::x86;
+  /// Select ARM feature metadata independently of the compilation target.
+  inline constexpr architecture arm=architecture::arm;
+  /// Select WebAssembly feature metadata independently of the compilation target.
+  inline constexpr architecture wasm=architecture::wasm;
+  /// The compiler target's family; no optional instruction support is implied.
+  inline constexpr architecture target_arch=
 #if defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64) || defined(_M_ARM64EC)
-    true;
+    arm;
+#elif defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)
+    x86;
+#elif defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__)
+    wasm;
 #else
-    false;
-#endif
-  /// The compilation target belongs to the x86 family; no optional ISA is implied.
-  inline constexpr bool is_x86 =
-#if (defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)) && !defined(_M_ARM64EC)
-    true;
-#else
-    false;
-#endif
-  /// The compilation target is WebAssembly, independently of engine capabilities.
-  inline constexpr bool is_wasm =
-#if defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__)
-    true;
-#else
-    false;
+    architecture::unknown;
 #endif
 }
 #else

@@ -54,7 +54,7 @@ foreach(family RANGE 0 1)
     "${CMAKE_CURRENT_SOURCE_DIR}/../source_targets/check_negative.py"
     --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target ${target} --config "$<CONFIG>"
     --log "${CMAKE_CURRENT_BINARY_DIR}/reject-family-${family}-$<CONFIG>.log"
-    --diagnostic "source target combines features from different architecture families")
+    --diagnostic "invalid operands to binary expression")
   set_tests_properties(native.wasm.features.reject_family_${family} PROPERTIES
     LABELS "host;wasm;negative" RUN_SERIAL TRUE TIMEOUT 180)
 endforeach()

@@ -40,9 +40,9 @@ namespace native {
   /// Admission reads present/observed. Compilation flags do not establish support.
   struct wasm_capabilities {
     /// Features successfully observed as supported.
-    feature_set<wasm_feature> present{};
+    isa<wasm> present{};
     /// Features whose observations completed, including negative answers.
-    feature_set<wasm_feature> observed{};
+    isa<wasm> observed{};
     /// Embedder-supplied query results; an unobserved positive never authorizes code.
     struct raw_observations {
       /// True only after a SIMD128 query completes with a boolean answer.
