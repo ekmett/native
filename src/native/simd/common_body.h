@@ -5,12 +5,12 @@ namespace detail {
   struct register_memory<simd<T,N,Arch>,L> {
     using V=simd<T,N,Arch>;
     static constexpr std::size_t lanes = L;
-    native_nodiscard static native_inline constexpr native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept {
+    native_nodiscard static native_inline constexpr native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept native_diagnose_if(n > L,"partial SIMD count exceeds the lane count") {
       alignas(64) std::array<float, L> a; a.fill(fill);
       for (std::size_t i = 0; i < n; ++i) a[i] = p[i];
       return V::load(a.data());
     }
-    native_inline constexpr void store_partial(native_noescape float * p, std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(native_noescape float * p, std::size_t n) const noexcept native_diagnose_if(n > L,"partial SIMD count exceeds the lane count") {
       alignas(64) std::array<float, L> a; static_cast<V const &>(*this).store(a.data());
       for (std::size_t i = 0; i < n; ++i) p[i] = a[i];
     }
@@ -97,7 +97,7 @@ namespace detail {
       typename V::value_type fill={},simd_memory<A,Access> = {})
       noexcept(std::is_nothrow_default_constructible_v<U> &&
         std::is_nothrow_constructible_v<U,typename V::value_type &> &&
-        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::load_simd<V>(p))) {
+        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::load_simd<V>(p))) native_diagnose_if(count > V::lanes,"partial SIMD count exceeds the lane count") {
     std::array<U,V::lanes> temporary; temporary.fill(U(fill));
     for(std::size_t i=0;i<count;++i) temporary[i]=p[i];
     return ::native::load_simd<V>(temporary.data());
@@ -111,7 +111,7 @@ namespace detail {
       requires(U * p,V value) { ::native::store_simd(p,value); }
   native_inline constexpr void store_simd_partial(U * p,V value,std::size_t count,simd_memory<A,Access> = {})
       noexcept(std::is_nothrow_default_constructible_v<U> &&
-        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::store_simd(p,value))) {
+        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::store_simd(p,value))) native_diagnose_if(count > V::lanes,"partial SIMD count exceeds the lane count") {
     std::array<U,V::lanes> temporary; ::native::store_simd(temporary.data(),value);
     for(std::size_t i=0;i<count;++i) p[i]=temporary[i];
   }

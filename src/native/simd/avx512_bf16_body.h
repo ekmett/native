@@ -125,7 +125,7 @@ export namespace native {
     /// exact representation. The default fill is positive zero. No access occurs
     /// for n == 0, when p may be null; otherwise p must address n BF16 objects.
     native_nodiscard static native_inline constexpr simd load_partial(bf16 const * p, std::size_t n,
-        bf16 fill = bf16::from_bits(0)) noexcept {
+        bf16 fill = bf16::from_bits(0)) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n <= lanes);
       std::array<bf16,lanes> values; values.fill(fill);
       if consteval {
@@ -136,7 +136,7 @@ export namespace native {
     /// Write the representations of lanes [0,n) to exactly n accessible BF16
     /// objects, where n <= N. Memory outside that prefix is untouched. No access
     /// occurs for n == 0, when p may be null; otherwise p must address n objects.
-    native_inline constexpr void store_partial(bf16 * p, std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(bf16 * p, std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n <= lanes);
       if consteval {
         std::array<std::uint16_t,lanes> words{}; store_bits(words.data());

@@ -167,14 +167,14 @@ namespace native {
     /// Store exactly the logical lanes without an additional alignment requirement.
     native_inline constexpr void storeu(T * p) const noexcept { store_memory(p); }
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
-    native_nodiscard static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill={}) noexcept {
+    native_nodiscard static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill={}) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       std::array<T,N> values;values.fill(fill);
       if consteval { for (std::size_t i=0;i<n;++i) values[i]=p[i]; }
       else { if(n) std::memcpy(values.data(),p,n*sizeof(T)); }
       return load(values.data());
     }
     /// Write exactly n logical lanes; require n <= lanes. For n == 0, p may be null.
-    native_inline constexpr void store_partial(T * p,std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(T * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       std::array<T,N> values;store(values.data());
       if consteval { for (std::size_t i=0;i<n;++i) p[i]=values[i]; }
       else { if(n) std::memcpy(p,values.data(),n*sizeof(T)); }
@@ -200,9 +200,9 @@ namespace native {
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(std::uint32_t * p) const noexcept requires std::same_as<T,float> { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr simd load_bits_partial(std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept requires std::same_as<T,float> { return from_bits(bits_type::load_partial(p,n,fill)); }
+    native_nodiscard static native_inline constexpr simd load_bits_partial(std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept requires std::same_as<T,float> native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
-    native_inline constexpr void store_bits_partial(std::uint32_t * p,std::size_t n) const noexcept requires std::same_as<T,float> { bits().store_partial(p,n); }
+    native_inline constexpr void store_bits_partial(std::uint32_t * p,std::size_t n) const noexcept requires std::same_as<T,float> native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Import lane i from bit i, clearing bits above the logical lane count.
     native_nodiscard static native_inline constexpr simd from_bitset(std::uint64_t bits) noexcept requires simd_mask_element<T> { return from_storage(storage_type::from_bitset(bits&lane_mask)); }
     /// Pack each logical lane truth value into bit i; higher bits are zero.

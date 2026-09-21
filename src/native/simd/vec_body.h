@@ -612,12 +612,12 @@ namespace native {
   native_inline void store_simd(U * p,simd<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept { value.store(p); }
   template<::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=T{},simd_memory<A,Access> = {}) noexcept {
+  native_nodiscard native_inline native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=T{},simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     std::array<T,N> a;a.fill(fill);for(std::size_t i=0;i<count;++i)a[i]=p[i];return simd<T,N,Arch>::load(a.data());
   }
   template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename simd<T,N,Arch>::native_type; }
-  native_inline void store_simd_partial(U * p,simd<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept {
+  native_inline void store_simd_partial(U * p,simd<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     std::array<T,N> a;value.store(a.data());for(std::size_t i=0;i<count;++i)p[i]=a[i];
   }
   }
@@ -744,13 +744,13 @@ namespace native {
     }
     // The caller supplies 0 <= count <= N. Zero touches no pointer, even null.
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
-    native_nodiscard static native_inline native_pure simd load_partial(bool const * p,std::size_t count,bool fill=false) noexcept {
+    native_nodiscard static native_inline native_pure simd load_partial(bool const * p,std::size_t count,bool fill=false) noexcept native_diagnose_if(count > simd::lanes,"partial SIMD count exceeds the lane count") {
       std::array<bool,N> values;values.fill(fill);
       for(std::size_t i=0;i<count;++i) values[i]=p[i];
       return load(values.data());
     }
     /// Write exactly n logical lanes; require n <= lanes. For n == 0, p may be null.
-    native_inline void store_partial(bool * p,std::size_t count) const noexcept {
+    native_inline void store_partial(bool * p,std::size_t count) const noexcept native_diagnose_if(count > simd::lanes,"partial SIMD count exceeds the lane count") {
       std::array<bool,N> values;store(values.data());
       for(std::size_t i=0;i<count;++i) p[i]=values[i];
     }
@@ -820,12 +820,12 @@ namespace native {
   native_inline void store_simd(U * p,simd<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept { value.store(p); }
   template<::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=false,simd_memory<A,Access> = {}) noexcept {
+  native_nodiscard native_inline native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=false,simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     return simd<T,N,Arch>::load_partial(p,count,fill);
   }
   template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename simd<T,N,Arch>::native_type; }
-  native_inline void store_simd_partial(U * p,simd<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept { value.store_partial(p,count); }
+  native_inline void store_simd_partial(U * p,simd<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") { value.store_partial(p,count); }
   }
   /// Expand lane truth into canonical zero/all-one full-vector mask lanes.
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<bool,N,Arch>::native_type; }
@@ -1880,12 +1880,12 @@ namespace native {
             simd_access Access = simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
   native_nodiscard native_inline native_pure simd<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
-                                                                    simd_memory<A, Access> = {}) noexcept;
+                                                                    simd_memory<A, Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count");
   template <simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
   native_inline void store_simd_partial(T *p, simd<T, N,Arch> v, std::size_t count,
-                                      simd_memory<A, Access> = {}) noexcept;
+                                      simd_memory<A, Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count");
 
   }
   template <simd_integer_element T, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<T, 1,Arch> : detail::swizzle_access<T,1,Arch> {
@@ -2177,7 +2177,7 @@ namespace native {
     native_inline constexpr void storeu(T *p) const noexcept { ::NATIVE_BACKEND_NAMESPACE::store_simd(p, *this); }
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
     native_nodiscard native_inline static native_pure simd load_partial(T const *p, std::size_t n,
-                                                                  T fill = T(0)) noexcept {
+                                                                  T fill = T(0)) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n <= lanes);
       std::array<T, lanes> data;
       data.fill(fill);
@@ -2186,7 +2186,7 @@ namespace native {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, lanes>(data.data());
     }
     /// Write exactly n logical lanes; require n <= lanes. For n == 0, p may be null.
-    native_inline void store_partial(T *p, std::size_t n) const noexcept { ::NATIVE_BACKEND_NAMESPACE::store_simd_partial(p, *this, n); }
+    native_inline void store_partial(T *p, std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { ::NATIVE_BACKEND_NAMESPACE::store_simd_partial(p, *this, n); }
     /// Reject this unsupported operand combination instead of converting implicitly to a native register.
     template <class U> requires (std::is_arithmetic_v<U> && !simd_integer_element<U>) friend void operator+(simd, U) = delete;
     /// Reject this unsupported operand combination instead of converting implicitly to a native register.
@@ -2725,7 +2725,7 @@ namespace native {
     native_inline constexpr void storeu(T *p) const noexcept { ::NATIVE_BACKEND_NAMESPACE::store_simd(p, *this); }
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
     native_nodiscard native_inline constexpr static native_pure simd load_partial(T const *p, std::size_t n,
-                                                                  T fill = T(0)) noexcept {
+                                                                  T fill = T(0)) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n <= lanes);
       if consteval {
         std::array<T,N> data; data.fill(fill);
@@ -2804,7 +2804,7 @@ namespace native {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, lanes>(data.data());
     }
     /// Write exactly n logical lanes; require n <= lanes. For n == 0, p may be null.
-    native_inline constexpr void store_partial(T *p, std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(T *p, std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       if consteval {
         assert(n<=N);
         auto data=__builtin_bit_cast(std::array<T,N>,value);
@@ -2993,7 +2993,7 @@ namespace native {
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
   native_nodiscard native_inline native_pure simd<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
-                                                                    simd_memory<A, Access>) noexcept {
+                                                                    simd_memory<A, Access>) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     assert(count <= N);
     std::array<T, N> data{};
     if (count)
@@ -3003,7 +3003,7 @@ namespace native {
   template <simd_integer_element T, std::size_t N, std::size_t A, simd_access Access, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
   native_inline void store_simd_partial(T *p, simd<T, N,Arch> v, std::size_t count,
-                                      simd_memory<A, Access>) noexcept {
+                                      simd_memory<A, Access>) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     assert(count <= N);
     std::array<T, N> data;
     store_simd(data.data(), v);
@@ -3298,9 +3298,9 @@ namespace native {
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept { return from_bits(bits_type::load_partial(p,n,fill)); }
+    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
-    native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept { bits().store_partial(p,n); }
+    native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Read all logical lanes without an extra alignment promise.
     native_inline constexpr simd(std::array<float,1> const & values) noexcept : simd(loadu(values.data())) {}
     /// Apply the corresponding lane-wise add operation in place and return *this.
@@ -3421,9 +3421,9 @@ namespace native {
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept { return from_bits(bits_type::load_partial(p,n,fill)); }
+    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
-    native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept { bits().store_partial(p,n); }
+    native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Read all logical lanes without an extra alignment promise.
     native_inline constexpr simd(std::array<float,16> const & values) noexcept : simd(loadu(values.data())) {}
 #if defined(__clang__)
@@ -3546,9 +3546,9 @@ namespace native {
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept { return from_bits(bits_type::load_partial(p,n,fill)); }
+    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
-    native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept { bits().store_partial(p,n); }
+    native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Read all logical lanes without an extra alignment promise.
     native_inline constexpr simd(std::array<float,4> const & values) noexcept : simd(loadu(values.data())) {}
 #if defined(__clang__)
@@ -3867,7 +3867,7 @@ namespace native {
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::native::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::native::simd_custom_element<T>)
   native_nodiscard native_inline native_pure simd<T,N,Arch> load_simd_partial(native_noescape U const * p,std::size_t count,
-      T fill=T{},simd_memory<A,Access> = {}) noexcept {
+      T fill=T{},simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     std::array<U,N> temporary;temporary.fill(U(fill));
     for(std::size_t i=0;i<count;++i)temporary[i]=p[i];
     return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T,N>(temporary.data());
@@ -3875,7 +3875,7 @@ namespace native {
   template <class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::native::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::native::simd_custom_element<T>)
-  native_inline void store_simd_partial(native_noescape U * p,simd<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept {
+  native_inline void store_simd_partial(native_noescape U * p,simd<T,N,Arch> value,std::size_t count,simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     std::array<U,N> temporary;store_simd(temporary.data(),value);
     for(std::size_t i=0;i<count;++i)p[i]=temporary[i];
   }

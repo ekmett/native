@@ -34,6 +34,22 @@
   #define native_has_attribute(__x) 0
 #endif
 
+/** \def native_diagnose_if(condition,message)
+    \brief Reject a call when Clang can prove that its arguments violate a precondition.
+
+    Place after the function declarator and any trailing requires clause. The
+    condition can name parameters. An unknown condition leaves the call valid;
+    this annotation adds no runtime check and does not affect overload selection. */
+#if native_has_attribute(diagnose_if)
+  #define native_diagnose_if(condition,message) \
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wgcc-compat\"") \
+    __attribute__((diagnose_if(condition,message,"error"))) \
+    _Pragma("clang diagnostic pop")
+#else
+  #define native_diagnose_if(condition,message)
+#endif
+
 /** \def native_has_declspec_attribute(__x)
 
       \brief portable `__has_declspec_attribute(__x)`

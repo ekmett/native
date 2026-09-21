@@ -253,7 +253,7 @@ export namespace native {
     /// Synonym for store; register alignment is unnecessary.
     native_inline constexpr void storeu(T * p) const noexcept { store(p); }
     /// Read n <= N elements and fill the remainder; a null pointer is valid for n == 0.
-    native_nodiscard static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill=T{}) noexcept {
+    native_nodiscard static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill=T{}) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n<=N);
       std::array<T,N> values; values.fill(fill);
       if consteval {
@@ -262,7 +262,7 @@ export namespace native {
       return load(values.data());
     }
     /// Write the first n <= N elements; a null pointer is valid for n == 0.
-    native_inline constexpr void store_partial(T * p,std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(T * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n<=N);
       if consteval {
         if(n) {

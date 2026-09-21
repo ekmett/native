@@ -12,3 +12,8 @@ representation bridges, and full-register FP16/BF16 representation-preserving
 loads and stores. These checks run through both modules and the private header
 where the corresponding interface is available. Runtime bridge assembly is
 compared with direct intrinsic code.
+
+The count-diagnostic fixture accepts dynamic counts, zero counts with null
+pointers, and counts equal to the logical lane count. Twelve invalid load/store
+forms must fail with the same specific diagnostic, through both module imports
+and private headers. Short vectors use the logical count, not register padding.
