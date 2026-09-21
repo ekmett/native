@@ -4,19 +4,19 @@
 #include <native/targets.h>
 import native.isa;
 
-static_assert(native::is_arm == bool(NATIVE_HOST_NEON));
-static_assert(native::is_x86 == bool(NATIVE_HOST_X86));
-static_assert(!native::is_wasm);
+static_assert((native::target_arch == native::arm) == bool(NATIVE_HOST_NEON));
+static_assert((native::target_arch == native::x86) == bool(NATIVE_HOST_X86));
+static_assert(!(native::target_arch == native::wasm));
 
 // An extra deployment requirement must not change the compiler's permissions.
 #undef NATIVE_TARGET_EXTRA_MINIMUM
-#define NATIVE_TARGET_EXTRA_MINIMUM (::native::isa(static_cast<::native::x86_feature>(-1)))
+#define NATIVE_TARGET_EXTRA_MINIMUM (::native::target_features("unregistered"))
 
 namespace {
   constexpr auto baseline=NATIVE_BASELINE;
-  static_assert(baseline<=native::detail::known_features);
-  static_assert(!(NATIVE_TARGET_MINIMUM<=native::detail::known_features));
-  template<native::isa A> struct snapshot { static constexpr auto value=A; };
+  static_assert(baseline<=native::detail::known_features<native::target_arch>);
+  static_assert(!(NATIVE_TARGET_MINIMUM<=native::detail::known_features<native::target_arch>));
+  template<native::isa<> A> struct snapshot { static constexpr auto value=A; };
   static_assert(snapshot<baseline>::value==baseline);
 
 #if NATIVE_BASELINE_CASE == 1

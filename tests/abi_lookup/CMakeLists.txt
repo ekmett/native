@@ -49,3 +49,19 @@ foreach(case RANGE 0 4)
   set_tests_properties(native.abi_lookup.reject_order_${case} PROPERTIES
     LABELS "host;abi_lookup" RUN_SERIAL TRUE TIMEOUT 180)
 endforeach()
+
+# A foreign family is ill-formed even when its feature set is empty.
+foreach(case RANGE 0 7)
+  add_library(native_abi_reject_foreign_${case} OBJECT EXCLUDE_FROM_ALL foreign.cc)
+  target_link_libraries(native_abi_reject_foreign_${case} PRIVATE native::headers)
+  target_compile_features(native_abi_reject_foreign_${case} PRIVATE cxx_std_20)
+  target_compile_definitions(native_abi_reject_foreign_${case} PRIVATE NATIVE_FOREIGN_CASE=${case})
+  add_test(NAME native.abi_lookup.reject_foreign_${case} COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../source_targets/check_negative.py"
+    --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
+    --target native_abi_reject_foreign_${case} --config "$<CONFIG>"
+    --log "${CMAKE_CURRENT_BINARY_DIR}/reject-foreign-${case}-$<CONFIG>.log"
+    --diagnostic "invalid operands|no viable conversion|no matching|constraints not satisfied|undefined template")
+  set_tests_properties(native.abi_lookup.reject_foreign_${case} PROPERTIES
+    LABELS "host;abi_lookup;negative" RUN_SERIAL TRUE TIMEOUT 180)
+endforeach()

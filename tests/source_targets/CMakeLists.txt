@@ -43,10 +43,10 @@ add_test(NAME native.source_targets.codegen COMMAND "${Python3_EXECUTABLE}"
   --output "${CMAKE_CURRENT_BINARY_DIR}/variants-$<CONFIG>.disassembly"
   $<TARGET_OBJECTS:native_source_variants> COMMAND_EXPAND_LISTS)
 
-foreach(kind IN ITEMS invalid no_target)
+foreach(kind IN ITEMS invalid foreign no_target)
   add_library(native_source_reject_${kind} OBJECT EXCLUDE_FROM_ALL ${kind}.cc)
   target_link_libraries(native_source_reject_${kind} PRIVATE native::native)
-  if(kind STREQUAL "invalid")
+  if(kind STREQUAL "invalid" OR kind STREQUAL "foreign")
     set(diagnostic "source target contains an unregistered ISA feature")
   else()
     set(diagnostic "requires target feature|target specific option mismatch")
@@ -58,7 +58,7 @@ foreach(kind IN ITEMS invalid no_target)
   set_tests_properties(native.source_targets.reject_${kind} PROPERTIES SKIP_RETURN_CODE 77 RUN_SERIAL TRUE)
 endforeach()
 set_tests_properties(native.source_targets.metadata native.source_targets.native
-  native.source_targets.codegen native.source_targets.reject_invalid native.source_targets.reject_no_target
+  native.source_targets.codegen native.source_targets.reject_invalid native.source_targets.reject_foreign native.source_targets.reject_no_target
   PROPERTIES LABELS "host;modules;source_targets" TIMEOUT 180)
 
 # Import only the capability module; admission must not require the SIMD hub.

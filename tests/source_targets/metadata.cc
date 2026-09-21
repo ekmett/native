@@ -12,13 +12,13 @@ import native;
 #endif
 
 namespace native {
-  constexpr isa source_isa_adl(isa value) { return value; }
+  template<architecture Family> constexpr isa<Family> source_isa_adl(isa<Family> value) { return value; }
 }
 static_assert(source_isa_adl(native::avx2)==native::avx2);
 
-template<native::isa A> requires(A==NATIVE_TARGET_ISA(avx2))
+template<native::isa<native::x86> A> requires(A==native::target_features<native::x86>(NATIVE_TARGET_STRING(avx2)))
 constexpr int repeated();
-template<native::isa A> requires(A==NATIVE_TARGET_ISA(avx2))
+template<native::isa<native::x86> A> requires(A==native::target_features<native::x86>(NATIVE_TARGET_STRING(avx2)))
 constexpr int repeated() { return 7; }
 static_assert(repeated<native::avx2>()==7);
 
@@ -34,9 +34,9 @@ namespace {
     bool baseline_observed=true,fp=true,asimd=true;
     bool fp16_observed=true,scalar_fp16=true,vector_fp16=true;
     bool bf16_observed=true,bf16=true;
-    native::isa extra_observed=native::detail::arm_features,extra_features=native::detail::arm_features;
+    native::isa<native::arm> extra_observed=native::detail::arm_features,extra_features=native::detail::arm_features;
   };
-  constexpr native::isa plain_avx2=native::x86_feature::avx2;
+  constexpr native::isa<native::x86> plain_avx2=native::x86_feature::avx2;
   constexpr auto combined=native::avx512_fp16&native::x86_feature::avx512bf16;
   static_assert(combined==(native::avx512_bf16&native::x86_feature::avx512fp16));
   static_assert(!plain_avx2.has(native::x86_feature::fma));
@@ -46,27 +46,30 @@ namespace {
   static_assert(!native::isa(native::x86_feature::avx512f).has(native::x86_feature::f16c));
   static_assert(native::feature_closure(native::x86_feature::avx512f).has(native::x86_feature::f16c));
   static_assert(native::feature_closure(native::x86_feature::avx512f).has(native::x86_feature::fma));
-  static_assert(NATIVE_TARGET_ISA(avx2)==native::avx2);
   static_assert(NATIVE_TARGET_ISA(scalar)==native::scalar);
+#if defined(__x86_64__) || defined(_M_X64)
+  static_assert(NATIVE_TARGET_ISA(avx2)==native::avx2);
   static_assert(NATIVE_TARGET_ISA(avx512)==native::avx512);
   static_assert(NATIVE_TARGET_ISA(avx512_bf16)==native::avx512_bf16);
   static_assert(NATIVE_TARGET_ISA(avx512_fp16)==native::avx512_fp16);
+#elif defined(__aarch64__) || defined(_M_ARM64)
   static_assert(NATIVE_TARGET_ISA(neon)==native::neon);
   static_assert(NATIVE_TARGET_ISA(neon_fp16)==native::neon_fp16);
   static_assert(NATIVE_TARGET_ISA(neon_bf16)==native::neon_bf16);
+#endif
   constexpr auto i8mm=native::isa(native::arm_feature::i8mm);
   static_assert(std::uint64_t(native::arm_feature::pauth)==14);
   static_assert(std::uint64_t(native::arm_feature::i8mm)==15);
   static_assert(native::arm_feature_count==20);
   static_assert(native::feature_closure(i8mm)==(native::neon&i8mm));
-  static_assert(native::target_features("i8mm")==native::feature_closure(i8mm));
+  static_assert(native::target_features<native::arm>("i8mm")==native::feature_closure(i8mm));
   static_assert([] {
-    native::isa features;
-    features.arm_i8mm=true;
-    if(!features.arm_i8mm || features!=i8mm) return false;
-    features.arm_pauth=true;
-    features.arm_i8mm=false;
-    return !features.arm_i8mm && features==native::isa(native::arm_feature::pauth);
+    native::isa<native::arm> features;
+    features.i8mm=true;
+    if(!features.i8mm || features!=i8mm) return false;
+    features.pauth=true;
+    features.i8mm=false;
+    return !features.i8mm && features==native::isa(native::arm_feature::pauth);
   }());
   static_assert(std::uint64_t(native::arm_feature::pmull)==16);
   static_assert(std::uint64_t(native::arm_feature::sha1)==17);
@@ -75,9 +78,9 @@ namespace {
   constexpr auto aes_bundle=native::neon&native::arm_feature::aes&native::arm_feature::pmull;
   constexpr auto sha2_bundle=native::neon&native::arm_feature::sha1&native::arm_feature::sha2;
   constexpr auto sha3_bundle=sha2_bundle&native::arm_feature::sha512&native::arm_feature::sha3;
-  static_assert(native::target_features("neon,aes")==aes_bundle);
-  static_assert(native::target_features("sha2")==sha2_bundle);
-  static_assert(native::target_features("sha3")==sha3_bundle);
+  static_assert(native::target_features<native::arm>("neon,aes")==aes_bundle);
+  static_assert(native::target_features<native::arm>("sha2")==sha2_bundle);
+  static_assert(native::target_features<native::arm>("sha3")==sha3_bundle);
   static_assert([] {
     constexpr native::arm_feature crypto[]{native::arm_feature::aes,native::arm_feature::pmull,
       native::arm_feature::sha1,native::arm_feature::sha2,native::arm_feature::sha512,native::arm_feature::sha3};
@@ -96,10 +99,10 @@ namespace {
     // These names describe hardware, but LLVM has no corresponding target switch.
     constexpr char const * hardware_names[]{"pmull","sha1","sha512","ebf16"};
     for(auto spelling:hardware_names)
-      if(native::target_features(spelling)<=native::detail::known_features) return false;
-    native::isa properties;
-    properties.arm_pmull=true; properties.arm_sha1=true;
-    properties.arm_sha512=true; properties.arm_ebf16=true;
+      if(native::target_features<native::arm>(spelling)<=native::detail::known_features<native::arm>) return false;
+    native::isa<native::arm> properties;
+    properties.pmull=true; properties.sha1=true;
+    properties.sha512=true; properties.ebf16=true;
     return properties==(native::arm_feature::pmull&native::arm_feature::sha1&
       native::arm_feature::sha512&native::arm_feature::ebf16);
   }());
@@ -115,17 +118,16 @@ namespace {
 #ifdef __ARM_FEATURE_SHA3
   static_assert(NATIVE_TARGET_MINIMUM.has(sha3_bundle));
 #endif
-  static_assert(!(native::target_features("avx2,no-fma")<=native::detail::known_features));
-  static_assert(!(native::target_features("default")<=native::detail::known_features));
+  static_assert(!(native::target_features<native::x86>("avx2,no-fma")<=native::detail::known_features<native::x86>));
+  static_assert(!(native::target_features<native::x86>("default")<=native::detail::known_features<native::x86>));
   static_assert(native::target_features("")==native::scalar);
-  static_assert(!(native::target_features("arch=skylake")<=native::detail::known_features));
-  static_assert(!(native::target_features("avx2,")<=native::detail::known_features));
-  static_assert(native::target_features("avx2,f16c")==native::feature_closure(native::x86_feature::avx2&native::x86_feature::f16c));
+  static_assert(!(native::target_features<native::x86>("arch=skylake")<=native::detail::known_features<native::x86>));
+  static_assert(!(native::target_features<native::x86>("avx2,")<=native::detail::known_features<native::x86>));
+  static_assert(native::target_features<native::x86>("avx2,f16c")==native::feature_closure(native::x86_feature::avx2&native::x86_feature::f16c));
 
   constexpr bool synthetic_x86_features() {
     x86_snapshot cpu;
     if(!native::classify_isa(cpu,combined).admitted()) return false;
-    if(native::classify_isa(cpu,native::neon).admitted()) return false;
     // All recorded CPU requirements and every OS state component are necessary.
     constexpr auto need=combined;
     constexpr std::uint32_t ecx=(1u<<0)|(1u<<9)|(1u<<12)|(1u<<19)|(1u<<20)|(1u<<23)|(1u<<26)|(1u<<27)|(1u<<28)|(1u<<29);
@@ -171,7 +173,6 @@ namespace {
     arm_snapshot arm;
     constexpr auto arm_all=native::neon_fp16&native::arm_feature::neon_bf16&native::arm_feature::dotprod;
     if(!native::classify_isa(arm,arm_all).admitted()) return false;
-    if(native::classify_isa(arm,native::avx2).admitted()) return false;
     for(unsigned i=0;i<8;++i) {
       arm={};
       switch(i) {
@@ -207,8 +208,8 @@ namespace {
   }
   constexpr bool synthetic_selection() {
     x86_snapshot cpu;
-    int calls=0;native::isa selected{};
-    auto callback=[&]<native::isa A> { ++calls;selected=A; };
+    int calls=0;native::isa<native::x86> selected{};
+    auto callback=[&]<native::isa<native::x86> A> { ++calls;selected=A; };
     cpu={};
     if(!native::with_isa(native::isa_list<combined,native::avx2>{},cpu,callback) || calls!=1 || selected!=combined) return false;
     calls=0;cpu.xcr0=6;
@@ -223,6 +224,9 @@ namespace {
     if(native::with_isa(native::isa_list<native::avx2>{},cpu,callback,native::avx512_bf16) || calls) return false;
     return true;
   }
+  template<class C,class R> concept compatible = requires(C c,R r) { native::classify_isa(c,r); };
+  static_assert(!compatible<x86_snapshot,native::isa<native::arm>>);
+  static_assert(!compatible<arm_snapshot,native::isa<native::x86>>);
   // Keep each independent oracle within the default constexpr step budget.
   static_assert(synthetic_x86_features());
   static_assert(synthetic_x86_state());

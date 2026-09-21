@@ -70,21 +70,20 @@ namespace {
     };
     if(native::classify_isa(old_snapshot{},native::arm_feature::dotprod).admitted()) return false;
     if(native::classify_isa(old_snapshot{},native::arm_feature::i8mm).admitted()) return false;
-    auto invalid=native::isa(static_cast<native::x86_feature>(-1));
+    auto invalid=native::isa(static_cast<native::arm_feature>(-1));
     if(!native::classify_isa(full,invalid).invalid_features) return false;
     invalid={};invalid.flags[0]=1ull<<63;
     if(!native::classify_isa(full,invalid).invalid_features) return false;
-    native::isa_admission unknown;
+    native::isa_admission<native::arm> unknown;
     unknown.missing_features=invalid;
     if(unknown.admitted() || std::string_view(unknown.reason())=="admitted") return false;
     unknown={};unknown.missing_xcr0=1ull<<63;
     if(unknown.admitted() || std::string_view(unknown.reason())=="admitted") return false;
-    if(!native::classify_isa(full,native::avx2&native::neon).invalid_features) return false;
-    if(!native::classify_isa(native::arm_capabilities{},native::scalar).admitted()) return false;
-    if(native::classify_isa(native::arm_capabilities{},native::scalar,native::neon).admitted()) return false;
+    if(!native::classify_isa(native::arm_capabilities{},native::isa<native::arm>{}).admitted()) return false;
+    if(native::classify_isa(native::arm_capabilities{},native::isa<native::arm>{},native::neon).admitted()) return false;
 
-    int calls=0;native::isa selected{};
-    auto callback=[&]<native::isa A> { ++calls;selected=A; };
+    int calls=0;native::isa<native::arm> selected{};
+    auto callback=[&]<native::isa<native::arm> A> { ++calls;selected=A; };
     cpu=full;
     if(!native::with_isa(native::isa_list<combined,native::neon>{},cpu,callback) || calls!=1 || selected!=combined) return false;
     calls=0;cpu.bf16_observed=false;
@@ -104,6 +103,9 @@ namespace {
     return true;
   }
   static_assert(synthetic());
+  template<class R> concept compatible = requires(native::arm_capabilities c,R r) { native::classify_isa(c,r); };
+  static_assert(compatible<native::isa<native::arm>>);
+  static_assert(!compatible<native::isa<native::x86>> && !compatible<native::isa<native::wasm>>);
 }
 
 int main() {
