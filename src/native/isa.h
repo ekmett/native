@@ -16,7 +16,7 @@ namespace native {
     sse42, popcnt, avx, avx2, fma, f16c,
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
-    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni
+    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq
   };
   /// ARM instruction features and compiler bundles, using local bit indices.
   enum class arm_feature : std::uint64_t {
@@ -25,7 +25,7 @@ namespace native {
     jsconv, rcpc, pauth
   };
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::gfni)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avx512vpopcntdq)+1;
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::pauth)+1;
 
@@ -241,6 +241,9 @@ namespace native {
     constexpr bool get_gfni() const noexcept { return get(x86_feature::gfni); }
     constexpr void set_gfni(bool value) noexcept { set(x86_feature::gfni,value); }
     __declspec(property(get=get_gfni,put=set_gfni)) bool gfni;
+    constexpr bool get_avx512vpopcntdq() const noexcept { return get(x86_feature::avx512vpopcntdq); }
+    constexpr void set_avx512vpopcntdq(bool value) noexcept { set(x86_feature::avx512vpopcntdq,value); }
+    __declspec(property(get=get_avx512vpopcntdq,put=set_avx512vpopcntdq)) bool avx512vpopcntdq;
     constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
@@ -374,6 +377,7 @@ namespace native {
       {x86_feature::avx512vl,"avx512vl",isa(x86_feature::avx512f),feature_register::leaf7_ebx,31},
       {x86_feature::avx512bf16,"avx512bf16",isa(x86_feature::avx512bw),feature_register::leaf7_1_eax,5},
       {x86_feature::avx512fp16,"avx512fp16",isa(x86_feature::avx512bw),feature_register::leaf7_edx,23},
+      {x86_feature::avx512vpopcntdq,"avx512vpopcntdq",isa(x86_feature::avx512f),feature_register::leaf7_ecx,14},
       {arm_feature::neon,"neon",{},feature_register::arm,0},
       {arm_feature::neon_fp16,"fullfp16",isa(arm_feature::neon),feature_register::arm,1},
       {arm_feature::neon_bf16,"bf16",isa(arm_feature::neon),feature_register::arm,2},
