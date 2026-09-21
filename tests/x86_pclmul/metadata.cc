@@ -26,7 +26,7 @@ static_assert(!vex.has(x86_feature::avx2));
 static_assert(!vex.has(x86_feature::avx512f));
 static_assert(!native::avx2.has(x86_feature::vpclmulqdq));
 static_assert(!native::avx512.has(x86_feature::vpclmulqdq));
-#ifdef __VAES__
+#ifdef __AMX_TILE__
 static_assert(!(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>));
 #else
 static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>);
