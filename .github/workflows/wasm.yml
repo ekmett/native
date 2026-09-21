@@ -96,22 +96,26 @@ jobs:
       - name: Test runtime, constant evaluation, codegen and feature boundaries
         run: |
           ctest --test-dir build/wasm --show-only=json-v1 > build/wasm-tests.json
-          ctest --test-dir build/wasm --no-tests=error --output-on-failure \
+          ctest --test-dir build/wasm -LE engine-conformance --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/wasm-tests.xml"
       - name: Install and physically relocate the package
         run: |
           cmake --install build/wasm --prefix build/install
           cmake -E rename build/install 'build/relocated wasm package'
-          for suite in wasm_simd wasm_boundaries; do
+          for suite in wasm_simd wasm_relaxed wasm_boundaries; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
               -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
               -DCMAKE_BUILD_TYPE=Release \
               -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated wasm package/lib/cmake/native" \
               -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
             cmake --build "build/$suite" --parallel
-            ctest --test-dir "build/$suite" --no-tests=error --output-on-failure \
+            ctest --test-dir "build/$suite" -LE engine-conformance --no-tests=error --output-on-failure \
               --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
           done
+      - name: Check raw engine dot conformance against the core specification
+        run: |
+          ctest --test-dir build/wasm -L engine-conformance --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/wasm-engine-tests.xml"
       - name: Retain Wasm artifacts and validation logs
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

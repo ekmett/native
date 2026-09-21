@@ -420,14 +420,14 @@ module when its boundary is useful:
 | Need | Import | CMake target |
 | --- | --- | --- |
 | SIMD, masks and register operations | `native.simd` | `native::native` |
-| A vector instruction family | Its `native.x86.*` or `native.arm.*` module | `native::native` |
+| A vector instruction family | Its `native.x86.*`, `native.arm.*` or `native.wasm.*` module | `native::native` |
 | Promoted numerical kernels | `native.math` | `native::native` |
 | CPU observation and admission | `native.features` | `native::minimal` |
 | ISA values without an observer | `native.isa` | `native::minimal` |
 | Scalar instruction utilities | The corresponding family module | `native::minimal` |
 | Scalar numerics, generic packs and utilities | `native.numerics`, `native.wide`, `native.types`, `native.memory`, `native.static_string` | `native::minimal` |
 
-The architecture hubs `native.x86` and `native.arm` include vector instruction
+The architecture hubs `native.x86`, `native.arm` and `native.wasm` include vector instruction
 families and therefore belong to `native::native`. `native::common` is an alias
 for `native::minimal`. Vector instruction modules import `native.simd` and use
 `simd<T,N,Arch>` in their public interfaces. Scalar forms keep ordinary C++
