@@ -187,10 +187,12 @@ class WindowsLauncherTests(unittest.TestCase):
 
     def check_route(self, arguments, cached):
         with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': r'C:\existing file'}):
-            with patch.object(launcher.os, 'execvp') as execute:
-                launcher.main(arguments)
+            with patch.object(launcher.subprocess, 'run',
+                              return_value=SimpleNamespace(returncode=19)) as execute:
+                self.assertEqual(launcher.main(arguments), 19)
                 expected = ['sccache', *arguments] if cached else arguments
-                execute.assert_called_once_with(expected[0], expected)
+                # No output redirection: compiler output reaches the build tool.
+                execute.assert_called_once_with(expected)
                 self.assertEqual(os.environ['SCCACHE_EXTRAFILES'], r'C:\existing file')
 
     def test_ordinary_clang_cl_compilations_remain_cached(self):

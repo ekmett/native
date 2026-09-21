@@ -14,6 +14,7 @@ import errno
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 
@@ -181,10 +182,14 @@ def main(arguments):
     if not arguments:
         print('usage: sccache_launcher.py COMPILER [ARGUMENT ...]', file=sys.stderr)
         return 2
+    if os.name == 'nt':
+        command = ['sccache', *arguments] if windows_cacheable(arguments) else arguments
+        # Windows execvp does not provide POSIX process-replacement semantics
+        # to the waiting build tool. Wait explicitly and forward the exit code.
+        return subprocess.run(command).returncode
     # An alias may still resolve to Clang, but its PCH syntax has not been
     # checked. Never send it through the cache without dependency hashing.
-    if (os.name == 'nt' and not windows_cacheable(arguments)) or (
-            os.name != 'nt' and not COMPILER.fullmatch(Path(arguments[0]).name)):
+    if not COMPILER.fullmatch(Path(arguments[0]).name):
         os.execvp(arguments[0], arguments)
         return 0
     original = ['sccache', *arguments]
