@@ -105,7 +105,8 @@ import native.arm;
 constexpr auto requirements = NATIVE_TARGET_ISA(platform_neon);
 static_assert(requirements.has(native::arm_feature::neon));
 static_assert(native::scalar <= requirements);
-static_assert(!requirements.has(native::x86_feature::bmi2));
+template<class A> concept accepts_x86_features=requires(A a) { a.has(native::x86_feature::bmi2); };
+static_assert(!accepts_x86_features<decltype(requirements)>);
 
 int main() {
   auto cpu = native::observe_arm_capabilities();
