@@ -19,7 +19,7 @@ export module native.types;
 
 /// \namespace native
 /// \brief Architecture-tagged vectors, register packs and supporting value types.
-/// Native arithmetic requires an explicit architecture and its instruction-set
+/// Native arithmetic follows its architecture tag and instruction-set
 /// preconditions. Common utilities do not select or admit a runtime CPU profile.
 export namespace native {
 /// Export the customizable association between a value and its logical mask.

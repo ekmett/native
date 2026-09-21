@@ -124,16 +124,24 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
     # The Windows ARM64 CRT includes NEON intrinsics even for ISA metadata.
     # Capture the real disabled-register macros before importing that metadata,
     # then check the expanded assertions with the ordinary Windows ABI.
+    if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+      get_target_property(native_header_dirs native::headers INTERFACE_INCLUDE_DIRECTORIES)
+      find_path(source_targets_include native/targets.h PATHS ${native_header_dirs}
+        NO_DEFAULT_PATH NO_CACHE REQUIRED)
+    else()
+      set(source_targets_include "${PROJECT_SOURCE_DIR}/src")
+    endif()
     set(general_regs_source "${CMAKE_CURRENT_BINARY_DIR}/baseline_general_regs.cc")
     add_custom_command(OUTPUT "${general_regs_source}"
       COMMAND "${CMAKE_COMMAND}"
         "-DCOMPILER=${CMAKE_CXX_COMPILER}"
         "-DCOMPILER_TARGET=${CMAKE_CXX_COMPILER_TARGET}"
         "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/baseline.cc"
-        "-DINCLUDE=${PROJECT_SOURCE_DIR}/src"
+        "-DINCLUDE=${source_targets_include}"
         "-DOUTPUT=${general_regs_source}"
         -P "${CMAKE_CURRENT_SOURCE_DIR}/snapshot_general_regs.cmake"
-      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/baseline.cc" "${PROJECT_SOURCE_DIR}/src/native/targets.h"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/baseline.cc" "${source_targets_include}/native/targets.h"
+        "${source_targets_include}/native/config.h"
         "${CMAKE_CURRENT_SOURCE_DIR}/snapshot_general_regs.cmake"
       VERBATIM)
     add_library(native_baseline_general_regs OBJECT "${general_regs_source}")
