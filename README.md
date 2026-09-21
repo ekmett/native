@@ -4,15 +4,14 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
 C++26 native operations and CPU capability detection for x86-64 and AArch64.
-`import native;` exposes the platform's supported operations and the detector
-used to check their instruction and OS-state requirements. Importing an API
-does not enable its instructions in the caller.
+`import native;` exposes operations for the compilation target and a detector
+for their CPU and OS-state requirements. Compile each kernel for the instructions
+it uses, and check optional requirements before calling it.
 
 `native::simd<T,N,Arch>` describes one register; `native::wide<V,M>` describes a
 pack of registers. Element type, lane count and ISA remain explicit, so an
 algorithm can use short vectors, native widths and independent instruction
-chains without changing its arithmetic. `native::simd` is the class template;
-extension specializations name it directly.
+chains without changing its arithmetic.
 
 ```cpp
 #include <native/targets.h>
@@ -32,9 +31,9 @@ void arithmetic(float * output) {
 NATIVE_TARGET_POP()
 ```
 
-This example targets x86 AVX2. Call it after checking that the CPU admits
-`avx2`; importing the module does not establish that precondition. The following
-snippets use the same `using namespace native;` directive.
+This example targets x86 AVX2. Check that the CPU and OS admit `avx2` before
+calling it; the import only makes the API visible. The following snippets use
+the same `using namespace native;` directive.
 
 The ISA value is part of the type. `native::avx2`, `native::avx512`, `native::neon` and
 `native::scalar` are `constexpr isa` presets; operations have no runtime dispatch.
@@ -83,13 +82,21 @@ custom element types and application dispatch.
 | `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
 | `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
 | `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `native.x86` | x86 feature detection, bit operations and wait utilities |
-| `native.arm` | AArch64 feature detection and admission |
+| `native.x86` | x86 feature detection, integer and byte operations, and wait utilities |
+| `native.arm` | AArch64 feature detection, admission and independently targeted instruction families |
 | `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
 | `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
 | `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
+| `native.x86.crc32c` | [Raw CRC32C updates](docs/x86-crc32c.md) for 8-, 16-, 32- and 64-bit operands |
+| `native.x86.gfni` | [GFNI byte operations](docs/x86-gfni.md): field multiplication, affine maps and inverse-affine maps |
+| `native.x86.vpopcntdq` | [VPOPCNTDQ](docs/x86-vpopcntdq.md) for 32- and 64-bit lanes, including merge and zero masks |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
+| `native.arm.dotprod` | [Signed and unsigned byte dot products](docs/arm-dotprod.md) |
+| `native.arm.rdm` | [Rounding, saturating fixed-point multiply-add and multiply-subtract](docs/arm-rdm.md) |
+| `native.arm.fp16fml` | [FP16 products accumulated in FP32](docs/arm-fp16fml.md) |
+| `native.arm.fcma` | [Complex multiply-add and rotated addition](docs/arm-fcma.md) |
+| `native.arm.i8mm` | [I8MM matrix and mixed-sign dot products](docs/arm-i8mm.md) |
 | `native.scalar` | `simd<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `native.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
@@ -97,14 +104,11 @@ custom element types and application dispatch.
 | `native.x86.features`, `native.x86.wait` | x86 CPU/OS capability observation, shared ISA admission and wait utilities |
 
 The hub exposes the common vector template, ISA values and `wide`. Import
-`native.math` explicitly for `math::exp`, `math::sin`, `math::cos`, `math::sincos`
-and their batch forms. Generic math
-uses argument-dependent lookup, so an element library can supply its own
-arithmetic and batched kernels. The separately versioned FTZ library uses that
-extension for reproducible binary32 arithmetic. Downstream packages need matching
-`native` imports and package versions; earlier `simd` packages are not
-interchangeable with this one. Native arithmetic leaves
-the floating-point environment under application control.
+`native.math` separately for `math::exp`, `math::sin`, `math::cos`, `math::sincos`
+and their batch forms. Generic math uses argument-dependent lookup, allowing an
+element library to supply its own arithmetic and batched kernels. The separately
+versioned FTZ library uses this extension for reproducible binary32 arithmetic.
+Native arithmetic leaves the floating-point environment under application control.
 
 ## Build and consume
 
@@ -132,22 +136,22 @@ target_link_libraries(example PRIVATE native::native)
 
 The hub compiles once at the toolchain's default baseline. Set
 `NATIVE_MINIMAL_COMPILE_OPTIONS` in project setup to choose a stronger minimum.
-Importing `native` exposes stronger APIs without enabling
-their instructions in ordinary caller code. Each native implementation carries
-its own Clang target requirements; common utilities have one provider.
+The process must satisfy that minimum before any runtime selection can help.
+Stronger implementations carry their own Clang target requirements; importing
+them leaves the ordinary caller's target unchanged.
 
 Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
-you choose, then pass the matching list to `with_isa`. It checks CPU and OS
-support and invokes `callback.operator()<A>()` with the first supported ISA
-value. Write the callback as `[]<native::isa A> { ... }`; selection does not
-retarget it. Generated variants have distinct constrained overloads and matching
-function attributes, with no per-variant CMake targets or BMIs.
+you choose. `native::observe_cpu()` supplies the current platform's capability
+record; pass it and the matching list to `with_isa` to select the first entry
+whose CPU and OS-state requirements are met. The callback takes the selected
+ISA as a template argument: `[]<native::isa A> { ... }`.
 
-`native::observe_cpu()` returns the current platform's capability record.
-`classify_isa` and `with_isa` use that record to check hardware and required OS
-state. `<native/targets.h>` retains `NATIVE_TARGET_PUSH(name)` and
-`NATIVE_TARGET_POP()`: target scopes control compiler code generation, while
-capability checks decide whether the resulting code may run.
+Selection does not change the callback's compiler target. Keep native operations
+in the generated overloads, or put your own functions inside
+`NATIVE_TARGET_PUSH(name)` / `NATIVE_TARGET_POP()` scopes from
+`<native/targets.h>`. Use `classify_isa` when checking one set of requirements.
+The generated variants use constrained overloads and function attributes, so
+they need no separate CMake targets or BMIs.
 
 Presets include AVX2, AVX-512, AVX-512 BF16/FP16, NEON and NEON BF16/FP16. They
 are ISA values; supported feature combinations can have their own source names.
@@ -155,29 +159,33 @@ CPU-model bundles remain future work. The native half operations retain their
 instruction contracts: [AVX-512 FP16](tests/avx512_fp16/README.md),
 [AVX-512 BF16](tests/bf16_profile/README.md),
 [NEON FP16](tests/neon_fp16/README.md), and [NEON BF16](tests/neon_bf16/README.md).
-Importing those APIs does not require that the CPU can execute them. Admission
-belongs at the call boundary, and the process must already meet its configured
-minimum.
+Check their requirements at the call boundary, as for the other optional
+instructions.
 
-`native::native` owns the hub and links `native::minimal`, which owns the common
-utilities. Old profile target names are aliases to the hub. The former
+`native::native` owns the hub and links `native::minimal`, which supplies the
+common utilities and ABI. `native::common` is an alias for `native::minimal`;
+linking either propagates its configured minimum to consumers. Old profile
+target names are aliases to the hub. The former
 `simd.avx2`, `simd.avx512` and native-half modules are replaced by `import native;`.
 `NATIVE_PROFILES` selects regression coverage, not the public API or BMI set.
 Applications that prefer separately compiled kernels may still use
 `native_target_profile`; the source target-list helper needs no such setup.
 
 `native::headers` exposes configuration, attributes, ISA metadata and
-`<native/targets.h>` for source generation. It also supports a `LANGUAGES NONE` consumer and a headers-only
-installation with `NATIVE_BUILD_HOST=OFF`. Include the attribute header when using
-macros such as `native_inline`; imports do not carry macros.
-Using `isa.h` without modules requires C++20; the host modules require C++26.
-The configuration and attribute headers impose no new C++ language mode.
+`<native/targets.h>` for source generation. It supports `LANGUAGES NONE`
+consumers and a headers-only installation with `NATIVE_BUILD_HOST=OFF`.
+Include `<native/attributes.h>` when using macros such as `native_inline`;
+imports do not carry macros. Using `isa.h` without modules requires C++20,
+while host modules require C++26. The configuration and attribute headers
+impose no new C++ language mode.
 
 The cutover changes module names, the C++ namespace, public header prefixes,
 target macros and CMake package names from `simd` to `native`. The register class
 template is now `native::simd`; the former `native::vec` class name is removed.
-Update extension specializations as well as ordinary uses. Rebuild BMIs and
-all code that exchanges vector types across library boundaries. The GitHub
+Update extension specializations as well as ordinary uses, and use matching
+`native` imports and package versions throughout downstream libraries. Earlier
+`simd` packages are not interchangeable with this one. Rebuild BMIs and all
+code that exchanges vector types across library boundaries. The GitHub
 repository remains `ekmett/simd`.
 
 [Compiled API examples](tests/api/README.md) exercise vector construction, masks,
@@ -195,13 +203,3 @@ individual source notices for retained upstream terms.
 
 Contributions and bug reports are welcome through [GitHub](https://github.com/ekmett/simd).
 Edward Kmett can also be reached as `ekmett` on Libera Chat and `@kmett` on Twitter/X.
-
-
-## Package baseline
-
-`native::minimal` owns the common ABI. Project setup chooses
-`NATIVE_MINIMAL_COMPILE_OPTIONS`; the default leaves the toolchain baseline
-unchanged. `native::common` remains an alias. Linking minimal carries its configured
-requirements to consumers; stronger functions carry their own target attributes.
-Admission checks may select a stronger implementation, but the process must
-already satisfy its configured minimum.

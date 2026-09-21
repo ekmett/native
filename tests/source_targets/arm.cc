@@ -10,7 +10,7 @@ namespace {
     native::arm_feature::crc, native::arm_feature::lse, native::arm_feature::rdm,
     native::arm_feature::fp16fml, native::arm_feature::dotprod,
     native::arm_feature::complxnum, native::arm_feature::jsconv,
-    native::arm_feature::rcpc, native::arm_feature::pauth
+    native::arm_feature::rcpc, native::arm_feature::pauth, native::arm_feature::i8mm
   };
   constexpr auto full=[] {
     native::arm_capabilities::raw_observations cpu;
@@ -61,6 +61,7 @@ namespace {
       bool bf16_observed=true,bf16=true;
     };
     if(native::classify_isa(old_snapshot{},native::arm_feature::dotprod).admitted()) return false;
+    if(native::classify_isa(old_snapshot{},native::arm_feature::i8mm).admitted()) return false;
     auto invalid=native::isa(static_cast<native::x86_feature>(-1));
     if(!native::classify_isa(full,invalid).invalid_features) return false;
     invalid={};invalid.flags[0]=1ull<<63;
@@ -104,8 +105,10 @@ int main() {
   if(!cpu.observed.has(native::arm_feature::neon) && native::classify_isa(cpu,native::neon).admitted()) return 2;
   if(!cpu.observed.has(native::arm_feature::neon_fp16) && native::classify_isa(cpu,native::neon_fp16).admitted()) return 3;
   if(!cpu.observed.has(native::arm_feature::neon_bf16) && native::classify_isa(cpu,native::neon_bf16).admitted()) return 4;
-  std::printf("ARM admission: NEON=%s FP16=%s BF16=%s\n",
+  if(!cpu.observed.has(native::arm_feature::i8mm) && native::classify_isa(cpu,native::arm_feature::i8mm).admitted()) return 5;
+  std::printf("ARM admission: NEON=%s FP16=%s BF16=%s I8MM=%s\n",
     native::classify_isa(cpu,native::neon).reason(),
     native::classify_isa(cpu,native::neon_fp16).reason(),
-    native::classify_isa(cpu,native::neon_bf16).reason());
+    native::classify_isa(cpu,native::neon_bf16).reason(),
+    native::classify_isa(cpu,native::arm_feature::i8mm).reason());
 }

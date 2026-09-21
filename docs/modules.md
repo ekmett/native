@@ -1,9 +1,12 @@
 # Types, modules and application dispatch
 
-`import native;` exposes the native ISA families and common utilities in one
-baseline hub. [Source target lists](omnibus.md) select which application
-kernels to compile and how to admit them before execution.
-Import `native.math` separately for promoted numerical kernels.
+`import native;` makes the platform's vector types, instruction families and
+common utilities available from one module. Types record the ISA an algorithm
+uses; compiler target scopes let it emit those instructions; runtime capability
+checks determine whether the machine can execute them. The
+[source target-list guide](omnibus.md) puts these pieces together.
+Import `native.math` separately for numerical kernels that work on scalars,
+vectors and batches.
 
 ## Identity and generic algorithms
 
@@ -44,15 +47,15 @@ Single-feature construction is exact; `feature_closure` adds prerequisites
 explicitly. The [ISA guide](abi-lookup.md) covers feature conjunction and
 compile-time target selection.
 
-Changing the ISA argument from a tag type to a structural value changes template
-identity and symbol names. Rebuild BMIs and every library or executable that
-exchanges these vector types when updating.
+When migrating from the older tag-type ISA argument to the current structural
+value, rebuild BMIs and every library or executable that exchanges these vector
+types: their template identities and symbol names have changed.
 
-The element type supplies its arithmetic contract; the architecture supplies
-native storage and instruction capabilities. A numerical extension specializes
-the common element hooks once and composes with every supported architecture.
-Shared x86 operations use common definitions for compatible register shapes;
-mask handling and instructions that differ remain architecture-sensitive.
+The element type supplies the arithmetic contract, while the ISA determines
+native storage and available instructions. A numerical extension specializes
+the common element hooks once and can then use every supported architecture.
+Compatible x86 register shapes share operation definitions; masks and
+instructions that differ still depend on the selected ISA.
 
 Keep dependent mathematical calls unqualified so ADL can select the register's
 overload. There is no runtime architecture branch in individual operations.
@@ -81,9 +84,10 @@ mutable lvalue and distinct destination indices. `position.xxy` is readable;
 assigning to it is ill-formed. Accessing nonexistent input lanes is ill-formed
 as well. Architecture and element type are retained in vector results.
 
-Properties invoke accessors and preserve the register layout. Lane construction
-supports constant evaluation, and `{}` value-initializes the backing register.
-Ordinary default initialization without braces leaves it uninitialized.
+Swizzle properties invoke accessors without changing the register layout.
+Lane construction supports constant evaluation. Initialize with `{}` to
+value-initialize the backing register; ordinary default initialization without
+braces leaves it uninitialized.
 
 A copied swizzle is a value, not a view. Address-taking, mutable-reference binding
 and assignments through a temporary swizzle such as `position.xyz.x = 5.f` are
@@ -118,14 +122,13 @@ M active = x < y;
 auto chosen = select(active,x,y);
 ```
 
-A mask is tied to the comparison shape. Boolean vectors, all-zero/all-one lane
-masks and compact predicates have different storage contracts. Named conversion
-operations make crossings explicit. `vector_mask_type` remains available when
-an algorithm needs full vector lanes. Common mask tags describe lane width;
-the chosen profile determines the register representation.
+Boolean vectors, all-zero/all-one lane masks and compact predicates have
+different storage contracts. Convert between them with the named conversion
+operations. Use `vector_mask_type` when an algorithm needs full vector lanes.
+Mask tags describe lane width; the chosen profile determines the register
+representation.
 
-Pointer operations select the result type explicitly rather than guessing a
-profile from the pointer:
+For pointer operations, specify the vector type to load:
 
 ```cpp
 auto x = native::load_simd<V>(p);
@@ -145,15 +148,34 @@ module fragment. ISA values select constrained definitions;
 Clang function target attributes establish each implementation's requirements.
 Consumer feature macros do not change a module's definitions.
 
-`native.wide` owns the container, tuple protocol and composed operations. Native
-element families select matching target overloads, while custom elements keep
-their ADL array-kernel preference and generic fallback. The binary32 exponential
-uses the shared canonical pack graph described below.
+`native.wide` provides the container, tuple protocol and operations over packs.
+Native element types select matching target overloads. Custom elements can
+supply array kernels through ADL, with generic operations as a fallback. The
+binary32 exponential advances its polynomial across a whole batch, as described
+below.
 
-Common string, type, memory and numerical utilities retain independent named
-modules with one provider each. `native.numerics` owns fp16/bf16 storage and scalar
-conversions. `native.x86.features` and `native.x86.wait` are x86-only; `native.arm.features` supplies Arm
-observation. Optional wait functions have their own target requirements.
+String, type, memory and numerical utilities have independent named modules,
+each with one provider. `native.numerics` supplies fp16/bf16 storage and scalar
+conversions. `native.x86.features` and `native.arm.features` observe the
+corresponding platform's capabilities. The x86-only `native.x86.wait` module
+provides waiting instructions, with target requirements for optional operations.
+
+The x86 integer instruction modules belong to `native::minimal`. Their
+implementation headers remain private; vendor intrinsic declarations stay in
+the global module fragment.
+
+On AArch64, `native.arm` reexports `native.arm.dotprod`, `native.arm.rdm`,
+`native.arm.fp16fml`, `native.arm.fcma` and `native.arm.i8mm`.
+These modules also belong to `native::minimal` and use raw NEON operands,
+without requiring `native.simd`. Each operation takes an explicit `isa` template
+argument and has its own compiler target requirement. Check the corresponding
+features with `classify_isa` before calling a function compiled for that target;
+the import itself neither enables instructions nor dispatches at runtime.
+
+Use `simd::to_native()` and `simd::from_native()` to pass values between SIMD
+algorithms and these instruction APIs. The documented operand shapes and lane
+bounds still apply; implicit vector reinterpretation cannot make an invalid
+lane valid by selecting another element format.
 
 ## Extending the element type
 
@@ -162,18 +184,18 @@ observation. Optional wait functions have their own target requirements.
 `simd` specialization instantiates that customization for the selected raw register.
 Existing raw float/integer/mask specializations remain direct implementations.
 
-An extension must define the arithmetic semantics of its custom element.
-The downstream FTZ library uses this boundary: it owns normalization,
-reproducible math and environment admission, while using this library's raw
-registers, masks and arrays. The dependency goes from FTZ to SIMD only.
-Every ISA family can use the common scalar type.
+An extension defines the arithmetic semantics of its custom element. For
+example, FTZ supplies normalization, reproducible math and environment checks,
+while using this library's raw registers, masks and arrays. FTZ depends on
+`native`; `native` does not depend on FTZ. Every ISA family can use the same
+scalar type.
 
 ## Build and dispatch
 
-The qualified toolchain is Clang 23, CMake 4.4 and Ninja. Configuration compiles
-structured-binding-pack and property/deducing-this feature tests. ISA properties
-and named swizzles use Clang's `__declspec(property)` extension; this is not
-standard C++26 syntax.
+The tested toolchain is Clang 23, CMake 4.4 and Ninja. Configuration checks
+structured-binding packs, properties and deducing `this`. ISA properties and
+named swizzles use Clang's `__declspec(property)` extension, so C++26 support
+alone is insufficient.
 The `native::headers` target propagates `-fms-extensions` to Clang's GNU-style
 driver, including installed consumers. The clang-cl driver enables it already.
 Installed module sources and build metadata permit consumer BMI regeneration;
@@ -207,17 +229,17 @@ module sources carry the metadata needed for regeneration. A downstream
 numerical library should put its public `CXX_MODULES` file set directly on its
 archive target so CMake can discover the transitive providers.
 
-Raw approximate math retains each function's stated domain and operation
-graph; wrapping it in `wide` does not strengthen its accuracy or floating-point
-environment contract. The [validation record](validation.md) distinguishes
-compiler fixtures, numerical tests and native execution results.
+Batching an approximation with `wide` preserves its stated domain, sequence
+of operations and floating-point environment contract; it does not improve the
+accuracy guarantee. The [validation record](validation.md) distinguishes
+compilation checks, numerical tests and native execution.
 
 ## Promoted math batches
 
 `import native.math;` provides `math::exp` and the other promoted numerical
 kernels. `import native;` provides `wide::promote`/`wide::demote<Original>` and
 the register primitives used by those kernels.
-Canonical batches use `std::array`. A float promotes to
+Batches use `std::array`. A float promotes to
 `std::array<native::simd<float,1,native::scalar>,1>`; a SIMD value promotes to a
 one-element array retaining its lane count and ISA. An array adapts its elements
 without adding another outer dimension. The existing `native::wide` also adapts
@@ -235,11 +257,12 @@ auto batch_result = math::exp(std::array{V(1.f), V(2.f)});
 // batch_result is std::array<V,2>.
 ```
 
-The caller must provide the selected vector target as usual. Each polynomial
-stage advances all independent chains; batching does not call unary `exp`
-separately for every element. Results preserve the input scalar, SIMD, array,
-or legacy `native::wide` shape, including empty and one-element containers.
-The staged kernels support binary32 elements.
+Compile the caller for the selected vector target, as with other native
+operations. Each polynomial stage advances all independent chains before the
+next stage begins, rather than finishing one `exp` call per element. Results
+preserve the input scalar, SIMD, array, or legacy `native::wide` shape, including
+empty and one-element containers.
+These kernels support binary32 elements.
 
 Promotion owns its values. Demotion uses the original type to restore shape,
 while retaining transformed element types: a scalar comparison demotes to
@@ -322,9 +345,9 @@ auto written = native::compress_store(output, 1, active, values);
 register and selected count. Its scalar fill defaults to zero and supplies
 every unused logical output lane. `expand` consumes the first selected-count
 lanes from its packed register, in order, and requires an explicit prior
-register for the unselected positions. Both rearrange object representations:
-floating-point signed zero, subnormal bits and NaN payloads are preserved without
-floating-point arithmetic. Short vectors exclude physical padding from masks
+register for the unselected positions. Both rearrange bits without
+floating-point arithmetic, preserving signed zero, subnormals and NaN payloads.
+Short vectors exclude physical padding from masks
 and counts; their output padding is zero.
 
 `compress_store` writes the first `min(capacity, selected_count)` selected
@@ -332,19 +355,21 @@ elements and returns the number **written**, which may be less than the count
 returned by `compress`. No later destination element is read or written. A null
 destination is allowed when capacity is zero or no logical lane is selected.
 For a nonzero write, the destination must provide that many writable elements
-of the vector's element type. No cross-register compaction or runtime backend
-selection is introduced; applications can assemble coherent batches using the
-returned counts.
-
+of the vector's element type. These operations compact within one register.
+Applications can use the returned counts to assemble batches across registers,
+without runtime backend selection inside the operations.
 
 ## Package baseline
 
-`native::minimal` owns the common ABI. Project setup chooses
-`NATIVE_MINIMAL_COMPILE_OPTIONS`; the default leaves the toolchain baseline
-unchanged. `native::common` remains an alias. Linking minimal carries its configured
-requirements to consumers; stronger functions carry their own target attributes.
-Admission checks may select a stronger implementation, but the process must
-already satisfy its configured minimum.
+`native::minimal` supplies the common ABI; `native::common` is an alias for it.
+Set `NATIVE_MINIMAL_COMPILE_OPTIONS` during project setup to choose its minimum
+ISA. The default leaves the toolchain baseline unchanged, and linking the target
+propagates that minimum to consumers.
+
+Functions that need more instructions carry their own target attributes.
+Runtime admission can select one of those stronger implementations, but the
+process must already be able to execute code compiled for its configured
+minimum.
 
 ## CPU capabilities
 
@@ -364,8 +389,13 @@ and OS-state checks determine which requirements the host can execute.
 for `native::classify_isa(cpu, requirements)` or `native::with_isa`.
 Architecture-specific observers remain available from their feature modules.
 On x86, `native.x86` also imports [BMI1](x86-bmi1.md), [BMI2](x86-bmi2.md),
-[POPCNT](x86-popcnt.md), [LZCNT](x86-lzcnt.md) and wait operations; the feature-only
-umbrella does not import those operations.
+[POPCNT](x86-popcnt.md), [LZCNT](x86-lzcnt.md), [CRC32C](x86-crc32c.md),
+[GFNI](x86-gfni.md), [VPOPCNTDQ](x86-vpopcntdq.md) and wait operations;
+the feature-only umbrella does not import those operations. CRC32C has a
+scalar feature requirement independent of the SSE4.2 compiler bundle. GFNI
+requirements depend on the register width and masking mode. VPOPCNTDQ needs
+AVX512F and its own feature, with AVX512VL for 128- and 256-bit forms. Each
+family requires caller target attributes and CPU/OS admission before execution.
 
 Native capability records contain `present` and `observed` typed sets:
 `feature_set<x86_feature>` or `feature_set<arm_feature>`. Admission requires each
@@ -375,7 +405,7 @@ editing diagnostics does not update normalized features or OS state. Synthetic
 native snapshots should fill the typed sets explicitly. Structural raw fixtures
 remain usable with `classify_isa` and run through the same decoder.
 
-ARM entries still describe the existing compiler requirements: NEON joins FP
+ARM entries describe compiler requirements: NEON joins FP
 and Advanced SIMD, FP16 joins scalar and vector arithmetic, and AES joins AES
 and PMULL. The typed set is not yet a complete list of independent architectural
 extension bits. Enhanced BF16 remains informational under `raw.ebf16` and

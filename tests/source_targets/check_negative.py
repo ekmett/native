@@ -14,7 +14,7 @@ p.add_argument('--config',default='')
 p.add_argument('--log',required=True,type=pathlib.Path)
 p.add_argument('--diagnostic',required=True)
 a=p.parse_args()
-command=[a.cmake,'--build',a.build,'--target',a.target,'--parallel','1']
+command=[a.cmake,'--build',a.build,'--target',a.target,'--parallel']
 if a.config: command.extend(['--config',a.config])
 r=subprocess.run(command,text=True,capture_output=True)
 text=r.stdout+r.stderr

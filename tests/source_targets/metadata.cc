@@ -54,6 +54,20 @@ namespace {
   static_assert(NATIVE_TARGET_ISA(neon)==native::neon);
   static_assert(NATIVE_TARGET_ISA(neon_fp16)==native::neon_fp16);
   static_assert(NATIVE_TARGET_ISA(neon_bf16)==native::neon_bf16);
+  constexpr auto i8mm=native::isa(native::arm_feature::i8mm);
+  static_assert(std::uint64_t(native::arm_feature::pauth)==14);
+  static_assert(std::uint64_t(native::arm_feature::i8mm)==15);
+  static_assert(native::arm_feature_count==16);
+  static_assert(native::feature_closure(i8mm)==(native::neon&i8mm));
+  static_assert(native::target_features("i8mm")==native::feature_closure(i8mm));
+  static_assert([] {
+    native::isa features;
+    features.arm_i8mm=true;
+    if(!features.arm_i8mm || features!=i8mm) return false;
+    features.arm_pauth=true;
+    features.arm_i8mm=false;
+    return !features.arm_i8mm && features==native::isa(native::arm_feature::pauth);
+  }());
   static_assert(!(native::target_features("avx2,no-fma")<=native::detail::known_features));
   static_assert(!(native::target_features("default")<=native::detail::known_features));
   static_assert(native::target_features("")==native::scalar);
@@ -129,6 +143,18 @@ namespace {
     if(native::classify_isa(arm,arm_all).admitted()) return false;
     arm={};arm.extra_features={};
     if(native::classify_isa(arm,arm_all).admitted()) return false;
+
+    // I8MM requires the NEON state, but no DotProd, FP16 or BF16 feature.
+    arm={};arm.fp16_observed=arm.scalar_fp16=arm.vector_fp16=false;
+    arm.bf16_observed=arm.bf16=false;
+    arm.extra_observed=arm.extra_features=i8mm;
+    if(!native::classify_isa(arm,i8mm).admitted()) return false;
+    arm.extra_observed={};
+    if(native::classify_isa(arm,i8mm).missing_features!=i8mm) return false;
+    arm.extra_observed=i8mm;arm.extra_features={};
+    if(native::classify_isa(arm,i8mm).missing_features!=i8mm) return false;
+    arm.extra_features=i8mm;arm.baseline_observed=false;
+    if(native::classify_isa(arm,i8mm).missing_features!=native::neon) return false;
 
     return true;
   }

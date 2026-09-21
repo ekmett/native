@@ -1,0 +1,12 @@
+native_sdot_int32x2
+native_sdot_int32x2_lane8
+native_sdot_int32x2_lane16
+native_sdot_int32x4
+native_sdot_int32x4_lane8
+native_sdot_int32x4_lane16
+native_udot_uint32x2
+native_udot_uint32x2_lane8
+native_udot_uint32x2_lane16
+native_udot_uint32x4
+native_udot_uint32x4_lane8
+native_udot_uint32x4_lane16

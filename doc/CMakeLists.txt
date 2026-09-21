@@ -25,9 +25,10 @@ set(DOXYGEN_SEARCH_INCLUDES NO)
 set(DOXYGEN_EXPAND_ONLY_PREDEF YES)
 # Doxygen misparses conditional explicit constructors; keep their actual
 # contracts in the comments while rendering the ordinary constructor signature.
-# Select the representative x86 host and omit raw compiler attributes so the
-# feature headers and their constrained function declarations remain visible.
+# Select a representative SIMD family and omit raw compiler attributes.
+# NATIVE_DOXYGEN also exposes independently guarded ARM instruction declarations.
 set(DOXYGEN_PREDEFINED
+  "NATIVE_DOXYGEN:=1"
   "NATIVE_HOST_X86:=1" "NATIVE_HOST_NEON:=0"
   "NATIVE_HAS_NATIVE_FP16=1" "NATIVE_HAS_NATIVE_BF16=1"
   "explicit(...):=explicit" "__declspec(x):=" "__attribute__(x):=" "__cplusplus=202600L" "NATIVE_PROFILE=512" "NATIVE_BACKEND:=avx512_backend" "NATIVE_ARCH:=::native::avx512"
@@ -41,7 +42,8 @@ set(DOXYGEN_PREDEFINED
   "native_const:=" "native_pure:=" "native_nodiscard:=" "native_lifetimebound:="
   "native_artificial:=" "native_noescape:=" "native_reinitializes:="
   "native_empty_bases:=" "native_restrict:=" "native_hidden:="
-  "native_nonnull(x):=" "native_null_terminated_string_arg(x):=")
+  "native_nonnull(x):=" "native_null_terminated_string_arg(x):="
+  "native_target(x):=")
 # The compiler includes wide's fragments once per target family. Doxygen scans
 # input headers independently and cannot reconstruct their class context. Stage
 # one expansion in the actual owning header, retaining signatures and comments;
@@ -124,7 +126,8 @@ set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
 set(docs_markdown_root "${CMAKE_CURRENT_BINARY_DIR}/markdown")
 set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md src/README.md tests/api/README.md
   doc/building.md tests/omnibus/README.md tests/bf16_profile/README.md tests/neon_fp16/README.md tests/neon_bf16/README.md tests/avx512_fp16/README.md
-  tests/exp_policy_refinement/README.md tests/wide_construction/README.md)
+  tests/exp_policy_refinement/README.md tests/wide_construction/README.md
+  tests/arm_dotprod/README.md tests/arm_rdm/README.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")
 list(APPEND docs_pages ${docs_guides})

@@ -16,18 +16,18 @@ namespace native {
     sse42, popcnt, avx, avx2, fma, f16c,
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
-    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg
+    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq
   };
   /// ARM instruction features and compiler bundles, using local bit indices.
   enum class arm_feature : std::uint64_t {
     neon, neon_fp16, neon_bf16, aes, sha2, sha3,
     crc, lse, rdm, fp16fml, dotprod, complxnum,
-    jsconv, rcpc, pauth
+    jsconv, rcpc, pauth, i8mm
   };
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::waitpkg)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avx512vpopcntdq)+1;
   /// Number of named ARM feature values.
-  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::pauth)+1;
+  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::i8mm)+1;
 
   namespace detail {
     template<class T> concept instruction_feature=
@@ -235,6 +235,15 @@ namespace native {
     constexpr bool get_waitpkg() const noexcept { return get(x86_feature::waitpkg); }
     constexpr void set_waitpkg(bool value) noexcept { set(x86_feature::waitpkg,value); }
     __declspec(property(get=get_waitpkg,put=set_waitpkg)) bool waitpkg;
+    constexpr bool get_crc32() const noexcept { return get(x86_feature::crc32); }
+    constexpr void set_crc32(bool value) noexcept { set(x86_feature::crc32,value); }
+    __declspec(property(get=get_crc32,put=set_crc32)) bool crc32;
+    constexpr bool get_gfni() const noexcept { return get(x86_feature::gfni); }
+    constexpr void set_gfni(bool value) noexcept { set(x86_feature::gfni,value); }
+    __declspec(property(get=get_gfni,put=set_gfni)) bool gfni;
+    constexpr bool get_avx512vpopcntdq() const noexcept { return get(x86_feature::avx512vpopcntdq); }
+    constexpr void set_avx512vpopcntdq(bool value) noexcept { set(x86_feature::avx512vpopcntdq,value); }
+    __declspec(property(get=get_avx512vpopcntdq,put=set_avx512vpopcntdq)) bool avx512vpopcntdq;
     constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
@@ -271,6 +280,9 @@ namespace native {
     constexpr bool get_arm_pauth() const noexcept { return get(arm_feature::pauth); }
     constexpr void set_arm_pauth(bool value) noexcept { set(arm_feature::pauth,value); }
     __declspec(property(get=get_arm_pauth,put=set_arm_pauth)) bool arm_pauth;
+    constexpr bool get_arm_i8mm() const noexcept { return get(arm_feature::i8mm); }
+    constexpr void set_arm_i8mm(bool value) noexcept { set(arm_feature::i8mm,value); }
+    __declspec(property(get=get_arm_i8mm,put=set_arm_i8mm)) bool arm_i8mm;
   };
 
   template<class T> concept arch=detail::instruction_feature<T> || std::same_as<T,isa> ||
@@ -350,7 +362,7 @@ namespace native {
       {x86_feature::sse3,"sse3",isa(x86_feature::sse2),feature_register::leaf1_ecx,0},
       {x86_feature::ssse3,"ssse3",isa(x86_feature::sse3),feature_register::leaf1_ecx,9},
       {x86_feature::sse41,"sse4.1",isa(x86_feature::ssse3),feature_register::leaf1_ecx,19},
-      {x86_feature::sse42,"sse4.2",x86_feature::sse41&x86_feature::popcnt,feature_register::leaf1_ecx,20},
+      {x86_feature::sse42,"sse4.2",x86_feature::sse41&x86_feature::popcnt&x86_feature::crc32,feature_register::leaf1_ecx,20},
       {x86_feature::popcnt,"popcnt",{},feature_register::leaf1_ecx,23},
       {x86_feature::avx,"avx",isa(x86_feature::sse42),feature_register::leaf1_ecx,28},
       {x86_feature::avx2,"avx2",isa(x86_feature::avx),feature_register::leaf7_ebx,5},
@@ -360,12 +372,15 @@ namespace native {
       {x86_feature::bmi2,"bmi2",{},feature_register::leaf7_ebx,8},
       {x86_feature::mwaitx,"mwaitx",{},feature_register::extended1_ecx,29},
       {x86_feature::waitpkg,"waitpkg",{},feature_register::leaf7_ecx,5},
+      {x86_feature::crc32,"crc32",{},feature_register::leaf1_ecx,20},
+      {x86_feature::gfni,"gfni",isa(x86_feature::sse2),feature_register::leaf7_ecx,8},
       {x86_feature::avx512f,"avx512f",x86_feature::avx2&x86_feature::f16c&x86_feature::fma,feature_register::leaf7_ebx,16},
       {x86_feature::avx512dq,"avx512dq",isa(x86_feature::avx512f),feature_register::leaf7_ebx,17},
       {x86_feature::avx512bw,"avx512bw",isa(x86_feature::avx512f),feature_register::leaf7_ebx,30},
       {x86_feature::avx512vl,"avx512vl",isa(x86_feature::avx512f),feature_register::leaf7_ebx,31},
       {x86_feature::avx512bf16,"avx512bf16",isa(x86_feature::avx512bw),feature_register::leaf7_1_eax,5},
       {x86_feature::avx512fp16,"avx512fp16",isa(x86_feature::avx512bw),feature_register::leaf7_edx,23},
+      {x86_feature::avx512vpopcntdq,"avx512vpopcntdq",isa(x86_feature::avx512f),feature_register::leaf7_ecx,14},
       {arm_feature::neon,"neon",{},feature_register::arm,0},
       {arm_feature::neon_fp16,"fullfp16",isa(arm_feature::neon),feature_register::arm,1},
       {arm_feature::neon_bf16,"bf16",isa(arm_feature::neon),feature_register::arm,2},
@@ -388,7 +403,8 @@ namespace native {
       {arm_feature::complxnum,"complxnum",isa(arm_feature::neon),feature_register::arm,11},
       {arm_feature::jsconv,"jsconv",isa(arm_feature::neon),feature_register::arm,12},
       {arm_feature::rcpc,"rcpc",isa(arm_feature::neon),feature_register::arm,13},
-      {arm_feature::pauth,"pauth",isa(arm_feature::neon),feature_register::arm,14}
+      {arm_feature::pauth,"pauth",isa(arm_feature::neon),feature_register::arm,14},
+      {arm_feature::i8mm,"i8mm",isa(arm_feature::neon),feature_register::arm,15}
     };
     inline constexpr isa arm_features=[] {
       isa result;

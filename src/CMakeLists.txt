@@ -85,16 +85,18 @@ target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
   FILES native.isa.ccm native.scalar.ccm native.wide.ccm native.static_string.ccm
     native.memory.ccm native.types.ccm native.numerics.ccm native.features.ccm)
 
-# Baseline x86 utilities are independent of every SIMD profile.
+# Architecture utilities are independent of every SIMD profile.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.x86.features.ccm native.x86.wait.ccm native.x86.bmi1.ccm native.x86.bmi2.ccm
-      native.x86.popcnt.ccm native.x86.lzcnt.ccm native.x86.ccm)
+      native.x86.popcnt.ccm native.x86.lzcnt.ccm native.x86.crc32c.ccm native.x86.gfni.ccm
+      native.x86.vpopcntdq.ccm native.x86.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
-    FILES native.arm.features.ccm native.arm.ccm)
+    FILES native.arm.features.ccm native.arm.dotprod.ccm native.arm.rdm.ccm
+      native.arm.fp16fml.ccm native.arm.fcma.ccm native.arm.i8mm.ccm native.arm.ccm)
 endif()
 
 native_module_target(native native)

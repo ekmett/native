@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/fcma.h"
+export module native.arm.fcma;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_fcma
+  /// \{
+  using ::native::fcadd;
+  using ::native::fcmla;
+  using ::native::fcmla_lane;
+  /// \}
+}
