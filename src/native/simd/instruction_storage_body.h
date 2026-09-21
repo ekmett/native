@@ -178,15 +178,12 @@ export namespace native {
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_target("sse2")
     native_type to_native() const noexcept requires(sizeof(native_type)==16) { return value_; }
-    /// Adopt implementation bits and clear unused physical bytes.
+    /// Adopt register bits unchanged; unused physical bytes are unspecified.
     native_nodiscard static native_inline native_target("sse2")
     simd from_native(native_type value) noexcept requires(sizeof(native_type)==16) {
-      simd result;
-      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
-      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
-      return result;
+      simd result; result.value_=value; return result;
     }
-    /// Adopt a register whose unused physical bytes are already zero.
+    /// Synonym for from_native; these storage-only shapes do not normalize padding.
     native_nodiscard static native_inline native_target("sse2")
     simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==16) {
       simd result; result.value_=value; return result;
@@ -194,15 +191,12 @@ export namespace native {
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_target("avx")
     native_type to_native() const noexcept requires(sizeof(native_type)==32) { return value_; }
-    /// Adopt implementation bits and clear unused physical bytes.
+    /// Adopt register bits unchanged; unused physical bytes are unspecified.
     native_nodiscard static native_inline native_target("avx")
     simd from_native(native_type value) noexcept requires(sizeof(native_type)==32) {
-      simd result;
-      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
-      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
-      return result;
+      simd result; result.value_=value; return result;
     }
-    /// Adopt a register whose unused physical bytes are already zero.
+    /// Synonym for from_native; these storage-only shapes do not normalize padding.
     native_nodiscard static native_inline native_target("avx")
     simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==32) {
       simd result; result.value_=value; return result;
@@ -210,15 +204,12 @@ export namespace native {
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_target("avx512f")
     native_type to_native() const noexcept requires(sizeof(native_type)==64) { return value_; }
-    /// Adopt implementation bits and clear unused physical bytes.
+    /// Adopt register bits unchanged; unused physical bytes are unspecified.
     native_nodiscard static native_inline native_target("avx512f")
     simd from_native(native_type value) noexcept requires(sizeof(native_type)==64) {
-      simd result;
-      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
-      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
-      return result;
+      simd result; result.value_=value; return result;
     }
-    /// Adopt a register whose unused physical bytes are already zero.
+    /// Synonym for from_native; these storage-only shapes do not normalize padding.
     native_nodiscard static native_inline native_target("avx512f")
     simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==64) {
       simd result; result.value_=value; return result;
@@ -226,12 +217,9 @@ export namespace native {
 #else
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_type to_native() const noexcept { return value_; }
-    /// Adopt implementation bits and clear unused physical bytes.
+    /// Adopt register bits unchanged; unused physical bytes are unspecified.
     native_nodiscard static native_inline simd from_native(native_type value) noexcept {
-      simd result;
-      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
-      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
-      return result;
+      simd result; result.value_=value; return result;
     }
 #endif
     /// Read exactly N objects, without requiring register-width alignment.
