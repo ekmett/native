@@ -146,6 +146,11 @@ The process must satisfy that minimum before any runtime selection can help.
 Stronger implementations carry their own Clang target requirements; importing
 them leaves the ordinary caller's target unchanged.
 
+`NATIVE_BASELINE` from `<native/targets.h>` captures the current translation
+unit's enabled features as a constant `isa` value. It uses Clang's resolved
+flags, including explicit feature disables, and is separate from runtime CPU
+detection. See [compiler baseline](docs/abi-lookup.md#compiler-baseline).
+
 Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
 you choose. `native::observe_cpu()` supplies the current platform's capability
 record; pass it and the matching list to `with_isa` to select the first entry

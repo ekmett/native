@@ -212,6 +212,47 @@ needs matching Clang target scopes in builds for its CPU family; see the
 Use `has` in these constraints. Adding `!!` to `A.neon` does not remove the
 property expression that Clang's Linux/macOS mangler rejects.
 
+## Compiler baseline
+
+`NATIVE_BASELINE` from `<native/targets.h>` is a constant `isa` expression for
+the registered instruction features enabled in the current translation unit:
+
+```cpp
+#include <native/targets.h>
+import native;
+using namespace native;
+
+constexpr isa baseline = NATIVE_BASELINE;
+```
+
+The snapshot reads Clang's resolved feature macros, including features implied
+by a CPU model or another compiler option. Explicit negative flags are retained:
+`-msse4.2 -mno-popcnt` includes SSE4.2 and CRC32 but excludes POPCNT. Likewise,
+`-mavx2` does not establish FMA. No prerequisite closure or additional project
+requirement is applied to this value. Unregistered extensions do not invalidate
+the registered features that Clang reports.
+
+ARM SIMD features also require enabled vector registers. Architecture macros
+that survive `-mgeneral-regs-only` do not establish permission to use those
+operations. Scalar FP16 support alone does not establish NEON FP16 support.
+
+This is a compiler permission set, not a runtime CPU query or a complete list of
+the instructions in an executable. Normal code may rely on its baseline once
+the application has established its deployment requirements. Function target
+attributes and target pragmas do not update the snapshot; a function that
+explicitly disables features can have a weaker target. Intrinsic target and ABI
+constraints still apply.
+
+The expression is textual so it captures the consumer's flags. A constant
+exported from a precompiled module would describe that module's compilation.
+Keep local bindings local, and pass the structural value explicitly when it
+selects a template specialization. Do not use differing compiler baselines to
+give a shared inline definition different meanings across translation units.
+
+`NATIVE_TARGET_MINIMUM` remains the conservative source-variant admission
+requirement: it adds prerequisite closure, `NATIVE_TARGET_EXTRA_MINIMUM` and
+the existing rejection marker for recognized but unregistered extensions.
+
 ## Compiler-minimum metadata
 
 `isa_list<...>` and `abi_lookup<A, List>` retain the internal ordered metadata
