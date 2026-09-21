@@ -218,3 +218,35 @@ static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGE
 #undef NATIVE_HAS_AVX512VL
 #undef NATIVE_HAS_ARM_NEON
 #endif
+
+#if NATIVE_HOST_WASM && (!defined(NATIVE_PROFILE) || NATIVE_PROFILE != 0)
+#define NATIVE_BACKEND wasm_backend
+#define NATIVE_BACKEND_NAMESPACE native::detail::NATIVE_BACKEND
+#define NATIVE_RAW_TARGET 0
+#define NATIVE_ARCH_REQUIRES(A) (::native::abi_lookup<A,::native::detail::raw_kernel_policies>::index == 0)
+#define NATIVE_DEFAULT_ARCH (::native::feature_closure(::native::wasm_feature::simd128))
+#define NATIVE_HAS_AVX2 0
+#define NATIVE_HAS_AVX512F 0
+#define NATIVE_HAS_AVX512DQ 0
+#define NATIVE_HAS_AVX512BW 0
+#define NATIVE_HAS_AVX512VL 0
+#define NATIVE_HAS_ARM_NEON 0
+#define NATIVE_HAS_WASM_SIMD128 1
+#pragma clang attribute push(__attribute__((target("simd128"))), apply_to=function)
+#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == 0)
+#include NATIVE_BACKEND_BODY
+#undef NATIVE_COMMON_ARCH
+#pragma clang attribute pop
+#undef NATIVE_BACKEND
+#undef NATIVE_BACKEND_NAMESPACE
+#undef NATIVE_ARCH_REQUIRES
+#undef NATIVE_RAW_TARGET
+#undef NATIVE_DEFAULT_ARCH
+#undef NATIVE_HAS_AVX2
+#undef NATIVE_HAS_AVX512F
+#undef NATIVE_HAS_AVX512DQ
+#undef NATIVE_HAS_AVX512BW
+#undef NATIVE_HAS_AVX512VL
+#undef NATIVE_HAS_ARM_NEON
+#undef NATIVE_HAS_WASM_SIMD128
+#endif

@@ -17,6 +17,7 @@
 #define NATIVE_KERNEL_TARGET_13 "avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"
 #define NATIVE_KERNEL_TARGET_15 "avx2,fma,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16"
 #define NATIVE_KERNEL_TARGET_17 "avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"
+#define NATIVE_KERNEL_TARGET_WASM "simd128"
 #define NATIVE_KERNEL_TARGET_20 "neon"
 #define NATIVE_KERNEL_TARGET_21 "neon,bf16"
 #define NATIVE_KERNEL_TARGET_22 "neon,fullfp16"
@@ -65,6 +66,14 @@ namespace native::detail {
     static constexpr std::array targets{NATIVE_KERNEL_TARGET_23,NATIVE_KERNEL_TARGET_21,
       NATIVE_KERNEL_TARGET_22,NATIVE_KERNEL_TARGET_20,NATIVE_KERNEL_TARGET_0};
     static constexpr std::array indices{11,12,13,14,15};
+  };
+  template<>
+  struct kernel_profiles<wasm> {
+    using raw = isa_list<feature_closure(wasm_feature::simd128), isa<wasm>{}>;
+    using storage = raw;
+    using memory = raw;
+    static constexpr std::array targets{NATIVE_KERNEL_TARGET_WASM, NATIVE_KERNEL_TARGET_0};
+    static constexpr std::array indices{16, 15};
   };
   template<architecture Family> struct kernel_policy_family {
     using profiles=kernel_profiles<Family>;

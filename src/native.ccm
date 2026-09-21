@@ -6,4 +6,6 @@ export import native.features;
 export import native.x86;
 #elif defined(__aarch64__) || defined(_M_ARM64)
 export import native.arm;
+#elif defined(__wasm__)
+export import native.wasm;
 #endif

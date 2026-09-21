@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+
+#include "native/isa_import.h"
+#include "native/x86/adx.h"
+#include "native/x86/adx_defaults.h"
+
+export module native.x86.adx;
+export import native.x86.features;
+
+export namespace native {
+  /// \addtogroup x86_adx
+  /// \{
+  /// Add 32/64-bit unsigned operands with carry; see the operation contract.
+  using ::native::addcarryx;
+  /// \}
+}

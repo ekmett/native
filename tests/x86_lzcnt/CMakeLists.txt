@@ -55,7 +55,7 @@ if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
 else()
   target_compile_options(native_test_x86_lzcnt_codegen PRIVATE -O2 ${disabled_features})
 endif()
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/lzcnt-codegen-object.txt"
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/lzcnt-codegen-object.txt"
   CONTENT "$<TARGET_OBJECTS:native_test_x86_lzcnt_codegen>\n")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(compiler_directory "${CMAKE_CXX_COMPILER}" DIRECTORY)

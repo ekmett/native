@@ -10,6 +10,11 @@ function(native_module_target target export_name)
   native_host_settings(${target})
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${export_name}
     POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_MODULES ON)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")
+    # WASI static modules and their consumers must agree on mutable-globals.
+    # PIC changes that target feature in Clang; these archives do not need it.
+    set_target_properties(${target} PROPERTIES POSITION_INDEPENDENT_CODE OFF)
+  endif()
   target_link_libraries(${target} PUBLIC native_headers)
   # Installed consumers rebuild BMIs with these private implementation inputs.
   # CMake records private include directories in imported module metadata.
@@ -91,7 +96,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.x86.features.ccm native.x86.wait.ccm native.x86.bmi1.ccm native.x86.bmi2.ccm
-      native.x86.popcnt.ccm native.x86.lzcnt.ccm native.x86.crc32c.ccm)
+      native.x86.adx.ccm native.x86.popcnt.ccm native.x86.lzcnt.ccm native.x86.crc32c.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
@@ -111,13 +116,18 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.x86.gfni.ccm native.x86.vpopcntdq.ccm native.x86.pclmul.ccm
       native.x86.vpclmul.ccm native.x86.vnni.ccm native.x86.f16c.ccm
-      native.x86.aes.ccm native.x86.avx512cd.ccm native.x86.bitalg.ccm native.x86.vbmi.ccm native.x86.ccm)
+      native.x86.aes.ccm native.x86.avx512cd.ccm native.x86.bitalg.ccm
+      native.x86.vbmi.ccm native.x86.vbmi2.ccm native.x86.sha.ccm native.x86.vaes.ccm
+      native.x86.ifma.ccm native.x86.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(native PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.arm.neon.ccm native.arm.dotprod.ccm native.arm.rdm.ccm native.arm.fp16fml.ccm
       native.arm.fcma.ccm native.arm.i8mm.ccm native.arm.bf16.ccm native.arm.aes.ccm
       native.arm.pmull.ccm native.arm.sha.ccm native.arm.sm3.ccm native.arm.sm4.ccm native.arm.ccm)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")
+  target_sources(native PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES native.wasm.relaxed.ccm native.wasm.ccm)
 endif()
 
 # Older build files may link these names. They all refer to the same hub and
@@ -126,6 +136,8 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   set(native_hub_profiles AVX2 AVX512 AVX512_BF16 AVX512_FP16)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   set(native_hub_profiles NEON NEON_FP16 NEON_BF16)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")
+  set(native_hub_profiles WASM_SIMD128 WASM_RELAXED_SIMD)
 else()
   set(native_hub_profiles)
 endif()

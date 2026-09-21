@@ -6,6 +6,10 @@ how ISA requirements connect to compilation and execution. The
 [README example](../README.md) includes a target scope and runtime check; vector
 snippets below belong inside a function compiled for their chosen ISA.
 
+The [WebAssembly backend](wasm-simd.md) provides SIMD128 integer, float and double
+registers with canonical lane masks. Wasm engine admission and separate module
+loading remain application responsibilities.
+
 ## Values and generic algorithms
 
 `native::simd<T,N,A>` takes an element type, a lane count and an `isa<>` value as a
@@ -416,15 +420,14 @@ module when its boundary is useful:
 | Need | Import | CMake target |
 | --- | --- | --- |
 | SIMD, masks and register operations | `native.simd` | `native::native` |
-| ARM SM3/SM4 rounds and schedules | `native.arm.sm3`, `native.arm.sm4` ([guide](arm-sm-crypto.md)) | `native::native` |
-| A vector instruction family | Its `native.x86.*` or `native.arm.*` module | `native::native` |
+| A vector instruction family | Its `native.x86.*`, `native.arm.*` or `native.wasm.*` module | `native::native` |
 | Promoted numerical kernels | `native.math` | `native::native` |
 | CPU observation and admission | `native.features` | `native::minimal` |
 | ISA values without an observer | `native.isa` | `native::minimal` |
 | Scalar instruction utilities | The corresponding family module | `native::minimal` |
 | Scalar numerics, generic packs and utilities | `native.numerics`, `native.wide`, `native.types`, `native.memory`, `native.static_string` | `native::minimal` |
 
-The architecture hubs `native.x86` and `native.arm` include vector instruction
+The architecture hubs `native.x86`, `native.arm` and `native.wasm` include vector instruction
 families and therefore belong to `native::native`. `native::common` is an alias
 for `native::minimal`. Vector instruction modules import `native.simd` and use
 `simd<T,N,Arch>` in their public interfaces. Scalar forms keep ordinary C++

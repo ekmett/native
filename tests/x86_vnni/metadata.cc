@@ -54,9 +54,17 @@ namespace {
   static_assert(properties());
 
 #if defined(NATIVE_VNNI_EXPECT_UNKNOWN)
+#ifndef __AMX_TILE__
+#error The unknown-minimum probe must enable AMX-TILE.
+#endif
   static_assert(!(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>));
 #else
   static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>);
+#endif
+#ifdef __AVXIFMA__
+  static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::avxifma));
+#else
+  static_assert(!NATIVE_TARGET_MINIMUM.has(x86_feature::avxifma));
 #endif
 #ifdef __AVXVNNI__
   static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::avxvnni));

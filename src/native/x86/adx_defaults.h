@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#pragma once
+
+#include "native/targets.h"
+
+// Defaults belong to this module's provider; importer macros cannot change them.
+#if NATIVE_HOST_X86
+namespace native {
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::adx))
+  constexpr std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
+
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx))
+  consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
+
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::adx))
+  constexpr std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
+
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx))
+  consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
+}
+#endif

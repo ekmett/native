@@ -5,7 +5,7 @@ Use an instruction family when the algorithm needs a particular operation or
 its exact arithmetic contract: a saturating dot product, a carry-less product,
 a conversion with specified rounding, or a checksum update.
 
-Import the family module directly, or use `native.x86`, `native.arm`, or the
+Import the family module directly, or use `native.x86`, `native.arm`, `native.wasm`, or the
 host's `native` hub. Vector operands and results use `simd<T,N,Arch>`; scalar
 forms use ordinary C++ values. Operations constrain the feature bits in `Arch`
 and require a compatible compiler target. Different ISA values remain different
@@ -18,6 +18,13 @@ all requirements of the containing function before entering it. Importing a
 module does not enable a compiler target or perform runtime dispatch. See
 [the call-boundary example](modules.md#features-compiler-targets-and-runtime-admission)
 and [target-list dispatch](omnibus.md).
+
+On WebAssembly, the engine admits the complete module before execution.
+[SIMD128](wasm-simd.md) supplies the ordinary 128-bit integer and floating
+instruction families. [Relaxed SIMD](wasm-relaxed.md) adds operations whose
+results can depend on the engine and its host. Build separate modules for
+different feature levels; a branch inside a module cannot hide an unsupported
+instruction from validation.
 
 ## Dot products and small matrices
 
@@ -35,6 +42,21 @@ matrix may need rearrangement. Saturating and wrapping integer accumulations
 are distinct operations. BF16 pair accumulation also differs from a chain of
 ordinary FP32 fused multiply-adds. The family guides specify those boundaries,
 including the effects of ARM's enhanced BF16 mode.
+
+## Integer products and carry chains
+
+[IFMA](x86-ifma.md) multiplies the low 52 bits of unsigned 64-bit vector
+lanes, then adds either half of the 104-bit product to the corresponding
+64-bit accumulator modulo 2⁶⁴. AVX-IFMA provides unmasked 128/256-bit forms;
+AVX512IFMA adds EVEX forms and hardware masks with width-specific requirements.
+Carries do not propagate between lanes.
+
+[Addition with carry](x86-adx.md) takes ordinary 32-bit or 64-bit unsigned
+values and writes a modular sum through an output pointer, returning a
+normalized carry byte. Its ADX feature requirement is independent of SIMD.
+The public operation matches Clang's `addcarryx` intrinsic, which currently
+uses ADD/ADC in the tested callers; independently scheduled ADCX/ADOX chains
+are not exposed.
 
 ## Conversions, fixed-point and complex arithmetic
 
@@ -70,7 +92,8 @@ and [LZCNT](x86-lzcnt.md) have independent feature requirements.
 its own width and masking requirements. [BITALG](x86-bitalg.md) counts bits in
 byte/word lanes and selects source bits into compact predicates.
 [VBMI](x86-vbmi.md) permutes bytes across one or two whole vectors and extracts
-wrapping bit windows from qwords.
+wrapping bit windows from qwords. [VBMI2](x86-vbmi2.md) adds byte/word
+compaction, packed memory transfers and double-source shifts.
 [AVX-512CD](x86-avx512cd.md) supplies leading-zero counts and masks identifying equal earlier lanes. Conflict
 detection compares across the whole vector, including masked-off source lanes.
 
@@ -93,6 +116,12 @@ They do not assemble a cipher mode, key schedule, message padding or a complete
 hash. ARM's hardware feature bits are independent. Clang's ARM `aes`, `sha2` and
 `sha3` targets enable bundles, so admission must cover each whole compiler
 target even when the source calls only one of its operations.
+
+The x86 [SHA primitives](x86-sha.md) implement SHA-1/SHA-256 round and message
+schedule steps on four-dword states. [Vector AES](x86-vaes.md) processes one, two
+or four independent 128-bit AES states per operation, with width-specific
+feature requirements. These operations expose round primitives; callers own
+message padding, schedules and complete algorithms.
 
 [ARM SM3 and SM4](arm-sm-crypto.md) supply hash-round, message-schedule,
 data-round and key-schedule instructions on four-word vectors. Their hardware
