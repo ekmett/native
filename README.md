@@ -114,6 +114,9 @@ Use the [instruction guide](docs/instructions.md) when an algorithm needs a
 particular dot product, conversion, polynomial operation or checksum. Vector
 forms take `simd` values; scalar forms take ordinary C++ values. Their feature
 requirements and arithmetic contracts remain specific to the instruction.
+For multiword integer arithmetic, [IFMA](docs/x86-ifma.md) accumulates halves
+of 52-bit vector products, while [addition with carry](docs/x86-adx.md) supplies
+scalar unsigned sums and carry propagation.
 
 Import `native.math` separately for promoted numerical kernels such as
 `math::exp` and `math::sincos`. Their domains and batching behavior are described

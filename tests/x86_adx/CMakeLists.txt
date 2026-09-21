@@ -93,6 +93,9 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
 
+add_test(NAME native.x86.adx.codegen_controls
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_codegen.py")
+
 foreach(interface IN ITEMS raw public)
   set(target native_test_x86_adx_codegen_${interface})
   if(interface STREQUAL "raw")

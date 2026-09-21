@@ -60,13 +60,13 @@ baseline = "native_adx_baseline_import" if args.baseline_only else "native_adx_b
 if args.admission_only:
     baseline = "native_adx_admission"
 for mnemonic, operands in instructions(baseline):
-    if mnemonic.startswith(("v", "k", "aes", "adx")) or re.search(r"\b[yz]mm\d+\b", operands):
+    if mnemonic.startswith(("v", "k", "aes", "adcx", "adox")) or re.search(r"\b[yz]mm\d+\b", operands):
         raise SystemExit(f"Baseline contains optional instruction: {mnemonic}.")
     if re.fullmatch(r"(?:popcnt|lzcnt|tzcnt|pdep|pext|bzhi|bextr)[wlq]?", mnemonic):
         raise SystemExit(f"Baseline contains optional scalar instruction: {mnemonic}.")
 if args.baseline_only:
     for mnemonic, operands in instructions("main"):
-        if mnemonic.startswith(("v", "k", "aes", "adx")) or re.search(r"\b[yz]mm\d+\b", operands):
+        if mnemonic.startswith(("v", "k", "aes", "adcx", "adox")) or re.search(r"\b[yz]mm\d+\b", operands):
             raise SystemExit(f"Baseline main contains optional instruction: {mnemonic}.")
 if args.baseline_only or args.admission_only:
     print("Baseline importer/admission body has no optional instructions.")

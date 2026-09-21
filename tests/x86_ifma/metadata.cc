@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <initializer_list>
 #include <native/isa.h>
 #include <native/targets.h>
 
@@ -53,26 +52,31 @@ namespace {
     bool xcr0_observed = true;
   };
 
-  constexpr bool admission() {
-    for (auto requirements : {hardware, vex, evex, evex_vl}) {
-      if (!native::classify_isa(snapshot{}, requirements).admitted()) {
-        return false;
-      }
-      auto state = requirements.has(x86_feature::avx512f) ? 0xe6u : 6u;
-      for (unsigned bit = 0; bit < 64; ++bit) {
-        snapshot cpu;
-        cpu.xcr0 &= ~(std::uint64_t{1} << bit);
-        if (native::classify_isa(cpu, requirements).admitted() !=
-            ((state & (std::uint64_t{1} << bit)) == 0)) {
-          return false;
-        }
-      }
+  constexpr bool state_admission(native::isa<native::x86> requirements) {
+    if (!native::classify_isa(snapshot{}, requirements).admitted()) {
+      return false;
+    }
+    auto state = requirements.has(x86_feature::avx512f) ? 0xe6u : 6u;
+    for (unsigned bit = 0; bit < 64; ++bit) {
       snapshot cpu;
-      cpu.xcr0_observed = false;
-      if (native::classify_isa(cpu, requirements).admitted()) {
+      cpu.xcr0 &= ~(std::uint64_t{1} << bit);
+      if (native::classify_isa(cpu, requirements).admitted() !=
+          ((state & (std::uint64_t{1} << bit)) == 0)) {
         return false;
       }
     }
+    snapshot cpu;
+    cpu.xcr0_observed = false;
+    return !native::classify_isa(cpu, requirements).admitted();
+  }
+
+  // Bound each constant evaluation independently; keep the complete XCR0 bank.
+  static_assert(state_admission(hardware));
+  static_assert(state_admission(vex));
+  static_assert(state_admission(evex));
+  static_assert(state_admission(evex_vl));
+
+  constexpr bool feature_admission() {
     for (unsigned bit = 0; bit < 32; ++bit) {
       snapshot cpu;
       cpu.leaf7_1_eax = 1u << bit;
@@ -94,7 +98,7 @@ namespace {
     return native::classify_isa(cpu, hardware).admitted() &&
       !native::classify_isa(cpu, vex).admitted();
   }
-  static_assert(admission());
+  static_assert(feature_admission());
 }
 
 extern "C" bool native_ifma_admission(std::uint32_t subleaf, std::uint32_t bits, std::uint64_t state) noexcept {
@@ -106,5 +110,6 @@ extern "C" bool native_ifma_admission(std::uint32_t subleaf, std::uint32_t bits,
 }
 
 int main() {
-  return admission() ? 0 : 1;
+  return state_admission(hardware) && state_admission(vex) &&
+    state_admission(evex) && state_admission(evex_vl) && feature_admission() ? 0 : 1;
 }

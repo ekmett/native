@@ -36,6 +36,21 @@ are distinct operations. BF16 pair accumulation also differs from a chain of
 ordinary FP32 fused multiply-adds. The family guides specify those boundaries,
 including the effects of ARM's enhanced BF16 mode.
 
+## Integer products and carry chains
+
+[IFMA](x86-ifma.md) multiplies the low 52 bits of unsigned 64-bit vector
+lanes, then adds either half of the 104-bit product to the corresponding
+64-bit accumulator modulo 2⁶⁴. AVX-IFMA provides unmasked 128/256-bit forms;
+AVX512IFMA adds EVEX forms and hardware masks with width-specific requirements.
+Carries do not propagate between lanes.
+
+[Addition with carry](x86-adx.md) takes ordinary 32-bit or 64-bit unsigned
+values and writes a modular sum through an output pointer, returning a
+normalized carry byte. Its ADX feature requirement is independent of SIMD.
+The public operation matches Clang's `addcarryx` intrinsic, which currently
+uses ADD/ADC in the tested callers; independently scheduled ADCX/ADOX chains
+are not exposed.
+
 ## Conversions, fixed-point and complex arithmetic
 
 [F16C](x86-f16c.md) converts between binary32 and IEEE binary16 on x86. It does

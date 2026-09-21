@@ -23,6 +23,8 @@ Positive-controlled rejections cover missing private feature tags, missing
 caller targets, weak-tag runtime calls, provider-default runtime calls at the
 baseline, signed output pointers and const output pointers. Baseline `main`,
 scalar import probes and the actual admission classifier are disassembled.
+Checker regression controls inject ADCX and ADOX disassembly into each baseline
+entry, including `main`, and require rejection while accepting ordinary ADC.
 
 ```sh
 cmake --build build --parallel --target \
@@ -32,7 +34,7 @@ cmake --build build --parallel --target \
 ctest --test-dir build -R '^native\.x86\.adx\.' --output-on-failure
 ```
 
-The source suite has 21 CTests, retains compiler/disassembly/pair reports and
+The source suite has 22 CTests, retains compiler/disassembly/pair reports and
 imposes no compiler job cap. A source build and codegen pass do not establish
 native runtime qualification; run the executable on an ADX-capable CPU.
 
