@@ -69,7 +69,7 @@ add_test(NAME native.x86.constexpr.codegen COMMAND "${Python3_EXECUTABLE}"
 set_tests_properties(native.x86.constexpr.codegen PROPERTIES LABELS "host;codegen;constexpr;baseline;x86")
 
 foreach(interface IN ITEMS header module)
-  foreach(index RANGE 0 40)
+  foreach(index RANGE 0 48)
     set(target native_x86_constexpr_reject_${interface}_${index})
     add_library(${target} OBJECT EXCLUDE_FROM_ALL negative.cc)
     target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_NEGATIVE=${index})

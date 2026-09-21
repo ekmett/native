@@ -342,3 +342,67 @@ std::uint32_t rejected(std::uint32_t a, std::uint64_t b) {
   return native::crc32c<native::scalar>(a, b);
 }
 #endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 41
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
+  return native::pdep<native::avx2>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 42
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
+  return native::pdep<native::avx2>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 43
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
+  return native::pext<native::avx2>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 44
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
+  return native::pext<native::avx2>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 45
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
+  return native::pdep<native::isa(native::x86_feature::avx2)>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 46
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
+  return native::pdep<native::isa(native::x86_feature::avx2)>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 47
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
+  return native::pext<native::isa(native::x86_feature::avx2)>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 48
+// AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
+  return native::pext<native::isa(native::x86_feature::avx2)>(value, mask);
+}
+#endif
