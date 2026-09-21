@@ -8,19 +8,19 @@
 import native.wide;
 import native;
 
-template<native::isa Arch,class... X>
+template<native::isa<> Arch,class... X>
 concept isa_deducible=requires(X... x) { native::simd(Arch,x...); };
 static_assert(!isa_deducible<native::avx2,float,float,float,float>);
 static_assert(!isa_deducible<native::avx2,std::array<float,4>>);
 
-template<native::isa Arch> struct family {
+template<native::isa<> Arch> struct family {
   using value = native::simd<float,4,Arch>;
 };
 static_assert(!std::same_as<family<native::avx2>,family<native::avx512>>);
 static_assert(!std::same_as<family<native::avx2>::value,family<native::avx512>::value>);
 static_assert(std::same_as<decltype(native::simd<float,8,native::avx2>{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f}),native::simd<float,8,native::avx2>>);
 static_assert(std::same_as<decltype(native::simd<float,16,native::avx512>{1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f}),native::simd<float,16,native::avx512>>);
-template<template<class,std::size_t,native::isa> class Vector,native::isa Arch>
+template<template<class,std::size_t,native::isa<>> class Vector,native::isa<> Arch>
 using generic_float4 = Vector<float,4,Arch>;
 static_assert(std::same_as<generic_float4<native::simd,native::avx2>,family<native::avx2>::value>);
 static_assert(std::same_as<decltype(native::simd<float,4,native::avx2>(std::array<float,4>{})),native::simd<float,4,native::avx2>>);

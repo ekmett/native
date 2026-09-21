@@ -15,7 +15,7 @@ static_assert(sizeof(native::simd<std::uint8_t,16,native::neon>) == 16);
 static_assert(std::is_same_v<decltype(native::simd<float,4,native::neon>{1.f,2.f,3.f,4.f}),native::simd<float,4,native::neon>>);
 static_assert(std::is_same_v<decltype(native::simd<float,4,native::neon>{} < native::simd<float,4,native::neon>{}),native::simd<float,4,native::neon>::mask>);
 static_assert(!native::simd<float,4,native::neon>::mask::compact);
-template<native::isa Arch> struct family { using value = native::simd<float,4,Arch>; };
+template<native::isa<> Arch> struct family { using value = native::simd<float,4,Arch>; };
 static_assert(std::is_same_v<family<native::neon>::value,native::simd<float,4,native::neon>>);
 extern "C" std::size_t profile_neon_header(std::uint32_t *, std::size_t);
 extern "C" std::size_t profile_neon_import(std::uint32_t *, std::size_t);

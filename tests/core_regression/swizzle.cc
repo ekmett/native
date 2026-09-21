@@ -16,6 +16,10 @@
 #include <utility>
 
 namespace {
+  constexpr bool compact_test_mask=[]<native::isa A>() {
+    if constexpr(decltype(A)::family==native::x86) return A==native::avx512;
+    else return false;
+  }.template operator()<test_arch>();
   template<class T,std::size_t N> constexpr bool original_layout =
     sizeof(test_vec<T,N>)==sizeof(T)*N && alignof(test_vec<T,N>)==sizeof(T)*N;
   static_assert(original_layout<float,1> && original_layout<std::int32_t,1> &&
@@ -119,7 +123,7 @@ namespace {
     using V=test_vec<float,N>;using M=typename V::mask;
     using Full=test_vec<native::mask32,N>;
     static_assert(std::is_trivially_copyable_v<M>);
-    static_assert(M::compact==(test_arch==native::avx512));
+    static_assert(M::compact==compact_test_mask);
     static_assert(sizeof(Full)==16 && std::is_trivially_copyable_v<Full>);
     constexpr auto low=(std::uint64_t(1)<<N)-1;
     auto full=Full::from_bitset(~std::uint64_t(0));
@@ -293,8 +297,10 @@ int main() {
   memory<float,2>();memory<float,3>();
   memory<std::int32_t,2>();memory<std::int32_t,3>();
   memory<std::uint32_t,2>();memory<std::uint32_t,3>();
-  constexpr char const * arch=test_arch==native::avx512?"avx512":
-    test_arch==native::avx2?"avx2":"neon";
+  constexpr char const * arch=[]<native::isa A>() {
+    if constexpr(decltype(A)::family==native::x86) return A==native::avx512?"avx512":"avx2";
+    else return "neon";
+  }.template operator()<test_arch>();
   using M2=typename test_vec<float,2>::mask;
   using M3=typename test_vec<float,3>::mask;
   std::printf("swizzle passed: arch=%s, float/int32/uint32 logical lanes=2,3, compact masks=%d,%d; owning snapshots, exact word scatter and guarded memory\n",

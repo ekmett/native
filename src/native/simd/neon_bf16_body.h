@@ -2,9 +2,9 @@
 #pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
 export namespace native {
   namespace detail {
-    template<::native::isa A> requires NATIVE_ARCH_REQUIRES(A)
+    template<::native::isa<> A> requires NATIVE_ARCH_REQUIRES(A)
     struct value_traits<simd<bf16,8,A>> {
-      static constexpr isa value=neon_bf16;
+      static constexpr isa<> value=neon_bf16;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
@@ -16,11 +16,11 @@ export namespace native {
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<bf16,8,Arch> {
+  template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<bf16,8,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
     /// The distinct compile-time NEON_BF16 instruction profile.
-    static constexpr isa architecture=Arch;
+    static constexpr isa<> architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = simd;
     /// Native 128-bit BF16 register representation; native bridges copy bits.
@@ -141,7 +141,7 @@ export namespace native {
   /// return default NaNs, ignore exception enables, and leave FPSR unchanged.
   /// No operation changes FPCR. Applications own FPCR and ISA admission; this
   /// API makes no reproducible cross-ISA or cross-FPCR result promise.
-  template<::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
+  template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
   native_nodiscard native_inline simd<float,4,Arch> dot2(
       simd<bf16,8,Arch> a, simd<bf16,8,Arch> b,
       simd<float,4,Arch> accumulator) noexcept {

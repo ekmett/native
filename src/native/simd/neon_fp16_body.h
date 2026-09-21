@@ -2,9 +2,9 @@
 #pragma clang attribute push(__attribute__((target("neon,fullfp16"))), apply_to=function)
 export namespace native {
   namespace detail {
-    template<::native::isa A> requires NATIVE_ARCH_REQUIRES(A)
+    template<::native::isa<> A> requires NATIVE_ARCH_REQUIRES(A)
     struct value_traits<simd<fp16,8,A>> {
-      static constexpr isa value=neon_fp16;
+      static constexpr isa<> value=neon_fp16;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
@@ -21,11 +21,11 @@ export namespace native {
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<fp16,8,Arch> {
+  template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<fp16,8,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = fp16;
     /// The distinct compile-time NEON_FP16 instruction profile.
-    static constexpr isa architecture=Arch;
+    static constexpr isa<> architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = simd;
     /// Native 128-bit FP16 register representation; native bridges copy bits.
@@ -188,7 +188,7 @@ export namespace native {
   /// Compute a*b+c in each lane with one final half-precision rounding (FMLA).
   /// The caller's FPCR rounding/FZ16/DN/exception controls apply, FPSR may change,
   /// and FPCR is preserved. NaN payload/sign follow the native instruction.
-  template<::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
+  template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
   native_nodiscard native_inline simd<fp16,8,Arch> fma(
       simd<fp16,8,Arch> a,simd<fp16,8,Arch> b,simd<fp16,8,Arch> c) noexcept {
     return simd<fp16,8,Arch>::from_native(

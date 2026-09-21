@@ -50,7 +50,7 @@ template<class V> consteval bool storage_only() {
   return true;
 }
 
-template<native::isa A,std::size_t N> consteval bool arithmetic_float() {
+template<native::isa<> A,std::size_t N> consteval bool arithmetic_float() {
   using V=native::simd<float,N,A>;
   static_assert(has_floor<V> && has_ceil<V> && has_trunc<V> && has_abs<V>);
   static_assert(has_scaleb<V> && has_fma<V> && has_masked_scaleb<V> && has_masked_scaleb_zero<V>);

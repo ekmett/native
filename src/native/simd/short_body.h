@@ -21,13 +21,13 @@ namespace native {
   /// Loads and stores touch only logical lanes; mask reductions ignore padding.
   /// Division supplies harmless inactive operands before using the full register.
   /// \snippet api.cc swizzles
-  template<::NATIVE_BACKEND_NAMESPACE::short_element T,std::size_t N,::native::isa Arch>
+  template<::NATIVE_BACKEND_NAMESPACE::short_element T,std::size_t N,::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && requires { typename simd<T,4,Arch>::native_type; }
   // Make the register alignment explicit: MSVC's packed standard-library
   // aggregates can otherwise cap an ext_vector_type member's implicit alignment.
   struct alignas(typename simd<T,4,Arch>::native_type) simd<T,N,Arch> : detail::swizzle_access<T,N,Arch> {
     using value_type=T;
-    static constexpr isa architecture=Arch;
+    static constexpr isa<> architecture=Arch;
     using storage_type=simd<T,4,Arch>;
     using native_type=::NATIVE_BACKEND_NAMESPACE::short_native<::NATIVE_BACKEND_NAMESPACE::short_lane<T>>;
     using register_type=simd;
@@ -312,21 +312,21 @@ namespace native {
   };
 
   /// Choose each bit from a where the corresponding mask bit is one, otherwise from b; arbitrary bit masks are permitted.
-  template<simd_integer_element T,std::size_t N,::native::isa Arch>
+  template<simd_integer_element T,std::size_t N,::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4)
   native_nodiscard native_inline simd<T,N,Arch> bit_select(simd<T,N,Arch> bits,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return (bits&a)|(~bits&b); }
   /// Add matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
-  template<simd_integer_element T,std::size_t N,::native::isa Arch,class M>
+  template<simd_integer_element T,std::size_t N,::native::isa<> Arch,class M>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename simd<T,N,Arch>::mask> || std::same_as<M,simd<mask32,N,Arch>>)
   native_nodiscard native_inline simd<T,N,Arch> masked_add(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a+b,prior); }
   /// Subtract matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
-  template<simd_integer_element T,std::size_t N,::native::isa Arch,class M>
+  template<simd_integer_element T,std::size_t N,::native::isa<> Arch,class M>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename simd<T,N,Arch>::mask> || std::same_as<M,simd<mask32,N,Arch>>)
   native_nodiscard native_inline simd<T,N,Arch> masked_sub(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a-b,prior); }
   /// Multiply matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
-  template<simd_integer_element T,std::size_t N,::native::isa Arch,class M>
+  template<simd_integer_element T,std::size_t N,::native::isa<> Arch,class M>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename simd<T,N,Arch>::mask> || std::same_as<M,simd<mask32,N,Arch>>)
   native_nodiscard native_inline simd<T,N,Arch> masked_mul(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a*b,prior); }

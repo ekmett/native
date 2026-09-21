@@ -2,7 +2,7 @@
 namespace NATIVE_BACKEND_NAMESPACE::native {
   namespace detail {
     template<class V> struct fp32_bit_bridge;
-    template<std::size_t N, ::native::isa Arch>
+    template<std::size_t N, ::native::isa<> Arch>
       requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
     struct fp32_bit_bridge<::native::simd<float,N,Arch>> {
       using value_type=::native::simd<float,N,Arch>;

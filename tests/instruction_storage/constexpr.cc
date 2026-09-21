@@ -65,7 +65,7 @@ static_assert([] {
     b.value[2]==3.f && b.value[3]==0.f && c.value[0]==1.f && c.value[3]==4.f;
 }());
 
-template<class T,std::size_t N,native::isa A> consteval bool integer_lanes() {
+template<class T,std::size_t N,native::isa<> A> consteval bool integer_lanes() {
   using V=native::simd<T,N,A>;
   static_assert(sizeof(V)==sizeof(typename V::native_type));
   static_assert(std::is_trivially_copyable_v<V>);
@@ -104,7 +104,7 @@ template<std::size_t N> consteval bool compact_mask() {
 }
 static_assert(compact_mask<7>() && compact_mask<64>());
 
-template<class T,std::size_t N,native::isa A> consteval bool instruction_lanes() {
+template<class T,std::size_t N,native::isa<> A> consteval bool instruction_lanes() {
   using V=native::simd<T,N,A>;
   std::array<T,N> source;
   for(std::size_t i=0;i<N;++i) source[i]=T(float(i+1));

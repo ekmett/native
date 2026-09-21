@@ -6,7 +6,7 @@ namespace native {
   /// Repartition the bits of an integer register without conversion or a spill.
   /// Both shapes need equal physical storage sizes supported by this backend's target.
   /// Storage-only element views are allowed; lane arithmetic is not required.
-  template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa Arch>
+  template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (sizeof(From) * N % sizeof(To) == 0 && requires {
       typename simd<From,N,Arch>::native_type;
       typename simd<To,sizeof(From)*N/sizeof(To),Arch>::native_type;
@@ -30,7 +30,7 @@ namespace native {
 
   /// Sum adjacent unsigned lanes into lanes twice as wide. No sum can overflow.
   /// The result contains half as many lanes; full-register inputs keep their width.
-  template <simd_integer_element T, std::size_t N, ::native::isa Arch>
+  template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T) <= 4 && N > 1 && N % 2 == 0 &&
       detail::integer_arithmetic<T,N,Arch>)
   native_nodiscard native_inline native_const auto pairwise_add_widened(simd<T,N,Arch> value) noexcept {
@@ -73,7 +73,7 @@ namespace native {
 
   /// Count set bits independently in each unsigned integer lane.
   /// Byte populations use CNT on NEON and register nibble tables on x86.
-  template <simd_integer_element T, std::size_t N, ::native::isa Arch>
+  template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && detail::integer_arithmetic<T,N,Arch>)
   native_nodiscard native_inline native_const simd<T,N,Arch> popcount(simd<T,N,Arch> value) noexcept {
     using result = simd<T,N,Arch>;
@@ -135,7 +135,7 @@ namespace native {
 
   /// Sum unsigned 8-, 16-, or 32-bit lanes exactly into a 64-bit scalar.
   /// Reduction widens before adding: it never wraps at the input lane width.
-  template <simd_integer_element T, std::size_t N, ::native::isa Arch>
+  template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T)<=4 &&
       detail::integer_arithmetic<T,N,Arch>)
   native_nodiscard native_inline native_const std::uint64_t reduce_add_widened(simd<T,N,Arch> value) noexcept {

@@ -7,5 +7,5 @@
 // this module provider, not to each translation unit including the raw headers.
 namespace native {
   /// Omitted architecture arguments use the native.simd provider's baseline.
-  template<class T, std::size_t N, isa Arch = NATIVE_BASELINE> struct simd;
+  template<class T, std::size_t N, isa<> Arch = NATIVE_BASELINE> struct simd;
 }

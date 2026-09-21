@@ -94,7 +94,7 @@ namespace native::detail::NATIVE_BACKEND {
 namespace native::detail {
   // Properties are compiler accessors, not proxy objects: a read owns its lanes,
   // and assignment materializes the complete right side before any scatter.
-  template<class T,std::size_t N,::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N<=4)
+  template<class T,std::size_t N,::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N<=4)
   struct swizzle_access<T,N,Arch> {
     template<std::size_t K> using result = std::conditional_t<K==1,T,simd<T,K,Arch>>;
 #define NATIVE_SWIZZLE_FIELD(NAME,K,...) \

@@ -2,8 +2,8 @@
 namespace native {
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct native_empty_bases simd<float, 4,Arch> : detail::register_memory<simd<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
-    static constexpr isa architecture=Arch;
+  template <::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct native_empty_bases simd<float, 4,Arch> : detail::register_memory<simd<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
+    static constexpr isa<> architecture=Arch;
     template <class T> using rebind = simd<T,4,Arch>;
     using vector_mask_type=simd<mask32,4,Arch>;
     using mask_type=std::conditional_t<bool(NATIVE_HAS_AVX512VL),predicate<4,Arch>,simd<mask32,4,Arch>>;
@@ -145,8 +145,8 @@ namespace native {
 
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<float, 8,Arch> : detail::register_memory<simd<float,8,Arch>, 8> {
-    static constexpr isa architecture=Arch;
+  template <::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<float, 8,Arch> : detail::register_memory<simd<float,8,Arch>, 8> {
+    static constexpr isa<> architecture=Arch;
     template <class T> using rebind = simd<T,8,Arch>;
     using vector_mask_type=simd<mask32,8,Arch>;
     using mask_type=std::conditional_t<bool(NATIVE_HAS_AVX512VL),predicate<8,Arch>,simd<mask32,8,Arch>>;

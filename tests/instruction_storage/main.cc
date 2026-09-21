@@ -6,7 +6,7 @@
 #include <type_traits>
 import native;
 
-template<class T,std::size_t N,native::isa A>
+template<class T,std::size_t N,native::isa<> A>
 concept complete_simd = requires { sizeof(native::simd<T,N,A>); };
 
 template<class V> bool check() {

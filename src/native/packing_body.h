@@ -6,7 +6,7 @@ namespace native {
 #if NATIVE_HAS_AVX2 || NATIVE_HAS_ARM_NEON
   /// Truncate unsigned lanes to half their width and concatenate a then b.
   /// This preserves lane order and low bits; it does not saturate.
-  template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa Arch>
+  template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From) == 2 * sizeof(To) &&
       // The selected backend must implement this width. Complete storage alone

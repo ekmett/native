@@ -41,9 +41,9 @@ namespace wide {
     // dependent, so this header may precede the complete SIMD definitions.
     template<class T> struct element_traits {};
     template<> struct element_traits<float> { using type=::native::simd<float,1,::native::scalar>; };
-    template<class T,std::size_t N,::native::isa A>
+    template<class T,std::size_t N,::native::isa<> A>
     struct element_traits<::native::simd<T,N,A>> { using type=::native::simd<T,N,A>; };
-    template<std::size_t N,::native::isa A>
+    template<std::size_t N,::native::isa<> A>
     struct element_traits<::native::predicate<N,A>> { using type=::native::predicate<N,A>; };
     template<class T> using adapted_t=typename element_traits<std::remove_cvref_t<T>>::type;
     template<class T> concept adaptable=requires { typename adapted_t<T>; };

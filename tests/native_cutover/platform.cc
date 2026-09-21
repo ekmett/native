@@ -12,7 +12,7 @@ constexpr auto requirements = NATIVE_TARGET_ISA(platform_bmi2);
 static_assert(requirements.has(native::x86_feature::bmi2));
 static_assert(!requirements.has(native::x86_feature::avx2));
 
-template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
+template<native::isa<> A, class T> concept has_bmi2 = requires(T value, T mask) {
   { native::pdep<A>(value, mask) } noexcept -> std::same_as<T>;
   { native::pext<A>(value, mask) } noexcept -> std::same_as<T>;
   { native::bzhi<A>(value, 9u) } noexcept -> std::same_as<T>;

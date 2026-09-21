@@ -251,7 +251,7 @@ namespace wide {
 
   namespace detail {
     template<class T> inline constexpr bool binary32_register = false;
-    template<std::size_t N, ::native::isa A>
+    template<std::size_t N, ::native::isa<> A>
     inline constexpr bool binary32_register<::native::simd<float, N, A>> =
       requires(::native::simd<float,N,A> a) { { a+a } -> std::same_as<::native::simd<float,N,A>>; };
     template<class P> inline constexpr bool binary32_array = false;

@@ -15,7 +15,7 @@ template<class Raw, class Self>
 struct native::simd_customization<mask_fixture::custom_element, Raw, Self> {};
 
 namespace mask_fixture {
-  template<class T, std::size_t N, native::isa A>
+  template<class T, std::size_t N, native::isa<> A>
   consteval bool vector_mask_matches() {
     using V = native::simd<T, N, A>;
     using M = typename V::mask_type;

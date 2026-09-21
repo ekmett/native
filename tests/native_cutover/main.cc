@@ -27,7 +27,7 @@ static_assert(std::same_as<native::simd<extension_element, 1, native::scalar>::v
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_TARGET_cutover_bmi2 "bmi2"
 constexpr auto bmi2 = NATIVE_TARGET_ISA(cutover_bmi2);
-template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
+template<native::isa<> A, class T> concept has_bmi2 = requires(T value, T mask) {
   { native::pdep<A>(value, mask) } noexcept -> std::same_as<T>;
   { native::pext<A>(value, mask) } noexcept -> std::same_as<T>;
 };
@@ -65,7 +65,7 @@ int main() {
 #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
   unsigned calls = 0;
   auto selected = native::with_isa(native::isa_list<native::scalar>{}, cpu,
-    [&]<native::isa A> { static_assert(A == native::scalar); ++calls; });
+    [&]<native::isa<> A> { static_assert(A == native::scalar); ++calls; });
   return selected && calls == 1 ? 0 : 3;
 #endif
 }

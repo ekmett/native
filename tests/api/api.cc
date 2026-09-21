@@ -38,7 +38,7 @@ namespace {
 void check(bool value) { if (!value) std::abort(); }
 
 //! [vector_construction]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void vector_construction() {
   using V = native::simd<float, 4, Arch>;
   V zero{};
@@ -51,7 +51,7 @@ void vector_construction() {
 //! [vector_construction]
 
 //! [masks]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void masks() {
   using V = native::simd<float, 4, Arch>;
   V x{1.f, 2.f, 3.f, 4.f};
@@ -67,7 +67,7 @@ void masks() {
 //! [masks]
 
 //! [memory]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void memory() {
   using V = native::simd<float, 4, Arch>;
   std::array<float, 4> input{1.f, 2.f, 3.f, 4.f};
@@ -82,7 +82,7 @@ void memory() {
 //! [memory]
 
 //! [compaction]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void compaction() {
   using V = native::simd<std::uint32_t, 4, Arch>;
   auto active = V::mask::from_bitset(0b1010);
@@ -98,7 +98,7 @@ void compaction() {
 //! [compaction]
 
 //! [swizzles]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void swizzles() {
   using V = native::simd<float, 3, Arch>;
   V position{1.f, 2.f, 3.f};
@@ -111,7 +111,7 @@ void swizzles() {
 //! [swizzles]
 
 //! [arithmetic]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void arithmetic() {
   using V = native::simd<float, 4, Arch>;
   auto y = fma(V(2.f), V(3.f), V(1.f));
@@ -125,7 +125,7 @@ void arithmetic() {
 //! [arithmetic]
 
 //! [rounding]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void rounding() {
   using V = native::simd<float, 4, Arch>;
   V x{-1.75f, -0.25f, 0.25f, 1.75f};
@@ -136,7 +136,7 @@ void rounding() {
 //! [rounding]
 
 //! [exponential]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void exponential() {
   using V = native::simd<float, 4, Arch>;
   std::array<V, 2> registers{V(0.f), V(1.f)};
@@ -147,7 +147,7 @@ void exponential() {
 //! [exponential]
 
 //! [bit_transport]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void bit_transport() {
   using V = native::simd<float, 4, Arch>;
   auto tiny = V::from_bits(0x80000001u);
@@ -159,7 +159,7 @@ void bit_transport() {
 //! [bit_transport]
 
 //! [wide_values]
-template<native::isa Arch>
+template<native::isa<> Arch>
 void wide_values() {
   using V = native::simd<float, 4, Arch>;
   native::wide batch{V(1.f), V(2.f), V(3.f)};

@@ -32,27 +32,25 @@ namespace native {
 
   namespace detail {
     template<class T, class = void> struct wide_features {
-      static constexpr isa value=scalar;
+      static constexpr isa<> value=scalar;
     };
     template<class T> struct wide_features<T,std::void_t<decltype(T::architecture)>> {
-      static constexpr isa value=value_architecture_v<T>;
+      static constexpr isa<> value=value_architecture_v<T>;
     };
     template<class T,std::size_t N> struct wide_features<wide<T,N>> : wide_features<T> {};
     template<class T,std::size_t N> struct wide_features<std::array<T,N>> : wide_features<T> {};
     template<class T,class U> struct wide_features<std::pair<T,U>> {
-      static constexpr isa value=wide_features<std::remove_cvref_t<T>>::value &
+      static constexpr isa<> value=wide_features<std::remove_cvref_t<T>>::value &
         wide_features<std::remove_cvref_t<U>>::value;
     };
     // Only operands with a SIMD architecture participate. Scalar/custom values
     // retain the generic ADL path. Arrays and nested packs contribute their
     // element features; mixed conversions use the union of both endpoints.
     template<class... T> inline constexpr auto wide_target=[] {
-      constexpr isa bits=(scalar & ... & wide_features<std::remove_cvref_t<T>>::value);
-      // A custom cross-host conversion combines both hosts. Preserve the
-      // previous operand-union preference for its x86 declaration scope.
-      constexpr isa x86=intersection(bits,x86_features), arm=intersection(bits,arm_features);
-      constexpr isa selected=x86!=scalar && arm!=scalar ? (avx2<=bits ? x86 : arm) : bits;
-      return abi_lookup<selected,wide_kernel_policies>::index;
+      constexpr isa<> bits=(scalar & ... & wide_features<std::remove_cvref_t<T>>::value);
+      constexpr auto index=abi_lookup<bits,wide_kernel_policies>::index;
+      static_assert(index>=0,"wide operands require an available host declaration scope");
+      return host_kernel_profiles::indices[index];
     }();
     template<class T> inline constexpr bool wide_equivalent_default=
       value_traits<std::remove_cv_t<T>>::aggregate_default;

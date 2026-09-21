@@ -55,7 +55,7 @@
 // A list uses X(name, ...), forwarding its extra arguments to X:
 //   #define targets(X,...) X(avx512,__VA_ARGS__) X(avx2,__VA_ARGS__)
 // A reusable body owns the complete function declaration and definition:
-//   #define body(name,ISA) template<::native::isa A> requires(A==ISA) void name(float * p) { /* ... */ }
+//   #define body(name,ISA) template<::native::isa<> A> requires(A==ISA) void name(float * p) { /* ... */ }
 //   NATIVE_TARGET_VARIANTS(kernel,targets,body)
 // Each chosen ISA constrains a distinct function template. List feature sets
 // must be unique. Definitions need normal C++ ODR rules.
@@ -69,291 +69,291 @@
 // ISA value. A target attribute adds features; it does not erase the project
 // minimum. An unregistered stronger minimum is rejected instead of under-admitted.
 #ifdef __MMX__
-#define NATIVE_DETAIL_MIN_MMX (::native::isa(::native::x86_feature::mmx))
+#define NATIVE_DETAIL_MIN_MMX (::native::isa<>(::native::x86_feature::mmx))
 #else
-#define NATIVE_DETAIL_MIN_MMX (::native::isa{})
+#define NATIVE_DETAIL_MIN_MMX (::native::isa<>{})
 #endif
 #ifdef __SSE__
-#define NATIVE_DETAIL_MIN_SSE (::native::isa(::native::x86_feature::sse))
+#define NATIVE_DETAIL_MIN_SSE (::native::isa<>(::native::x86_feature::sse))
 #else
-#define NATIVE_DETAIL_MIN_SSE (::native::isa{})
+#define NATIVE_DETAIL_MIN_SSE (::native::isa<>{})
 #endif
 #ifdef __SSE2__
-#define NATIVE_DETAIL_MIN_SSE2 (::native::isa(::native::x86_feature::sse2))
+#define NATIVE_DETAIL_MIN_SSE2 (::native::isa<>(::native::x86_feature::sse2))
 #else
-#define NATIVE_DETAIL_MIN_SSE2 (::native::isa{})
+#define NATIVE_DETAIL_MIN_SSE2 (::native::isa<>{})
 #endif
 #ifdef __SSE3__
-#define NATIVE_DETAIL_MIN_SSE3 (::native::isa(::native::x86_feature::sse3))
+#define NATIVE_DETAIL_MIN_SSE3 (::native::isa<>(::native::x86_feature::sse3))
 #else
-#define NATIVE_DETAIL_MIN_SSE3 (::native::isa{})
+#define NATIVE_DETAIL_MIN_SSE3 (::native::isa<>{})
 #endif
 #ifdef __SSSE3__
-#define NATIVE_DETAIL_MIN_SSSE3 (::native::isa(::native::x86_feature::ssse3))
+#define NATIVE_DETAIL_MIN_SSSE3 (::native::isa<>(::native::x86_feature::ssse3))
 #else
-#define NATIVE_DETAIL_MIN_SSSE3 (::native::isa{})
+#define NATIVE_DETAIL_MIN_SSSE3 (::native::isa<>{})
 #endif
 #ifdef __SSE4_1__
-#define NATIVE_DETAIL_MIN_SSE41 (::native::isa(::native::x86_feature::sse41))
+#define NATIVE_DETAIL_MIN_SSE41 (::native::isa<>(::native::x86_feature::sse41))
 #else
-#define NATIVE_DETAIL_MIN_SSE41 (::native::isa{})
+#define NATIVE_DETAIL_MIN_SSE41 (::native::isa<>{})
 #endif
 #ifdef __SSE4_2__
-#define NATIVE_DETAIL_MIN_SSE42 (::native::isa(::native::x86_feature::sse42))
+#define NATIVE_DETAIL_MIN_SSE42 (::native::isa<>(::native::x86_feature::sse42))
 #else
-#define NATIVE_DETAIL_MIN_SSE42 (::native::isa{})
+#define NATIVE_DETAIL_MIN_SSE42 (::native::isa<>{})
 #endif
 #ifdef __POPCNT__
-#define NATIVE_DETAIL_MIN_POPCNT (::native::isa(::native::x86_feature::popcnt))
+#define NATIVE_DETAIL_MIN_POPCNT (::native::isa<>(::native::x86_feature::popcnt))
 #else
-#define NATIVE_DETAIL_MIN_POPCNT (::native::isa{})
+#define NATIVE_DETAIL_MIN_POPCNT (::native::isa<>{})
 #endif
 #ifdef __AVX__
-#define NATIVE_DETAIL_MIN_AVX (::native::isa(::native::x86_feature::avx))
+#define NATIVE_DETAIL_MIN_AVX (::native::isa<>(::native::x86_feature::avx))
 #else
-#define NATIVE_DETAIL_MIN_AVX (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX (::native::isa<>{})
 #endif
 #ifdef __AVX2__
-#define NATIVE_DETAIL_MIN_AVX2 (::native::isa(::native::x86_feature::avx2))
+#define NATIVE_DETAIL_MIN_AVX2 (::native::isa<>(::native::x86_feature::avx2))
 #else
-#define NATIVE_DETAIL_MIN_AVX2 (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX2 (::native::isa<>{})
 #endif
 #ifdef __FMA__
-#define NATIVE_DETAIL_MIN_FMA (::native::isa(::native::x86_feature::fma))
+#define NATIVE_DETAIL_MIN_FMA (::native::isa<>(::native::x86_feature::fma))
 #else
-#define NATIVE_DETAIL_MIN_FMA (::native::isa{})
+#define NATIVE_DETAIL_MIN_FMA (::native::isa<>{})
 #endif
 #ifdef __F16C__
-#define NATIVE_DETAIL_MIN_F16C (::native::isa(::native::x86_feature::f16c))
+#define NATIVE_DETAIL_MIN_F16C (::native::isa<>(::native::x86_feature::f16c))
 #else
-#define NATIVE_DETAIL_MIN_F16C (::native::isa{})
+#define NATIVE_DETAIL_MIN_F16C (::native::isa<>{})
 #endif
 #ifdef __BMI__
-#define NATIVE_DETAIL_MIN_BMI1 (::native::isa(::native::x86_feature::bmi1))
+#define NATIVE_DETAIL_MIN_BMI1 (::native::isa<>(::native::x86_feature::bmi1))
 #else
-#define NATIVE_DETAIL_MIN_BMI1 (::native::isa{})
+#define NATIVE_DETAIL_MIN_BMI1 (::native::isa<>{})
 #endif
 #ifdef __BMI2__
-#define NATIVE_DETAIL_MIN_BMI2 (::native::isa(::native::x86_feature::bmi2))
+#define NATIVE_DETAIL_MIN_BMI2 (::native::isa<>(::native::x86_feature::bmi2))
 #else
-#define NATIVE_DETAIL_MIN_BMI2 (::native::isa{})
+#define NATIVE_DETAIL_MIN_BMI2 (::native::isa<>{})
 #endif
 #ifdef __AVX512F__
-#define NATIVE_DETAIL_MIN_AVX512F (::native::isa(::native::x86_feature::avx512f))
+#define NATIVE_DETAIL_MIN_AVX512F (::native::isa<>(::native::x86_feature::avx512f))
 #else
-#define NATIVE_DETAIL_MIN_AVX512F (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512F (::native::isa<>{})
 #endif
 #ifdef __AVX512DQ__
-#define NATIVE_DETAIL_MIN_AVX512DQ (::native::isa(::native::x86_feature::avx512dq))
+#define NATIVE_DETAIL_MIN_AVX512DQ (::native::isa<>(::native::x86_feature::avx512dq))
 #else
-#define NATIVE_DETAIL_MIN_AVX512DQ (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512DQ (::native::isa<>{})
 #endif
 #ifdef __AVX512BW__
-#define NATIVE_DETAIL_MIN_AVX512BW (::native::isa(::native::x86_feature::avx512bw))
+#define NATIVE_DETAIL_MIN_AVX512BW (::native::isa<>(::native::x86_feature::avx512bw))
 #else
-#define NATIVE_DETAIL_MIN_AVX512BW (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512BW (::native::isa<>{})
 #endif
 #ifdef __AVX512VL__
-#define NATIVE_DETAIL_MIN_AVX512VL (::native::isa(::native::x86_feature::avx512vl))
+#define NATIVE_DETAIL_MIN_AVX512VL (::native::isa<>(::native::x86_feature::avx512vl))
 #else
-#define NATIVE_DETAIL_MIN_AVX512VL (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512VL (::native::isa<>{})
 #endif
 #ifdef __AVX512BF16__
-#define NATIVE_DETAIL_MIN_AVX512BF16 (::native::isa(::native::x86_feature::avx512bf16))
+#define NATIVE_DETAIL_MIN_AVX512BF16 (::native::isa<>(::native::x86_feature::avx512bf16))
 #else
-#define NATIVE_DETAIL_MIN_AVX512BF16 (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512BF16 (::native::isa<>{})
 #endif
 #ifdef __AVX512FP16__
-#define NATIVE_DETAIL_MIN_AVX512FP16 (::native::isa(::native::x86_feature::avx512fp16))
+#define NATIVE_DETAIL_MIN_AVX512FP16 (::native::isa<>(::native::x86_feature::avx512fp16))
 #else
-#define NATIVE_DETAIL_MIN_AVX512FP16 (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512FP16 (::native::isa<>{})
 #endif
 #ifdef __AVX512VPOPCNTDQ__
-#define NATIVE_DETAIL_MIN_AVX512VPOPCNTDQ (::native::isa(::native::x86_feature::avx512vpopcntdq))
+#define NATIVE_DETAIL_MIN_AVX512VPOPCNTDQ (::native::isa<>(::native::x86_feature::avx512vpopcntdq))
 #else
-#define NATIVE_DETAIL_MIN_AVX512VPOPCNTDQ (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512VPOPCNTDQ (::native::isa<>{})
 #endif
 #ifdef __AVXVNNI__
-#define NATIVE_DETAIL_MIN_AVXVNNI (::native::isa(::native::x86_feature::avxvnni))
+#define NATIVE_DETAIL_MIN_AVXVNNI (::native::isa<>(::native::x86_feature::avxvnni))
 #else
-#define NATIVE_DETAIL_MIN_AVXVNNI (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVXVNNI (::native::isa<>{})
 #endif
 #ifdef __AVX512VNNI__
-#define NATIVE_DETAIL_MIN_AVX512VNNI (::native::isa(::native::x86_feature::avx512vnni))
+#define NATIVE_DETAIL_MIN_AVX512VNNI (::native::isa<>(::native::x86_feature::avx512vnni))
 #else
-#define NATIVE_DETAIL_MIN_AVX512VNNI (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512VNNI (::native::isa<>{})
 #endif
 #ifdef __AVXVNNIINT8__
-#define NATIVE_DETAIL_MIN_AVXVNNIINT8 (::native::isa(::native::x86_feature::avxvnniint8))
+#define NATIVE_DETAIL_MIN_AVXVNNIINT8 (::native::isa<>(::native::x86_feature::avxvnniint8))
 #else
-#define NATIVE_DETAIL_MIN_AVXVNNIINT8 (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVXVNNIINT8 (::native::isa<>{})
 #endif
 #ifdef __AVXVNNIINT16__
-#define NATIVE_DETAIL_MIN_AVXVNNIINT16 (::native::isa(::native::x86_feature::avxvnniint16))
+#define NATIVE_DETAIL_MIN_AVXVNNIINT16 (::native::isa<>(::native::x86_feature::avxvnniint16))
 #else
-#define NATIVE_DETAIL_MIN_AVXVNNIINT16 (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVXVNNIINT16 (::native::isa<>{})
 #endif
 #ifdef __ARM_NEON
-#define NATIVE_DETAIL_MIN_NEON (::native::isa(::native::arm_feature::neon))
+#define NATIVE_DETAIL_MIN_NEON (::native::isa<>(::native::arm_feature::neon))
 #else
-#define NATIVE_DETAIL_MIN_NEON (::native::isa{})
+#define NATIVE_DETAIL_MIN_NEON (::native::isa<>{})
 #endif
 #if defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC) || defined(__ARM_FEATURE_FP16_SCALAR_ARITHMETIC)
-#define NATIVE_DETAIL_MIN_NEON_FP16 (::native::isa(::native::arm_feature::neon_fp16))
+#define NATIVE_DETAIL_MIN_NEON_FP16 (::native::isa<>(::native::arm_feature::neon_fp16))
 #else
-#define NATIVE_DETAIL_MIN_NEON_FP16 (::native::isa{})
+#define NATIVE_DETAIL_MIN_NEON_FP16 (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_BF16_VECTOR_ARITHMETIC
-#define NATIVE_DETAIL_MIN_NEON_BF16 (::native::isa(::native::arm_feature::neon_bf16))
+#define NATIVE_DETAIL_MIN_NEON_BF16 (::native::isa<>(::native::arm_feature::neon_bf16))
 #else
-#define NATIVE_DETAIL_MIN_NEON_BF16 (::native::isa{})
+#define NATIVE_DETAIL_MIN_NEON_BF16 (::native::isa<>{})
 #endif
 #ifdef __AES__
-#define NATIVE_DETAIL_MIN_AES (::native::isa(::native::x86_feature::aes))
+#define NATIVE_DETAIL_MIN_AES (::native::isa<>(::native::x86_feature::aes))
 #else
-#define NATIVE_DETAIL_MIN_AES (::native::isa{})
+#define NATIVE_DETAIL_MIN_AES (::native::isa<>{})
 #endif
 #ifdef __VPCLMULQDQ__
-#define NATIVE_DETAIL_MIN_VPCLMULQDQ (::native::isa(::native::x86_feature::vpclmulqdq))
+#define NATIVE_DETAIL_MIN_VPCLMULQDQ (::native::isa<>(::native::x86_feature::vpclmulqdq))
 #else
-#define NATIVE_DETAIL_MIN_VPCLMULQDQ (::native::isa{})
+#define NATIVE_DETAIL_MIN_VPCLMULQDQ (::native::isa<>{})
 #endif
 #ifdef __PCLMUL__
-#define NATIVE_DETAIL_MIN_PCLMUL (::native::isa(::native::x86_feature::pclmul))
+#define NATIVE_DETAIL_MIN_PCLMUL (::native::isa<>(::native::x86_feature::pclmul))
 #else
-#define NATIVE_DETAIL_MIN_PCLMUL (::native::isa{})
+#define NATIVE_DETAIL_MIN_PCLMUL (::native::isa<>{})
 #endif
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_16) && (defined(__x86_64__) || defined(_M_X64))
-#define NATIVE_DETAIL_MIN_CX16 (::native::isa(::native::x86_feature::cx16))
+#define NATIVE_DETAIL_MIN_CX16 (::native::isa<>(::native::x86_feature::cx16))
 #else
-#define NATIVE_DETAIL_MIN_CX16 (::native::isa{})
+#define NATIVE_DETAIL_MIN_CX16 (::native::isa<>{})
 #endif
 #ifdef __AVX512CD__
-#define NATIVE_DETAIL_MIN_AVX512CD (::native::isa(::native::x86_feature::avx512cd))
+#define NATIVE_DETAIL_MIN_AVX512CD (::native::isa<>(::native::x86_feature::avx512cd))
 #else
-#define NATIVE_DETAIL_MIN_AVX512CD (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512CD (::native::isa<>{})
 #endif
 #ifdef __AVX512IFMA__
-#define NATIVE_DETAIL_MIN_AVX512IFMA (::native::isa(::native::x86_feature::avx512ifma))
+#define NATIVE_DETAIL_MIN_AVX512IFMA (::native::isa<>(::native::x86_feature::avx512ifma))
 #else
-#define NATIVE_DETAIL_MIN_AVX512IFMA (::native::isa{})
+#define NATIVE_DETAIL_MIN_AVX512IFMA (::native::isa<>{})
 #endif
 
 #ifdef __LZCNT__
-#define NATIVE_DETAIL_MIN_LZCNT (::native::isa(::native::x86_feature::lzcnt))
+#define NATIVE_DETAIL_MIN_LZCNT (::native::isa<>(::native::x86_feature::lzcnt))
 #else
-#define NATIVE_DETAIL_MIN_LZCNT (::native::isa{})
+#define NATIVE_DETAIL_MIN_LZCNT (::native::isa<>{})
 #endif
 #ifdef __MOVBE__
-#define NATIVE_DETAIL_MIN_MOVBE (::native::isa(::native::x86_feature::movbe))
+#define NATIVE_DETAIL_MIN_MOVBE (::native::isa<>(::native::x86_feature::movbe))
 #else
-#define NATIVE_DETAIL_MIN_MOVBE (::native::isa{})
+#define NATIVE_DETAIL_MIN_MOVBE (::native::isa<>{})
 #endif
 #ifdef __LAHF_SAHF__
-#define NATIVE_DETAIL_MIN_SAHF (::native::isa(::native::x86_feature::sahf))
+#define NATIVE_DETAIL_MIN_SAHF (::native::isa<>(::native::x86_feature::sahf))
 #else
-#define NATIVE_DETAIL_MIN_SAHF (::native::isa{})
+#define NATIVE_DETAIL_MIN_SAHF (::native::isa<>{})
 #endif
 #ifdef __MWAITX__
-#define NATIVE_DETAIL_MIN_MWAITX (::native::isa(::native::x86_feature::mwaitx))
+#define NATIVE_DETAIL_MIN_MWAITX (::native::isa<>(::native::x86_feature::mwaitx))
 #else
-#define NATIVE_DETAIL_MIN_MWAITX (::native::isa{})
+#define NATIVE_DETAIL_MIN_MWAITX (::native::isa<>{})
 #endif
 #ifdef __WAITPKG__
-#define NATIVE_DETAIL_MIN_WAITPKG (::native::isa(::native::x86_feature::waitpkg))
+#define NATIVE_DETAIL_MIN_WAITPKG (::native::isa<>(::native::x86_feature::waitpkg))
 #else
-#define NATIVE_DETAIL_MIN_WAITPKG (::native::isa{})
+#define NATIVE_DETAIL_MIN_WAITPKG (::native::isa<>{})
 #endif
 #ifdef __CRC32__
-#define NATIVE_DETAIL_MIN_CRC32 (::native::isa(::native::x86_feature::crc32))
+#define NATIVE_DETAIL_MIN_CRC32 (::native::isa<>(::native::x86_feature::crc32))
 #else
-#define NATIVE_DETAIL_MIN_CRC32 (::native::isa{})
+#define NATIVE_DETAIL_MIN_CRC32 (::native::isa<>{})
 #endif
 #ifdef __GFNI__
-#define NATIVE_DETAIL_MIN_GFNI (::native::isa(::native::x86_feature::gfni))
+#define NATIVE_DETAIL_MIN_GFNI (::native::isa<>(::native::x86_feature::gfni))
 #else
-#define NATIVE_DETAIL_MIN_GFNI (::native::isa{})
+#define NATIVE_DETAIL_MIN_GFNI (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_AES
 #define NATIVE_DETAIL_MIN_ARM_AES (::native::arm_feature::aes&::native::arm_feature::pmull)
 #else
-#define NATIVE_DETAIL_MIN_ARM_AES (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_AES (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_SHA2
 #define NATIVE_DETAIL_MIN_ARM_SHA2 (::native::arm_feature::sha1&::native::arm_feature::sha2)
 #else
-#define NATIVE_DETAIL_MIN_ARM_SHA2 (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_SHA2 (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_SHA3
-#define NATIVE_DETAIL_MIN_ARM_SHA3 (::native::isa(::native::arm_feature::sha3))
+#define NATIVE_DETAIL_MIN_ARM_SHA3 (::native::isa<>(::native::arm_feature::sha3))
 #else
-#define NATIVE_DETAIL_MIN_ARM_SHA3 (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_SHA3 (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_SHA512
 #define NATIVE_DETAIL_MIN_ARM_SHA512 (::native::arm_feature::sha1&::native::arm_feature::sha2&::native::arm_feature::sha512)
 #else
-#define NATIVE_DETAIL_MIN_ARM_SHA512 (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_SHA512 (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_CRC32
-#define NATIVE_DETAIL_MIN_ARM_CRC (::native::isa(::native::arm_feature::crc))
+#define NATIVE_DETAIL_MIN_ARM_CRC (::native::isa<>(::native::arm_feature::crc))
 #else
-#define NATIVE_DETAIL_MIN_ARM_CRC (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_CRC (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_ATOMICS
-#define NATIVE_DETAIL_MIN_ARM_LSE (::native::isa(::native::arm_feature::lse))
+#define NATIVE_DETAIL_MIN_ARM_LSE (::native::isa<>(::native::arm_feature::lse))
 #else
-#define NATIVE_DETAIL_MIN_ARM_LSE (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_LSE (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_QRDMX
-#define NATIVE_DETAIL_MIN_ARM_RDM (::native::isa(::native::arm_feature::rdm))
+#define NATIVE_DETAIL_MIN_ARM_RDM (::native::isa<>(::native::arm_feature::rdm))
 #else
-#define NATIVE_DETAIL_MIN_ARM_RDM (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_RDM (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_FP16_FML
-#define NATIVE_DETAIL_MIN_ARM_FP16FML (::native::isa(::native::arm_feature::fp16fml))
+#define NATIVE_DETAIL_MIN_ARM_FP16FML (::native::isa<>(::native::arm_feature::fp16fml))
 #else
-#define NATIVE_DETAIL_MIN_ARM_FP16FML (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_FP16FML (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_DOTPROD
-#define NATIVE_DETAIL_MIN_ARM_DOTPROD (::native::isa(::native::arm_feature::dotprod))
+#define NATIVE_DETAIL_MIN_ARM_DOTPROD (::native::isa<>(::native::arm_feature::dotprod))
 #else
-#define NATIVE_DETAIL_MIN_ARM_DOTPROD (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_DOTPROD (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_COMPLEX
-#define NATIVE_DETAIL_MIN_ARM_COMPLEX (::native::isa(::native::arm_feature::complxnum))
+#define NATIVE_DETAIL_MIN_ARM_COMPLEX (::native::isa<>(::native::arm_feature::complxnum))
 #else
-#define NATIVE_DETAIL_MIN_ARM_COMPLEX (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_COMPLEX (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_JCVT
-#define NATIVE_DETAIL_MIN_ARM_JSCVT (::native::isa(::native::arm_feature::jsconv))
+#define NATIVE_DETAIL_MIN_ARM_JSCVT (::native::isa<>(::native::arm_feature::jsconv))
 #else
-#define NATIVE_DETAIL_MIN_ARM_JSCVT (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_JSCVT (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_RCPC
-#define NATIVE_DETAIL_MIN_ARM_RCPC (::native::isa(::native::arm_feature::rcpc))
+#define NATIVE_DETAIL_MIN_ARM_RCPC (::native::isa<>(::native::arm_feature::rcpc))
 #else
-#define NATIVE_DETAIL_MIN_ARM_RCPC (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_RCPC (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_MATMUL_INT8
-#define NATIVE_DETAIL_MIN_ARM_I8MM (::native::isa(::native::arm_feature::i8mm))
+#define NATIVE_DETAIL_MIN_ARM_I8MM (::native::isa<>(::native::arm_feature::i8mm))
 #else
-#define NATIVE_DETAIL_MIN_ARM_I8MM (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_I8MM (::native::isa<>{})
 #endif
 #ifdef __ARM_FEATURE_PAUTH
-#define NATIVE_DETAIL_MIN_ARM_PAUTH (::native::isa(::native::arm_feature::pauth))
+#define NATIVE_DETAIL_MIN_ARM_PAUTH (::native::isa<>(::native::arm_feature::pauth))
 #else
-#define NATIVE_DETAIL_MIN_ARM_PAUTH (::native::isa{})
+#define NATIVE_DETAIL_MIN_ARM_PAUTH (::native::isa<>{})
 #endif
 
 #ifdef __wasm_simd128__
-#define NATIVE_DETAIL_MIN_WASM_SIMD128 (::native::isa(::native::wasm_feature::simd128))
+#define NATIVE_DETAIL_MIN_WASM_SIMD128 (::native::isa<>(::native::wasm_feature::simd128))
 #else
-#define NATIVE_DETAIL_MIN_WASM_SIMD128 (::native::isa{})
+#define NATIVE_DETAIL_MIN_WASM_SIMD128 (::native::isa<>{})
 #endif
 #ifdef __wasm_relaxed_simd__
-#define NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD (::native::isa(::native::wasm_feature::relaxed_simd))
+#define NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD (::native::isa<>(::native::wasm_feature::relaxed_simd))
 #else
-#define NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD (::native::isa{})
+#define NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD (::native::isa<>{})
 #endif
 
 #if defined(__SSE4A__) || defined(__XOP__) || defined(__FMA4__) || \
@@ -365,7 +365,7 @@
     defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SME)
 #define NATIVE_DETAIL_MIN_UNREGISTERED (::native::target_features("unregistered"))
 #else
-#define NATIVE_DETAIL_MIN_UNREGISTERED (::native::isa{})
+#define NATIVE_DETAIL_MIN_UNREGISTERED (::native::isa<>{})
 #endif
 
 // Optional additional project contract. This is an ISA value/expression (for
@@ -374,7 +374,7 @@
 // already be safe to run. Compiler CPU models can enable features not represented
 // by predefines; this macro is not an inference engine for arbitrary -mcpu flags.
 #ifndef NATIVE_TARGET_EXTRA_MINIMUM
-#define NATIVE_TARGET_EXTRA_MINIMUM (::native::isa{})
+#define NATIVE_TARGET_EXTRA_MINIMUM (::native::isa<>{})
 #endif
 // The current translation unit's known enabled instruction features. Clang has
 // already resolved command-line implications and explicit negative flags. Do not
@@ -382,9 +382,9 @@
 // This textual expression belongs to the consumer, not a precompiled module.
 // Function target attributes and target pragmas do not change this snapshot.
 #if defined(__ARM_FEATURE_FP16_VECTOR_ARITHMETIC)
-#define NATIVE_DETAIL_BASELINE_NEON_FP16 (::native::isa(::native::arm_feature::neon_fp16))
+#define NATIVE_DETAIL_BASELINE_NEON_FP16 (::native::isa<>(::native::arm_feature::neon_fp16))
 #else
-#define NATIVE_DETAIL_BASELINE_NEON_FP16 (::native::isa{})
+#define NATIVE_DETAIL_BASELINE_NEON_FP16 (::native::isa<>{})
 #endif
 // Some architecture-version macros survive -mgeneral-regs-only. SIMD
 // operations are available only when the vector register target is enabled.
@@ -395,12 +395,12 @@
 #ifdef __ARM_NEON
 #define NATIVE_DETAIL_BASELINE_ARM_SIMD_EXTRAS NATIVE_DETAIL_MIN_ARM_SIMD_EXTRAS
 #else
-#define NATIVE_DETAIL_BASELINE_ARM_SIMD_EXTRAS (::native::isa{})
+#define NATIVE_DETAIL_BASELINE_ARM_SIMD_EXTRAS (::native::isa<>{})
 #endif
 #if defined(__ARM_FP) && (__ARM_FP & 8)
 #define NATIVE_DETAIL_BASELINE_ARM_JSCVT NATIVE_DETAIL_MIN_ARM_JSCVT
 #else
-#define NATIVE_DETAIL_BASELINE_ARM_JSCVT (::native::isa{})
+#define NATIVE_DETAIL_BASELINE_ARM_JSCVT (::native::isa<>{})
 #endif
 #define NATIVE_BASELINE (\
   NATIVE_DETAIL_MIN_MMX&NATIVE_DETAIL_MIN_SSE&NATIVE_DETAIL_MIN_SSE2&NATIVE_DETAIL_MIN_SSE3& \

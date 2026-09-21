@@ -7,7 +7,7 @@ export namespace native {
       std::same_as<T,float> || std::same_as<T,double> ||
       std::same_as<T,fp16> || std::same_as<T,bf16>;
 
-    template<class T, std::size_t N, isa A>
+    template<class T, std::size_t N, isa<> A>
     inline constexpr bool instruction_storage_shape = [] {
       if constexpr(!instruction_element<T> || N<2) return false;
       else if constexpr(N>64/sizeof(T)) return false;
@@ -40,7 +40,7 @@ export namespace native {
       }
     }();
 
-    template<std::size_t N,isa A> inline constexpr bool instruction_predicate_shape =
+    template<std::size_t N,isa<> A> inline constexpr bool instruction_predicate_shape =
       N>0 && N<=64 &&
 #if NATIVE_HOST_X86
       A.has(x86_feature::sse2) && !((kernel_base<=A) &&
@@ -52,16 +52,16 @@ export namespace native {
       false;
 #endif
 
-    template<class T,std::size_t N,isa A>
+    template<class T,std::size_t N,isa<> A>
       requires ordinary_simd_element<T> && instruction_storage_shape<T,N,A>
     struct value_traits<simd<T,N,A>> {
-      static constexpr isa value=A;
+      static constexpr isa<> value=A;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
-    template<std::size_t N,isa A> requires instruction_predicate_shape<N,A>
+    template<std::size_t N,isa<> A> requires instruction_predicate_shape<N,A>
     struct value_traits<predicate<N,A>> {
-      static constexpr isa value=A;
+      static constexpr isa<> value=A;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
@@ -81,9 +81,9 @@ export namespace native {
   }
 
   /// Compact logical mask for register-only instruction shapes.
-  template<std::size_t N, isa A> requires detail::instruction_predicate_shape<N,A>
+  template<std::size_t N, isa<> A> requires detail::instruction_predicate_shape<N,A>
   struct predicate<N,A> {
-    static constexpr isa architecture=A;
+    static constexpr isa<> architecture=A;
     static constexpr std::size_t lanes=N;
     using native_type=std::conditional_t<(N<=8),std::uint8_t,
       std::conditional_t<(N<=16),std::uint16_t,std::conditional_t<(N<=32),std::uint32_t,std::uint64_t>>>;
@@ -143,12 +143,12 @@ export namespace native {
   /// One register of representation-preserving instruction operands.
   /// This shape provides storage and transfer operations; arithmetic is supplied
   /// by the instruction modules supported by its architecture tag.
-  template<class T, std::size_t N, isa A> requires detail::instruction_storage_shape<T,N,A>
+  template<class T, std::size_t N, isa<> A> requires detail::instruction_storage_shape<T,N,A>
   struct alignas(typename detail::instruction_register<T,N>::type) simd<T,N,A> {
     using value_type=T;
     using register_type=simd;
     using native_type=typename detail::instruction_register<T,N>::type;
-    static constexpr isa architecture=A;
+    static constexpr isa<> architecture=A;
     static constexpr std::size_t lanes=N;
     using mask=predicate<N,A>;
     using mask_type=mask;

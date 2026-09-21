@@ -24,20 +24,20 @@ import native.arm.features;
 #endif
 
 namespace integer_test {
-  template<class T,std::size_t N,native::isa A> concept has_shape=requires { typename native::simd<T,N,A>::native_type; };
-  template<class To,class From,std::size_t N,native::isa A> concept can_pack=requires(native::simd<From,N,A> a) {
+  template<class T,std::size_t N,native::isa<> A> concept has_shape=requires { typename native::simd<T,N,A>::native_type; };
+  template<class To,class From,std::size_t N,native::isa<> A> concept can_pack=requires(native::simd<From,N,A> a) {
     native::narrow_concat<To>(a,a);
   };
-  template<class To,class From,std::size_t N,native::isa A> concept can_reinterpret=requires(native::simd<From,N,A> a) {
+  template<class To,class From,std::size_t N,native::isa<> A> concept can_reinterpret=requires(native::simd<From,N,A> a) {
     native::reinterpret_bits<To>(a);
   };
-  template<class T,std::size_t N,native::isa A> concept can_popcount=requires(native::simd<T,N,A> a) {
+  template<class T,std::size_t N,native::isa<> A> concept can_popcount=requires(native::simd<T,N,A> a) {
     native::popcount(a);
   };
-  template<class T,std::size_t N,native::isa A> concept can_pairwise=requires(native::simd<T,N,A> a) {
+  template<class T,std::size_t N,native::isa<> A> concept can_pairwise=requires(native::simd<T,N,A> a) {
     native::pairwise_add_widened(a);
   };
-  template<class T,std::size_t N,native::isa A> concept can_reduce=requires(native::simd<T,N,A> a) {
+  template<class T,std::size_t N,native::isa<> A> concept can_reduce=requires(native::simd<T,N,A> a) {
     native::reduce_add_widened(a);
   };
   static_assert(!has_shape<std::uint32_t,0,native::scalar>);
