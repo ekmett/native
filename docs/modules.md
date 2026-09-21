@@ -170,12 +170,19 @@ the return width explicitly. Conversions retain MXCSR effects even when their
 results are unused.
 
 On AArch64, `native.arm` reexports `native.arm.dotprod`, `native.arm.rdm`,
-`native.arm.fp16fml`, `native.arm.fcma` and `native.arm.i8mm`.
-These modules also belong to `native::minimal` and use raw NEON operands,
+`native.arm.fp16fml`, `native.arm.fcma`, `native.arm.i8mm`, `native.arm.crc`,
+`native.arm.aes`, `native.arm.pmull` and `native.arm.sha`.
+These modules also belong to `native::minimal` and use raw native operands,
 without requiring `native.simd`. Each operation takes an explicit `isa` template
 argument and has its own compiler target requirement. Check the corresponding
 features with `classify_isa` before calling a function compiled for that target;
 the import itself neither enables instructions nor dispatches at runtime.
+
+[ARM CRC](arm-crc.md) provides scalar CRC32 and CRC32C updates.
+[ARM crypto](arm-crypto.md) provides AES rounds, unreduced polynomial products
+and SHA state, schedule and logical helpers. Crypto hardware features are
+independent; admit the complete `target_features` set for the compiler's
+`aes`, `sha2` or `sha3` bundle before entering a leaf compiled with that target.
 
 Use `simd::to_native()` and `simd::from_native()` to pass values between SIMD
 algorithms and these instruction APIs. The documented operand shapes and lane

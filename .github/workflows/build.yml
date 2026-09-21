@@ -207,9 +207,9 @@ jobs:
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
           suites=(public_headers omnibus api half_storage source_targets native_cutover)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_gfni x86_vpopcntdq)
+            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_gfni x86_vpopcntdq x86_pclmul x86_vnni x86_f16c)
           else
-            suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_crc)
+            suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_crc arm_crypto)
           fi
           for suite in "${suites[@]}"; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
