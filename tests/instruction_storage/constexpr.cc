@@ -86,7 +86,7 @@ static_assert(integer_lanes<std::int16_t,8,arithmetic_arch>());
 static_assert(integer_lanes<std::uint32_t,4,arithmetic_arch>());
 static_assert(integer_lanes<std::int64_t,2,arithmetic_arch>());
 static_assert([] {
-  native::simd<std::uint64_t,2,arithmetic_arch> v(0x8000000000000001ull,0xffffffffffffffffull);
+  native::simd<std::uint64_t,2,arithmetic_arch> v(std::uint64_t{0x8000000000000001ull},std::uint64_t{0xffffffffffffffffull});
   auto a=std::bit_cast<std::array<std::uint64_t,2>>(v.to_native());
   return a[0]==0x8000000000000001ull && a[1]==0xffffffffffffffffull;
 }());
