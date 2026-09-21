@@ -575,6 +575,10 @@ namespace native {
     /// Import lane truth from the low logical-lane bits.
     native_nodiscard static native_inline native_const constexpr predicate from_bitset(std::uint64_t value) noexcept { return from_native(native_type(value)); }
     /// Pack lane truth into low bits, with lane zero in bit zero.
+#if NATIVE_HOST_X86
+    // Compact masks hold scalar bits even when their vector profile is stronger.
+    native_target("sse2")
+#endif
     native_nodiscard native_inline native_pure constexpr std::uint64_t to_bitset() const noexcept { return value_; }
     /// Invert each lane truth value, preserving the mask representation.
     native_nodiscard friend native_inline native_const constexpr predicate operator~(predicate a) noexcept { return predicate(raw{},ops::bit_not(a.value_)); }
