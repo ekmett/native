@@ -218,7 +218,7 @@ jobs:
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
           suites=(public_headers omnibus api half_storage half_constexpr floating_instructions_constexpr float_constexpr instruction_storage source_targets native_cutover wasm_features)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_gfni x86_vpopcntdq x86_pclmul x86_vnni x86_f16c x86_scalar_defaults x86_constexpr x86_integer_constexpr)
+            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_aes x86_gfni x86_vpopcntdq x86_avx512cd x86_pclmul x86_vnni x86_f16c x86_scalar_defaults x86_constexpr x86_integer_constexpr)
           else
             suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_bf16 arm_crc arm_crypto arm_scalar_defaults arm_constexpr)
           fi
@@ -275,6 +275,15 @@ jobs:
             build/core/tests/x86_vpopcntdq/*.disassembly
             build/core/tests/x86_vpopcntdq/reject-*.log
             build/x86_vpopcntdq/*.disassembly
+            build/core/tests/x86_vpopcntdq/*-paired-*.txt
+            build/core/tests/x86_aes/*.disassembly
+            build/core/tests/x86_aes/*-paired-*.txt
+            build/core/tests/x86_aes/*-reject-*.log
+            build/x86_aes/*.disassembly
+            build/core/tests/x86_avx512cd/*.disassembly
+            build/core/tests/x86_avx512cd/*-paired-*.txt
+            build/core/tests/x86_avx512cd/reject-*.log
+            build/x86_avx512cd/*.disassembly
             build/core/tests/x86_crc32c/*.disassembly
             build/core/tests/x86_crc32c/reject-*.log
             build/x86_crc32c/*.disassembly

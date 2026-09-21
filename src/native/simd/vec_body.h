@@ -72,6 +72,9 @@ namespace native {
     template <std::size_t N> struct mask_compact_ops {
       using native_type = std::conditional_t<(N<=8),std::uint8_t,std::conditional_t<(N<=16),std::uint16_t,
         std::conditional_t<(N<=32),std::uint32_t,std::uint64_t>>>;
+#if NATIVE_HOST_X86
+      native_target("sse2")
+#endif
       static native_inline native_const constexpr native_type normalize(native_type a) noexcept {
         if constexpr(N==8 || N==16 || N==32 || N==64) return a;
         else return native_type(std::uint64_t(a)&mask_low_bits<N>);
@@ -567,14 +570,30 @@ namespace native {
     /// Broadcast the supplied truth value to every logical lane.
     explicit native_inline constexpr predicate(bool value) noexcept : value_(ops::broadcast(value)) {}
     /// Import compact mask bits and clear bits above the lane count.
+#if NATIVE_HOST_X86
+    native_target("sse2")
+#endif
     native_nodiscard static native_inline native_const constexpr predicate from_native(native_type value) noexcept { return predicate(raw{},ops::normalize(value)); }
     /// Import compact bits and clear bits above the lane count, just like from_native.
+#if NATIVE_HOST_X86
+    native_target("sse2")
+#endif
     native_nodiscard static native_inline native_const constexpr predicate unsafe_from_native(native_type value) noexcept { return from_native(value); }
     /// Return the native storage representation.
+#if NATIVE_HOST_X86
+    native_target("sse2")
+#endif
     native_nodiscard native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
     /// Import lane truth from the low logical-lane bits.
+#if NATIVE_HOST_X86
+    native_target("sse2")
+#endif
     native_nodiscard static native_inline native_const constexpr predicate from_bitset(std::uint64_t value) noexcept { return from_native(native_type(value)); }
     /// Pack lane truth into low bits, with lane zero in bit zero.
+#if NATIVE_HOST_X86
+    // Compact masks hold scalar bits even when their vector profile is stronger.
+    native_target("sse2")
+#endif
     native_nodiscard native_inline native_pure constexpr std::uint64_t to_bitset() const noexcept { return value_; }
     /// Invert each lane truth value, preserving the mask representation.
     native_nodiscard friend native_inline native_const constexpr predicate operator~(predicate a) noexcept { return predicate(raw{},ops::bit_not(a.value_)); }
@@ -606,6 +625,9 @@ namespace native {
     native_nodiscard friend native_inline native_const constexpr predicate select(predicate p,predicate a,predicate b) noexcept { return (p&a)|(~p&b); }
   private:
     struct raw {};
+#if NATIVE_HOST_X86
+    native_target("sse2")
+#endif
     native_inline constexpr predicate(raw,native_type value) noexcept : value_(value) {}
     native_type value_=0;
   };

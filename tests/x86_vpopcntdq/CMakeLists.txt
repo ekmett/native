@@ -213,3 +213,39 @@ add_test(NAME native.x86.vpopcntdq.codegen_pairs
     COMMAND_EXPAND_LISTS)
 set_tests_properties(native.x86.vpopcntdq.codegen_pairs PROPERTIES
   LABELS "host;modules;codegen;baseline;x86;vpopcntdq")
+
+# Superset ISA tags select arithmetic predicates rather than storage-only masks.
+# Keep their scalar extraction usable from each instruction's minimal target.
+add_library(native_test_x86_vpopcntdq_codegen_broad_raw OBJECT codegen.cc)
+native_vpopcntdq_baseline_target(native_test_x86_vpopcntdq_codegen_broad_raw)
+add_library(native_test_x86_vpopcntdq_codegen_broad_public OBJECT codegen_public.cc)
+target_link_libraries(native_test_x86_vpopcntdq_codegen_broad_public PRIVATE native::native)
+set_target_properties(native_test_x86_vpopcntdq_codegen_broad_public PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+foreach(target IN ITEMS native_test_x86_vpopcntdq_codegen_broad_raw
+    native_test_x86_vpopcntdq_codegen_broad_public)
+  target_compile_definitions(${target} PRIVATE NATIVE_TEST_BROAD_ARCH)
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /O2)
+  else()
+    target_compile_options(${target} PRIVATE -O2)
+  endif()
+endforeach()
+add_test(NAME native.x86.vpopcntdq.codegen_broad
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
+    --broad-arch
+    --objdump "${NATIVE_VPOPCNTDQ_OBJDUMP}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/vpopcntdq-broad-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:native_test_x86_vpopcntdq_codegen_broad_public>
+    COMMAND_EXPAND_LISTS)
+add_test(NAME native.x86.vpopcntdq.codegen_broad_pairs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../x86_codegen_pairs.py"
+    --objdump "${NATIVE_VPOPCNTDQ_OBJDUMP}"
+    --raw $<TARGET_OBJECTS:native_test_x86_vpopcntdq_codegen_broad_raw>
+    --public $<TARGET_OBJECTS:native_test_x86_vpopcntdq_codegen_broad_public>
+    --expected 19
+    --output "${CMAKE_CURRENT_BINARY_DIR}/vpopcntdq-broad-paired-$<CONFIG>.txt"
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.vpopcntdq.codegen_broad
+  native.x86.vpopcntdq.codegen_broad_pairs PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;vpopcntdq")
