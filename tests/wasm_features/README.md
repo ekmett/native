@@ -22,3 +22,8 @@ same four C++ interfaces and JavaScript checks run after physical relocation,
 using the installed adapter path exported by the package.
 
 See the [detector guide](../../docs/wasm-features.md) for the public contract.
+
+The producer also resolves Clang's actual Wasm32 and Wasm64 predefines for eight
+positive/negative flag combinations and compiles the expanded `NATIVE_BASELINE`
+expressions against the public metadata. This checks the snapshot without a
+Wasm C++ sysroot; it does not substitute for Wasm backend or execution tests.

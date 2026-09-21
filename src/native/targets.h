@@ -345,6 +345,17 @@
 #define NATIVE_DETAIL_MIN_ARM_PAUTH (::native::isa{})
 #endif
 
+#ifdef __wasm_simd128__
+#define NATIVE_DETAIL_MIN_WASM_SIMD128 (::native::isa(::native::wasm_feature::simd128))
+#else
+#define NATIVE_DETAIL_MIN_WASM_SIMD128 (::native::isa{})
+#endif
+#ifdef __wasm_relaxed_simd__
+#define NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD (::native::isa(::native::wasm_feature::relaxed_simd))
+#else
+#define NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD (::native::isa{})
+#endif
+
 #if defined(__SSE4A__) || defined(__XOP__) || defined(__FMA4__) || \
     defined(__AVX512VBMI__) || defined(__AVX512VBMI2__) || \
     defined(__AVX512BITALG__) || defined(__AVX512VP2INTERSECT__) || \
@@ -404,7 +415,8 @@
   NATIVE_DETAIL_MIN_AVX512IFMA&NATIVE_DETAIL_MIN_LZCNT&NATIVE_DETAIL_MIN_MOVBE&NATIVE_DETAIL_MIN_SAHF& \
   NATIVE_DETAIL_MIN_MWAITX&NATIVE_DETAIL_MIN_WAITPKG&NATIVE_DETAIL_MIN_CRC32&NATIVE_DETAIL_MIN_GFNI& \
   NATIVE_DETAIL_MIN_ARM_CRC&NATIVE_DETAIL_MIN_ARM_LSE&NATIVE_DETAIL_BASELINE_ARM_JSCVT& \
-  NATIVE_DETAIL_MIN_ARM_RCPC&NATIVE_DETAIL_MIN_ARM_PAUTH)
+  NATIVE_DETAIL_MIN_ARM_RCPC&NATIVE_DETAIL_MIN_ARM_PAUTH& \
+  NATIVE_DETAIL_MIN_WASM_SIMD128&NATIVE_DETAIL_MIN_WASM_RELAXED_SIMD)
 
 // Source-variant admission retains its conservative inherited minimum and any
 // additional deployment requirements, separately from the exact known baseline.

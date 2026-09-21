@@ -58,3 +58,17 @@ foreach(family RANGE 0 1)
   set_tests_properties(native.wasm.features.reject_family_${family} PROPERTIES
     LABELS "host;wasm;negative" RUN_SERIAL TRUE TIMEOUT 180)
 endforeach()
+
+# Resolve the real Wasm predefines without a C++ sysroot, then type-check the
+# resulting ISA expressions against the public metadata on the native host.
+set(wasm_baseline_source "${CMAKE_CURRENT_BINARY_DIR}/wasm-baseline.cc")
+add_custom_command(OUTPUT "${wasm_baseline_source}"
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/baseline.py"
+    --compiler "${CMAKE_CXX_COMPILER}" --include "${PROJECT_SOURCE_DIR}/src"
+    --output "${wasm_baseline_source}"
+  DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/baseline.py" "${PROJECT_SOURCE_DIR}/src/native/targets.h"
+  VERBATIM)
+add_library(native_test_wasm_baseline OBJECT "${wasm_baseline_source}")
+target_link_libraries(native_test_wasm_baseline PRIVATE native::headers)
+target_compile_features(native_test_wasm_baseline PRIVATE cxx_std_20)
+set_target_properties(native_test_wasm_baseline PROPERTIES CXX_SCAN_FOR_MODULES OFF)

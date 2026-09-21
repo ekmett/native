@@ -95,6 +95,16 @@ instantiates a probe or invokes a Wasm function. The
 and [relaxed-SIMD opcode table](https://github.com/WebAssembly/relaxed-simd/blob/main/proposals/relaxed-simd/Overview.md)
 define the probe encodings.
 
+## Compiler permissions
+
+The textual `NATIVE_BASELINE` expression includes `wasm_feature::simd128` and
+`wasm_feature::relaxed_simd` when Clang's resolved `__wasm_simd128__` and
+`__wasm_relaxed_simd__` predefines enable them. Explicit negative compiler flags
+remain effective; the snapshot does not apply prerequisite closure. It describes
+known compiler permissions, independently of the engine observations above.
+A module provider's flags do not describe its importers: obtain the expression
+in each consumer translation unit, as explained in the [ISA guide](abi-lookup.md).
+
 ## What admission establishes
 
 An admitted feature requirement means that the supplied observations establish
