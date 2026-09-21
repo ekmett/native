@@ -5307,7 +5307,7 @@ namespace native {
   }
 }
 
-#if NATIVE_HAS_WASM_SIMD128
+#if NATIVE_HAS_WASM_SIMD128 || defined(NATIVE_DOXYGEN)
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Included only in the SIMD128 backend target scope.
 namespace native {

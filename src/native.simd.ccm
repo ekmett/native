@@ -409,7 +409,7 @@ export namespace native {
 #pragma clang attribute pop
 #undef NATIVE_ARCH_REQUIRES
 #endif
-#if NATIVE_HOST_NEON
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 #define NATIVE_ARCH_REQUIRES(A) (::native::neon_bf16 <= A)
 #pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
 export namespace native {
