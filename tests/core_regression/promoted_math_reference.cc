@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <native/simd/math/sincos.h>
+#include "native/simd/math/bits.h"
+#define NATIVE_BACKEND_BODY "native/simd/math/sincos_body.h"
+#include "native/simd/for_each_backend.h"
+#undef NATIVE_BACKEND_BODY
 #include <array>
 #include <cstdlib>
 
