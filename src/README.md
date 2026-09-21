@@ -53,7 +53,9 @@ change the module's definitions. System headers and intrinsic helpers stay in
 the global module fragment.
 
 Vector instruction modules import `native.simd` before defining their public
-bindings. Vector parameters and results use `simd<T,N,Arch>`; scalar operations
+bindings directly in the module interface. Textual implementation headers serve
+shared consumers, repeated target expansion, or declarations that belong in the
+global module fragment. Vector parameters and results use `simd<T,N,Arch>`; scalar operations
 use ordinary C++ values. Masked x86 instruction forms use `predicate<N,Arch>`.
 Each operation constrains its required features and retains the appropriate
 compiler target. Raw intrinsic helpers remain private. The `native.arm.sm3` and

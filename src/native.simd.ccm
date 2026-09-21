@@ -7,15 +7,6 @@ module;
 #include <native/packing.h>
 #include <native/simd/math/bits.h>
 #include "native/simd/defaults.h"
-#include "native/simd/half_constant.h"
-#if NATIVE_HOST_X86
-#include "native/simd/avx512_bf16_native.h"
-#include "native/simd/avx512_fp16_native.h"
-#endif
-#if NATIVE_HOST_NEON
-#include "native/simd/neon_bf16_native.h"
-#include "native/simd/neon_fp16_native.h"
-#endif
 export module native.simd;
 export import native.numerics;
 export import native.wide;
