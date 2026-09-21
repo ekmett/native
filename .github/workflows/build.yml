@@ -207,7 +207,7 @@ jobs:
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
           suites=(public_headers omnibus api half_storage source_targets native_cutover)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package bf16_profile avx512_fp16)
+            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c)
           else
             suites+=(neon_fp16 neon_bf16)
           fi
@@ -258,6 +258,10 @@ jobs:
             build/core/tests/source_targets/*.disassembly
             build/source_targets/*.disassembly
             build/core/tests/source_targets/reject-*.log
+            build/core/tests/x86_crc32c/*.disassembly
+            build/core/tests/x86_crc32c/reject-*.log
+            build/x86_crc32c/*.disassembly
+            build/x86_crc32c/reject-*.log
             build/source_targets/reject-*.log
             build/*/compile_commands.json
             build/*/Testing/Temporary/

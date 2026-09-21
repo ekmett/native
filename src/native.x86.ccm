@@ -5,4 +5,5 @@ export import native.x86.bmi1;
 export import native.x86.bmi2;
 export import native.x86.popcnt;
 export import native.x86.lzcnt;
+export import native.x86.crc32c;
 export import native.x86.wait;
