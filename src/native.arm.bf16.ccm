@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/bf16.h"
+export module native.arm.bf16;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_bf16
+  /// \{
+  using ::native::bfdot;
+  using ::native::bfdot_lane;
+  using ::native::bfmmla;
+  using ::native::bfmlalb;
+  using ::native::bfmlalt;
+  using ::native::bfmlalb_lane;
+  using ::native::bfmlalt_lane;
+  /// \}
+}
