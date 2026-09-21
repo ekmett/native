@@ -62,8 +62,9 @@ For scalar x86 integers, [BMI1](x86-bmi1.md) and [BMI2](x86-bmi2.md) provide bit
 field operations, deposit/extract and related primitives. [POPCNT](x86-popcnt.md)
 and [LZCNT](x86-lzcnt.md) have independent feature requirements.
 [VPOPCNTDQ](x86-vpopcntdq.md) counts bits in 32- or 64-bit vector lanes and has
-its own width and masking requirements. [AVX-512CD](x86-avx512cd.md) supplies
-leading-zero counts and masks identifying equal earlier lanes. Conflict
+its own width and masking requirements. [BITALG](x86-bitalg.md) counts bits in
+byte/word lanes and selects source bits into compact predicates.
+[AVX-512CD](x86-avx512cd.md) supplies leading-zero counts and masks identifying equal earlier lanes. Conflict
 detection compares across the whole vector, including masked-off source lanes.
 
 For polynomial arithmetic, [PCLMULQDQ and VPCLMULQDQ](x86-pclmul.md) on x86 and
