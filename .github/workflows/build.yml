@@ -13,7 +13,8 @@ jobs:
   build:
     name: ${{ matrix.platform.name }} / exceptions=${{ matrix.exceptions }}
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 45
+    # Source and relocated consumers both rebuild the complete module graph.
+    timeout-minutes: 90
     env:
       SCCACHE_GHA_ENABLED: "true"
     defaults:
