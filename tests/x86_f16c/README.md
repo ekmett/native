@@ -39,3 +39,12 @@ random binary32 encodings per environment, all rounding modes, all immediate
 bytes, and all FTZ/DAZ combinations. Linux additionally checks 27 unmasked
 exceptions and their saved MXCSR flags in child processes. Other platforms
 retain the masked-status and discarded-result checks.
+
+For a binary32 subnormal with the denormal exception masked and underflow
+unmasked, the saved flags differ by vendor. Intel requires DE, UE and PE
+([Intel SDM, volume 1, section 14.4.1](https://cdrdv2-public.intel.com/874240/325462-090-sdm-vol-1-2abcd-3abcd-4.pdf)).
+AMD's exception-priority procedure handles the unmasked UE before masked PE,
+leaving DE and UE ([AMD APM, volume 1, section 4.10.3](https://kib.kiev.ua/x86docs/AMD/AMD64/24592_APM_v1-r3.25.pdf)).
+The trap fixture requires each known vendor's exact flags. For an unknown
+vendor, only these two complete flag sets are accepted for that case. Every
+case still requires SIGFPE, and all other flag expectations remain exact.
