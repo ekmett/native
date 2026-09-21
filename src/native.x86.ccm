@@ -14,6 +14,7 @@ export import native.x86.aes;
 export import native.x86.avx512cd;
 export import native.x86.bitalg;
 export import native.x86.vbmi;
+export import native.x86.vbmi2;
 export import native.x86.wait;
 export import native.x86.pclmul;
 export import native.x86.vpclmul;

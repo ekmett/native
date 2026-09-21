@@ -164,7 +164,8 @@ set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md src/README.md tests/api/R
   tests/arm_dotprod/README.md tests/arm_rdm/README.md tests/arm_bf16/README.md tests/arm_crypto/README.md
   tests/x86_pclmul/README.md tests/x86_vnni/README.md tests/x86_f16c/README.md
   tests/x86_sha/README.md tests/x86_vaes/README.md
-  tests/x86_aes/README.md tests/x86_avx512cd/README.md tests/x86_bitalg/README.md tests/x86_vbmi/README.md
+  tests/x86_aes/README.md tests/x86_avx512cd/README.md tests/x86_bitalg/README.md
+  tests/x86_vbmi/README.md tests/x86_vbmi2/README.md
   tests/wasm_features/README.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")

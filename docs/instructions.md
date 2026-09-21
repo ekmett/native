@@ -65,7 +65,8 @@ and [LZCNT](x86-lzcnt.md) have independent feature requirements.
 its own width and masking requirements. [BITALG](x86-bitalg.md) counts bits in
 byte/word lanes and selects source bits into compact predicates.
 [VBMI](x86-vbmi.md) permutes bytes across one or two whole vectors and extracts
-wrapping bit windows from qwords.
+wrapping bit windows from qwords. [VBMI2](x86-vbmi2.md) adds byte/word
+compaction, packed memory transfers and double-source shifts.
 [AVX-512CD](x86-avx512cd.md) supplies leading-zero counts and masks identifying equal earlier lanes. Conflict
 detection compares across the whole vector, including masked-off source lanes.
 
