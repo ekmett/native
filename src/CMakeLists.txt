@@ -117,7 +117,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.arm.neon.ccm native.arm.dotprod.ccm native.arm.rdm.ccm native.arm.fp16fml.ccm
       native.arm.fcma.ccm native.arm.i8mm.ccm native.arm.bf16.ccm native.arm.aes.ccm
-      native.arm.pmull.ccm native.arm.sha.ccm native.arm.ccm)
+      native.arm.pmull.ccm native.arm.sha.ccm native.arm.sm3.ccm native.arm.sm4.ccm native.arm.ccm)
 endif()
 
 # Older build files may link these names. They all refer to the same hub and

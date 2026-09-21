@@ -60,7 +60,7 @@ namespace {
   constexpr auto i8mm=native::isa(native::arm_feature::i8mm);
   static_assert(std::uint64_t(native::arm_feature::pauth)==14);
   static_assert(std::uint64_t(native::arm_feature::i8mm)==15);
-  static_assert(native::arm_feature_count==20);
+  static_assert(native::arm_feature_count==22);
   static_assert(native::feature_closure(i8mm)==(native::neon&i8mm));
   static_assert(native::target_features<native::arm>("i8mm")==native::feature_closure(i8mm));
   static_assert([] {

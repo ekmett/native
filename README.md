@@ -114,6 +114,8 @@ Use the [instruction guide](docs/instructions.md) when an algorithm needs a
 particular dot product, conversion, polynomial operation or checksum. Vector
 forms take `simd` values; scalar forms take ordinary C++ values. Their feature
 requirements and arithmetic contracts remain specific to the instruction.
+The [ARM SM3/SM4 guide](docs/arm-sm-crypto.md) describes individual hash-round,
+message-schedule and cipher-round operations on four-word vectors.
 
 Import `native.math` separately for promoted numerical kernels such as
 `math::exp` and `math::sincos`. Their domains and batching behavior are described

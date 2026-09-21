@@ -416,6 +416,7 @@ module when its boundary is useful:
 | Need | Import | CMake target |
 | --- | --- | --- |
 | SIMD, masks and register operations | `native.simd` | `native::native` |
+| ARM SM3/SM4 rounds and schedules | `native.arm.sm3`, `native.arm.sm4` ([guide](arm-sm-crypto.md)) | `native::native` |
 | A vector instruction family | Its `native.x86.*` or `native.arm.*` module | `native::native` |
 | Promoted numerical kernels | `native.math` | `native::native` |
 | CPU observation and admission | `native.features` | `native::minimal` |

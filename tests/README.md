@@ -26,6 +26,9 @@ representation and memory boundaries of shapes used by instruction extensions.
 Each instruction family also checks its public SIMD calls against the matching
 raw instruction sequence. Runtime checks report a skip when the host lacks the
 required feature; compiling an operation does not establish hardware behavior.
+The [SM3/SM4 fixture](arm_sm_crypto/README.md) separately checks all nine typed
+operations, constant-evaluation known answers, independent feature observations
+and the compiler target requirements.
 
 Constant-evaluation fixtures compare public calls with independent integer
 references or admitted hardware results. They cover integer and cryptographic
