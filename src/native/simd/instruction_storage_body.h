@@ -10,6 +10,7 @@ export namespace native {
     template<class T, std::size_t N, isa A>
     inline constexpr bool instruction_storage_shape = [] {
       if constexpr(!instruction_element<T> || N<2) return false;
+      else if constexpr(N>64/sizeof(T)) return false;
       else {
         constexpr auto bytes=sizeof(T)*N;
 #if NATIVE_HOST_NEON
@@ -143,7 +144,7 @@ export namespace native {
   /// This shape provides storage and transfer operations; arithmetic is supplied
   /// by the instruction modules supported by its architecture tag.
   template<class T, std::size_t N, isa A> requires detail::instruction_storage_shape<T,N,A>
-  struct simd<T,N,A> {
+  struct alignas(typename detail::instruction_register<T,N>::type) simd<T,N,A> {
     using value_type=T;
     using register_type=simd;
     using native_type=typename detail::instruction_register<T,N>::type;
@@ -258,16 +259,13 @@ export namespace native {
     }
     /// Return each half lane as its unchanged unsigned representation.
     native_nodiscard native_inline bits_type bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
-      std::array<std::uint16_t,N> words;
-      std::memcpy(words.data(),&value_,sizeof(T)*N);
-      return bits_type::load(words.data());
+      return bits_type::from_native(std::bit_cast<typename bits_type::native_type>(value_));
     }
     /// Synonym for bits; no floating-point conversion occurs.
     native_nodiscard native_inline bits_type to_bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) { return bits(); }
     /// Interpret unsigned words as half representations without conversion.
     native_nodiscard static native_inline simd from_bits(bits_type words) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
-      std::array<std::uint16_t,N> values; words.store(values.data());
-      return load_bits(values.data());
+      return from_native(std::bit_cast<native_type>(words.to_native()));
     }
     /// Read N unsigned half representations without numerical conversion.
     native_nodiscard static native_inline simd load_bits(std::uint16_t const * p) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
