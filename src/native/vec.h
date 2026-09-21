@@ -10,6 +10,9 @@
 #include <cstring>
 #include <span>
 #include <limits>
+#if NATIVE_HOST_WASM
+#include <wasm_simd128.h>
+#endif
 #if NATIVE_HOST_X86
 #include <immintrin.h>
 #endif

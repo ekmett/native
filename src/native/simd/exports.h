@@ -158,3 +158,7 @@ export namespace native {
   using ::native::narrow_concat;
 #endif
 }
+
+#if NATIVE_HOST_WASM && (!defined(NATIVE_PROFILE) || NATIVE_PROFILE != 0)
+export namespace native { using ::native::shuffle; using ::native::swizzle; using ::native::round_even; }
+#endif

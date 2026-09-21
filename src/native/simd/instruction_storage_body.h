@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Register shapes needed by instruction interfaces outside the arithmetic kernels.
+#if !NATIVE_HOST_WASM
 export namespace native {
   namespace detail {
     template<class T> concept instruction_element = simd_integer_element<T> ||
@@ -293,3 +294,5 @@ export namespace native {
     }
   };
 }
+
+#endif

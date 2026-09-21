@@ -1,0 +1,4 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+export module native.wasm;
+export import native.wasm.features;
+export import native.simd;

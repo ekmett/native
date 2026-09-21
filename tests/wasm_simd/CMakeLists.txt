@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+cmake_minimum_required(VERSION 4.4)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_wasm_consumer LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+  enable_testing()
+endif()
+find_program(NATIVE_WASM_NODE NAMES node REQUIRED)
+add_executable(native_test_wasm_simd main.cc)
+target_link_libraries(native_test_wasm_simd PRIVATE native::native)
+set_target_properties(native_test_wasm_simd PROPERTIES CXX_SCAN_FOR_MODULES ON)
+add_test(NAME native.wasm.simd COMMAND "${NATIVE_WASM_NODE}" "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_simd>)
+set_tests_properties(native.wasm.simd PROPERTIES SKIP_RETURN_CODE 77 LABELS "wasm;modules;simd128")
