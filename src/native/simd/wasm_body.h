@@ -277,8 +277,10 @@ namespace native {
     /// Initialize every lane to zero.
     constexpr simd() noexcept = default;
 
-    /// Broadcast the element value to every lane.
-    native_inline constexpr simd(T x) noexcept {
+    /// Broadcast a floating element value to every lane.
+    native_inline constexpr simd(T x) noexcept
+      requires std::is_floating_point_v<T>
+    {
       if consteval {
         std::array<T, N> a{};
         a.fill(x);
@@ -286,9 +288,22 @@ namespace native {
       } else {
         if constexpr (std::same_as<T, float>)
           value_ = wasm_f32x4_splat(x);
-        else if constexpr (std::same_as<T, double>)
+        else
           value_ = wasm_f64x2_splat(x);
-        else if constexpr (std::same_as<T, std::int8_t>)
+      }
+    }
+
+    /// Broadcast an integer, retaining its low lane-width bits in every lane.
+    template <simd_integer_element U>
+      requires simd_integer_element<T>
+    native_inline constexpr simd(U input) noexcept {
+      auto x = static_cast<T>(input);
+      if consteval {
+        std::array<T, N> a{};
+        a.fill(x);
+        value_ = __builtin_bit_cast(native_type, a);
+      } else {
+        if constexpr (std::same_as<T, std::int8_t>)
           value_ = wasm_i8x16_splat(x);
         else if constexpr (std::same_as<T, std::uint8_t>)
           value_ = wasm_u8x16_splat(x);
@@ -311,10 +326,12 @@ namespace native {
     native_inline constexpr explicit simd(std::array<T, N> const &a) noexcept
         : simd(load(a.data())) {}
 
-    /// Construct exactly N lanes from element-typed arguments.
+    /// Construct N lanes; integer arguments retain their low lane-width bits.
     template <class... U>
-      requires(sizeof...(U) == N && (std::same_as<U, T> && ...))
-    native_inline constexpr simd(U... x) noexcept : simd(std::array<T, N>{x...}) {}
+      requires(sizeof...(U) == N && ((std::same_as<U, T> && ...) ||
+               (simd_integer_element<T> && (simd_integer_element<U> && ...))))
+    native_inline constexpr simd(U... x) noexcept
+        : simd(std::array<T, N>{static_cast<T>(x)...}) {}
 
     /// Return the implementation register without changing its bits.
     native_inline constexpr native_type to_native() const noexcept {
