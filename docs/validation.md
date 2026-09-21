@@ -134,10 +134,15 @@ hit/miss and error counters. Consumer PCH use remains optional.
 
 ## ISA value API tooling
 
-Clang 23 can warn about repeated feature-property declarations from module
-global fragments with `-Wmodules-ambiguous-internal-linkage`. The library keeps
-header interoperability and does not suppress this diagnostic. Use
-`A.has(native::x86_feature::fma)` when treating that warning as an error.
+ISA property reads and writes through `import native;` are checked with warnings
+treated as errors for all three families, including foreign metadata. Including
+`<native/isa.h>` after the import also passes. Internal module fragments import
+the ISA owner before parsing shared headers so their property declarations merge.
+
+Clang 23 still reports `-Wmodules-ambiguous-internal-linkage` when the textual
+ISA header precedes the import: the local property declaration conflicts with
+the imported one. Import first, or use `A.has(native::x86_feature::fma)` for
+feature checks in that arrangement. The library does not suppress the warning.
 
 On Linux and macOS, Clang 23 cannot mangle a direct property expression in a
 function constraint such as `requires(A.avx2 && A.fma)`. Use

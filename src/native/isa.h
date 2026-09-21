@@ -493,8 +493,9 @@ namespace native {
   constexpr bool operator>(A a,B b) noexcept { return b<a; }
 
   /// First matching requirement, with every later choice checked for shadowing.
-  template<arch auto A,arch auto... Choices>
-    requires ((detail::same_arch<decltype(A),decltype(Choices)>) && ...)
+  // Explicit constraints let Clang merge the header with an imported declaration.
+  template<auto A,auto... Choices>
+    requires arch<decltype(A)> && ((detail::same_arch<decltype(A),decltype(Choices)>) && ...)
   inline constexpr int target=[]() consteval {
     using value_type=isa<detail::arch_family_v<decltype(A)>>;
     constexpr std::array<value_type,sizeof...(Choices)> choices{value_type(Choices)...};

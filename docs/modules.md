@@ -407,9 +407,11 @@ BMIs. Provider modules compile without PCHs; consumer PCHs must agree with their
 translation unit's compiler, exception and preprocessing settings. See
 [building and installation](../doc/building.md) for package configuration.
 
-Clang 23 can warn about ambiguous internal linkage when feature properties
-occur through several module global fragments. `A.has(feature)` avoids that
-property syntax for feature checks. Direct property expressions in constraints
+Clang 23 can warn about ambiguous internal linkage if `<native/isa.h>` is
+included before importing a module that exposes it. Import first when mixing
+the header and modules, or use `A.has(feature)` for feature checks. Module-only
+property reads and writes are checked with warnings treated as errors.
+Direct property expressions in constraints
 also have a Clang mangling limitation; use `has` or a named concept there.
 The [tooling record](validation.md#isa-value-api-tooling) gives the scope of
 these compiler limitations.

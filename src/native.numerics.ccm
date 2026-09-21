@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 /// \brief Scalar half storage, numeric limits and legacy scalar predicates.
 module;
+#include "native/isa_import.h"
 #include <bit>
 #include <cmath>
 #include <compare>

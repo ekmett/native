@@ -21,6 +21,19 @@ endif()
 # No per-variant compiler options, profile helpers, generated source, or extra BMI.
 add_executable(native_test_source_metadata metadata.cc)
 target_link_libraries(native_test_source_metadata PRIVATE native::native)
+# Repeated global-module includes must preserve one property declaration for
+# each ISA family, including foreign metadata reached through the full hub.
+foreach(include_header RANGE 0 1)
+  add_library(native_isa_properties_${include_header} OBJECT isa_properties.cc)
+  target_link_libraries(native_isa_properties_${include_header} PRIVATE native::native)
+  target_compile_definitions(native_isa_properties_${include_header} PRIVATE
+    NATIVE_ISA_PROPERTIES_INCLUDE=${include_header})
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(native_isa_properties_${include_header} PRIVATE /WX)
+  else()
+    target_compile_options(native_isa_properties_${include_header} PRIVATE -Werror)
+  endif()
+endforeach()
 add_library(native_source_variants OBJECT macros.cc scalar.cc)
 target_link_libraries(native_source_variants PRIVATE native::native)
 add_executable(native_test_source_variants $<TARGET_OBJECTS:native_source_variants>)
