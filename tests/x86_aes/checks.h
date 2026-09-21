@@ -3,6 +3,9 @@
 
 #include "prelude.h"
 
+extern "C" bool native_aes_admission(
+  std::uint32_t leaf1_ecx, std::uint32_t leaf1_edx, std::uint32_t max_basic_leaf = 1) noexcept;
+
 namespace aes_fixture {
   using native::x86_feature;
   constexpr auto strong = native::feature_closure(native::isa<native::x86>{x86_feature::aes});
@@ -280,6 +283,23 @@ namespace aes_fixture {
   }
 
   int run() {
+    constexpr std::uint32_t sse2 = (1u << 23) | (1u << 25) | (1u << 26);
+    if (native_aes_admission(1u << 25, sse2, 0)) {
+      std::puts("AES admission accepted an unobserved CPUID leaf");
+      return 1;
+    }
+    for (unsigned bit = 0; bit < 32; ++bit) {
+      if (native_aes_admission(1u << bit, sse2) != (bit == 25)) {
+        std::puts("AES admission confused CPUID feature bits");
+        return 1;
+      }
+    }
+    for (unsigned bit : {23u, 25u, 26u}) {
+      if (native_aes_admission(1u << 25, sse2 & ~(1u << bit))) {
+        std::puts("AES admission ignored a register prerequisite");
+        return 1;
+      }
+    }
     auto admission = native::classify_isa(native::observe_x86_capabilities(), strong);
     if (!admission.admitted()) {
       std::printf("SKIP AES: %s\n", admission.reason());
