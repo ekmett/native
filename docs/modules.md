@@ -80,6 +80,18 @@ authorize those operations or change its scalar conversion policy.
 Keep dependent mathematical calls unqualified so ADL can select the register's
 overload. There is no runtime architecture branch in individual operations.
 
+FP16 vector arithmetic also works during constant evaluation: addition,
+subtraction, multiplication, division, square root and FMA use round-to-nearest,
+ties-to-even with gradual underflow. Comparisons, sign changes and selection
+preserve their lane semantics. Constant evaluation does not read or change the
+floating-point control or status registers. Runtime operations retain the
+caller's architectural environment. NaN payload selection during arithmetic
+is not a portable cross-platform promise.
+
+BF16 `dot2` is constant-evaluable with the architecture's instruction semantics.
+ARM uses legacy BFDOT behavior with EBF clear; x86 retains VDPBF16PS's
+high-product-first ordering. Their fixed rounding and denormal rules differ.
+
 ## Masks and memory
 
 `V::mask` is the type produced by comparisons of `V`. AVX2 and NEON use vector

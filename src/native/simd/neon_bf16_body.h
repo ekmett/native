@@ -47,7 +47,7 @@ export namespace native {
     simd() noexcept = default;
     /// Broadcast the exact representation of value to all 8 lanes.
     native_inline constexpr explicit simd(bf16 value) noexcept
-      : value_(std::bit_cast<native_type>(bits_type(value.to_bits()).to_native())) {}
+      : value_(__builtin_bit_cast(native_type,bits_type(value.to_bits()).to_native())) {}
     /// Copy array element i into lane i without conversion or representation changes.
     native_inline constexpr explicit simd(std::array<bf16,lanes> const & values) noexcept : simd(load(values.data())) {}
     /// Construct all 8 lanes from BF16 values in argument order, preserving their bits.
@@ -67,13 +67,13 @@ export namespace native {
     }
     /// Return the 16-bit representation of each lane in an unsigned vector.
     native_nodiscard native_inline constexpr bits_type bits() const noexcept {
-      return bits_type::from_native(std::bit_cast<typename bits_type::native_type>(value_));
+      return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value_));
     }
     /// Synonym for bits(); this is a representation bridge, not a numeric conversion.
     native_nodiscard native_inline constexpr bits_type to_bits() const noexcept { return bits(); }
     /// Interpret each unsigned lane as a BF16 representation without changing its bits.
     native_nodiscard static native_inline constexpr simd from_bits(bits_type value) noexcept {
-      return from_native(std::bit_cast<native_type>(value.to_native()));
+      return from_native(__builtin_bit_cast(native_type,value.to_native()));
     }
     /// Read exactly 8 accessible uint16_t objects into corresponding BF16 lane bits.
     /// No alignment beyond that of uint16_t is required; p must not be null.
@@ -157,9 +157,10 @@ export namespace native {
   /// No operation changes FPCR. Applications own FPCR and ISA admission; this
   /// API makes no reproducible cross-ISA or cross-FPCR result promise.
   template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline simd<float,4,Arch> dot2(
+  native_nodiscard native_inline constexpr simd<float,4,Arch> dot2(
       simd<bf16,8,Arch> a, simd<bf16,8,Arch> b,
       simd<float,4,Arch> accumulator) noexcept {
+    if consteval { return detail::half_constant::dot2<true>(a,b,accumulator); }
     return simd<float,4,Arch>::from_native(
       detail::neon_bf16_backend::dot2_native(a.to_native(), b.to_native(), accumulator.to_native()));
   }

@@ -52,7 +52,7 @@ export namespace native {
     simd() noexcept = default;
     /// Broadcast the exact representation of value to all 8 lanes.
     native_inline constexpr explicit simd(fp16 value) noexcept
-      : value_(std::bit_cast<native_type>(bits_type(value.to_bits()).to_native())) {}
+      : value_(__builtin_bit_cast(native_type,bits_type(value.to_bits()).to_native())) {}
     /// Copy array element i into lane i without conversion or representation changes.
     native_inline constexpr explicit simd(std::array<fp16,lanes> const & values) noexcept : simd(load(values.data())) {}
     /// Construct all 8 lanes from FP16 values in argument order, preserving their bits.
@@ -70,13 +70,13 @@ export namespace native {
     }
     /// Return the 16-bit representation of each lane in an unsigned vector.
     native_nodiscard native_inline constexpr bits_type bits() const noexcept {
-      return bits_type::from_native(std::bit_cast<typename bits_type::native_type>(value_));
+      return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value_));
     }
     /// Synonym for bits(); this is a representation bridge, not a numeric conversion.
     native_nodiscard native_inline constexpr bits_type to_bits() const noexcept { return bits(); }
     /// Interpret each unsigned lane as a FP16 representation without changing its bits.
     native_nodiscard static native_inline constexpr simd from_bits(bits_type value) noexcept {
-      return from_native(std::bit_cast<native_type>(value.to_native()));
+      return from_native(__builtin_bit_cast(native_type,value.to_native()));
     }
     /// Read exactly 8 accessible uint16_t objects into corresponding FP16 lane bits.
     /// No alignment beyond that of uint16_t is required; p must not be null.
@@ -146,55 +146,65 @@ export namespace native {
       } else { if (n) std::memcpy(p, &value_, n * sizeof(fp16)); }
     }
     /// Add corresponding half lanes, rounding directly under the caller's FPCR.
-    native_nodiscard friend native_inline simd operator+(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr simd operator+(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::arithmetic<detail::half_constant::operation::add,true>(a,b); }
       return from_native(detail::neon_fp16_backend::add_half(a.value_,b.value_));
     }
     /// Subtract corresponding half lanes, rounding directly under the caller's FPCR.
-    native_nodiscard friend native_inline simd operator-(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr simd operator-(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::arithmetic<detail::half_constant::operation::subtract,true>(a,b); }
       return from_native(detail::neon_fp16_backend::sub_half(a.value_,b.value_));
     }
     /// Multiply corresponding half lanes, rounding directly under the caller's FPCR.
-    native_nodiscard friend native_inline simd operator*(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr simd operator*(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::arithmetic<detail::half_constant::operation::multiply,true>(a,b); }
       return from_native(detail::neon_fp16_backend::mul_half(a.value_,b.value_));
     }
     /// Divide corresponding half lanes with native half-precision rounding.
     /// The caller's FPCR and native exception behavior apply.
-    native_nodiscard friend native_inline simd operator/(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr simd operator/(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::arithmetic<detail::half_constant::operation::divide,true>(a,b); }
       return from_native(detail::neon_fp16_backend::div_half(a.value_,b.value_));
     }
     /// Compute each half lane's square root with native half-precision rounding.
     /// Signed zero is preserved; negative nonzero operands after native input
     /// flushing produce a quiet NaN.
     /// The caller's FPCR and native exception behavior apply.
-    native_nodiscard friend native_inline simd sqrt(simd a) noexcept {
+    native_nodiscard friend native_inline constexpr simd sqrt(simd a) noexcept {
+      if consteval { return detail::half_constant::square_root<true>(a); }
       return from_native(detail::neon_fp16_backend::sqrt_half(a.value_));
     }
     /// Apply native FNEG to each half lane; no scalar half-to-float conversion occurs.
-    native_nodiscard friend native_inline simd operator-(simd a) noexcept {
+    native_nodiscard friend native_inline constexpr simd operator-(simd a) noexcept {
+      if consteval { return detail::half_constant::unary(a,[](auto x) { return std::uint16_t(x^0x8000); }); }
       return from_native(detail::neon_fp16_backend::neg_half(a.value_));
     }
     /// Ordered lane equality. NaNs compare false; signed zeros compare equal.
     /// FPCR half-denormal controls and native comparison exception behavior apply.
-    native_nodiscard friend native_inline mask operator==(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr mask operator==(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::compare(a,b,[](auto x,auto y) { return detail::constexpr_float::equal_bits<detail::constexpr_float::binary16>(x,y); }); }
       return mask::unsafe_from_native(detail::neon_fp16_backend::eq_half(a.value_,b.value_));
     }
     /// Lane inequality, true for unordered NaN operands; complements native equality.
-    native_nodiscard friend native_inline mask operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    native_nodiscard friend native_inline constexpr mask operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Ordered lane less-than. NaNs compare false; native FPCR/FPSR semantics apply.
-    native_nodiscard friend native_inline mask operator<(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr mask operator<(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::compare(a,b,[](auto x,auto y) { return detail::constexpr_float::less_bits<detail::constexpr_float::binary16>(x,y); }); }
       return mask::unsafe_from_native(detail::neon_fp16_backend::lt_half(a.value_,b.value_));
     }
     /// Ordered lane less-or-equal. NaNs compare false; native FPCR/FPSR semantics apply.
-    native_nodiscard friend native_inline mask operator<=(simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr mask operator<=(simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::compare(a,b,[](auto x,auto y) { return detail::constexpr_float::less_bits<detail::constexpr_float::binary16>(x,y) || detail::constexpr_float::equal_bits<detail::constexpr_float::binary16>(x,y); }); }
       return mask::unsafe_from_native(detail::neon_fp16_backend::le_half(a.value_,b.value_));
     }
     /// Ordered lane greater-than, with the native less-than operands reversed.
-    native_nodiscard friend native_inline mask operator>(simd a,simd b) noexcept { return b<a; }
+    native_nodiscard friend native_inline constexpr mask operator>(simd a,simd b) noexcept { return b<a; }
     /// Ordered lane greater-or-equal, with native less-or-equal operands reversed.
-    native_nodiscard friend native_inline mask operator>=(simd a,simd b) noexcept { return b<=a; }
+    native_nodiscard friend native_inline constexpr mask operator>=(simd a,simd b) noexcept { return b<=a; }
     /// Choose a lane from a when its canonical mask lane is true, otherwise b.
     /// Selection copies every representation bit without arithmetic or NaN quieting.
-    native_nodiscard friend native_inline simd select(mask m,simd a,simd b) noexcept {
+    native_nodiscard friend native_inline constexpr simd select(mask m,simd a,simd b) noexcept {
+      if consteval { return detail::half_constant::select(m,a,b); }
       return from_native(detail::neon_fp16_backend::select_half(m.to_native(),a.value_,b.value_));
     }
   };
@@ -204,8 +214,9 @@ export namespace native {
   /// The caller's FPCR rounding/FZ16/DN/exception controls apply, FPSR may change,
   /// and FPCR is preserved. NaN payload/sign follow the native instruction.
   template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline simd<fp16,8,Arch> fma(
+  native_nodiscard native_inline constexpr simd<fp16,8,Arch> fma(
       simd<fp16,8,Arch> a,simd<fp16,8,Arch> b,simd<fp16,8,Arch> c) noexcept {
+    if consteval { return detail::half_constant::fused<true>(a,b,c); }
     return simd<fp16,8,Arch>::from_native(
       detail::neon_fp16_backend::fma_half(a.to_native(),b.to_native(),c.to_native()));
   }
