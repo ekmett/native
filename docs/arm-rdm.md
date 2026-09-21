@@ -7,8 +7,9 @@ and `native` hubs re-export them.
 
 Scalar operations use ordinary C++ integers. Vector operands and results use
 `native::simd<T, N, Arch>`, including the vector source of a scalar lane operation.
-Scalar `sqrdmlah(a,b,c)` and `sqrdmlsh(a,b,c)` calls may omit `Arch` when the
-owning module's `NATIVE_BASELINE` contains RDM. This default is captured at module
+Scalar `sqrdmlah(a,b,c)` and `sqrdmlsh(a,b,c)` calls may omit `Arch`, using the
+owning module's `NATIVE_BASELINE`. Runtime calls require that baseline to contain
+RDM. This default is captured at module
 compilation; an importing function's target attribute does not change it. An
 explicit ISA remains available for optional target leaves. Clang 23 reports
 `__ARM_FEATURE_QRDMX` for an Armv8.1-A baseline, but not for `armv8-a+rdm`
@@ -40,17 +41,23 @@ minimum-times-minimum product can cancel a negative accumulator without
 intermediate saturation. These functions cannot be replaced by a saturating
 multiply followed by a separate saturating add/subtract.
 
-Saturation sets the calling thread's sticky FPSR.QC bit. A nonsaturating result
+Runtime saturation sets the calling thread's sticky FPSR.QC bit. A nonsaturating result
 does not clear it. The wrappers do not modify FPCR, clear FPSR or promise
 `const`/`pure` semantics. Even an unused result executes the instruction.
 
-Each wrapper requires `Arch.has(arm_feature::rdm)` and a Clang `rdm` function
+All scalar, vector and lane forms support constant evaluation. The constant
+branch computes the value using the formula above; it neither observes nor
+modifies FPSR and cannot simulate a thread's sticky QC state. An ISA without RDM
+exposes only immediate (`consteval`) overloads, with the same exact operand types
+and available SIMD storage shapes. Calls with runtime operands are rejected.
+
+Each runtime wrapper requires `Arch.has(arm_feature::rdm)` and a Clang `rdm` function
 target. Before calling it, check that
 `classify_isa(observe_arm_capabilities(), feature_closure(arm_feature::rdm),
 NATIVE_TARGET_MINIMUM)` admits execution. Feature closure adds NEON to these
 requirements; DotProd, FP16 and the rest of the Armv8.1-A bundle are unnecessary.
-Missing feature bits and invalid lanes are rejected at compile time. The
-operations have no software fallback or runtime dispatch.
+Missing feature bits reject runtime operands, and invalid lanes are always
+rejected. The operations have no runtime software fallback or dispatch.
 
 Clang 23's ACLE wrappers and underlying RDM builtins require the broader
 `v8.1a` target even though the instructions can be enabled with `rdm` alone.
@@ -78,3 +85,11 @@ Primary references are the [Arm Advanced SIMD intrinsic
 reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#sqrdmlah-intrinsics-from-armv81-a)
 and [LLVM's big-endian NEON representation
 notes](https://llvm.org/docs/BigEndianNEON.html).
+
+Generated properties cover all 120 scalar, vector and selected-lane forms.
+Forty constant-evaluated cases per form include signed extremes, halfway ties,
+minimum-times-minimum cancellation and final saturation. Results agree with an
+independent 128-bit formula and actual native execution. Additional runtime
+cases accept `NATIVE_TEST_SEED` and `NATIVE_TEST_CASES`, reporting seed, case index
+and operands on failure. The separate native status tests retain sticky-QC and
+discarded-result checks.

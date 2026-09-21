@@ -32,6 +32,17 @@ foreach(interface IN LISTS interfaces)
   math(EXPR interface_number "${interface_number}+1")
 endforeach()
 
+add_executable(native_test_arm_rdm_constexpr constexpr.cc)
+target_link_libraries(native_test_arm_rdm_constexpr PRIVATE native::native)
+set_target_properties(native_test_arm_rdm_constexpr PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(COMMAND native_link_clang_cl_asan)
+  native_link_clang_cl_asan(native_test_arm_rdm_constexpr)
+endif()
+add_test(NAME native.arm.rdm.constexpr COMMAND native_test_arm_rdm_constexpr)
+set_tests_properties(native.arm.rdm.constexpr PROPERTIES
+  SKIP_RETURN_CODE 77 LABELS "host;modules;arm;rdm;constexpr;properties")
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
@@ -105,3 +116,19 @@ add_test(NAME native.arm.rdm.zero_overhead
     $<TARGET_OBJECTS:native_test_arm_rdm_codegen> COMMAND_EXPAND_LISTS)
 set_tests_properties(native.arm.rdm.zero_overhead PROPERTIES
   LABELS "host;arm;rdm;codegen")
+
+# Every missing-feature overload rejects a call with runtime operands.
+foreach(kind RANGE 0 35)
+  set(target native_test_arm_rdm_constexpr_reject_${kind})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL constexpr_reject.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  target_compile_definitions(${target} PRIVATE NATIVE_INTEGER_REJECT=${kind})
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.arm.rdm.constexpr_reject_${kind}
+    COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py"
+      --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
+      --config "$<CONFIG>" --diagnostic "call to consteval function.*is not a constant expression"
+      --log "${CMAKE_CURRENT_BINARY_DIR}/constexpr-reject-${kind}.log")
+  set_tests_properties(native.arm.rdm.constexpr_reject_${kind} PROPERTIES
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;rdm;constexpr")
+endforeach()

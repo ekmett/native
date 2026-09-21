@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/arm/detail/integer_constant.h"
 #include "native/arm/i8mm.h"
 export module native.arm.i8mm;
 export import native.arm.features;

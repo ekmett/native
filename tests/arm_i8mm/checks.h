@@ -11,8 +11,8 @@ namespace i8mm_fixture {
   template<native::isa<native::arm> A> concept accepts=requires(int32x4_t c,int8x16_t a) {
     i8mm_api::smmla<A>(c,a,a);
   };
-  static_assert(accepts<feature> && !accepts<native::neon>);
-  static_assert(!accepts<native::isa<native::arm>(native::arm_feature::dotprod)>);
+  static_assert(accepts<feature> && accepts<native::neon>);
+  static_assert(accepts<native::isa<native::arm>(native::arm_feature::dotprod)>);
   template<unsigned L> concept accepts_lane=requires(int32x4_t c,uint8x16_t a,int8x8_t b) {
     i8mm_api::usdot_lane<feature,L>(c,a,b);
   };

@@ -40,8 +40,8 @@ CRC_CONTRACT(crc32c)
   template<class A, class B, class C> concept default_##name = requires(A a, B b, C c) { native::name(a,b,c); }; \
   template<isa<native::arm> Arch, class T> concept explicit_##name = requires(T x) { native::name<Arch>(x,x,x); }; \
   template<class T> consteval bool name##_contract() { \
-    return default_##name<T,T,T> == present && explicit_##name<rdm,T> \
-      && !explicit_##name<isa<native::arm>(arm_feature::neon),T>; \
+    return default_##name<T,T,T> && explicit_##name<rdm,T> \
+      && explicit_##name<isa<native::arm>(arm_feature::neon),T>; \
   } \
   static_assert(name##_contract<std::int16_t>() && name##_contract<std::int32_t>()); \
   static_assert(!default_##name<std::int32_t,std::int16_t,std::int16_t> \
@@ -90,7 +90,7 @@ static_assert(!valid_lane<rdm_words>);
 // Function targets enable instructions, but do not replace module defaults.
 __attribute__((target("crc,rdm,aes,sha2"))) consteval bool scoped_contract() {
   return default_crc32<std::uint32_t,std::uint64_t>
-    && default_sqrdmlah<std::int32_t,std::int32_t,std::int32_t> == present
+    && default_sqrdmlah<std::int32_t,std::int32_t,std::int32_t>
     && default_sha1h<std::uint32_t>
     && default_pmull<std::uint64_t,std::uint64_t>;
 }

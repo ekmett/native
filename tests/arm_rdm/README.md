@@ -11,8 +11,8 @@ stickiness, cancellation without saturation and a saturating vector lane form;
 the status-check helper restores its incoming FPSR.
 
 Direct public type checks reject raw registers and mixed architectures.
-Compile-time participation checks reject absent/unrelated features and invalid
-lanes, including ordinary-call checks that prevent Clang's lax vector conversions
+Compile-time participation checks accept feature-absent immediate overloads and
+reject invalid lanes, including ordinary-call checks that prevent Clang's lax vector conversions
 or scalar narrowing from selecting halfword overloads for invalid word lanes.
 A separate negative compilation checks those calls with deduced return types.
 Synthetic observations reject missing and unobserved RDM. Native entry
@@ -45,3 +45,12 @@ Windows/Linux execution is claimed. See
 The zero-overhead test compares paired public `simd` and raw-helper leaves under
 the same target and calling context. It requires identical full instruction
 sequences, including register moves and memory traffic.
+
+The `constexpr` consumer checks all 120 width/lane forms against an independent
+128-bit formula. Forty generated constant inputs per form exercise strong and
+feature-absent immediate overloads, then compare with native hardware. Directed
+inputs cover ties, saturation and cancellation. Additional seeded runtime
+properties honor `NATIVE_TEST_SEED` and `NATIVE_TEST_CASES`; failures print
+reproducible operands. Each immediate-only overload has an actual compilation
+rejection with runtime inputs. Constant evaluation computes values only; native
+status tests retain their FPSR.QC checks.

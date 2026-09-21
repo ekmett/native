@@ -3,7 +3,8 @@
 I8MM multiplies small byte matrices and computes mixed-sign byte dot products,
 accumulating the results into 32-bit integers. Import `native.arm.i8mm`, `native.arm`, or `native` for these
 AArch64 operations. Operands and results use `native::simd<T, N, Arch>`, with
-semantic byte or integer lanes and a shared `Arch` containing `arm_feature::i8mm`.
+semantic byte or integer lanes and a shared `Arch`. Runtime calls require
+`arm_feature::i8mm`.
 Raw NEON registers are private implementation details.
 
 | Operation | Accumulator and result | Input signedness |
@@ -37,7 +38,11 @@ bits as two's complement. There is no saturation, floating-point arithmetic,
 or floating-point control-register dependency. These contracts follow Arm's
 [Advanced SIMD intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#matrix-multiplication-intrinsics-from-armv86-a).
 
-Each wrapper is `noexcept` and always inline with Clang's `target("i8mm")`
+All forms support constant evaluation with the same lane mapping and modular
+arithmetic. An ISA without I8MM exposes only immediate (`consteval`) overloads
+when the required SIMD storage shapes exist; runtime operands are rejected.
+
+Each runtime wrapper is `noexcept` and always inline with Clang's `target("i8mm")`
 attribute. The caller must compile in a compatible target scope and check
 `classify_isa(observe_arm_capabilities(), arm_feature::i8mm).admitted()` before
 entering it. Importing the API does not enable I8MM instructions or dispatch
@@ -74,15 +79,15 @@ The macOS detector queries `hw.optional.arm.FEAT_I8MM`. The Linux detector
 uses [`HWCAP2_I8MM` from `AT_HWCAP2`](https://docs.kernel.org/arch/arm64/elf_hwcaps.html)
 when the SDK defines that bit. Failed queries and missing SDK definitions leave
 the feature unobserved; a successful false query records observed-but-absent.
-The Windows detector leaves Advanced SIMD I8MM unobserved, so admission fails
-there: an SVE I8MM query does not establish this instruction family's
+The Windows detector queries `PF_ARM_V82_I8MM_INSTRUCTIONS_AVAILABLE`
+independently; an SVE I8MM query does not establish this instruction family's
 availability.
 
 `tests/arm_i8mm` checks the granular module and main hub against
 independent scalar references with unsigned modular accumulation. It covers
 matrix row/column sentinels, all 256 single-product positions, integer extremes,
 10,000 deterministic random cases, both register widths, and all 24 indexed
-signedness/width/lane combinations. Compile checks reject a missing feature,
+signedness/width/lane combinations. Compile checks reject runtime operands with a missing feature,
 an incompatible caller target and an invalid lane. A separately targeted
 object is disassembled to verify matrix and mixed-dot instructions, indexed
 immediates, and a baseline control. Runtime tests return the CTest skip code 77
@@ -95,3 +100,8 @@ This checks abstraction overhead in the tested leaf contexts; it is not a
 benchmark or a guarantee about surrounding application code.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
+Generated properties cover all 29 matrix, dot and indexed forms. Forty
+constant-evaluated cases per form agree with native execution and an independent
+wide-integer reference. Additional runtime cases accept `NATIVE_TEST_SEED` and
+`NATIVE_TEST_CASES`, and report the seed, case index and operands on failure.
