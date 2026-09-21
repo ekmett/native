@@ -12,6 +12,8 @@
 
 inline constexpr auto cd512 = native::target_features<native::x86>("avx512f,avx512cd");
 inline constexpr auto cdvl = native::target_features<native::x86>("avx512f,avx512cd,avx512vl");
+inline constexpr auto cd_broad = native::target_features<native::x86>(
+  "avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd");
 
 template<native::isa<native::x86> A, class T, std::size_t N>
 concept cd_shape = requires(native::simd<T, N, A> v, native::predicate<N, A> m) {
@@ -19,6 +21,8 @@ concept cd_shape = requires(native::simd<T, N, A> v, native::predicate<N, A> m) 
   { native::mask_vpconflictd<A>(v, m, v) } noexcept -> std::same_as<decltype(v)>;
   { native::maskz_vpconflictd<A>(m, v) } noexcept -> std::same_as<decltype(v)>;
   { native::vplzcntd<A>(v) } noexcept -> std::same_as<decltype(v)>;
+  { native::mask_vplzcntd<A>(v, m, v) } noexcept -> std::same_as<decltype(v)>;
+  { native::maskz_vplzcntd<A>(m, v) } noexcept -> std::same_as<decltype(v)>;
 };
 static_assert(cd_shape<cdvl, std::uint32_t, 4> && cd_shape<cdvl, std::uint32_t, 8> &&
               cd_shape<cd512, std::uint32_t, 16>);
@@ -33,6 +37,21 @@ concept cd_mask = requires(native::simd<std::uint32_t, 4, cdvl> v, M m) {
 };
 static_assert(!cd_mask<unsigned> && !cd_mask<native::predicate<8, cdvl>> &&
               !cd_mask<native::predicate<4, cd512>>);
+
+template<native::isa<native::x86> A, class T, std::size_t N>
+concept cd_qshape = requires(native::simd<T, N, A> v, native::predicate<N, A> m) {
+  { native::vpconflictq<A>(v) } noexcept -> std::same_as<decltype(v)>;
+  { native::mask_vpconflictq<A>(v, m, v) } noexcept -> std::same_as<decltype(v)>;
+  { native::maskz_vpconflictq<A>(m, v) } noexcept -> std::same_as<decltype(v)>;
+  { native::vplzcntq<A>(v) } noexcept -> std::same_as<decltype(v)>;
+  { native::mask_vplzcntq<A>(v, m, v) } noexcept -> std::same_as<decltype(v)>;
+  { native::maskz_vplzcntq<A>(m, v) } noexcept -> std::same_as<decltype(v)>;
+};
+static_assert(cd_qshape<cdvl, std::uint64_t, 2> && cd_qshape<cdvl, std::uint64_t, 4> &&
+              cd_qshape<cd512, std::uint64_t, 8>);
+static_assert(!cd_qshape<cdvl, std::int64_t, 2> && !cd_qshape<cdvl, std::uint64_t, 3>);
+static_assert(!cd_shape<cdvl, std::uint32_t, 3>);
+static_assert(!cd_qshape<native::isa<native::x86>{}, std::uint64_t, 2>);
 
 template<class T, std::size_t N>
 constexpr std::array<std::array<T, N>, 6>
@@ -139,6 +158,23 @@ static_assert(constants<cdvl, std::uint64_t, 8>());
 static_assert(constants<cd512, std::uint32_t, 16>());
 static_assert(constants<cd512, std::uint64_t, 8>());
 
+static_assert(constants<cd_broad, std::uint32_t, 4>());
+static_assert(constants<cd_broad, std::uint32_t, 8>());
+static_assert(constants<cd_broad, std::uint32_t, 16>());
+static_assert(constants<cd_broad, std::uint64_t, 2>());
+static_assert(constants<cd_broad, std::uint64_t, 4>());
+static_assert(constants<cd_broad, std::uint64_t, 8>());
+
+// Hand-written anchors keep lane numbering independent of the reference loop.
+constexpr std::array<std::uint32_t, 16> boundary_d{
+  17, 1, 2, 3, 17, 5, 6, 7, 17, 9, 10, 11, 12, 13, 14, 17};
+constexpr std::array<std::uint64_t, 8> boundary_q{17, 1, 17, 3, 17, 5, 6, 17};
+constexpr auto boundary_d_result = calculate<cd512>(boundary_d, boundary_d, 0x8000);
+constexpr auto boundary_q_result = calculate<cd512>(boundary_q, boundary_q, 0x80);
+static_assert(boundary_d_result[2][15] == 0x111 && boundary_d_result[2][8] == 0);
+static_assert(boundary_q_result[2][7] == 0x15 && boundary_q_result[2][4] == 0);
+static_assert(boundary_d_result[1][4] == 17 && boundary_q_result[1][2] == 17);
+
 // Each native entry keeps its literal target visible at the baseline call boundary.
 template<class T, std::size_t N>
 native_noinline native_target("avx512f,avx512cd")
@@ -188,6 +224,30 @@ void invoke_vl(T * result, T const * input, T const * source, std::uint64_t mask
   }
 }
 
+template<class T, std::size_t N>
+native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd")
+void invoke_broad(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
+  using vector_type = native::simd<T, N, cd_broad>;
+  auto value = vector_type::load(input);
+  auto source_value = vector_type::load(source);
+  auto lane_mask = native::predicate<N, cd_broad>::from_bitset(mask);
+  if constexpr (sizeof(T) == 4) {
+    native::vpconflictd<cd_broad>(value).store(result);
+    native::mask_vpconflictd<cd_broad>(source_value, lane_mask, value).store(result + N);
+    native::maskz_vpconflictd<cd_broad>(lane_mask, value).store(result + 2 * N);
+    native::vplzcntd<cd_broad>(value).store(result + 3 * N);
+    native::mask_vplzcntd<cd_broad>(source_value, lane_mask, value).store(result + 4 * N);
+    native::maskz_vplzcntd<cd_broad>(lane_mask, value).store(result + 5 * N);
+  } else {
+    native::vpconflictq<cd_broad>(value).store(result);
+    native::mask_vpconflictq<cd_broad>(source_value, lane_mask, value).store(result + N);
+    native::maskz_vpconflictq<cd_broad>(lane_mask, value).store(result + 2 * N);
+    native::vplzcntq<cd_broad>(value).store(result + 3 * N);
+    native::mask_vplzcntq<cd_broad>(source_value, lane_mask, value).store(result + 4 * N);
+    native::maskz_vplzcntq<cd_broad>(lane_mask, value).store(result + 5 * N);
+  }
+}
+
 inline std::uint64_t random_bits(std::uint64_t & state) {
   state ^= state << 13;
   state ^= state >> 7;
@@ -195,11 +255,13 @@ inline std::uint64_t random_bits(std::uint64_t & state) {
   return state;
 }
 
-template<class T, std::size_t N>
+template<bool Broad = false, class T, std::size_t N>
 bool check_case(std::array<T, N> const & input, std::array<T, N> const & source,
                 std::uint64_t mask) {
   std::array<T, 6 * N> actual{};
-  if constexpr (sizeof(T) * N == 64) {
+  if constexpr (Broad) {
+    invoke_broad<T, N>(actual.data(), input.data(), source.data(), mask);
+  } else if constexpr (sizeof(T) * N == 64) {
     invoke_512<T, N>(actual.data(), input.data(), source.data(), mask);
   } else {
     invoke_vl<T, N>(actual.data(), input.data(), source.data(), mask);
@@ -220,7 +282,7 @@ bool check_case(std::array<T, N> const & input, std::array<T, N> const & source,
   return true;
 }
 
-template<class T, std::size_t N>
+template<class T, std::size_t N, bool Broad = false>
 bool check_vectors(std::uint64_t & state) {
   std::array<T, N> input{};
   std::array<T, N> source{};
@@ -241,17 +303,30 @@ bool check_vectors(std::uint64_t & state) {
         input[lane] = T{1} << ((pattern - 4 + lane) % (sizeof(T) * 8));
       }
     }
-    if (!check_case(input, source, 0) || !check_case(input, source, ~std::uint64_t{0}) ||
-        !check_case(input, source, 0xaaaa) || !check_case(input, source, 0x5555)) {
+    if (!check_case<Broad>(input, source, 0) || !check_case<Broad>(input, source, ~std::uint64_t{0}) ||
+        !check_case<Broad>(input, source, 0xaaaa) || !check_case<Broad>(input, source, 0x5555)) {
       return false;
     }
     for (unsigned bit = 0; bit < 16; ++bit) {
-      if (!check_case(input, source, std::uint64_t{1} << bit) ||
-          !check_case(input, source, ~(std::uint64_t{1} << bit))) {
+      if (!check_case<Broad>(input, source, std::uint64_t{1} << bit) ||
+          !check_case<Broad>(input, source, ~(std::uint64_t{1} << bit))) {
         return false;
       }
     }
   }
+  // Exhaust every logical mask over a duplicate bank. Repeat with all high bits
+  // set to check that predicate normalization ignores bits beyond the lane count.
+  for (std::size_t lane = 0; lane < N; ++lane) {
+    input[lane] = static_cast<T>(lane % 3);
+  }
+  constexpr auto lane_mask = (std::uint64_t{1} << N) - 1;
+  for (std::uint64_t mask = 0; mask <= lane_mask; ++mask) {
+    if (!check_case<Broad>(input, source, mask) ||
+        !check_case<Broad>(input, source, mask | ~lane_mask)) {
+      return false;
+    }
+  }
+
   // Small-domain inputs force duplicates across every 128-bit boundary.
   for (unsigned trial = 0; trial < 2048; ++trial) {
     for (auto & lane : input) {
@@ -260,7 +335,7 @@ bool check_vectors(std::uint64_t & state) {
     for (auto & lane : source) {
       lane = static_cast<T>(random_bits(state));
     }
-    if (!check_case(input, source, random_bits(state))) {
+    if (!check_case<Broad>(input, source, random_bits(state))) {
       return false;
     }
   }

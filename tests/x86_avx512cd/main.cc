@@ -43,6 +43,18 @@ int main(int argc, char **) {
   } else {
     std::puts("SKIP AVX512CD narrow forms: AVX512VL unavailable.");
   }
+  if (native::classify_isa(cpu, cd_broad).admitted()) {
+    if (!check_vectors<std::uint32_t, 4, true>(state) ||
+        !check_vectors<std::uint32_t, 8, true>(state) ||
+        !check_vectors<std::uint32_t, 16, true>(state) ||
+        !check_vectors<std::uint64_t, 2, true>(state) ||
+        !check_vectors<std::uint64_t, 4, true>(state) ||
+        !check_vectors<std::uint64_t, 8, true>(state)) {
+      return 4;
+    }
+  } else {
+    std::puts("SKIP AVX512CD broader-tag forms: AVX512DQ/BW unavailable.");
+  }
   std::puts("AVX512CD runtime lane and mask checks passed.");
   return 0;
 }

@@ -1,44 +1,65 @@
 # AVX512CD checks
 
-These fixtures exercise `native.x86.avx512cd` and the `native` hub with the
-public `simd` and `predicate` overloads. The compile-time banks cover conflict
-bits and leading-zero counts for both lane types at 128, 256 and 512 bits,
-using instruction-enabled tags and storage-only tags. Shape assertions reject
-unsupported dword signatures, raw-register arguments and mismatched predicates.
-The large constant-evaluation banks use a test-local Clang step budget.
+These fixtures exercise `native.x86.avx512cd` and the `native` hub through
+`simd` and `predicate` values. Compile-time banks cover conflict bits and
+leading-zero counts for 32-bit and 64-bit lanes at 128, 256 and 512 bits. They
+use storage-only tags, minimal instruction tags, and a broader AVX512DQ/BW/VL
+tag. The large banks use a test-local Clang constant-evaluation step budget.
+Hand-written anchors check bit positions across 128-bit boundaries while earlier
+destination lanes are masked off. Shape assertions cover all twelve operation
+names, including qword and masked leading-zero forms.
 
-The runtime checks compare all plain, merge and zero forms with an independent
+The runtime checks compare plain, merge and zero forms with an independent
 scalar reference. Inputs include zero, distinct lanes, repeated values, set-bit
-patterns and random values. Masks include empty, full, alternating, isolated
-and complemented bits. Conflict comparisons include earlier lanes across
-128-bit boundaries even when those lanes' output mask bits are clear.
+patterns and random values. They exhaust every logical mask over a duplicate
+bank and repeat with all unused high bits set. Pattern banks also cover isolated
+and complemented mask bits. Conflict comparisons include every earlier source
+lane regardless of its destination mask bit.
 
-Each runtime entry has an explicit target attribute. Baseline callers admit
+Each native entry has an explicit target attribute. Baseline callers admit
 CPU features and OS vector state before entering it. CTest reports a skip
-(return code 77) when AVX512CD cannot run; AVX512VL forms are tested only when
+(return code 77) when AVX512CD cannot run. AVX512VL and broader-tag forms are
 separately admitted. A skip still requires the static assertions to compile,
-but does not establish native execution correctness.
+but does not establish native instruction execution correctness.
 
 From a configured x86 source build with `NATIVE_BUILD_TESTS=ON`:
 
 ```sh
-cmake --build build --parallel --target \
-  native_test_x86_avx512cd_module native_test_x86_avx512cd_hub \
-  native_test_x86_avx512cd_codegen native_test_x86_avx512cd_codegen_public
+cmake --build build --parallel
 ctest --test-dir build -R '^native\.x86\.avx512cd\.' --output-on-failure
 ```
 
-The `codegen_pairs` test uses the shared comparison script to compare 37 raw
-and public function bodies: 36 instruction forms and one baseline control.
-It requires LLVM objdump and Python. This checks that the typed wrappers add
-no instructions in these caller contexts; compilation alone does not establish
-assembly equality. It is not a separate expected-opcode audit or a measurement
-of execution time.
+The checks require Python and LLVM objdump, discovered beside the selected
+compiler when available. Their responsibilities are separate:
 
-This directory can also be configured against an installed `native` package;
-that mode builds only the public module and hub consumers. The fixtures do not
-yet contain compile-failure tests for missing features, mismatched target scopes
-or runtime use of storage-only tags. Those checks and native AVX512CD execution
-remain separate qualification work.
+- `module.baseline` and `hub.baseline` inspect the actual runtime consumers'
+  object code and reject optional instructions in the baseline probe and `main`.
+- `metadata` checks normalized feature admission, raw CPUID decoding, missing
+  features and observations, and required XCR0 state without executing CD.
+- Four `codegen` checks require exactly one expected CD opcode per wrapper,
+  the correct register width and native merge/zero mask mode, and no helper
+  calls. Minimal callers permit only AVX512F mask moves; explicitly broader
+  callers may use mask moves enabled by their additional features.
+- Two `codegen_pairs` checks compare 37 raw/public function pairs each: all
+  36 instruction forms and one baseline control, at minimal and broader caller
+  targets. These checks establish assembly equality in those caller contexts,
+  not performance measurements.
+- Compile-failure groups require a successful positive control before checking
+  all expected operation diagnostics. They cover missing F/CD/VL features,
+  each missing caller target feature and a baseline caller, runtime use of
+  storage-only tags, signed/floating/raw vectors, mismatched vector tags,
+  scalar masks, wrong predicate lane counts, and mismatched predicate tags.
+  Target-mismatch calls compile separately so Clang reaches every operation.
+
+The broader-tag probes ensure that scalar compact-mask extraction does not
+silently add AVX512DQ/BW requirements to minimal CD wrappers. CPU instructions
+remain behind runtime admission even when a broader tag selects arithmetic
+storage specializations.
+
+Configuring this directory against an installed `native` package builds the
+public module/hub consumers, their baseline checks, and the admission fixture.
+Private-helper and compile-failure probes belong to the source build. Native
+execution on a supported CPU remains necessary in addition to cross-compilation,
+static assertions and assembly inspection.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
