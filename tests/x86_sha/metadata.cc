@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
+#include <native/attributes.h>
 #include <native/isa.h>
 #include <native/targets.h>
 
@@ -73,7 +74,7 @@ namespace {
   static_assert(admission());
 }
 
-extern "C" bool native_sha_admission(std::uint32_t sha_bits, std::uint32_t storage_bits) noexcept {
+extern "C" native_noinline bool native_sha_admission(std::uint32_t sha_bits, std::uint32_t storage_bits) noexcept {
   snapshot cpu;
   cpu.leaf7_ebx = sha_bits;
   cpu.leaf1_edx = storage_bits;
@@ -81,5 +82,9 @@ extern "C" bool native_sha_admission(std::uint32_t sha_bits, std::uint32_t stora
 }
 
 int main() {
-  return admission() ? 0 : 1;
+  // Runtime inputs keep the inspected classifier on the executable's call path.
+  volatile std::uint32_t feature_bits = 1u << 29;
+  volatile std::uint32_t storage_bits = (1u << 23) | (1u << 25) | (1u << 26);
+  return admission() && native_sha_admission(feature_bits, storage_bits) &&
+    !native_sha_admission(0, storage_bits) && !native_sha_admission(feature_bits, 0) ? 0 : 1;
 }
