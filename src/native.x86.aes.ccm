@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+
 #include "native/isa_import.h"
 #include "native/x86/aes.h"
 #include "native/x86/aes_constant.h"
+
 export module native.x86.aes;
 export import native.x86.features;
 export import native.simd;
+
 #include "native/x86/aes_body.h"

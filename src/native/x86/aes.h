@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+
 /// \cond NATIVE_DETAIL
+
 #include "native/config.h"
 #include "native/attributes.h"
 #include "native/isa.h"
+
 #if NATIVE_HOST_X86
 #include <immintrin.h>
 #endif
