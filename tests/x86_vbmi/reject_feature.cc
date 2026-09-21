@@ -119,4 +119,3 @@ extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpmultishiftqb(bmask mask, register_type control, register_type value) noexcept {
   return native::detail::x86_vbmi::maskz_vpmultishiftqb<requirements>(mask, control, value);
 }
-

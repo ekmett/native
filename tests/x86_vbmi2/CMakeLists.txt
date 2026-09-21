@@ -42,4 +42,3 @@ foreach(minimum IN ITEMS enabled disabled)
     target_compile_options(${target} PRIVATE ${options})
   endif()
 endforeach()
-
