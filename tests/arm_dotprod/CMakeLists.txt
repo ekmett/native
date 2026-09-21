@@ -40,20 +40,24 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
 
+function(native_arm_dotprod_baseline target)
+  target_link_libraries(${target} PRIVATE native::headers)
+  target_compile_features(${target} PRIVATE cxx_std_26)
+  set_target_properties(${target} PROPERTIES
+    CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
+  # Each fixture function enables only its own feature. Explicit CPU selection
+  # avoids inheriting the platform's default architecture bundle.
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /O2
+      /clang:-mcpu=generic /clang:-march=armv8-a+nodotprod+nordm)
+  else()
+    target_compile_options(${target} PRIVATE -O2 -mcpu=generic
+      -march=armv8-a+nodotprod+nordm)
+  endif()
+endfunction()
+
 add_library(native_test_arm_dotprod_codegen OBJECT codegen.cc)
-target_link_libraries(native_test_arm_dotprod_codegen PRIVATE native::headers)
-target_compile_features(native_test_arm_dotprod_codegen PRIVATE cxx_std_26)
-set_target_properties(native_test_arm_dotprod_codegen PROPERTIES
-  CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
-# A genuine AArch64 baseline: each fixture function enables only its own feature.
-# Explicit CPU selection avoids inheriting Apple's default architecture bundle.
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_dotprod_codegen PRIVATE /O2
-    /clang:-mcpu=generic /clang:-march=armv8-a+nodotprod+nordm)
-else()
-  target_compile_options(native_test_arm_dotprod_codegen PRIVATE -O2 -mcpu=generic
-    -march=armv8-a+nodotprod+nordm)
-endif()
+native_arm_dotprod_baseline(native_test_arm_dotprod_codegen)
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/dotprod-codegen-object.txt"
   CONTENT "$<TARGET_OBJECTS:native_test_arm_dotprod_codegen>\n")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -67,11 +71,14 @@ add_test(NAME native.arm.dotprod.codegen
     $<TARGET_OBJECTS:native_test_arm_dotprod_codegen>)
 set_tests_properties(native.arm.dotprod.codegen PROPERTIES
   LABELS "host;codegen;baseline;arm;dotprod")
+# Let CMake preserve the platform compiler command, quoting and driver flags.
+add_library(native_test_arm_dotprod_negative_target OBJECT EXCLUDE_FROM_ALL negative.cc)
+native_arm_dotprod_baseline(native_test_arm_dotprod_negative_target)
 add_test(NAME native.arm.dotprod.negative_target
-  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/check_negative.py"
-    --database "${CMAKE_BINARY_DIR}/compile_commands.json"
-    --source "${CMAKE_CURRENT_LIST_DIR}/codegen.cc"
-    --negative "${CMAKE_CURRENT_LIST_DIR}/negative.cc"
-    --output "${CMAKE_CURRENT_BINARY_DIR}/negative-target.txt")
+  COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py"
+    --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
+    --target native_test_arm_dotprod_negative_target --config "$<CONFIG>"
+    --diagnostic "requires target feature.*dotprod|target specific option mismatch"
+    --log "${CMAKE_CURRENT_BINARY_DIR}/negative-target.txt")
 set_tests_properties(native.arm.dotprod.negative_target PROPERTIES
-  LABELS "host;compile;baseline;arm;dotprod")
+  RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;baseline;arm;dotprod")

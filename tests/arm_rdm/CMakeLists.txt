@@ -40,20 +40,24 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
 
+function(native_arm_rdm_baseline target)
+  target_link_libraries(${target} PRIVATE native::headers)
+  target_compile_features(${target} PRIVATE cxx_std_26)
+  set_target_properties(${target} PROPERTIES
+    CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
+  # Each fixture function enables only its own feature. Explicit CPU selection
+  # avoids inheriting the platform's default architecture bundle.
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /O2
+      /clang:-mcpu=generic /clang:-march=armv8-a+nodotprod+nordm)
+  else()
+    target_compile_options(${target} PRIVATE -O2 -mcpu=generic
+      -march=armv8-a+nodotprod+nordm)
+  endif()
+endfunction()
+
 add_library(native_test_arm_rdm_codegen OBJECT codegen.cc)
-target_link_libraries(native_test_arm_rdm_codegen PRIVATE native::headers)
-target_compile_features(native_test_arm_rdm_codegen PRIVATE cxx_std_26)
-set_target_properties(native_test_arm_rdm_codegen PROPERTIES
-  CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
-# A genuine AArch64 baseline: each fixture function enables only its own feature.
-# Explicit CPU selection avoids inheriting Apple's default architecture bundle.
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_rdm_codegen PRIVATE /O2
-    /clang:-mcpu=generic /clang:-march=armv8-a+nodotprod+nordm)
-else()
-  target_compile_options(native_test_arm_rdm_codegen PRIVATE -O2 -mcpu=generic
-    -march=armv8-a+nodotprod+nordm)
-endif()
+native_arm_rdm_baseline(native_test_arm_rdm_codegen)
 file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/rdm-codegen-object.txt"
   CONTENT "$<TARGET_OBJECTS:native_test_arm_rdm_codegen>\n")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -67,23 +71,26 @@ add_test(NAME native.arm.rdm.codegen
     $<TARGET_OBJECTS:native_test_arm_rdm_codegen>)
 set_tests_properties(native.arm.rdm.codegen PROPERTIES
   LABELS "host;codegen;baseline;arm;rdm")
-add_test(NAME native.arm.rdm.negative_target
-  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/check_negative.py"
-    --database "${CMAKE_BINARY_DIR}/compile_commands.json"
-    --source "${CMAKE_CURRENT_LIST_DIR}/codegen.cc"
-    --negative "${CMAKE_CURRENT_LIST_DIR}/negative.cc"
-    --output "${CMAKE_CURRENT_BINARY_DIR}/negative-target.txt")
-set_tests_properties(native.arm.rdm.negative_target PROPERTIES
-  LABELS "host;compile;baseline;arm;rdm")
-
-add_test(NAME native.arm.rdm.negative_lane
-  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/check_negative.py"
-    --database "${CMAKE_BINARY_DIR}/compile_commands.json"
-    --source "${CMAKE_CURRENT_LIST_DIR}/codegen.cc"
-    --negative "${CMAKE_CURRENT_LIST_DIR}/negative_lane.cc"
-    --output "${CMAKE_CURRENT_BINARY_DIR}/negative-lane.txt" --lane)
-set_tests_properties(native.arm.rdm.negative_lane PROPERTIES
-  LABELS "host;compile;baseline;arm;rdm")
+# Let CMake preserve the platform compiler command, quoting and driver flags.
+foreach(kind IN ITEMS target lane)
+  if(kind STREQUAL "lane")
+    set(source negative_lane.cc)
+    set(diagnostic "deleted function|no matching function")
+  else()
+    set(source negative.cc)
+    set(diagnostic "requires target feature.*rdm|target specific option mismatch")
+  endif()
+  set(target native_test_arm_rdm_negative_${kind})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL ${source})
+  native_arm_rdm_baseline(${target})
+  add_test(NAME native.arm.rdm.negative_${kind}
+    COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py"
+      --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
+      --config "$<CONFIG>" --diagnostic "${diagnostic}"
+      --log "${CMAKE_CURRENT_BINARY_DIR}/negative-${kind}.txt")
+  set_tests_properties(native.arm.rdm.negative_${kind} PROPERTIES
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;baseline;arm;rdm")
+endforeach()
 
 add_test(NAME native.arm.rdm.big_endian_codegen
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/check_big_endian.py"
