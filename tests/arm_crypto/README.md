@@ -2,7 +2,7 @@
 
 The same scalar-reference checks run through each granular module,
 the `native.arm` architecture module and the `native` hub. Installed-package
-mode runs all three consumers. Each operation takes or returns semantic `simd`
+mode runs all three consumers and the constant-evaluation property corpus. Each operation takes or returns semantic `simd`
 values; oracle adapters convert the fixture’s intrinsic storage at the boundary.
 The private implementation headers do not provide a standalone public SIMD API. Runtime entry points are admitted using the full compiler
 `aes`, `sha2` and `sha3` feature bundles; unsupported hosts return CTest skip code
@@ -13,6 +13,18 @@ maps, AES column transforms, unreduced binary polynomial products, SHA rounds an
 schedules, and SHA-3 Boolean/rotate operations. Inputs cover every AES substitution
 byte, polynomial basis vectors, zero/all-one products, and 512 seeded cases per
 family. Every XAR immediate is exercised. FPCR and FPSR are checked for retention.
+
+The constant corpus covers 102 operation/shape/immediate forms with 24 reproducible
+full-bit generated cases per form. Public calls with the exact instruction tag
+and with baseline NEON are compared in `static_assert` checks, together with zero,
+all-one and every basis-bit input. The computed outputs are then compared with
+native hardware calls. Failures report the seed, case index, expected and actual
+bits, and all operands. AES inverse identities cover all substitution bytes;
+known AES columns and complete SHA-1/SHA-256 `abc` digests provide fixed oracles
+from [FIPS 197](https://csrc.nist.gov/pubs/fips/197/final) and
+[FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final).
+Actual compile-failure cases exercise every immediate-only vector overload with
+runtime operands, retaining exact-shape, target and immediate-range checks.
 
 The code-generation fixture instantiates every overload and all 64 XAR rotations
 from a baseline ARMv8-A translation unit. Its disassembly check verifies expected

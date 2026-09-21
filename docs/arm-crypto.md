@@ -13,18 +13,19 @@ does not change a module's default; optional instruction leaves can still give
 an explicit ISA. Vector arguments continue to deduce their own `Arch`.
 They perform integer operations without changing FPCR, FPSR or NZCV.
 
-`sha1h` also supports constant evaluation. Its feature-capable overload is
-`constexpr` and still emits SHA1H for runtime input. A separate `consteval`
-overload permits constant words with an ISA that lacks SHA-1, using the same
-32-bit rotation. Runtime values with that ISA are rejected, even though the
-immediate overload can appear in an unevaluated `requires` expression. Scalar
-width and signedness checks remain exact. Scalar-input `pmull` likewise evaluates constant operands with or without the
-PMULL feature, provided `simd<std::uint64_t,2,Arch>` is an available storage
-shape. On AArch64 this still requires NEON in `Arch`. Its constant result retains
-the same tag and all 128 polynomial coefficients. An ISA without PMULL gets a
-`consteval` overload, so runtime operands are rejected. Feature-capable runtime
-calls keep the native instruction. Vector-input polynomial forms and other SHA
-and AES operations retain their instruction requirements.
+All AES, SHA and polynomial operations support constant evaluation. A
+feature-capable overload is `constexpr`: its constant branch computes the
+instruction's value semantics, while runtime calls retain the native instruction.
+When `Arch` lacks the instruction feature, a disjoint `consteval` overload accepts
+constant operands only. Runtime operands with that tag are rejected even though
+the immediate call can appear in an unevaluated `requires` expression. No runtime
+software implementation is selected.
+
+Vector operands and results still require complete `simd<T,N,Arch>` storage;
+on AArch64 these shapes require NEON. Constant evaluation preserves the exact
+feature tag, logical lanes and integer widths. It does not manufacture vector
+storage for a scalar ISA. The byte polynomial forms already require only NEON,
+so their existing overloads provide both constant and runtime evaluation.
 
 These operations do not implement a cipher mode, key expansion, message padding,
 byte-order conversion or a complete hash. Their input state and prepared round
@@ -74,7 +75,7 @@ bool supported() {
 
 Only call `round` after `supported` succeeds. The module provider and admission
 code retain the project's baseline target. Wrong register shapes, unsupported
-features and invalid `xar` rotation immediates are rejected; convert vector types
+runtime features and invalid `xar` rotation immediates are rejected; convert vector types
 explicitly when a bit reinterpretation is intended. All vector operands must carry the same `Arch`; raw intrinsic vectors are not
 public overloads. The implementation headers are private to the module provider.
 

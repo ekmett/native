@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/arm/detail/crypto_constant.h"
 #include "native/arm/aes.h"
 export module native.arm.aes;
 export import native.arm.features;
