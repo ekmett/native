@@ -1,25 +1,26 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include "simd_bridge.h"
 #include "reference_cases.h"
 #include "../neon_bf16/reference_cases.h"
 namespace bf16_fixture {
-  constexpr native::isa arch{native::arm_feature::neon_bf16};
+  constexpr auto arch = native::feature_closure(native::isa{native::arm_feature::neon_bf16});
   template<native::isa A, class R, class V, class W>
   concept dot_valid = requires(R r, V v, W w) { native::bfdot<A>(r,v,w); };
   template<native::isa A, unsigned Lane, class R, class V, class W>
   concept dot_lane_valid = requires(R r, V v, W w) { native::bfdot_lane<A,Lane>(r,v,w); };
   template<native::isa A, unsigned Lane, class V>
-  concept fma_lane_valid = requires(float32x4_t r, bfloat16x8_t v, V w) { native::bfmlalb_lane<A,Lane>(r,v,w); native::bfmlalt_lane<A,Lane>(r,v,w); };
-  static_assert(dot_valid<arch,float32x2_t,bfloat16x4_t,bfloat16x4_t>);
-  static_assert(dot_valid<arch,float32x4_t,bfloat16x8_t,bfloat16x8_t>);
-  static_assert(!dot_valid<native::neon,float32x4_t,bfloat16x8_t,bfloat16x8_t>);
-  static_assert(!dot_valid<arch,float32x4_t,float16x8_t,float16x8_t>);
-  static_assert(!dot_valid<arch,int32x4_t,bfloat16x8_t,bfloat16x8_t>);
-  static_assert(!dot_lane_valid<arch,2,float32x2_t,bfloat16x4_t,bfloat16x4_t>);
-  static_assert(!dot_lane_valid<arch,4,float32x4_t,bfloat16x8_t,bfloat16x8_t>);
-  static_assert(!fma_lane_valid<arch,4,bfloat16x4_t>);
-  static_assert(!fma_lane_valid<arch,8,bfloat16x8_t>);
-  static_assert(!fma_lane_valid<arch,0,float16x8_t>);
+  concept fma_lane_valid = requires(native::simd<float, 4, arch> r, native::simd<native::bf16, 8, arch> v, V w) { native::bfmlalb_lane<A,Lane>(r,v,w); native::bfmlalt_lane<A,Lane>(r,v,w); };
+  static_assert(dot_valid<arch,native::simd<float, 2, arch>,native::simd<native::bf16, 4, arch>,native::simd<native::bf16, 4, arch>>);
+  static_assert(dot_valid<arch,native::simd<float, 4, arch>,native::simd<native::bf16, 8, arch>,native::simd<native::bf16, 8, arch>>);
+  static_assert(!dot_valid<native::neon,native::simd<float, 4, native::neon>,native::simd<native::bf16, 8, native::neon>,native::simd<native::bf16, 8, native::neon>>);
+  static_assert(!dot_valid<arch,native::simd<float, 4, arch>,native::simd<native::fp16, 8, arch>,native::simd<native::fp16, 8, arch>>);
+  static_assert(!dot_valid<arch,native::simd<std::int32_t, 4, arch>,native::simd<native::bf16, 8, arch>,native::simd<native::bf16, 8, arch>>);
+  static_assert(!dot_lane_valid<arch,2,native::simd<float, 2, arch>,native::simd<native::bf16, 4, arch>,native::simd<native::bf16, 4, arch>>);
+  static_assert(!dot_lane_valid<arch,4,native::simd<float, 4, arch>,native::simd<native::bf16, 8, arch>,native::simd<native::bf16, 8, arch>>);
+  static_assert(!fma_lane_valid<arch,4,native::simd<native::bf16, 4, arch>>);
+  static_assert(!fma_lane_valid<arch,8,native::simd<native::bf16, 8, arch>>);
+  static_assert(!fma_lane_valid<arch,0,native::simd<native::fp16, 8, arch>>);
 
   std::uint64_t fpcr() {std::uint64_t x; asm volatile("mrs %0, fpcr" : "=r"(x) :: "memory"); return x;}
   std::uint64_t fpsr() {std::uint64_t x; asm volatile("mrs %0, fpsr" : "=r"(x) :: "memory"); return x;}
@@ -38,15 +39,15 @@ namespace bf16_fixture {
     if constexpr(N==2) {
       auto va=vreinterpret_bf16_u16(vld1_u16(a.data()));
       auto vc=vreinterpret_f32_u32(vld1_u32(c.data()));
-      if constexpr(M==0) vst1_u32(result.data(),vreinterpret_u32_f32(native::bfdot<arch>(vc,va,vreinterpret_bf16_u16(vld1_u16(b.data())))));
-      else if constexpr(M==4) vst1_u32(result.data(),vreinterpret_u32_f32(native::bfdot_lane<arch,Lane>(vc,va,vreinterpret_bf16_u16(vld1_u16(b.data())))));
-      else vst1_u32(result.data(),vreinterpret_u32_f32(native::bfdot_lane<arch,Lane>(vc,va,vreinterpretq_bf16_u16(vld1q_u16(b.data())))));
+      if constexpr(M==0) vst1_u32(result.data(),vreinterpret_u32_f32(instruction_fixture::bfdot<arch>(vc,va,vreinterpret_bf16_u16(vld1_u16(b.data())))));
+      else if constexpr(M==4) vst1_u32(result.data(),vreinterpret_u32_f32(instruction_fixture::bfdot_lane<arch,Lane>(vc,va,vreinterpret_bf16_u16(vld1_u16(b.data())))));
+      else vst1_u32(result.data(),vreinterpret_u32_f32(instruction_fixture::bfdot_lane<arch,Lane>(vc,va,vreinterpretq_bf16_u16(vld1q_u16(b.data())))));
     } else {
       auto va=vreinterpretq_bf16_u16(vld1q_u16(a.data()));
       auto vc=vreinterpretq_f32_u32(vld1q_u32(c.data()));
-      if constexpr(M==0) vst1q_u32(result.data(),vreinterpretq_u32_f32(native::bfdot<arch>(vc,va,vreinterpretq_bf16_u16(vld1q_u16(b.data())))));
-      else if constexpr(M==4) vst1q_u32(result.data(),vreinterpretq_u32_f32(native::bfdot_lane<arch,Lane>(vc,va,vreinterpret_bf16_u16(vld1_u16(b.data())))));
-      else vst1q_u32(result.data(),vreinterpretq_u32_f32(native::bfdot_lane<arch,Lane>(vc,va,vreinterpretq_bf16_u16(vld1q_u16(b.data())))));
+      if constexpr(M==0) vst1q_u32(result.data(),vreinterpretq_u32_f32(instruction_fixture::bfdot<arch>(vc,va,vreinterpretq_bf16_u16(vld1q_u16(b.data())))));
+      else if constexpr(M==4) vst1q_u32(result.data(),vreinterpretq_u32_f32(instruction_fixture::bfdot_lane<arch,Lane>(vc,va,vreinterpret_bf16_u16(vld1_u16(b.data())))));
+      else vst1q_u32(result.data(),vreinterpretq_u32_f32(instruction_fixture::bfdot_lane<arch,Lane>(vc,va,vreinterpretq_bf16_u16(vld1q_u16(b.data())))));
     }
     return result;
   }
@@ -57,15 +58,15 @@ namespace bf16_fixture {
     auto vc=vreinterpretq_f32_u32(vld1q_u32(c.data()));
     auto vb=[&] {if constexpr(M==4) return vreinterpret_bf16_u16(vld1_u16(b.data())); else return vreinterpretq_bf16_u16(vld1q_u16(b.data()));}();
     float32x4_t value;
-    if constexpr(M==0 && Top) value=native::bfmlalt<arch>(vc,va,vb);
-    else if constexpr(M==0) value=native::bfmlalb<arch>(vc,va,vb);
-    else if constexpr(Top) value=native::bfmlalt_lane<arch,Lane>(vc,va,vb);
-    else value=native::bfmlalb_lane<arch,Lane>(vc,va,vb);
+    if constexpr(M==0 && Top) value=instruction_fixture::bfmlalt<arch>(vc,va,vb);
+    else if constexpr(M==0) value=instruction_fixture::bfmlalb<arch>(vc,va,vb);
+    else if constexpr(Top) value=instruction_fixture::bfmlalt_lane<arch,Lane>(vc,va,vb);
+    else value=instruction_fixture::bfmlalb_lane<arch,Lane>(vc,va,vb);
     singles result; vst1q_u32(result.data(),vreinterpretq_u32_f32(value)); return result;
   }
 
   native_inline native_target("bf16") singles matrix(singles c, halves a, halves b) {
-    auto value=native::bfmmla<arch>(vreinterpretq_f32_u32(vld1q_u32(c.data())),
+    auto value=instruction_fixture::bfmmla<arch>(vreinterpretq_f32_u32(vld1q_u32(c.data())),
       vreinterpretq_bf16_u16(vld1q_u16(a.data())),vreinterpretq_bf16_u16(vld1q_u16(b.data())));
     singles result; vst1q_u32(result.data(),vreinterpretq_u32_f32(value)); return result;
   }

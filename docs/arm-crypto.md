@@ -2,7 +2,9 @@
 
 `native.arm.aes`, `native.arm.pmull` and `native.arm.sha` expose individual
 Advanced SIMD instructions. They are also exported by `native.arm` and `native`.
-The functions take ACLE register types and an explicit `isa` template argument.
+The vector arguments and results use `simd<T,N,Arch>`, preserving the same
+feature tag throughout each operation. Scalar SHA-1 and polynomial operands
+use C++ integer types. Each module reexports `native.simd`.
 They perform integer operations without changing FPCR, FPSR or NZCV.
 
 These operations do not implement a cipher mode, key expansion, message padding,
@@ -34,13 +36,14 @@ bundle. Hardware-only names `pmull`, `sha1` and `sha512` are not supported targe
 strings.
 
 ```cpp
-#include <arm_neon.h>
+#include <cstdint>
 import native.arm.aes;
 
-constexpr native::isa aes_instruction{native::arm_feature::aes};
+constexpr auto aes_instruction = native::feature_closure(native::arm_feature::aes);
+using bytes = native::simd<std::uint8_t,16,aes_instruction>;
 
 __attribute__((target("aes"), noinline))
-uint8x16_t round(uint8x16_t state, uint8x16_t key) {
+bytes round(bytes state, bytes key) {
   return native::aese<aes_instruction>(state, key);
 }
 
@@ -53,32 +56,35 @@ bool supported() {
 Only call `round` after `supported` succeeds. The module provider and admission
 code retain the project's baseline target. Wrong register shapes, unsupported
 features and invalid `xar` rotation immediates are rejected; convert vector types
-explicitly when a bit reinterpretation is intended. For `native::simd` values,
-pass `to_native()` and explicitly construct the result from the returned register.
+explicitly when a bit reinterpretation is intended. All vector operands must carry the same `Arch`; raw intrinsic vectors are not
+public overloads. The implementation headers are private to the module provider.
 
 ## AES and polynomial state
 
-AES functions use a `uint8x16_t` state with four consecutive bytes per column.
+AES functions use a `simd<std::uint8_t,16,Arch>` state with four consecutive bytes per column.
 `aese` and `aesd` XOR the round key before the substitution and row permutation.
 They do not include MixColumns. `aesmc` and `aesimc` perform that separate forward
 or inverse column transform. The final encryption round therefore uses `aese`
 without `aesmc`, followed by the final round-key XOR.
 
 For polynomial products, bit *i* is the coefficient of *x^i*. No integer carry or
-modular reduction is performed. `pmull(poly64_t, poly64_t)` returns `poly128_t`;
-`pmull2(poly64x2_t, poly64x2_t)` multiplies the high lanes and ignores the low
-lanes. `pmull(poly8x8_t, poly8x8_t)` and the high-half `poly8x16_t` form return
-eight `poly16_t` products and require only baseline NEON.
+modular reduction is performed. `pmull<Arch>(std::uint64_t, std::uint64_t)` returns
+`simd<std::uint64_t,2,Arch>`, with coefficients 0–63 in lane zero and 64–127
+in lane one on either endian layout. `pmull2` takes that same vector shape,
+multiplies lane one from each operand and ignores lane zero. The byte forms
+take `simd<std::uint8_t,8,Arch>` or the high half of
+`simd<std::uint8_t,16,Arch>` and return `simd<std::uint16_t,8,Arch>`; they
+require only baseline NEON.
 
 ## SHA state and schedule
 
-SHA-1 and SHA-256 vectors place consecutive 32-bit state or schedule words in
+SHA-1 and SHA-256 use `simd<std::uint32_t,4,Arch>` vectors and place consecutive 32-bit state or schedule words in
 increasing lane order. Each round function processes four rounds; `wk` already
 contains the message word plus its round constant. `sha256h2` takes the original
 `abcd` state, not the result of `sha256h`. The paired schedule helpers generate
 four successive schedule words.
 
-SHA-512 helpers process pairs of 64-bit words. For `sha512h(sum, fg, de)`, the
+SHA-512 helpers use `simd<std::uint64_t,2,Arch>` to process pairs of 64-bit words. For `sha512h(sum, fg, de)`, the
 high lane is processed first: `fg` contains f,g and `de` contains d,e in increasing
 lane order. `sum` contains the prepared k+w+h terms for the later and earlier
 round, respectively. `sha512h2(sum, c_, ab)` likewise produces the high lane before

@@ -1,7 +1,7 @@
 # BF16 instruction tests
 
 This fixture exercises all thirteen overloads and all forty-one concrete
-vector/lane forms in `native.arm.bf16`, through the header, granular module,
+vector/lane forms in `native.arm.bf16`, through the granular module,
 ARM hub and main hub. The runtime driver checks observed CPU capabilities
 before entering BF16 code. Missing BF16 returns CTest skip code 77. A separate
 enhanced test also returns 77 when EBF16 is unavailable, without setting EBF.
@@ -33,10 +33,13 @@ Apple M3 with Clang 23. EBF16 was not advertised, so there is no native enhanced
 arithmetic result from that run.
 
 Assembly checks compile from a generic Armv8-A baseline with BF16 disabled.
-Each wrapper must emit its matching instruction and immediate lane without a
-helper call; ordinary baseline code must remain free of BF16 instructions.
+Each public wrapper is paired with a raw helper under the same caller target.
+All 41 pairs must have identical instruction sequences: the BF16 primitive
+and return only, with no loads, stores, stack references or helper calls.
+Indexed four-element sources leave their unused upper half undefined, avoiding
+an unnecessary duplication. Ordinary baseline code must remain free of BF16 instructions.
 The checks also retain discarded instructions and separate calls across an
-FPCR write. Thirteen compiler-failure cases cover missing targets, missing
+FPCR write. Fifteen compiler-failure cases cover missing targets, missing
 features, wrong formats and invalid lanes. They test ordinary calls, so a
 conversion to another vector type cannot hide a rejected overload.
 
@@ -49,9 +52,16 @@ hardware execution or an arithmetic oracle.
 To check an installed package, install and physically move its prefix, then
 configure this directory with `native_DIR` pointing into the moved package.
 The standalone build uses only the granular, ARM and main modules; private
-header and compiler-control fixtures remain source-tree checks.
+instruction-layout and compiler-control fixtures remain source-tree checks.
 
 See the [instruction guide](../../docs/arm-bf16.md) for operand layout and
 arithmetic contracts.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
+Public calls use `simd<float,N,Arch>` and `simd<bf16,M,Arch>` throughout.
+The oracle adapters convert raw fixture storage at that boundary and assert the
+result feature tag. Compile failures reject raw vectors and mismatched tags.
+The two-lane bridge also verifies zeroed padding. Private instruction helpers
+retain the separate compiler layout comparison; public code generation covers
+every instruction form through the module API.

@@ -19,5 +19,9 @@
   "sha_sha3_feature": "call to deleted function",
   "sha_sha3_shape": "call to deleted function",
   "sha_sha3_target": "requires target feature|target specific option mismatch",
-  "sha_rotate": "call to deleted function"
+  "sha_rotate": "call to deleted function",
+  "aes_raw": "call to deleted function",
+  "pmull_raw": "call to deleted function",
+  "sha_raw": "call to deleted function",
+  "aes_tag": "call to deleted function"
 }

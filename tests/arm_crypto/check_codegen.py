@@ -37,3 +37,21 @@ baseline=bodies.get('native_crypto_baseline')
 if baseline is None or re.search(r'\b(?:aes\w*|pmull2?|sha\w*|eor3|bcax|rax1|xar)\s',baseline):
     raise SystemExit('Crypto instructions escaped into the baseline control')
 print(f'{len(checks)} instruction forms and baseline isolation verified')
+
+paired = list(checks) + ["native_crypto_pmull_vector", "native_crypto_pmull2_vector"]
+
+# Compare the public semantic boundary with the same target and raw signature.
+# Reject memory traffic or calls even if an expected instruction is still present.
+def sequence(body):
+    return [re.sub(r"\s+", " ", line.strip()) for line in
+            re.findall(r"(?m)^\s*[0-9a-f]+:\s+(.*)$", body)
+            if line.strip() != "nop"]
+
+for name in paired:
+    public = sequence(bodies.get(name, ""))
+    direct = sequence(bodies.get(name + "_raw", ""))
+    if not public or public != direct:
+        raise SystemExit(f"{name}: public/raw instruction sequences differ\npublic: {public}\nraw: {direct}")
+    if any(re.match(r"(?:ld\w*|st\w*|bl|blr)\b", line) or re.search(r"\bsp\b", line) for line in public):
+        raise SystemExit(f"{name}: unexpected memory, stack or out-of-line call: {public}")
+print(f"{len(paired)} public/raw instruction sequences match without loads, stores, spills or calls")

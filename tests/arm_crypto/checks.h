@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include "simd_bridge.h"
 #include "availability.h"
 namespace crypto_fixture {
-  constexpr native::isa aes{native::arm_feature::aes};
-  constexpr native::isa pmull{native::arm_feature::pmull};
-  constexpr native::isa sha1{native::arm_feature::sha1};
-  constexpr native::isa sha2{native::arm_feature::sha2};
-  constexpr native::isa sha512{native::arm_feature::sha512};
-  constexpr native::isa sha3{native::arm_feature::sha3};
+  constexpr auto aes = native::feature_closure(native::isa{native::arm_feature::aes});
+  constexpr auto pmull = native::feature_closure(native::isa{native::arm_feature::pmull});
+  constexpr auto sha1 = native::feature_closure(native::isa{native::arm_feature::sha1});
+  constexpr auto sha2 = native::feature_closure(native::isa{native::arm_feature::sha2});
+  constexpr auto sha512 = native::feature_closure(native::isa{native::arm_feature::sha512});
+  constexpr auto sha3 = native::feature_closure(native::isa{native::arm_feature::sha3});
 
   inline std::uint64_t random_word(std::uint64_t &s) {
     s ^= s << 13; s ^= s >> 7; s ^= s << 17; return s;
@@ -80,8 +81,8 @@ namespace crypto_fixture {
           invmix[4*col+row] ^= multiply_byte(a[4*col+j], std::uint8_t(inverse[(j+4-row)%4]));
         }
       }
-      if(!equal(native::aese<aes>(a,k),enc,"AESE") || !equal(native::aesd<aes>(a,k),dec,"AESD") ||
-         !equal(native::aesmc<aes>(a),mix,"AESMC") || !equal(native::aesimc<aes>(a),invmix,"AESIMC")) return false;
+      if(!equal(instruction_fixture::aese<aes>(a,k),enc,"AESE") || !equal(instruction_fixture::aesd<aes>(a,k),dec,"AESD") ||
+         !equal(instruction_fixture::aesmc<aes>(a),mix,"AESMC") || !equal(instruction_fixture::aesimc<aes>(a),invmix,"AESIMC")) return false;
     }
     return true;
   }
@@ -96,8 +97,8 @@ namespace crypto_fixture {
       if(test < 64) a = std::uint64_t(1) << test;
       if(test == 64) a = b = ~std::uint64_t(0);
       if(test == 65) a = b = 0;
-      if(native::pmull<pmull>(poly64_t(a),poly64_t(b)) != polynomial(a,b) ||
-         native::pmull2<pmull>(poly64x2_t{poly64_t(random_word(seed)),poly64_t(a)},
+      if(instruction_fixture::pmull<pmull>(poly64_t(a),poly64_t(b)) != polynomial(a,b) ||
+         instruction_fixture::pmull2<pmull>(poly64x2_t{poly64_t(random_word(seed)),poly64_t(a)},
                               poly64x2_t{poly64_t(random_word(seed)),poly64_t(b)}) != polynomial(a,b)) return false;
       // Clang's MSVC ABI gives uint8x16_t and poly8x16_t the same template
       // mangling. Reinterpret unsigned bytes to preserve the polynomial lane bits.
@@ -107,8 +108,8 @@ namespace crypto_fixture {
       for(unsigned i=0; i!=8; ++i) {
         lo[i]=poly16_t(polynomial(x[i],y[i])); hi[i]=poly16_t(polynomial(x[i+8],y[i+8]));
       }
-      if(!equal(native::pmull<native::neon>(vget_low_p8(x),vget_low_p8(y)),lo,"PMULL8") ||
-         !equal(native::pmull2<native::neon>(x,y),hi,"PMULL2-8")) return false;
+      if(!equal(instruction_fixture::pmull<native::neon>(vget_low_p8(x),vget_low_p8(y)),lo,"PMULL8") ||
+         !equal(instruction_fixture::pmull2<native::neon>(x,y),hi,"PMULL2-8")) return false;
     }
     return true;
   }
@@ -122,10 +123,10 @@ namespace crypto_fixture {
           auto f=mode==0 ? choose(b,c,d) : mode==1 ? (b^c^d) : majority(b,c,d);
           auto next=std::rotl(a,5)+f+h+z[i]; h=d; d=c; c=std::rotl(b,30); b=a; a=next;
         }
-        auto actual=mode==0 ? native::sha1c<sha1>(x,e,z) : mode==1 ? native::sha1p<sha1>(x,e,z) : native::sha1m<sha1>(x,e,z);
+        auto actual=mode==0 ? instruction_fixture::sha1c<sha1>(x,e,z) : mode==1 ? instruction_fixture::sha1p<sha1>(x,e,z) : instruction_fixture::sha1m<sha1>(x,e,z);
         if(!equal(actual,std::array{a,b,c,d},"SHA1 rounds")) return false;
       }
-      if(native::sha1h<sha1>(e) != std::rotr(e,2)) return false;
+      if(instruction_fixture::sha1h<sha1>(e) != std::rotr(e,2)) return false;
       std::array<std::uint32_t,4> su0{},su1{},s2560{},s2561{};
       for(unsigned i=0; i!=4; ++i) {
         su0[i]=x[i]^z[i]^(i<2 ? x[i+2] : y[i-2]);
@@ -134,17 +135,17 @@ namespace crypto_fixture {
         s2561[i]=x[i]+(i<3 ? y[i+1] : z[0])+sigma1(i<2 ? z[i+2] : s2561[i-2]);
       }
       su1[3] ^= std::rotl(x[0]^y[1],2);
-      if(!equal(native::sha1su0<sha1>(x,y,z),su0,"SHA1SU0") ||
-         !equal(native::sha1su1<sha1>(x,y),su1,"SHA1SU1") ||
-         !equal(native::sha256su0<sha2>(x,y),s2560,"SHA256SU0") ||
-         !equal(native::sha256su1<sha2>(x,y,z),s2561,"SHA256SU1")) return false;
+      if(!equal(instruction_fixture::sha1su0<sha1>(x,y,z),su0,"SHA1SU0") ||
+         !equal(instruction_fixture::sha1su1<sha1>(x,y),su1,"SHA1SU1") ||
+         !equal(instruction_fixture::sha256su0<sha2>(x,y),s2560,"SHA256SU0") ||
+         !equal(instruction_fixture::sha256su1<sha2>(x,y,z),s2561,"SHA256SU1")) return false;
       std::uint32_t a=x[0],b=x[1],c=x[2],d=x[3],f=y[1],g=y[2],h=y[3]; e=y[0];
       for(unsigned i=0; i!=4; ++i) {
         auto t1=h+sum1(e)+choose(e,f,g)+z[i], t2=sum0(a)+majority(a,b,c);
         h=g;g=f;f=e;e=d+t1;d=c;c=b;b=a;a=t1+t2;
       }
-      if(!equal(native::sha256h<sha2>(x,y,z),std::array{a,b,c,d},"SHA256H") ||
-         !equal(native::sha256h2<sha2>(y,x,z),std::array{e,f,g,h},"SHA256H2")) return false;
+      if(!equal(instruction_fixture::sha256h<sha2>(x,y,z),std::array{a,b,c,d},"SHA256H") ||
+         !equal(instruction_fixture::sha256h2<sha2>(y,x,z),std::array{e,f,g,h},"SHA256H2")) return false;
     }
     return true;
   }
@@ -163,14 +164,14 @@ namespace crypto_fixture {
   template<class V>
   __attribute__((target("sha3"))) bool logical_shapes(uint64x2_t x,uint64x2_t y,uint64x2_t z) {
     auto a=std::bit_cast<V>(x),b=std::bit_cast<V>(y),c=std::bit_cast<V>(z);
-    auto e=std::bit_cast<uint64x2_t>(native::eor3<sha3>(a,b,c));
-    auto bc=std::bit_cast<uint64x2_t>(native::bcax<sha3>(a,b,c));
+    auto e=std::bit_cast<uint64x2_t>(instruction_fixture::eor3<sha3>(a,b,c));
+    auto bc=std::bit_cast<uint64x2_t>(instruction_fixture::bcax<sha3>(a,b,c));
     for(unsigned i=0;i!=2;++i) if(e[i]!=xor3(x[i],y[i],z[i]) || bc[i]!=clear_xor(x[i],y[i],z[i])) return false;
     return true;
   }
   template<unsigned R>
   __attribute__((target("sha3"))) bool rotate(uint64x2_t x,uint64x2_t y) {
-    return equal(native::xar<sha3,R>(x,y),std::array{xor_rotate(x[0],y[0],R),xor_rotate(x[1],y[1],R)},"XAR");
+    return equal(instruction_fixture::xar<sha3,R>(x,y),std::array{xor_rotate(x[0],y[0],R),xor_rotate(x[1],y[1],R)},"XAR");
   }
   template<unsigned... R>
   __attribute__((target("sha3"))) bool rotations(uint64x2_t x,uint64x2_t y,std::integer_sequence<unsigned,R...>) {
@@ -187,15 +188,15 @@ namespace crypto_fixture {
       h2[0]=x[0]+sum0(h2[1])+majority(h2[1],z[0],z[1]);
       su0={x[0]+sigma0(x[1]),x[1]+sigma0(y[0])};
       su1={x[0]+sigma1(y[0])+z[0],x[1]+sigma1(y[1])+z[1]};
-      if(!equal(native::sha512h<sha512>(x,y,z),h,"SHA512H") ||
-         !equal(native::sha512h2<sha512>(x,y,z),h2,"SHA512H2") ||
-         !equal(native::sha512su0<sha512>(x,y),su0,"SHA512SU0") ||
-         !equal(native::sha512su1<sha512>(x,y,z),su1,"SHA512SU1")) return false;
+      if(!equal(instruction_fixture::sha512h<sha512>(x,y,z),h,"SHA512H") ||
+         !equal(instruction_fixture::sha512h2<sha512>(x,y,z),h2,"SHA512H2") ||
+         !equal(instruction_fixture::sha512su0<sha512>(x,y),su0,"SHA512SU0") ||
+         !equal(instruction_fixture::sha512su1<sha512>(x,y,z),su1,"SHA512SU1")) return false;
       if(!logical_shapes<uint8x16_t>(x,y,z) || !logical_shapes<uint16x8_t>(x,y,z) ||
          !logical_shapes<uint32x4_t>(x,y,z) || !logical_shapes<uint64x2_t>(x,y,z) ||
          !logical_shapes<int8x16_t>(x,y,z) || !logical_shapes<int16x8_t>(x,y,z) ||
          !logical_shapes<int32x4_t>(x,y,z) || !logical_shapes<int64x2_t>(x,y,z)) return false;
-      if(!equal(native::rax1<sha3>(x,y),std::array{rotate_xor(x[0],y[0]),rotate_xor(x[1],y[1])},"RAX1") ||
+      if(!equal(instruction_fixture::rax1<sha3>(x,y),std::array{rotate_xor(x[0],y[0]),rotate_xor(x[1],y[1])},"RAX1") ||
          !rotations(x,y,std::make_integer_sequence<unsigned,64>{})) return false;
     }
     return true;

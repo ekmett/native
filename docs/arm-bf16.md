@@ -2,25 +2,26 @@
 
 BF16 stores a sign, an eight-bit exponent and seven fraction bits in sixteen
 bits. These operations multiply BF16 inputs and accumulate into FP32 registers.
-Import `native.arm.bf16`, `native.arm`, or `native` to use them. Source-tree
-header consumers can include `<native/arm/bf16.h>`; installed consumers use
-the named modules.
+Import `native.arm.bf16`, `native.arm`, or `native` to use them. Each module reexports `native.simd`; vector arguments and results use
+`simd<T,N,Arch>` with the same feature tag. The implementation headers contain
+private raw helpers and are not a standalone SIMD interface.
 
 | Operation | Accumulator/result | Inputs | Selection |
 | --- | --- | --- | --- |
-| `bfdot<Arch>(acc,a,b)` | `float32x2_t` or `float32x4_t` | Matching-width `bfloat16x4_t` or `bfloat16x8_t` | Adjacent pairs |
+| `bfdot<Arch>(acc,a,b)` | `simd<float,2,Arch>` or `simd<float,4,Arch>` | Matching-width `simd<bf16,4,Arch>` or `simd<bf16,8,Arch>` | Adjacent pairs |
 | `bfdot_lane<Arch,Lane>(acc,a,b)` | Either dot shape | Matching-width `a`; either width for `b` | Pair `b[2*Lane]`, `b[2*Lane+1]` |
-| `bfmmla<Arch>(acc,a,b)` | `float32x4_t` | Two `bfloat16x8_t` registers | 2×4 by 4×2 matrix product |
-| `bfmlalb<Arch>(acc,a,b)` | `float32x4_t` | Two `bfloat16x8_t` registers | Even lanes of both inputs |
-| `bfmlalt<Arch>(acc,a,b)` | `float32x4_t` | Two `bfloat16x8_t` registers | Odd lanes of both inputs |
-| `bfmlalb_lane<Arch,Lane>(acc,a,b)` | `float32x4_t` | `bfloat16x8_t` for `a`; either width for `b` | Even lanes of `a`, scalar `b[Lane]` |
-| `bfmlalt_lane<Arch,Lane>(acc,a,b)` | `float32x4_t` | `bfloat16x8_t` for `a`; either width for `b` | Odd lanes of `a`, scalar `b[Lane]` |
+| `bfmmla<Arch>(acc,a,b)` | `simd<float,4,Arch>` | Two `simd<bf16,8,Arch>` registers | 2×4 by 4×2 matrix product |
+| `bfmlalb<Arch>(acc,a,b)` | `simd<float,4,Arch>` | Two `simd<bf16,8,Arch>` registers | Even lanes of both inputs |
+| `bfmlalt<Arch>(acc,a,b)` | `simd<float,4,Arch>` | Two `simd<bf16,8,Arch>` registers | Odd lanes of both inputs |
+| `bfmlalb_lane<Arch,Lane>(acc,a,b)` | `simd<float,4,Arch>` | `simd<bf16,8,Arch>` for `a`; either width for `b` | Even lanes of `a`, scalar `b[Lane]` |
+| `bfmlalt_lane<Arch,Lane>(acc,a,b)` | `simd<float,4,Arch>` | `simd<bf16,8,Arch>` for `a`; either width for `b` | Odd lanes of `a`, scalar `b[Lane]` |
 
 A dot-product lane index selects a pair, so its range is 0–1 for a four-element
 right operand and 0–3 for an eight-element operand. The widening multiply-add
 forms select one element, with ranges 0–3 and 0–7 respectively. Lane indices
 are compile-time immediates. Wrong operand types and invalid lanes are rejected;
-implicit conversions between same-sized NEON vectors cannot change the format.
+raw intrinsic vectors and mismatched feature tags cannot select an overload.
+The two-lane FP32 result clears the unused lanes of its padded storage.
 
 For `bfmmla`, store the left matrix's rows consecutively and the right matrix's
 columns consecutively. Output lane `2*r+c` starts with `acc[2*r+c]`, accumulates
@@ -70,7 +71,6 @@ Its compiler prerequisite closure includes NEON. Importing the module neither
 enables instructions in the caller nor checks the executing CPU:
 
 ```cpp
-#include <arm_neon.h>
 #include <native/targets.h>
 import native.arm.bf16;
 
@@ -79,9 +79,10 @@ constexpr auto dot_isa = NATIVE_TARGET_ISA(bfloat_dot);
 
 NATIVE_TARGET_PUSH(bfloat_dot)
 void accumulate(float* output, float const* acc,
-                bfloat16_t const* a, bfloat16_t const* b) noexcept {
-  auto result = native::bfdot<dot_isa>(vld1q_f32(acc), vld1q_bf16(a), vld1q_bf16(b));
-  vst1q_f32(output, result);
+                native::bf16 const* a, native::bf16 const* b) noexcept {
+  using F = native::simd<float,4,dot_isa>;
+  using B = native::simd<native::bf16,8,dot_isa>;
+  native::bfdot<dot_isa>(F::load(acc), B::load(a), B::load(b)).store(output);
 }
 NATIVE_TARGET_POP()
 
@@ -96,8 +97,7 @@ before setting FPCR.EBF; the feature bit alone does not set the control.
 `target_features("ebf16")` is rejected because Clang 23 has no standalone target
 feature with that spelling. Enhanced arithmetic uses the same BF16 instructions.
 
-Use `simd<bf16,8,neon_bf16>::to_native()` and the FP32 `simd` native-register
-conversions to pass values between vector algorithms and these APIs. The
+Pass BF16 and FP32 `simd` values directly between vector algorithms and these APIs. The
 wrappers add no BF16 elementwise arithmetic or conversion policy.
 
 The [tests](../tests/arm_bf16/README.md) cover every shape and legal lane,

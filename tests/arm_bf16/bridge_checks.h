@@ -9,12 +9,18 @@ namespace bf16_fixture {
     auto a=B::load_bits(bits.data());
     auto c=F(0.f);
     std::array<float,4> output;
-    F::from_native(native::bfdot<arch>(c.to_native(),a.to_native(),a.to_native())).store(output.data());
+    native::bfdot<arch>(c,a,a).store(output.data());
     for(auto value:output) if(value!=2.f) return false;
-    F::from_native(native::bfmmla<arch>(c.to_native(),a.to_native(),a.to_native())).store(output.data());
+    native::bfmmla<arch>(c,a,a).store(output.data());
     for(auto value:output) if(value!=4.f) return false;
-    F::from_native(native::bfmlalt<arch>(c.to_native(),a.to_native(),a.to_native())).store(output.data());
+    native::bfmlalt<arch>(c,a,a).store(output.data());
     for(auto value:output) if(value!=1.f) return false;
+    using B4=native::simd<native::bf16,4,arch>;
+    using F2=native::simd<float,2,arch>;
+    auto short_input=B4::load_bits(bits.data());
+    auto short_result=native::bfdot<arch>(F2(0.f),short_input,short_input);
+    auto storage=short_result.to_storage().to_native();
+    if(storage[0]!=2.f || storage[1]!=2.f || storage[2]!=0.f || storage[3]!=0.f) return false;
     return true;
   }
 

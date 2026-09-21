@@ -3,10 +3,5 @@ module;
 #include "native/arm/pmull.h"
 export module native.arm.pmull;
 export import native.arm.features;
-export namespace native {
-  /// \addtogroup arm_pmull
-  /// \{
-  using ::native::pmull;
-  using ::native::pmull2;
-  /// \}
-}
+export import native.simd;
+#include "native/arm/pmull_body.h"

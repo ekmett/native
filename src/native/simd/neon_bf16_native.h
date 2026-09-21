@@ -4,7 +4,7 @@
 namespace native::detail::neon_bf16_backend {
   native_inline float32x4_t dot2_native(bfloat16x8_t a, bfloat16x8_t b, float32x4_t accumulator) noexcept {
     // Share the instruction wrapper's FPCR-sensitive evaluation contract.
-    return native::bfdot<native::isa(native::arm_feature::neon_bf16)>(accumulator, a, b);
+    return native::detail::arm_bf16::bfdot<native::isa(native::arm_feature::neon_bf16)>(accumulator, a, b);
   }
 }
 #pragma clang attribute pop
