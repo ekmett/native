@@ -3,6 +3,10 @@
 #include <cstdio>
 import native.features;
 
+// The family values are exported without including the configuration header.
+static_assert(native::is_arm != native::is_x86);
+static_assert(!native::is_wasm);
+
 // Both feature families are available through the CPU-only umbrella.
 template<native::isa A> struct requirement {};
 static_assert(!__is_same(requirement<native::avx2>, requirement<native::neon>));

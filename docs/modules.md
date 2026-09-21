@@ -54,6 +54,14 @@ Single-feature construction is exact; `feature_closure` adds prerequisites
 explicitly. The [ISA guide](abi-lookup.md) covers feature conjunction and
 compile-time target selection.
 
+`native::is_arm`, `native::is_x86` and `native::is_wasm` are `inline constexpr
+bool` values identifying the compilation target's architecture family. Use
+them with `if constexpr` in generic code. They are available from `native.isa`,
+`native.features`, `native` and the dependency-free `<native/config.h>` header.
+They describe neither runtime CPU detection nor optional instruction support;
+both 32-bit and 64-bit targets belong to their respective family. Platform
+headers and declarations with unavailable names still need preprocessing guards.
+
 The element type supplies the arithmetic contract; the ISA determines storage
 and available operations. Some instruction-specific shapes provide storage and
 transfer without the full arithmetic interface of a vector profile. Having a

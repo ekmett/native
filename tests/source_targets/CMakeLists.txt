@@ -10,6 +10,14 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(source_targets_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
 find_program(source_targets_objdump NAMES llvm-objdump HINTS "${source_targets_compiler_dir}" REQUIRED)
 
+if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  add_test(NAME native.source_targets.platform COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/check_platform.py" --compiler "${CMAKE_CXX_COMPILER}"
+    --include "${PROJECT_SOURCE_DIR}/src" --source "${CMAKE_CURRENT_SOURCE_DIR}/platform.cc"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/platform-$<CONFIG>.json")
+  set_tests_properties(native.source_targets.platform PROPERTIES LABELS "host;baseline;source_targets")
+endif()
+
 # No per-variant compiler options, profile helpers, generated source, or extra BMI.
 add_executable(native_test_source_metadata metadata.cc)
 target_link_libraries(native_test_source_metadata PRIVATE native::native)

@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <native/config.h>
 #include <native/targets.h>
 import native.isa;
+
+static_assert(native::is_arm == bool(NATIVE_HOST_NEON));
+static_assert(native::is_x86 == bool(NATIVE_HOST_X86));
+static_assert(!native::is_wasm);
 
 // An extra deployment requirement must not change the compiler's permissions.
 #undef NATIVE_TARGET_EXTRA_MINIMUM
