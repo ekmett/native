@@ -89,6 +89,12 @@ hash. ARM's hardware feature bits are independent. Clang's ARM `aes`, `sha2` and
 `sha3` targets enable bundles, so admission must cover each whole compiler
 target even when the source calls only one of its operations.
 
+The x86 [SHA primitives](x86-sha.md) implement SHA-1/SHA-256 round and message
+schedule steps on four-dword states. [Vector AES](x86-vaes.md) processes one, two
+or four independent 128-bit AES states per operation, with width-specific
+feature requirements. These operations expose round primitives; callers own
+message padding, schedules and complete algorithms.
+
 ## Shapes, masks and execution
 
 The family guides list supported element types, lane counts and compile-time
