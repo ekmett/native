@@ -7,13 +7,22 @@
 #if NATIVE_HOST_X86
 namespace native {
   template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::lzcnt))
-  std::uint16_t lzcnt(std::uint16_t value) noexcept;
+  constexpr std::uint16_t lzcnt(std::uint16_t value) noexcept;
+
+  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::lzcnt))
+  consteval std::uint16_t lzcnt(std::uint16_t value) noexcept;
 
   template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::lzcnt))
-  std::uint32_t lzcnt(std::uint32_t value) noexcept;
+  constexpr std::uint32_t lzcnt(std::uint32_t value) noexcept;
+
+  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::lzcnt))
+  consteval std::uint32_t lzcnt(std::uint32_t value) noexcept;
 
   template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::lzcnt))
-  std::uint64_t lzcnt(std::uint64_t value) noexcept;
+  constexpr std::uint64_t lzcnt(std::uint64_t value) noexcept;
+
+  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::lzcnt))
+  consteval std::uint64_t lzcnt(std::uint64_t value) noexcept;
 
 }
 #endif

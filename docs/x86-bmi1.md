@@ -26,9 +26,16 @@ if (native::classify_isa(cpu, bits).admitted()) {
 ```
 
 Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
-their owning module is compiled. The default must contain the required feature;
-a function target attribute on the caller does not change that captured value.
-Explicit `Arch` arguments remain available, and standalone headers require them.
+their owning module is compiled. A function target attribute on the caller
+does not change that captured value.
+Explicit `Arch` arguments are supported, and standalone headers require them.
+
+All operand widths support constant evaluation. If `Arch` lacks the feature,
+the selected overload is `consteval`: a constant call is accepted, while a call
+with runtime inputs is ill-formed. With the feature present, the overload is
+`constexpr` and uses the instruction implementation at runtime. Runtime calls
+still require a matching compiler target and admitted CPU support; there is
+no runtime software fallback.
 
 The five bit operations have `std::uint32_t` and `std::uint64_t` overloads.
 `tzcnt` additionally supports `std::uint16_t`. Each returns the operand type.

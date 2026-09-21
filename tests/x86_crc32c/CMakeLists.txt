@@ -78,7 +78,7 @@ foreach(interface IN LISTS interfaces)
 
   foreach(kind IN ITEMS feature target)
     if(kind STREQUAL "feature")
-      set(diagnostic "constraints not satisfied|no matching function")
+      set(diagnostic "call to consteval function.*is not a constant expression")
     else()
       set(diagnostic "requires target feature 'crc32'|target specific option mismatch")
     endif()

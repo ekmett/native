@@ -18,19 +18,20 @@ namespace crc32c_fixture {
     { native::crc32c<A>(accumulator, value) } noexcept -> std::same_as<std::uint32_t>;
   };
 
-  template<class T> consteval bool feature_contract() {
+  // Immediate-only fallback signatures do not grant runtime instruction admission.
+  template<class T> consteval bool signature_contract() {
     return has_crc32c<requirements, T> &&
-      !has_crc32c<native::scalar, T> &&
-      !has_crc32c<native::isa(native::x86_feature::popcnt), T> &&
-      !has_crc32c<native::isa(native::x86_feature::sse42), T> &&
-      !has_crc32c<native::isa(native::x86_feature::bmi1), T> &&
-      !has_crc32c<native::isa(native::x86_feature::bmi2), T>;
+      has_crc32c<native::scalar, T> &&
+      has_crc32c<native::isa(native::x86_feature::popcnt), T> &&
+      has_crc32c<native::isa(native::x86_feature::sse42), T> &&
+      has_crc32c<native::isa(native::x86_feature::bmi1), T> &&
+      has_crc32c<native::isa(native::x86_feature::bmi2), T>;
   }
-  static_assert(feature_contract<std::uint8_t>());
-  static_assert(feature_contract<std::uint16_t>());
-  static_assert(feature_contract<std::uint32_t>());
+  static_assert(signature_contract<std::uint8_t>());
+  static_assert(signature_contract<std::uint16_t>());
+  static_assert(signature_contract<std::uint32_t>());
 #if defined(__x86_64__) || defined(_M_X64)
-  static_assert(feature_contract<std::uint64_t>());
+  static_assert(signature_contract<std::uint64_t>());
 #endif
 
   // This raw fixture is independent of the feature registry under test.

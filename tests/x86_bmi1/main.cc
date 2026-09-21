@@ -30,23 +30,16 @@ template<native::isa A, class T> concept has_all_bmi1 = requires(T a, T b, unsig
   { native::blsr<A>(a) } noexcept -> std::same_as<T>;
   { native::tzcnt<A>(a) } noexcept -> std::same_as<T>;
 };
-template<native::isa A, class T> concept has_any_bmi1 =
-  requires(T a) { native::andn<A>(a, a); } ||
-  requires(T a) { native::bextr<A>(a, 0u); } ||
-  requires(T a) { native::bextr<A>(a, 0u, 0u); } ||
-  requires(T a) { native::blsi<A>(a); } ||
-  requires(T a) { native::blsmsk<A>(a); } ||
-  requires(T a) { native::blsr<A>(a); } ||
-  requires(T a) { native::tzcnt<A>(a); };
 template<native::isa A> concept has_tzcnt16 = requires(std::uint16_t a) {
   { native::tzcnt<A>(a) } noexcept -> std::same_as<std::uint16_t>;
 };
+// Weak tags participate for constant evaluation; runtime calls are rejected separately.
 static_assert(has_all_bmi1<bmi1, std::uint32_t> && has_all_bmi1<bmi1, std::uint64_t>);
 static_assert(has_tzcnt16<bmi1>);
-static_assert(!has_any_bmi1<native::isa{}, std::uint32_t>);
-static_assert(!has_any_bmi1<native::isa{}, std::uint64_t>);
-static_assert(!has_any_bmi1<bmi2, std::uint32_t> && !has_any_bmi1<bmi2, std::uint64_t>);
-static_assert(!has_tzcnt16<native::isa{}> && !has_tzcnt16<bmi2>);
+static_assert(has_all_bmi1<native::isa{}, std::uint32_t>);
+static_assert(has_all_bmi1<native::isa{}, std::uint64_t>);
+static_assert(has_all_bmi1<bmi2, std::uint32_t> && has_all_bmi1<bmi2, std::uint64_t>);
+static_assert(has_tzcnt16<native::isa{}> && has_tzcnt16<bmi2>);
 
 // BMI1 does not require the AVX OS state or the independent BMI2 flag.
 static_assert([] {

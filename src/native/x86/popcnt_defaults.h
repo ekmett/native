@@ -7,13 +7,22 @@
 #if NATIVE_HOST_X86
 namespace native {
   template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
-  std::uint16_t popcnt(std::uint16_t value) noexcept;
+  constexpr std::uint16_t popcnt(std::uint16_t value) noexcept;
+
+  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  consteval std::uint16_t popcnt(std::uint16_t value) noexcept;
 
   template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
-  std::uint32_t popcnt(std::uint32_t value) noexcept;
+  constexpr std::uint32_t popcnt(std::uint32_t value) noexcept;
+
+  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  consteval std::uint32_t popcnt(std::uint32_t value) noexcept;
 
   template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
-  std::uint64_t popcnt(std::uint64_t value) noexcept;
+  constexpr std::uint64_t popcnt(std::uint64_t value) noexcept;
+
+  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  consteval std::uint64_t popcnt(std::uint64_t value) noexcept;
 
 }
 #endif

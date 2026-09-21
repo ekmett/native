@@ -21,8 +21,12 @@ template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
 };
 static_assert(has_bmi2<requirements, std::uint32_t>);
 static_assert(has_bmi2<requirements, std::uint64_t>);
-static_assert(!has_bmi2<native::scalar, std::uint32_t>);
-static_assert(!has_bmi2<native::scalar, std::uint64_t>);
+static_assert(has_bmi2<native::scalar, std::uint32_t>);
+static_assert(has_bmi2<native::scalar, std::uint64_t>);
+// Below-feature calls are immediate-only; runtime-input rejection has its own fixtures.
+static_assert(native::pdep<native::scalar>(std::uint32_t{5}, std::uint32_t{0x52}) == 0x42);
+static_assert(native::pext<native::scalar>(std::uint64_t{0x100000002},
+                                         std::uint64_t{0x100000012}) == 5);
 
 #define NATIVE_TARGET_platform_lzcnt "lzcnt"
 constexpr auto lzcnt_requirements = NATIVE_TARGET_ISA(platform_lzcnt);

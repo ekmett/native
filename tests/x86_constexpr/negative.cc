@@ -1,0 +1,344 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <cstdint>
+#include <native/attributes.h>
+#if NATIVE_CONSTEXPR_INTERFACE == 0
+#include <native/x86/bmi1.h>
+#include <native/x86/bmi2.h>
+#include <native/x86/popcnt.h>
+#include <native/x86/lzcnt.h>
+#include <native/x86/crc32c.h>
+#else
+import native.x86.bmi1;
+import native.x86.bmi2;
+import native.x86.popcnt;
+import native.x86.lzcnt;
+import native.x86.crc32c;
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 0
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a, std::uint32_t b) {
+  return native::andn<native::scalar>(a, b);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 1
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a, std::uint32_t control) {
+  return native::bextr<native::scalar>(a, control);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 2
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a, unsigned start, unsigned length) {
+  return native::bextr<native::scalar>(a, start, length);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 3
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::blsi<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 4
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::blsmsk<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 5
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::blsr<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 6
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a, unsigned count) {
+  return native::bzhi<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 7
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a, std::uint32_t b, std::uint32_t* high) {
+  return native::mulx<native::scalar>(a, b, high);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 8
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a, std::uint32_t mask) {
+  return native::pdep<native::scalar>(a, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 9
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a, std::uint32_t mask) {
+  return native::pext<native::scalar>(a, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 10
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a, unsigned count) {
+  return native::shlx<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 11
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a, unsigned count) {
+  return native::shrx<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 12
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::rorx<native::scalar, 7>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 13
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a, std::uint64_t b) {
+  return native::andn<native::scalar>(a, b);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 14
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a, std::uint32_t control) {
+  return native::bextr<native::scalar>(a, control);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 15
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a, unsigned start, unsigned length) {
+  return native::bextr<native::scalar>(a, start, length);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 16
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::blsi<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 17
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::blsmsk<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 18
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::blsr<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 19
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a, unsigned count) {
+  return native::bzhi<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 20
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a, std::uint64_t b, std::uint64_t* high) {
+  return native::mulx<native::scalar>(a, b, high);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 21
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a, std::uint64_t mask) {
+  return native::pdep<native::scalar>(a, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 22
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a, std::uint64_t mask) {
+  return native::pext<native::scalar>(a, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 23
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a, unsigned count) {
+  return native::shlx<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 24
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a, unsigned count) {
+  return native::shrx<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 25
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::rorx<native::scalar, 7>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 26
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::int32_t rejected(std::int32_t a, unsigned count) {
+  return native::sarx<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 27
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi2")
+std::int64_t rejected(std::int64_t a, unsigned count) {
+  return native::sarx<native::scalar>(a, count);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 28
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint16_t rejected(std::uint16_t a) {
+  return native::tzcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 29
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::tzcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 30
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("bmi")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::tzcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 31
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("popcnt")
+std::uint16_t rejected(std::uint16_t a) {
+  return native::popcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 32
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("popcnt")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::popcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 33
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("popcnt")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::popcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 34
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("lzcnt")
+std::uint16_t rejected(std::uint16_t a) {
+  return native::lzcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 35
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("lzcnt")
+std::uint32_t rejected(std::uint32_t a) {
+  return native::lzcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 36
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("lzcnt")
+std::uint64_t rejected(std::uint64_t a) {
+  return native::lzcnt<native::scalar>(a);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 37
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("crc32")
+std::uint32_t rejected(std::uint32_t a, std::uint8_t b) {
+  return native::crc32c<native::scalar>(a, b);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 38
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("crc32")
+std::uint32_t rejected(std::uint32_t a, std::uint16_t b) {
+  return native::crc32c<native::scalar>(a, b);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 39
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("crc32")
+std::uint32_t rejected(std::uint32_t a, std::uint32_t b) {
+  return native::crc32c<native::scalar>(a, b);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 40
+// A matching compiler target cannot grant runtime permission to a weak tag.
+native_target("crc32")
+std::uint32_t rejected(std::uint32_t a, std::uint64_t b) {
+  return native::crc32c<native::scalar>(a, b);
+}
+#endif

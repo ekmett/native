@@ -32,8 +32,12 @@ template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
   { native::pext<A>(value, mask) } noexcept -> std::same_as<T>;
 };
 static_assert(has_bmi2<bmi2, std::uint32_t> && has_bmi2<bmi2, std::uint64_t>);
-static_assert(!has_bmi2<native::scalar, std::uint32_t>);
-static_assert(!has_bmi2<native::scalar, std::uint64_t>);
+static_assert(has_bmi2<native::scalar, std::uint32_t>);
+static_assert(has_bmi2<native::scalar, std::uint64_t>);
+// Below-feature calls are immediate-only; runtime-input rejection has its own fixtures.
+static_assert(native::pdep<native::scalar>(std::uint32_t{5}, std::uint32_t{0x52}) == 0x42);
+static_assert(native::pext<native::scalar>(std::uint64_t{0x100000002},
+                                         std::uint64_t{0x100000012}) == 5);
 
 NATIVE_TARGET_PUSH(cutover_bmi2)
 static bool check_bmi2() {
