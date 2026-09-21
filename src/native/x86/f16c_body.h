@@ -69,8 +69,17 @@ export namespace native {
     return detail::x86_f16c::cvtss_sh<Arch, Imm8>(a);
   }
 
+  /// Convert one binary32 value using the module baseline or an explicit ISA.
+  /// The legacy cvtss_sh<Arch, Imm8> spelling remains available.
+  template<unsigned Imm8, isa Arch = NATIVE_BASELINE>
+    requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
+  native_nodiscard native_inline native_target("f16c")
+  std::uint16_t cvtss_sh(float a) noexcept {
+    return cvtss_sh<Arch, Imm8>(a);
+  }
+
   /// Widen one binary16 representation to binary32.
-  template<isa Arch> requires(Arch.has(x86_feature::f16c))
+  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::f16c))
   native_nodiscard native_inline native_target("f16c")
   float cvtsh_ss(std::uint16_t a) noexcept {
     return detail::x86_f16c::cvtsh_ss<Arch>(a);

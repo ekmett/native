@@ -5,6 +5,11 @@ integer operand. Import `native.x86.crc32c`, `native.x86`, or `native` to use it
 Source-tree header consumers can include `<native/x86/crc32c.h>`; installed
 consumers use the named modules. The granular module belongs to `native::minimal`.
 
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. The default must contain the required feature;
+a function target attribute on the caller does not change that captured value.
+Explicit `Arch` arguments remain available, and standalone headers require them.
+
 The accumulator and result are always `std::uint32_t`:
 
 | Operand type | Bits consumed | Execution mode |

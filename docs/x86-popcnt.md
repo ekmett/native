@@ -8,6 +8,11 @@ Import `native.x86.popcnt`, `native.x86`, or `native` to use them. Source-tree
 header consumers can include `<native/x86/popcnt.h>`; the installed public API
 uses the named modules.
 
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. The default must contain the required feature;
+a function target attribute on the caller does not change that captured value.
+Explicit `Arch` arguments remain available, and standalone headers require them.
+
 Intel defines 16-, 32- and 64-bit forms, admitted by CPUID leaf 1 ECX bit 23.
 SSE, BMI and vector OS state are not prerequisites.
 See the POPCNT entry in [Intel's instruction reference, Volume 2B](https://cdrdv2-public.intel.com/782151/253667-sdm-vol-2b.pdf#page=401)

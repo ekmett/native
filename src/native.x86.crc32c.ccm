@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/x86/crc32c.h"
+#include "native/x86/crc32c_defaults.h"
 export module native.x86.crc32c;
 export import native.x86.features;
 export namespace native {

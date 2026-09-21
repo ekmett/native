@@ -1,0 +1,7 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <concepts>
+#include <cstdint>
+#include <native/targets.h>
+@imports@
+constexpr native::isa expected = NATIVE_BASELINE;
+#include "checks.h"

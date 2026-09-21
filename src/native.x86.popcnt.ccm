@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/x86/popcnt.h"
+#include "native/x86/popcnt_defaults.h"
 export module native.x86.popcnt;
 export import native.x86.features;
 export namespace native {

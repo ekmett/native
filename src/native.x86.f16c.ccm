@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/x86/f16c.h"
+#include "native/targets.h"
 export module native.x86.f16c;
 export import native.x86.features;
 export import native.simd;

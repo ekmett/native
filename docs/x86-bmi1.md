@@ -25,6 +25,11 @@ if (native::classify_isa(cpu, bits).admitted()) {
 }
 ```
 
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. The default must contain the required feature;
+a function target attribute on the caller does not change that captured value.
+Explicit `Arch` arguments remain available, and standalone headers require them.
+
 The five bit operations have `std::uint32_t` and `std::uint64_t` overloads.
 `tzcnt` additionally supports `std::uint16_t`. Each returns the operand type.
 

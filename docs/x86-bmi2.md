@@ -3,8 +3,15 @@
 `import native`, `import native.x86`, or `import native.x86.bmi2` exposes the
 BMI2 family on x86-64. Source-tree header consumers can include
 `<native/x86/bmi2.h>`; the installed public API uses the named modules.
-Every operation takes an explicit `isa` template argument containing
+Every operation requires an `isa` template argument containing
 `x86_feature::bmi2`; no AVX, AVX2, FMA, or BMI1 feature is required.
+
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. The default must contain the required feature;
+a function target attribute on the caller does not change that captured value.
+Explicit `Arch` arguments remain available, and standalone headers require them.
+Use `rorx<Imm8>(value)` for the module default or `rorx<Imm8, Arch>(value)`
+for an explicit tag; the original `rorx<Arch, Imm8>(value)` spelling is unchanged.
 
 For `U = std::uint32_t` or `std::uint64_t`, the overloads are:
 
