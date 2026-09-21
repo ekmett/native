@@ -170,7 +170,7 @@ the return width explicitly. Conversions retain MXCSR effects even when their
 results are unused.
 
 On AArch64, `native.arm` reexports `native.arm.dotprod`, `native.arm.rdm`,
-`native.arm.fp16fml`, `native.arm.fcma`, `native.arm.i8mm`, `native.arm.crc`,
+`native.arm.fp16fml`, `native.arm.fcma`, `native.arm.i8mm`, `native.arm.bf16`, `native.arm.crc`,
 `native.arm.aes`, `native.arm.pmull` and `native.arm.sha`.
 These modules also belong to `native::minimal` and use raw native operands,
 without requiring `native.simd`. Each operation takes an explicit `isa` template
@@ -178,6 +178,9 @@ argument and has its own compiler target requirement. Check the corresponding
 features with `classify_isa` before calling a function compiled for that target;
 the import itself neither enables instructions nor dispatches at runtime.
 
+[ARM BF16](arm-bf16.md) provides dot products, matrix products and widening
+multiply-adds with the instructions' FPCR and FPSR behavior. The optional
+`ebf16` capability admits enhanced dot-product arithmetic when FPCR.EBF is set.
 [ARM CRC](arm-crc.md) provides scalar CRC32 and CRC32C updates.
 [ARM crypto](arm-crypto.md) provides AES rounds, unreduced polynomial products
 and SHA state, schedule and logical helpers. Crypto hardware features are

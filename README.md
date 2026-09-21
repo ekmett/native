@@ -102,6 +102,7 @@ custom element types and application dispatch.
 | `native.arm.fp16fml` | [FP16 products accumulated in FP32](docs/arm-fp16fml.md) |
 | `native.arm.fcma` | [Complex multiply-add and rotated addition](docs/arm-fcma.md) |
 | `native.arm.i8mm` | [I8MM matrix and mixed-sign dot products](docs/arm-i8mm.md) |
+| `native.arm.bf16` | [BF16 dot products, matrix products and widening multiply-adds](docs/arm-bf16.md) |
 | `native.scalar` | `simd<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `native.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
