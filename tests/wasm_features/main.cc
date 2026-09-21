@@ -103,6 +103,17 @@ namespace {
   static_assert(!admits<wasm_capabilities,x86_feature> && !admits<wasm_capabilities,arm_feature>);
   static_assert(!admits<arm_snapshot,isa<wasm>> && !admits<x86_snapshot,isa<wasm>>);
   static_assert(!combines<isa<wasm>,isa<arm>> && !combines<wasm_feature,x86_feature>);
+  // Raw-looking diagnostics do not reinterpret a normalized snapshot's family.
+  struct misleading_snapshot : wasm_capabilities {
+    bool baseline_observed=true,fp=true,asimd=true;
+    bool fp16_observed=false,scalar_fp16=false,vector_fp16=false;
+    bool bf16_observed=false,bf16=false;
+  };
+  static_assert(!admits<misleading_snapshot,isa<arm>>);
+  template<class List> concept wasm_policy=requires { sizeof(abi_lookup<relaxed,List>); };
+  static_assert(wasm_policy<isa_list<relaxed,standard_isa,isa<wasm>{}>>);
+  static_assert(!wasm_policy<isa_list<relaxed,isa<arm>{}>>);
+
 
   template<class V> concept validator_accepted=requires(V v) { observe_wasm_capabilities(v); };
   static_assert(!validator_accepted<decltype([](std::span<std::uint8_t const>) { return std::optional<bool>{true}; })>);

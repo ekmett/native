@@ -704,6 +704,7 @@ namespace native {
       { c.present } -> std::same_as<isa<Family> const &>;
       { c.observed } -> std::same_as<isa<Family> const &>;
     };
+    template<class C> concept has_feature_observation=requires(C const & c) { c.present; c.observed; };
     template<architecture Family> struct feature_observation {
       isa<Family> present{},observed{};
     };
@@ -814,7 +815,7 @@ namespace native {
 
   /// Decode a structural raw x86 snapshot before applying the same admission rules.
   /// Unsupported leaves and unread XCR0 cannot authorize stale positive values.
-  template<detail::x86_observation C> requires (!detail::normalized_features<C,x86>) && requires(C const & c) { c.xcr0; c.xcr0_observed; }
+  template<detail::x86_observation C> requires (!detail::has_feature_observation<C>) && requires(C const & c) { c.xcr0; c.xcr0_observed; }
   constexpr isa_admission<x86> classify_isa(C const & cpu,isa<x86> requested,isa<x86> minimum={}) noexcept {
     auto features=detail::decode_x86_features(cpu);
     bool readable=cpu.max_basic_leaf>=1 && (cpu.leaf1_ecx&(1u<<26)) &&
@@ -825,7 +826,7 @@ namespace native {
 
   /// Decode a structural raw ARM snapshot before applying the same admission rules.
   /// Failed OS queries cannot authorize stale positive values.
-  template<detail::arm_observation C> requires (!detail::normalized_features<C,arm>)
+  template<detail::arm_observation C> requires (!detail::has_feature_observation<C>)
   constexpr isa_admission<arm> classify_isa(C const & cpu,isa<arm> requested,isa<arm> minimum={}) noexcept {
     auto features=detail::decode_arm_features(cpu);
     return detail::classify_features(features.present,features.observed,feature_closure(requested&minimum));
@@ -878,6 +879,7 @@ namespace native {
   /// Unlike target's exact set selection, this includes prerequisite closure.
   template<isa A,class List> struct abi_lookup;
   template<isa A,auto... Entries>
+    requires ((decltype(detail::abi_match<Entries,0>::architecture)::family==decltype(A)::family) && ...)
   struct abi_lookup<A,isa_list<Entries...>> : detail::abi_lookup_impl<A,0,Entries...> {};
 
   namespace detail {
