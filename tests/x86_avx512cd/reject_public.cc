@@ -161,4 +161,3 @@ auto reject_maskz_vplzcntq(qmask mask, qvector value) noexcept {
   return native::maskz_vplzcntq<arch>(mask, value);
 }
 #endif
-

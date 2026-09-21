@@ -93,4 +93,3 @@ extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vplzcntq(__mmask8 mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::maskz_vplzcntq<requirements>(mask, value);
 }
-
