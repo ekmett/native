@@ -1,12 +1,11 @@
 # ARM complex arithmetic
 
-Import `native.arm.fcma`, `native.arm`, or `native` for
-`fcadd<Arch,Rotation>`, `fcmla<Arch,Rotation>`, and
+FCMA operates on complex numbers stored as adjacent `(real,imaginary)`
+elements in NEON registers. Import `native.arm.fcma`, `native.arm`, or `native`
+for `fcadd<Arch,Rotation>`, `fcmla<Arch,Rotation>`, and
 `fcmla_lane<Arch,Rotation,Lane>`. Source-tree header consumers can include
-`<native/arm/fcma.h>`; installed consumers use the named modules. Inputs and
-results are NEON registers, with adjacent elements holding `(real,imaginary)`.
-The existing `native::simd` native-register bridges also accept these results
-and supply their inputs.
+`<native/arm/fcma.h>`; installed consumers use the named modules. The
+`native::simd` native-register conversions supply inputs and accept results.
 
 | Register shape | Complex pairs | Required feature bits |
 | --- | --- | --- |
@@ -17,11 +16,10 @@ and supply their inputs.
 | `float16x8_t` | 4 | `complxnum` and `neon_fp16` |
 
 The feature is FEAT_FCMA. Runtime admission adds the compiler prerequisites,
-including baseline NEON. FP32/FP64 calls target exactly `"complxnum"`; FP16 calls
-target `"complxnum,fullfp16"`. Neither FHM nor BF16 substitutes for FCMA, and an
-FP16 feature alone is insufficient. Exact rejection overloads prevent Clang's
-implicit conversions between same-size NEON types from bypassing a missing
-feature or invalid immediate by selecting another element format.
+including baseline NEON. FP32/FP64 calls target `"complxnum"`; FP16 calls target
+`"complxnum,fullfp16"`. FHM, BF16 and FP16 alone do not supply FCMA. Missing
+features and invalid immediates are rejected even when Clang could implicitly
+convert the operands to a same-size NEON type of another element format.
 
 For one pair `a=(ar,ai)` and `b=(br,bi)`, `fcadd` permits rotations 90 and 270:
 
@@ -31,7 +29,7 @@ For one pair `a=(ar,ai)` and `b=(br,bi)`, `fcadd` permits rotations 90 and 270:
 | 270 | `(ar+bi, ai-br)` |
 
 `fcmla` performs one partial complex multiply-add per call. For accumulator
-`c=(cr,ci)`, the component graph is:
+`c=(cr,ci)`, the components are computed as follows:
 
 | Rotation | Result |
 | --- | --- |
@@ -55,7 +53,8 @@ other shapes use the indexed instruction. A 64-bit half result selecting either
 upper pair of a 128-bit source first extracts the upper 64 bits. There is no
 indexed FP64 overload. Rotations and pair indices are compile-time immediates.
 
-Target and admit the caller; imports and template arguments do neither:
+Compile the caller for its target and check CPU support before entering it.
+An import or template argument alone does neither:
 
 ```cpp
 #include <arm_neon.h>
@@ -96,20 +95,22 @@ The operations carry neither `pure` nor `const`. A shared private helper handles
 Clang's different 64-bit and 128-bit big-endian asm register coercions, including
 bytes within each floating element.
 
-`tests/arm_fcma` executes the header, granular module and main module on Apple M3
-with Clang 23. It checks all five formats, every rotation and every indexed pair
-against scalar arithmetic under all four rounding modes, plus real
-`native::simd` round trips, unchanged FPCR, sticky FPSR and used/discarded invalid
-results. FP32/FP64 use `std::fma`; the bounded dyadic half bank uses an exact
-binary64 expression followed by one half conversion. NaN payload identity and
-all possible FPCR/trap configurations are outside this qualification.
+`tests/arm_fcma` runs through the header, granular module and main module on
+Apple M3 with Clang 23. It compares all five formats, every rotation and every
+indexed pair with scalar arithmetic under all four rounding modes. It also
+checks conversions to and from `native::simd`, unchanged FPCR, sticky FPSR, and
+invalid-operation effects with used and discarded results. The FP32/FP64
+reference uses `std::fma`; the half-precision cases use bounded dyadic values
+whose binary64 expressions are exact, followed by one half conversion. These
+tests do not establish NaN payload identity or cover every FPCR setting and
+hardware trap configuration.
 
 The Armv8-A assembly fixture verifies 102 vector/indexed forms and baseline
-isolation. Real compiler-failure fixtures reject missing FCMA targets, missing
-FP16 targets/features, and invalid FP32 lanes even when the supplied ISA also
+isolation. Compilation must fail for missing FCMA targets, missing FP16
+targets or features, and invalid FP32 lanes even when the supplied ISA also
 includes FP16. Twenty-eight big-endian compiler memory mappings check byte and
-pair selection symbolically, including ACLE vector controls; there is no
-big-endian hardware execution claim. Standalone CMake consumers exercise the
+pair selection symbolically, including ACLE vector controls. Native big-endian
+execution remains untested. Standalone CMake consumers exercise the
 installed granular and main modules.
 
 See the [Arm Neon complex-operation reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#complex-operations-from-armv83-a)

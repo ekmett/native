@@ -1,21 +1,22 @@
 # x86 POPCNT
 
-Import `native.x86.popcnt`, `native.x86`, or `native` for
-`native::popcnt<Arch>(value)`. Source-tree header consumers can include
-`<native/x86/popcnt.h>`; the installed public API uses the named modules.
-The operation accepts `std::uint16_t`,
-`std::uint32_t`, or `std::uint64_t` and returns the same unsigned type.
+`native::popcnt<Arch>(value)` counts the set bits of an unsigned integer.
+Zero returns zero; an all-one input returns its width. The overloads accept
+`std::uint16_t`, `std::uint32_t`, or `std::uint64_t` and return the same type.
 
-POPCNT counts the set bits of its input. Zero returns zero; an all-one input
-returns its width. Intel defines 16-, 32- and 64-bit forms, admitted by
-CPUID leaf 1 ECX bit 23. SSE, BMI and vector OS state are not prerequisites.
+Import `native.x86.popcnt`, `native.x86`, or `native` to use them. Source-tree
+header consumers can include `<native/x86/popcnt.h>`; the installed public API
+uses the named modules.
+
+Intel defines 16-, 32- and 64-bit forms, admitted by CPUID leaf 1 ECX bit 23.
+SSE, BMI and vector OS state are not prerequisites.
 See the POPCNT entry in [Intel's instruction reference, Volume 2B](https://cdrdv2-public.intel.com/782151/253667-sdm-vol-2b.pdf#page=401)
 and the [current Intel manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html).
 
-Each overload is `noexcept`, always inline, targeted to `"popcnt"`, and constrained
-by `Arch.has(native::x86_feature::popcnt)`. That constraint describes the
-supplied ISA; it does not enable a caller's instructions or detect the CPU.
-Use a target scope and admit it before calling:
+Each overload is `noexcept` and always inline, with target `"popcnt"` and the
+constraint `Arch.has(native::x86_feature::popcnt)`. Supplying the feature in
+`Arch` does not change the caller's compiler target or check the CPU. The
+caller still needs a matching target scope and a runtime capability check:
 
 ```cpp
 #include <cstdint>
@@ -45,9 +46,9 @@ instruction width. None of these wrappers exposes the instruction's flags.
 The existing generic scalar/vector `popcount` operations keep their own API;
 `popcnt` is the explicit x86 feature-gated spelling.
 
-`tests/x86_popcnt` checks the header, direct module and main import, feature
-participation and admission, zero/all-one/single-bit cases, and randomized
-results against `std::popcount`. Its codegen test checks all three widths with
-optional ISA features disabled outside the target scopes.
+`tests/x86_popcnt` checks the header, direct module and main import, along with
+feature constraints and runtime admission. It compares zero, all-one,
+single-bit and random inputs with `std::popcount`. Assembly checks cover all
+three widths with optional ISA features disabled outside the target scopes.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

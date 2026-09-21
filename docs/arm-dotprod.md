@@ -1,8 +1,9 @@
 # ARM DotProd instructions
 
-`import native.arm.dotprod;` exposes twelve raw NEON wrappers. The AArch64
-`native.arm` and `native` hubs re-export them. These functions operate on native
-register types, independent of the high-level `simd` shape and CPU profiles.
+DotProd accumulates groups of four byte products into 32-bit integer lanes.
+`import native.arm.dotprod;` provides twelve wrappers for signed and unsigned
+operands; `native.arm` and `native` re-export them on AArch64. They use raw NEON
+registers, independently of the high-level `simd` shapes and CPU profiles.
 
 | Operation | Accumulator/result | Byte operands | Selected right-hand group |
 | --- | --- | --- | --- |
@@ -17,13 +18,12 @@ wrapping result; it is not C++ signed-overflow undefined behavior. Lane forms
 reuse the selected four-byte group for every accumulator lane.
 
 Each function requires `Arch.has(arm_feature::dotprod)` and a Clang `dotprod`
-function target. Neither a CPU model nor RDM, FP16, I8MM or another architecture
-bundle is required. Invalid lane indices and missing feature bits do not
-participate in overload resolution. There is no runtime dispatch or fallback
-inside an operation.
+function target. DotProd can be requested independently of RDM, FP16, I8MM or a
+CPU-model bundle. Missing feature bits and invalid lane indices are rejected at
+compile time; the operations have no runtime dispatch or software fallback.
 
-A caller admits the requested feature together with its translation-unit
-minimum before entering the targeted kernel:
+Before calling the kernel, check both the requested feature and the
+translation unit's minimum requirements:
 
 ```cpp
 #include <arm_neon.h>
@@ -43,13 +43,13 @@ bool available() {
 }
 ```
 
-`tests/arm_dotprod` exercises all twelve overloads and every lane through the
-header, granular module and omnibus module. An independent scalar oracle uses
-unsigned accumulation and covers directed wraparound plus edge/random inputs.
-Baseline code-generation fixtures disable DotProd and RDM globally, enable only
-DotProd per function, and require exactly one SDOT/UDOT instruction, native lane
-selection, and no helper call. A negative caller without the target must fail
-compilation. See [the fixture](../tests/arm_dotprod/README.md) for scope.
+The [tests](../tests/arm_dotprod/README.md) exercise all twelve overloads and
+every lane through the header, granular module and hub. An independent scalar
+reference uses unsigned accumulation to check wraparound, boundary values and
+random inputs. Assembly checks start with DotProd and RDM disabled, enable
+only DotProd per function, and require one SDOT/UDOT instruction with native
+lane selection and no helper call. A caller without the target must fail to
+compile.
 
 The instruction mapping follows the [Arm Advanced SIMD intrinsic
 reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#dot-product).

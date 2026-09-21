@@ -1,10 +1,10 @@
 # GFNI byte operations
 
-`import native.x86.gfni;` exposes raw-register Galois-field multiplication
-and affine transformations. `native.x86` and `native` re-export the module.
-Link `native::minimal` for the granular module or `native::native` for the hub.
-The implementation is in `native/x86/gfni.h`, included in the module's global
-fragment; vendor declarations stay outside the `native` namespace.
+GFNI multiplies bytes in a finite field and applies affine transformations
+to their bits. `import native.x86.gfni;` provides these operations on raw
+registers; `native.x86` and `native` re-export them. Link `native::minimal`
+for the granular module or `native::native` for the hub. The implementation
+header is `native/x86/gfni.h`.
 
 | Operation | Result for each input byte |
 | --- | --- |
@@ -12,17 +12,16 @@ fragment; vendor declarations stay outside the `native` namespace.
 | `gf2p8affineqb<Arch,Imm8>(a,matrix)` | Binary matrix product XOR `Imm8` |
 | `gf2p8affineinvqb<Arch,Imm8>(a,matrix)` | Field inverse, then matrix product XOR `Imm8` |
 
-The field polynomial is x⁸ + x⁴ + x³ + x + 1 (0x11b).
-Inverse-affine maps zero to zero before the matrix operation.
-It takes the inverse of the input field element, not the inverse of the matrix.
+The field polynomial is x⁸ + x⁴ + x³ + x + 1 (0x11b). The inverse-affine
+operation first takes the field inverse of each input byte, treating zero as
+zero, then applies the matrix. It does not invert the matrix itself.
 
 Each 64-bit lane of `matrix` supplies an independent 8×8 binary matrix for
-the eight input bytes in that lane. Number bytes from the least significant
-end. Result bit `i` is the parity of
-`a_byte & matrix_byte[7-i]`, XOR bit `i` of `Imm8`.
-Thus `0x0102040810204080` is the identity matrix and
-`0x8040201008040201` reverses the bits in each byte.
-The immediate is an unsigned template argument in [0,255], shared by all lanes.
+the eight input bytes in that lane. Numbering bytes from the least significant
+end, result bit `i` is the parity of `a_byte & matrix_byte[7-i]`, XOR bit `i`
+of `Imm8`. Thus `0x0102040810204080` is the identity matrix and
+`0x8040201008040201` reverses the bits in each byte. The immediate is an unsigned
+template argument in [0,255], shared by all lanes.
 These semantics follow Intel's
 [instruction reference](https://cdrdv2-public.intel.com/868140/253666-089-sdm-vol-2a.pdf).
 
@@ -62,9 +61,10 @@ OSXSAVE or YMM state. VEX execution requires OS-enabled XMM/YMM state
 (`XCR0 & 0xe6 == 0xe6`). Admission applies these checks when the
 corresponding AVX or AVX-512 requirements are present.
 
-Imports do not enable instructions or dispatch at runtime. Admit the target
-before calling a function compiled for it. A function compiled with additional
-features must be admitted for those features as well.
+Compile the caller for the required target and check CPU and OS support before
+entering it. Include any additional features used to compile that function in
+the runtime check. Importing the module does not enable instructions or
+dispatch at runtime.
 
 ```cpp
 #include <native/attributes.h>
@@ -92,11 +92,11 @@ bool try_multiply(void* out, void const* a, void const* b) {
 
 ## Validation
 
-`tests/x86_gfni` exercises header, granular-module and hub consumers from
-baseline translation units. Its scalar polynomial arithmetic and binary
-matrix oracle are independent of GFNI. Directed byte and matrix cases and
-deterministic randomized vectors check multiplication, affine and inverse-affine
-results. Optional execution is gated by CPU and OS-state admission.
+`tests/x86_gfni` uses the header, granular module and hub from baseline
+translation units. It compares multiplication, affine and inverse-affine
+results with independent scalar polynomial and binary-matrix calculations,
+using selected byte and matrix cases plus deterministic random vectors.
+Runtime tests check CPU and OS support before executing optional instructions.
 
 Compiler fixtures check feature constraints, constant immediate bounds and
 target mismatches. Assembly checks distinguish legacy XMM, VEX YMM and EVEX

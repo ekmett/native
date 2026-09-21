@@ -1,12 +1,14 @@
 # ARM RDM instructions
 
-`import native.arm.rdm;` exposes `sqrdmlah<Arch>`, `sqrdmlsh<Arch>` and their
-`_lane<Arch, Lane>` forms. The AArch64 `native.arm` and `native` hubs re-export
-them. These are raw register instructions independent of high-level `simd`
-shapes and CPU profiles.
+RDM combines a signed fixed-point product with an accumulator, then rounds
+and saturates the result. `import native.arm.rdm;` provides `sqrdmlah<Arch>`,
+`sqrdmlsh<Arch>` and their `_lane<Arch, Lane>` forms. The AArch64 `native.arm`
+and `native` hubs re-export them.
 
-Each add/subtract operation has eighteen overloads: six scalar/vector shapes,
-each with an ordinary form and two selectable right-hand vector widths.
+These operations use scalar integers or raw NEON registers, independently of
+high-level `simd` shapes and CPU profiles. Each add/subtract operation has
+eighteen overloads: six shapes, each with an ordinary form and two selectable
+right-hand vector widths.
 
 | Accumulator, left operand and result | Right operand in ordinary form | Right operand in lane form |
 | --- | --- | --- |
@@ -34,12 +36,12 @@ does not clear it. The wrappers do not modify FPCR, clear FPSR or promise
 `const`/`pure` semantics. Even an unused result executes the instruction.
 
 Each wrapper requires `Arch.has(arm_feature::rdm)` and a Clang `rdm` function
-target. Before entering it, admit
+target. Before calling it, check that
 `classify_isa(observe_arm_capabilities(), feature_closure(arm_feature::rdm),
-NATIVE_TARGET_MINIMUM)`. The admission includes NEON through feature closure;
-DotProd, FP16 and a whole Armv8.1-A feature bundle are not required. Missing
-feature bits and invalid lanes reject during overload resolution. There is no
-software fallback or runtime dispatch inside the operation.
+NATIVE_TARGET_MINIMUM)` admits execution. Feature closure adds NEON to these
+requirements; DotProd, FP16 and the rest of the Armv8.1-A bundle are unnecessary.
+Missing feature bits and invalid lanes are rejected at compile time. The
+operations have no software fallback or runtime dispatch.
 
 Clang 23's ACLE wrappers and underlying RDM builtins require the broader
 `v8.1a` target even though the instructions can be enabled with `rdm` alone.
@@ -49,13 +51,13 @@ wrapper. Halfword lane operands use the instruction's V0–V15 register constrai
 constraint. Big-endian 128-bit operands correct Clang's vector-to-byte
 inline-assembly conversion; 64-bit operands retain their scalar-register bit
 mapping. Lane indices retain ACLE numbering. This does not enable any
-additional ISA feature. The byte-order branch has generated-assembly comparison against ACLE,
-not native big-endian runtime qualification.
+additional ISA feature. Generated assembly is compared with ACLE to check the
+byte-order handling; native big-endian execution remains untested.
 
-The [fixture](../tests/arm_rdm/README.md) covers all thirty-six overloads,
-every legal lane, signed ties, cancellation, saturation and FPSR.QC effects.
-It separately checks feature participation and code generation from a genuine
-baseline AArch64 translation unit.
+The [tests](../tests/arm_rdm/README.md) cover all thirty-six overloads, every
+legal lane, signed ties, cancellation, saturation and FPSR.QC effects. Separate
+compilation checks exercise the feature constraints and instruction selection
+from a baseline AArch64 translation unit.
 
 Primary references are the [Arm Advanced SIMD intrinsic
 reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#sqrdmlah-intrinsics-from-armv81-a)

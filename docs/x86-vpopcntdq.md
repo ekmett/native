@@ -1,10 +1,10 @@
 # Packed population counts
 
-`import native.x86.vpopcntdq;` exposes population counts for 32-bit and 64-bit
-integer lanes through `native::minimal`. `native.x86` and `native` re-export
-the same operations. The implementation header is `native/x86/vpopcntdq.h`.
-Installed consumers import the modules; the package retains implementation
-headers privately for BMI regeneration.
+VPOPCNTDQ counts the set bits in each 32-bit or 64-bit integer lane.
+`import native.x86.vpopcntdq;` provides these operations through
+`native::minimal`; `native.x86` and `native` re-export them. The implementation
+header is `native/x86/vpopcntdq.h`. Installed consumers import the modules;
+the package keeps implementation headers private for BMI regeneration.
 
 Every operation takes a `template<native::isa Arch>` argument and raw native
 integer registers. `Arch` must contain `avx512f` and `avx512vpopcntdq`;
@@ -23,8 +23,8 @@ All six names overload `__m128i`, `__m256i` and `__m512i`. Mask bit zero
 controls the lowest lane; excess mask bits are ignored. The 512-bit dword
 forms take `__mmask16`; all other masked forms take `__mmask8`. Counts retain
 their lane width. Operations are `noexcept`, have no memory or flag effects,
-and carry named constant-function and exact target attributes. The intrinsic
-definitions follow LLVM's [512-bit](https://clang.llvm.org/doxygen/avx512vpopcntdqintrin_8h_source.html)
+and carry constant-function and target attributes. The intrinsic definitions
+follow LLVM's [512-bit](https://clang.llvm.org/doxygen/avx512vpopcntdqintrin_8h_source.html)
 and [VL](https://clang.llvm.org/doxygen/avx512vpopcntdqvlintrin_8h_source.html)
 interfaces.
 
@@ -68,16 +68,17 @@ Admission requires observed and present CPU features plus readable XCR0 with
 XMM, YMM, opmask, upper ZMM and high ZMM state enabled (`(XCR0 & 0xe6) == 0xe6`).
 This also applies to VL forms. Missing CPU support or OS state prevents the call.
 
-`tests/x86_vpopcntdq` checks header, granular-module and omnibus consumption.
-A baseline scalar bit-loop oracle checks directed inputs, every one-hot bit,
-complements, lane order, masks and randomized vectors on admitted hardware.
-Separate baseline tests cover metadata and synthetic admission. Compile controls
-reject missing feature sets and target attributes; disassembly checks require
-the expected instruction, register width and masking for every form.
-These checks establish code generation, not performance. Runtime fixtures return
-CTest skip code 77 when AVX-512 cannot execute. Compile and disassembly success
-do not establish native execution. The same module fixtures support a relocated
-installed package.
+`tests/x86_vpopcntdq` uses the header, granular module and hub. On admitted
+hardware, a baseline scalar bit loop checks selected inputs, every one-hot bit,
+complements, lane order, masks and random vectors. Separate baseline tests cover
+metadata and admission using synthetic capability records. Compilation must
+fail for missing feature sets or target attributes; disassembly checks the
+instruction, register width and masking for every form.
+
+Runtime tests return CTest skip code 77 when AVX-512 cannot execute. The
+compilation and disassembly checks establish instruction selection, with no
+claim of native execution or performance. The same module tests support a
+relocated installed package.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

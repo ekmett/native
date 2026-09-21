@@ -1,9 +1,10 @@
 # I8MM integer matrix and dot products
 
-`import native`, `import native.arm`, or `import native.arm.i8mm` exposes
-these AArch64 operations. Source-tree header consumers can include
-`<native/arm/i8mm.h>`. The operands and results are the raw vector types from
-`<arm_neon.h>`; every call has an explicit `isa Arch` template argument
+I8MM multiplies small byte matrices and computes mixed-sign byte dot products,
+accumulating the results into 32-bit integers. Import `native.arm.i8mm`, `native.arm`, or `native` for these
+AArch64 operations. Source-tree header consumers can include
+`<native/arm/i8mm.h>`. Operands and results use the raw vector types from
+`<arm_neon.h>`, and every call takes an explicit `isa Arch` template argument
 containing `arm_feature::i8mm`.
 
 | Operation | Accumulator and result | Input signedness |
@@ -59,19 +60,19 @@ bool can_multiply() {
 }
 ```
 
-The I8MM compiler prerequisite is NEON, independently of DotProd, FP16 and
+I8MM requires NEON but can be requested independently of DotProd, FP16 and
 BF16, matching [LLVM's AArch64 feature definition](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/AArch64/AArch64Features.td).
-`arm_feature::i8mm` is index 15, appended after `pauth`; the `isa::arm_i8mm`
-property accesses that exact bit. `target_features("i8mm")` adds the NEON
-prerequisite, and `NATIVE_TARGET_MINIMUM` records I8MM when the compiler defines
-`__ARM_FEATURE_MATMUL_INT8`.
+The `isa::arm_i8mm` property accesses the `arm_feature::i8mm` bit.
+`target_features("i8mm")` adds the NEON prerequisite, and `NATIVE_TARGET_MINIMUM`
+records I8MM when the compiler defines `__ARM_FEATURE_MATMUL_INT8`.
 
 The macOS detector queries `hw.optional.arm.FEAT_I8MM`. The Linux detector
 uses [`HWCAP2_I8MM` from `AT_HWCAP2`](https://docs.kernel.org/arch/arm64/elf_hwcaps.html)
 when the SDK defines that bit. Failed queries and missing SDK definitions leave
 the feature unobserved; a successful false query records observed-but-absent.
-The Windows detector leaves Advanced SIMD I8MM unobserved: an SVE I8MM query
-does not establish this instruction family's availability.
+The Windows detector leaves Advanced SIMD I8MM unobserved, so admission fails
+there: an SVE I8MM query does not establish this instruction family's
+availability.
 
 `tests/arm_i8mm` checks the header, granular module and main hub against
 independent scalar references with unsigned modular accumulation. It covers

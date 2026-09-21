@@ -1,13 +1,11 @@
 # x86 CRC32C
 
-Import `native.x86.crc32c`, `native.x86`, or `native` for
-`native::crc32c<Arch>(accumulator, value)`. Source-tree header consumers can
-include `<native/x86/crc32c.h>`; the installed public API uses named modules.
-The granular module belongs to `native::minimal` and includes the implementation
-header in its global module fragment. Vendor intrinsic headers remain outside
-the `native` namespace. Importing the API leaves the caller's target unchanged.
+`native::crc32c<Arch>(accumulator, value)` updates a CRC32C remainder with one
+integer operand. Import `native.x86.crc32c`, `native.x86`, or `native` to use it.
+Source-tree header consumers can include `<native/x86/crc32c.h>`; installed
+consumers use the named modules. The granular module belongs to `native::minimal`.
 
-The accumulator and return type are always `std::uint32_t`:
+The accumulator and result are always `std::uint32_t`:
 
 | Operand type | Bits consumed | Execution mode |
 | --- | --- | --- |
@@ -19,13 +17,12 @@ The accumulator and return type are always `std::uint32_t`:
 The package currently supports x86-64 builds. The 64-bit operand overload also
 has an explicit x86-64 declaration guard.
 
-Each call performs one raw CRC32C update using the Castagnoli polynomial
-`0x1edc6f41`, whose reflected representation is `0x82f63b78`. It consumes the
-numeric operand from least significant bit to most significant bit. Consequently,
-a wider update equals successive byte updates from least significant byte to
-most significant byte: `std::uint16_t{0x3231}` consumes `0x31`, then `0x32`.
-The API takes values and defines no buffer loading or byte-order conversion.
-Callers choose how bytes become numeric operands and which memory to access.
+The update uses the Castagnoli polynomial `0x1edc6f41`, whose reflected
+representation is `0x82f63b78`. It consumes the numeric operand from least
+significant bit to most significant bit. A wider update therefore equals
+successive byte updates from least significant byte to most significant byte:
+`std::uint16_t{0x3231}` consumes `0x31`, then `0x32`. The API works on values;
+callers choose how to load buffers and convert their byte order.
 
 No initial or final complement is implicit. All 32 seed bits participate.
 The 64-bit instruction zeroes the upper half of its destination; its wrapper
@@ -41,8 +38,9 @@ bundle; its closure includes `crc32`. The independent feature matches
 [Clang's CRC intrinsic target](https://clang.llvm.org/doxygen/crc32intrin_8h.html)
 and [LLVM's separate CRC32 feature](https://reviews.llvm.org/D105462).
 
-Use a matching target scope and admit execution before calling. This example
-explicitly supplies the conventional initial seed and final complement:
+Importing the API leaves the caller's compiler target unchanged. Use a
+matching target scope and check CPU support before calling it. This example
+supplies the conventional initial seed and final complement explicitly:
 
 ```cpp
 #include <cstdint>
@@ -70,16 +68,16 @@ int main() {
 }
 ```
 
-`tests/x86_crc32c` covers the known `"123456789"` vector, an independent bitwise
-polynomial oracle, directed seeds and operands, randomized updates at every
-width, and agreement between wider operands and ordered byte updates.
-Consumption checks cover the header, granular module, x86 module and main
-module, including a relocated installed package. Negative compilation checks
-exercise missing feature requirements and missing caller targets. Codegen
-checks compile baseline callers with optional features disabled, check each
-CRC operand width, and check that ordinary baseline functions remain free of
-CRC instructions. Assembly checks establish instruction selection only.
-Runtime checks admit optional instructions before execution and report skips
-when unavailable; compilation alone does not establish execution coverage.
+`tests/x86_crc32c` compares updates with an independent bitwise polynomial
+reference. Cases include the known `"123456789"` result, selected seeds and
+operands, random inputs at every width, and agreement between wider updates
+and ordered byte updates. The tests use the header, granular module, x86 module
+and main module, including a relocated installed package.
+
+Compilation must fail when feature requirements or caller targets are missing.
+Assembly checks cover each CRC operand width and verify that ordinary baseline
+functions remain free of CRC instructions. Runtime tests check CPU support
+before execution and report skips when it is unavailable; successful
+compilation and assembly checks alone do not establish native execution.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

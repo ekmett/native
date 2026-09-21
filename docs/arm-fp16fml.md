@@ -1,17 +1,18 @@
 # ARM FP16 widening fused multiply-add
 
-Import `native.arm.fp16fml`, `native.arm`, or `native` for the explicit
-`fmlal`, `fmlal2`, `fmlsl`, `fmlsl2` and corresponding `_lane` operations.
-Source-tree header consumers can include `<native/arm/fp16fml.h>`; installed
-consumers use the named modules. Each overload accepts and returns native NEON
-registers. Existing `native::simd` native-register conversions work at this
-boundary, including `simd<fp16,8,neon_fp16>` inputs and `simd<float,4,neon>` results.
+`fmlal<Arch>(acc,a,b)` adds binary16 products directly to binary32 accumulators;
+`fmlsl` subtracts them. Import `native.arm.fp16fml`, `native.arm`, or `native`
+for these operations, their upper-half forms `fmlal2` and `fmlsl2`, and the
+corresponding `_lane` forms. Source-tree header consumers can include
+`<native/arm/fp16fml.h>`; installed consumers use the named modules.
 
-`fmlal<Arch>(acc,a,b)` adds binary16 products directly to binary32 accumulators.
-`fmlsl` subtracts the products. For a result with `N` lanes, the inputs have `2*N`
-half lanes; the unsuffixed instructions select lanes `[0,N)`, and the `2`
-variants select `[N,2*N)`. Each result component is one fused operation with one
-binary32 rounding. There is no intermediate binary16 product or binary32
+Each overload accepts and returns raw NEON registers. Use the `native::simd`
+native-register conversions with types such as `simd<fp16,8,neon_fp16>` for
+inputs and `simd<float,4,neon>` for results.
+
+For a result with `N` lanes, the inputs have `2*N` half lanes. The unsuffixed
+instructions select lanes `[0,N)`, and the `2` variants select `[N,2*N)`. Each
+result component is one fused operation with one binary32 rounding. There is no intermediate binary16 product or binary32
 multiply rounding. These are FEAT_FHM operations; ordinary FP16 arithmetic and
 BF16 arithmetic have different feature requirements and numerical contracts.
 
@@ -25,14 +26,14 @@ BF16 arithmetic have different feature requirements and numerical contracts.
 Every `_lane<Arch,Lane>(acc,a,b)` form selects the same lanes of `a` and broadcasts
 one scalar half from `b`. The source `b` may have four or eight half lanes;
 `Lane` is an immediate less than four or eight respectively. Invalid lane
-indices do not participate. The widening result has the same binary32 shape
-as `acc`.
+indices are rejected at compile time. The widening result has the same
+binary32 shape as `acc`.
 
-The API requires `Arch.has(arm_feature::fp16fml)` and targets exactly
-`"fp16fml"`. The compiler-prerequisite closure used by runtime admission also
-requires NEON and FP16. A `neon_fp16`, BF16 or FCMA tag alone cannot call these
-operations. Importing a module does not enable instructions or admit hardware.
-Target the caller and check its requirements before entering it:
+The API requires `Arch.has(arm_feature::fp16fml)` and a `"fp16fml"` compiler
+target. Runtime admission includes the compiler prerequisites NEON and FP16.
+The `neon_fp16` preset, BF16 and FCMA do not supply the FHM feature. Compile the
+caller for the matching target and check its requirements before entering it;
+importing the module does neither:
 
 ```cpp
 #include <arm_neon.h>
@@ -72,13 +73,13 @@ barrier also orders surrounding memory-based floating-environment operations;
 it is not a general CPU memory fence. The implementation normalizes Clang's
 big-endian register coercion separately for 64-bit and 128-bit vectors.
 
-`tests/arm_fp16fml` covers headers, the granular module, the main module, actual
-`native::simd` bridges, missing/unobserved features, and invalid lane admission.
+`tests/arm_fp16fml` checks the header, granular and main modules, conversions
+through `native::simd`, missing or unobserved features, and invalid lanes.
 Native execution on Apple M3 with Clang 23 checks all vector and indexed shapes
 against scalar `std::fma`, all four rounding modes, signed zeros, a subnormal
 input, unchanged FPCR, sticky flags, and invalid-operation effects with both
-used and discarded results. The scalar bank assumes the ordinary gradual
-underflow environment; it is not an exhaustive FPCR/NaN/trap qualification.
+used and discarded results. The scalar reference cases assume ordinary gradual
+underflow; they do not exhaust FPCR settings, NaN behavior or hardware traps.
 The assembly checks compile from Armv8-A, verify sixteen instruction forms and
 baseline isolation, and reject a caller missing the target attribute.
 Thirty-two big-endian cross-compiled memory mappings verify input bytes, lane
