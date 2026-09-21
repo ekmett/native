@@ -84,6 +84,25 @@ namespace abi_lookup_test {
   struct partial<A> { static constexpr int index=0; };
   static_assert(partial<extra>::index==0 && partial<avx2>::index==-1);
 
+  // Independent extensions append after the existing public x86 ordinals.
+  static_assert(static_cast<unsigned>(x86_feature::waitpkg)==29);
+  static_assert(static_cast<unsigned>(x86_feature::crc32)==30);
+  static_assert(static_cast<unsigned>(x86_feature::gfni)==31);
+  static_assert(static_cast<unsigned>(x86_feature::avx512vpopcntdq)==32);
+  static_assert(x86_feature_count==33);
+  static_assert([] {
+    isa a=arm_feature::neon;
+    a.crc32=true;
+    a.gfni=true;
+    a.avx512vpopcntdq=true;
+    if(a!=(arm_feature::neon&x86_feature::crc32&x86_feature::gfni&x86_feature::avx512vpopcntdq))
+      return false;
+    a.crc32=false;
+    a.gfni=false;
+    a.avx512vpopcntdq=false;
+    return a==isa(arm_feature::neon);
+  }());
+
   // Architecture-local ordinals must never alias in shared ISA storage.
   static_assert(isa(x86_feature::aes)!=isa(arm_feature::aes));
   static_assert(!(x86_feature::aes<=arm_feature::aes));

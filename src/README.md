@@ -34,7 +34,17 @@ or `native.arm` umbrella. `native.x86.features` and `native.arm.features` retain
 architecture-specific observation APIs; `native.features` adds `observe_cpu()`
 for portable callers. The `native.x86.bmi1`, `native.x86.bmi2`,
 `native.x86.popcnt` and `native.x86.lzcnt` modules expose independently constrained
-integer instructions; their Doxygen groups use the corresponding feature names.
+integer instructions. `native.x86.crc32c` adds scalar Castagnoli updates;
+`native.x86.gfni` adds byte field arithmetic and affine maps;
+`native.x86.vpopcntdq` counts bits in 32- and 64-bit vector lanes. These modules
+belong to `native::minimal`, use raw scalar or intrinsic register types, and keep
+their implementation headers in the global module fragment. Each operation
+constrains `Arch` and carries its own function target attribute. Their Doxygen
+groups use the corresponding feature names.
+`native.arm.dotprod`, `native.arm.rdm`, `native.arm.fp16fml`,
+`native.arm.fcma` and `native.arm.i8mm` follow the same ownership model for
+independent AArch64 instruction families. Their raw-register interfaces use
+`simd::to_native()` and `simd::from_native()` at the SIMD boundary.
 `native.x86.wait` supplies wait operations. The main hub does not re-export
 `native.math`; numerical consumers import it explicitly.
 
