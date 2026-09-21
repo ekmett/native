@@ -98,7 +98,9 @@ namespace abi_lookup_test {
   static_assert(static_cast<unsigned>(x86_feature::avx512bitalg)==38);
   static_assert(static_cast<unsigned>(x86_feature::avx512vbmi)==39);
   static_assert(static_cast<unsigned>(x86_feature::avx512vbmi2)==40);
-  static_assert(x86_feature_count==41);
+  static_assert(static_cast<unsigned>(x86_feature::sha)==41);
+  static_assert(static_cast<unsigned>(x86_feature::vaes)==42);
+  static_assert(x86_feature_count==43);
   static_assert([] {
     isa<x86> a{};
     a.crc32=true;
