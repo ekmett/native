@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-execute_process(COMMAND "${OBJDUMP}" --file-headers "${OBJECT}"
+execute_process(COMMAND "${OBJDUMP}" --section-headers "${OBJECT}"
   RESULT_VARIABLE status OUTPUT_VARIABLE headers ERROR_VARIABLE errors)
 if(NOT status EQUAL 0)
   message(FATAL_ERROR "objdump headers failed: ${errors}")
