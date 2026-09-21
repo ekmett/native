@@ -80,6 +80,11 @@ Selecting each byte by its own mask sign bit would produce `0x12cd`, which
 is outside that set. The independent raw-engine fixture includes this witness
 and randomized cases; canonical zero/all-one masks have one exact result.
 
+On x86, Wasmtime 49.0.0 passes individual lane-selection result checks but
+fails the requirement for one interpretation shared across all lane widths,
+lanes and calls. Its deterministic lane-selection mode passes. Ordinary Node
+and Wasmtime x86 dot checks pass; Wasmtime's deterministic dot mode fails.
+
 The tested toolchain is WASI SDK 34 / Clang 23.1.0. Passing wrapper, constant and
 opcode checks does not establish full engine conformance or agreement across
 other engines or architectures.

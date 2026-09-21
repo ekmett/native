@@ -27,6 +27,7 @@ void check_selection() {
   constexpr auto width = 8 * sizeof(U);
   constexpr auto count = 16 / sizeof(U);
   std::array<U, count> left{}, right{}, mask{}, result{};
+  unsigned width_modes = 3;
   for (unsigned trial = 0; trial < 256; ++trial) {
     for (unsigned i = 0; i < count; ++i) {
       left[i] = U(random_bits());
@@ -74,9 +75,12 @@ void check_selection() {
         }
         ++failures;
       }
+      width_modes &= possible;
       modes &= possible;
     }
   }
+  std::printf("i%zu permitted interpretations: bitselect=%u whole-lane=%u\n",
+    width, width_modes & 1, (width_modes >> 1) & 1);
 }
 
 int main(int argc, char ** argv) {
