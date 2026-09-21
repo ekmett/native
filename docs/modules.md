@@ -155,6 +155,19 @@ modules with one provider each. `native.numerics` owns fp16/bf16 storage and sca
 conversions. `native.x86.features` and `native.x86.wait` are x86-only; `native.arm.features` supplies Arm
 observation. Optional wait functions have their own target requirements.
 
+On AArch64, `native.arm` reexports `native.arm.dotprod`, `native.arm.rdm`,
+`native.arm.fp16fml`, `native.arm.fcma` and `native.arm.i8mm`.
+These modules use raw NEON vector operands and belong to `native::minimal`;
+they do not require the `native.simd` module. Each operation has an explicit
+`isa` template argument and its own compiler target requirement. Importing
+the module does not enable the instruction or perform runtime dispatch.
+Check the corresponding feature with `classify_isa` before entering a
+compatible target scope.
+Use `simd::to_native()` and `simd::from_native()` to cross this raw-register
+boundary. The instruction APIs require their documented operand shapes;
+implicit vector reinterpretation must not turn an invalid lane into a different
+instruction.
+
 ## Extending the element type
 
 `simd_traits<T>` identifies a custom element's raw storage type.

@@ -177,7 +177,7 @@ jobs:
             -DNATIVE_TEST_ISA="${{ matrix.platform.profile }}" \
             '-DNATIVE_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
       - name: Build
-        run: cmake --build build/core --parallel 2
+        run: cmake --build build/core --parallel
       - name: Test
         shell: bash
         run: |
@@ -209,7 +209,7 @@ jobs:
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
             suites+=(cpuid_package profile_package bf16_profile avx512_fp16)
           else
-            suites+=(neon_fp16 neon_bf16)
+            suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm)
           fi
           for suite in "${suites[@]}"; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
@@ -217,7 +217,7 @@ jobs:
               -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/native" \
               -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
               "${extra[@]}"
-            cmake --build "build/$suite" --parallel 2
+            cmake --build "build/$suite" --parallel
             ctest --test-dir "build/$suite" --no-tests=error --output-on-failure \
               --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
           done

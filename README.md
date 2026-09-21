@@ -84,12 +84,17 @@ custom element types and application dispatch.
 | `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
 | `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
 | `native.x86` | x86 feature detection, bit operations and wait utilities |
-| `native.arm` | AArch64 feature detection and admission |
+| `native.arm` | AArch64 feature detection, admission and independently targeted instruction families |
 | `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
 | `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
 | `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
+| `native.arm.dotprod` | [Signed and unsigned byte dot products](docs/arm-dotprod.md) |
+| `native.arm.rdm` | [Rounding, saturating fixed-point multiply-add and multiply-subtract](docs/arm-rdm.md) |
+| `native.arm.fp16fml` | [FP16 products accumulated in FP32](docs/arm-fp16fml.md) |
+| `native.arm.fcma` | [Complex multiply-add and rotated addition](docs/arm-fcma.md) |
+| `native.arm.i8mm` | [I8MM matrix and mixed-sign dot products](docs/arm-i8mm.md) |
 | `native.scalar` | `simd<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `native.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
