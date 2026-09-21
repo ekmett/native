@@ -4,4 +4,5 @@
 
 #if NATIVE_HAS_WASM_SIMD128
 #include "native/simd/wasm_body.h"
+#include "native/simd/wasm_operations_body.h"
 #endif

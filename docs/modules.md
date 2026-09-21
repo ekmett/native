@@ -6,6 +6,10 @@ how ISA requirements connect to compilation and execution. The
 [README example](../README.md) includes a target scope and runtime check; vector
 snippets below belong inside a function compiled for their chosen ISA.
 
+The [WebAssembly backend](wasm-simd.md) provides SIMD128 integer, float and double
+registers with canonical lane masks. Wasm engine admission and separate module
+loading remain application responsibilities.
+
 ## Values and generic algorithms
 
 `native::simd<T,N,A>` takes an element type, a lane count and an `isa<>` value as a
