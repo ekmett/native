@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <array>
 #include <bit>
+#include <concepts>
+#include <utility>
 #include <cstdint>
 #if NATIVE_ARM_CONSTEXPR_HUB
 import native;
 #else
 import native.arm.crc;
 import native.arm.sha;
+import native.arm.pmull;
 #endif
 #include "crc_checks.h"
 constexpr auto sha1=native::isa(native::arm_feature::sha1);
@@ -27,4 +31,5 @@ static_assert(native::sha1h(std::uint32_t{3})==0xc0000000);
 template<class T> concept exact_sha_word = requires(T x) { native::sha1h<native::isa{}>(x); };
 static_assert(!exact_sha_word<std::int32_t> && !exact_sha_word<std::uint16_t>
   && !exact_sha_word<std::uint64_t> && !exact_sha_word<float>);
+#include "pmull_checks.h"
 int main() { return 0; }

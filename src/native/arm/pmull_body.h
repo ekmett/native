@@ -2,23 +2,45 @@
 #pragma once
 
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+namespace native::detail {
+  template<isa Arch>
+  constexpr simd<std::uint64_t,2,Arch> pmull_constant(std::uint64_t a,std::uint64_t b) noexcept {
+    std::uint64_t low=0,high=0;
+    for(unsigned bit=0;bit<64;++bit) if((b>>bit)&1) {
+      low^=a<<bit;
+      if(bit) high^=a>>(64-bit);
+    }
+    return simd<std::uint64_t,2,Arch>(low,high);
+  }
+}
 export namespace native {
   /// \defgroup arm_pmull Polynomial multiplication
   /// Bit i is the coefficient of x^i. Products use XOR, without carry or
-  /// reduction by a modulus. Byte products need NEON; 64-bit products need
-  /// FEAT_PMULL. The latter use the compiler "aes" target, whose full
+  /// reduction by a modulus. Byte products need NEON; runtime 64-bit products
+  /// need FEAT_PMULL. The latter use the compiler "aes" target, whose full
   /// target_features("aes") set must be admitted before entering the leaf.
   /// These integer operations do not read or modify FPCR, FPSR or NZCV.
   /// \{
 
   /// Multiply two degree-at-most-63 polynomials over GF(2), returning all 128 coefficients.
   /// Arch defaults to the owning module's baseline, and is preserved in the result.
+  /// Constant evaluation performs polynomial arithmetic; runtime evaluation uses PMULL.
   template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::pmull))
   native_nodiscard native_inline native_const native_target("aes")
-  simd<std::uint64_t, 2, Arch> pmull(std::uint64_t a, std::uint64_t b) noexcept {
-    auto result = detail::arm_pmull::pmull<Arch>(a, b);
-    return simd<std::uint64_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::uint64_t, 2, Arch>::native_type, (uint64x2_t{
-      static_cast<std::uint64_t>(result), static_cast<std::uint64_t>(result >> 64)})));
+  constexpr simd<std::uint64_t, 2, Arch> pmull(std::uint64_t a, std::uint64_t b) noexcept {
+    if consteval { return detail::pmull_constant<Arch>(a,b); }
+    else {
+      auto result = detail::arm_pmull::pmull<Arch>(a, b);
+      return simd<std::uint64_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::uint64_t, 2, Arch>::native_type, (uint64x2_t{
+        static_cast<std::uint64_t>(result), static_cast<std::uint64_t>(result >> 64)})));
+    }
+  }
+
+  /// Evaluate a 64-bit polynomial product at compile time using an available SIMD storage shape.
+  template<isa Arch=NATIVE_BASELINE>
+    requires(!Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t,2,Arch>); })
+  native_nodiscard consteval simd<std::uint64_t,2,Arch> pmull(std::uint64_t a,std::uint64_t b) noexcept {
+    return detail::pmull_constant<Arch>(a,b);
   }
 
   /// Multiply the high 64-bit polynomial lane of each operand; lower lanes are ignored.

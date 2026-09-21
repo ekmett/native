@@ -2,6 +2,7 @@
 #include <cstdint>
 import native.arm.crc;
 import native.arm.sha;
+import native.arm.pmull;
 #if NATIVE_ARM_CONSTEXPR_REJECT < 8
 std::uint32_t reject(std::uint32_t c,std::uint64_t word) {
 #if NATIVE_ARM_CONSTEXPR_REJECT == 0
@@ -28,6 +29,14 @@ std::uint32_t reject(std::uint32_t x) { return native::sha1h<native::isa{}>(x); 
 std::uint32_t reject(std::uint32_t c,std::uint64_t word) {
   return native::crc32<native::isa(native::arm_feature::crc)>(c,word);
 }
-#else
+#elif NATIVE_ARM_CONSTEXPR_REJECT == 10
 std::uint32_t reject(std::uint32_t x) { return native::sha1h<native::isa(native::arm_feature::sha1)>(x); }
+#endif
+
+#if NATIVE_ARM_CONSTEXPR_REJECT == 11
+auto reject(std::uint64_t a,std::uint64_t b) { return native::pmull<native::neon>(a,b); }
+#elif NATIVE_ARM_CONSTEXPR_REJECT == 12
+auto reject(std::uint64_t a,std::uint64_t b) {
+  return native::pmull<native::feature_closure(native::arm_feature::pmull)>(a,b);
+}
 #endif

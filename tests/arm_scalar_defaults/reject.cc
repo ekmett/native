@@ -12,7 +12,7 @@ void reject(std::uint32_t a,std::uint64_t b) {
 #elif NATIVE_ARM_DEFAULT_REJECT == 2
   (void)native::sha1h(a);
 #elif NATIVE_ARM_DEFAULT_REJECT == 3
-  (void)native::pmull(std::uint64_t{},std::uint64_t{});
+  (void)native::pmull(b,b);
 #elif NATIVE_ARM_DEFAULT_REJECT == 4
   (void)native::crc32c(std::uint32_t{},std::int32_t{});
 #elif NATIVE_ARM_DEFAULT_REJECT == 5

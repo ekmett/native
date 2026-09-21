@@ -61,8 +61,8 @@ static_assert(!default_sha1h<std::int32_t> && !default_sha1h<std::uint16_t>
 
 template<class A, class B> concept default_pmull = requires(A a, B b) { native::pmull(a,b); };
 template<isa Arch, class T> concept explicit_pmull = requires(T x) { native::pmull<Arch>(x,x); };
-static_assert(default_pmull<std::uint64_t,std::uint64_t> == present);
-static_assert(explicit_pmull<pmull,std::uint64_t> && !explicit_pmull<isa(arm_feature::neon),std::uint64_t>);
+static_assert(default_pmull<std::uint64_t,std::uint64_t>);
+static_assert(explicit_pmull<pmull,std::uint64_t> && explicit_pmull<isa(arm_feature::neon),std::uint64_t>);
 static_assert(!default_pmull<std::uint32_t,std::uint64_t>
   && !default_pmull<std::int64_t,std::int64_t> && !explicit_pmull<pmull,std::int64_t>);
 #if NATIVE_ARM_DEFAULT_PRESENT
@@ -92,7 +92,7 @@ __attribute__((target("crc,rdm,aes,sha2"))) consteval bool scoped_contract() {
   return default_crc32<std::uint32_t,std::uint64_t>
     && default_sqrdmlah<std::int32_t,std::int32_t,std::int32_t> == present
     && default_sha1h<std::uint32_t>
-    && default_pmull<std::uint64_t,std::uint64_t> == present;
+    && default_pmull<std::uint64_t,std::uint64_t>;
 }
 static_assert(scoped_contract());
 int main() { return 0; }

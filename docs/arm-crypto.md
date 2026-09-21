@@ -18,8 +18,13 @@ They perform integer operations without changing FPCR, FPSR or NZCV.
 overload permits constant words with an ISA that lacks SHA-1, using the same
 32-bit rotation. Runtime values with that ISA are rejected, even though the
 immediate overload can appear in an unevaluated `requires` expression. Scalar
-width and signedness checks remain exact. Other SHA, AES and polynomial
-operations retain their existing instruction requirements.
+width and signedness checks remain exact. Scalar-input `pmull` likewise evaluates constant operands with or without the
+PMULL feature, provided `simd<std::uint64_t,2,Arch>` is an available storage
+shape. On AArch64 this still requires NEON in `Arch`. Its constant result retains
+the same tag and all 128 polynomial coefficients. An ISA without PMULL gets a
+`consteval` overload, so runtime operands are rejected. Feature-capable runtime
+calls keep the native instruction. Vector-input polynomial forms and other SHA
+and AES operations retain their instruction requirements.
 
 These operations do not implement a cipher mode, key expansion, message padding,
 byte-order conversion or a complete hash. Their input state and prepared round

@@ -24,7 +24,8 @@ compiler's BMI configuration diagnostic. It never disables Clang's compatibility
 checks. Target-attributed scopes in the ordinary consumer also assert that they
 do not change the imported defaults.
 
-CRC and SHA1H now have immediate-only overloads for a baseline without the
+CRC, SHA1H and scalar-input PMULL have immediate-only overloads for a baseline without the
 instruction. Their availability expressions intentionally see those overloads;
 negative fixtures pass runtime parameters to prove there is no runtime fallback.
-RDM and PMULL still require their feature even for constant arguments.
+PMULL also requires an available result storage shape. RDM requires its feature
+even for constant arguments.

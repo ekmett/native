@@ -2,7 +2,7 @@
   "aes_aes_feature": "call to deleted function",
   "aes_aes_shape": "call to deleted function",
   "aes_aes_target": "requires target feature|target specific option mismatch",
-  "pmull_pmull_feature": "call to deleted function",
+  "pmull_pmull_feature": "call to consteval function.*is not a constant expression",
   "pmull_pmull_shape": "call to deleted function",
   "pmull_pmull_target": "requires target feature|target specific option mismatch",
   "pmull_neon_feature": "call to deleted function",

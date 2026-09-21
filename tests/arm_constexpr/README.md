@@ -8,12 +8,17 @@ with and without the instruction. Module and hub consumers additionally check
 omitted-ISA constant calls from a provider built without CRC/SHA. The ordinary
 CRC-header fixture is compiled as C++20 and keeps explicit ISA arguments.
 
-Nine actual failed compilations pass runtime parameters to the immediate-only
-weak overloads. Two more retain proof that an explicit feature tag cannot replace
+Scalar-input PMULL checks all 4096 monomial pairs on both sides of the 64-bit
+lane boundary, a dense known product, zero products, defaulted ISA and result
+tags. Its weak ISA keeps NEON storage while omitting PMULL; a scalar tag without
+the result shape remains unavailable.
+
+Ten actual failed compilations pass runtime parameters to the immediate-only
+weak overloads. Three more retain proof that an explicit feature tag cannot replace
 the compiler target requirement for runtime code. Existing exact-type guards
 remain tested by the family and scalar-default suites.
 
-The scalar-default code-generation suite compares all nine runtime-capable
+The scalar-default code-generation suite compares all ten runtime-capable
 operations against explicit-ISA and native-helper leaves instruction for
 instruction. CRC and crypto family runtime references remain unchanged.
 

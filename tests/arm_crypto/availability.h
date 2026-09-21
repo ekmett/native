@@ -23,7 +23,8 @@ namespace crypto_fixture {
   static_assert(!available_aes_3<native::feature_closure(native::isa{native::arm_feature::aes}), uint8x16_t>);
   template<native::isa A, class T0, class T1> concept available_pmull_0 = requires(T0 a0, T1 a1) { native::pmull<A>(a0, a1); };
   static_assert(available_pmull_0<native::feature_closure(native::isa{native::arm_feature::pmull}), std::uint64_t, std::uint64_t>);
-  static_assert(!available_pmull_0<native::neon, std::uint64_t, std::uint64_t>);
+  static_assert(available_pmull_0<native::neon, std::uint64_t, std::uint64_t>);
+  static_assert(!available_pmull_0<native::scalar, std::uint64_t, std::uint64_t>);
   static_assert(!available_pmull_0<native::feature_closure(native::isa{native::arm_feature::pmull}), double, std::uint64_t>);
   template<native::isa A, class T0, class T1> concept available_pmull_1 = requires(T0 a0, T1 a1) { native::pmull2<A>(a0, a1); };
   static_assert(available_pmull_1<native::feature_closure(native::isa{native::arm_feature::pmull}), native::simd<std::uint64_t, 2, native::feature_closure(native::isa{native::arm_feature::pmull})>, native::simd<std::uint64_t, 2, native::feature_closure(native::isa{native::arm_feature::pmull})>>);
