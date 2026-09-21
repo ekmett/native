@@ -3,16 +3,16 @@
 <!-- SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-C++26 SIMD values and native instructions for x86-64 and AArch64, with a shared
-feature detection and admission API for x86, ARM and WebAssembly.
+C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
+with a shared vocabulary for compiler features and runtime admission.
 
 `simd<T,N,Arch>` keeps the element type, lane count and instruction requirements
 in the type. Omitting `Arch` uses the `native.simd` module's compiler baseline.
 Comparisons produce masks; `wide<V,M>` groups registers into
 independent instruction chains. Operations have no runtime dispatch inside them.
 
-Compile a kernel for the instructions it uses, then check that the CPU and OS
-can execute it before entering. This example loads four floats, computes
+Compile a kernel for the instructions it uses, then admit execution on the
+intended CPU or Wasm engine. This x86/AArch64 example loads four floats, computes
 `2*x + 1`, and replaces negative inputs with zero:
 
 ```cpp
@@ -98,7 +98,7 @@ operations does not strengthen an ordinary caller's compiler target.
 ## Working with values and instructions
 
 Start with [SIMD values, masks and memory](docs/modules.md) for construction,
-short vectors, tails, swizzles and packs. A three-float vector has three logical
+short vectors, tails, swizzles and packs. On x86 and ARM, a three-float vector has three logical
 lanes: its load touches twelve bytes even if its register has room for four.
 `native::mask<V>` names the mask associated with `V`.
 
@@ -118,16 +118,25 @@ requirements and arithmetic contracts remain specific to the instruction.
 Import `native.math` separately for promoted numerical kernels such as
 `math::exp` and `math::sincos`. Their domains and batching behavior are described
 in the [value guide](docs/modules.md#promoted-math-batches). Floating-point
-controls remain under application ownership. The separate FTZ package builds
+controls remain under application ownership. Promoted SIMD math kernels
+currently require x86 or ARM profiles. The separate FTZ package builds
 reproducible binary32 arithmetic on this library's element extension.
+
+The [WebAssembly backend](docs/wasm-simd.md) supplies 128-bit integer, float and
+double vectors through `native.simd`, `native.wasm` and `native`. It includes
+saturating arithmetic, widening and narrowing, conversions, shuffles and memory
+operations. [Relaxed SIMD](docs/wasm-relaxed.md) adds the 20 relaxed operations
+through `native.wasm.relaxed` and the Wasm hubs. Both use typed `simd` operands
+and support constant evaluation; relaxed results can vary between engines.
 
 The [WebAssembly detector](docs/wasm-features.md), available through
 `native.wasm.features`, `native.features` or `native`, describes `simd128` and
 `relaxed_simd` with `isa<wasm>`. It accepts engine observations through a C++
 validation callback or an optional JavaScript adapter. On Wasm compiler targets,
 `NATIVE_BASELINE` records the SIMD features enabled by the compiler separately
-from runtime engine support. Applications compile and load the appropriate Wasm
-bodies; a WebAssembly `simd<>` backend is not yet provided.
+from runtime engine support. Applications compile and load separate modules
+when they need different feature levels: an engine validates the complete
+module, including instructions behind branches that are never taken.
 
 [Compiled examples](tests/api/README.md) exercise the public API. The
 [validation record](docs/validation.md) distinguishes compilation, native

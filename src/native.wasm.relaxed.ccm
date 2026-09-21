@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+
+#include "native/isa_import.h"
+#include "native/wasm/relaxed.h"
+#include "native/wasm/relaxed_constant.h"
+
+export module native.wasm.relaxed;
+export import native.wasm.features;
+export import native.simd;
+
+#include "native/wasm/relaxed_body.h"

@@ -1,7 +1,7 @@
 # WebAssembly feature observations
 
 `import native.wasm.features;` exposes WebAssembly capability observations and
-shared ISA admission without a SIMD implementation or a Wasm SDK dependency.
+shared ISA admission without depending on the SIMD implementation or a Wasm SDK.
 The module is available on every supported host, including native applications
 that embed a WebAssembly engine. `native.features` and `native` also export it.
 The C++20 header `<native/wasm/features.h>` provides the same detector API through
@@ -125,6 +125,7 @@ instructions in an uncalled function or behind a runtime branch does not hide
 them from validation.
 
 Applications own compilation, loading and invocation of their higher-feature
-bodies. This API provides no Wasm `native::simd` specialization or loader policy.
+bodies. This observer API provides no loader policy. The separate
+[`native.simd` WebAssembly backend](wasm-simd.md) supplies SIMD128 vector values.
 Relaxed SIMD admission also does not strengthen numerical semantics: relaxed
 instructions retain their specification-defined sets of allowed results.

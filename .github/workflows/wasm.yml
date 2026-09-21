@@ -1,0 +1,165 @@
+name: WebAssembly modules
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wasm:
+    name: WASI Clang 23 / ${{ matrix.platform.name }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: x86-64
+            runner: ubuntu-24.04
+            sdk: x86_64
+            runtime: x86_64
+            sdk_sha256: b761e3a0721dbae9c09a0059e5fdb2bf917d1b4a8a7b430fb3b5aafb0984b2c4
+            runtime_sha256: a956c279ac6e80109369a285db30fc46f68239fa1bbeb03ccfa8e913bbca85fc
+          - name: ARM64
+            runner: ubuntu-24.04-arm
+            sdk: arm64
+            runtime: aarch64
+            sdk_sha256: f7e243dff54d60bcc576e94d6166b69f410f2500ae4a9ceef34315be10e77971
+            runtime_sha256: 211255e48fcf3107e6ea357b6214938c4f45e29ea1b295398e7ab6b269d51294
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check changed whitespace
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if [[ -n "$BASE_SHA" && "$BASE_SHA" != 0000000000000000000000000000000000000000 ]] &&
+             git cat-file -e "${BASE_SHA}^{commit}"; then
+            git diff --check "$BASE_SHA" HEAD
+          else
+            git diff --check HEAD^ HEAD
+          fi
+      - uses: ./.github/actions/setup/ubuntu/build-tools
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install verified WASI SDK and Wasmtime releases
+        env:
+          SDK_ARCH: ${{ matrix.platform.sdk }}
+          RUNTIME_ARCH: ${{ matrix.platform.runtime }}
+          SDK_SHA256: ${{ matrix.platform.sdk_sha256 }}
+          RUNTIME_SHA256: ${{ matrix.platform.runtime_sha256 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/wasm-tools"
+          cd "$RUNNER_TEMP/wasm-tools"
+          sdk="wasi-sdk-34.0-${SDK_ARCH}-linux"
+          runtime="wasmtime-v49.0.0-${RUNTIME_ARCH}-linux"
+          curl --fail --location --retry 3 -o "$sdk.tar.gz" \
+            "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-34/$sdk.tar.gz"
+          curl --fail --location --retry 3 -o "$runtime.tar.xz" \
+            "https://github.com/bytecodealliance/wasmtime/releases/download/v49.0.0/$runtime.tar.xz"
+          echo "$SDK_SHA256  $sdk.tar.gz" | sha256sum --check -
+          echo "$RUNTIME_SHA256  $runtime.tar.xz" | sha256sum --check -
+          tar -xzf "$sdk.tar.gz"
+          tar -xJf "$runtime.tar.xz"
+          echo "WASI_SDK_PATH=$PWD/$sdk" >> "$GITHUB_ENV"
+          echo "$PWD/$runtime" >> "$GITHUB_PATH"
+      - name: Record host and compiler
+        run: |
+          mkdir -p build
+          {
+            git rev-parse HEAD
+            uname -a
+            lscpu
+            "$WASI_SDK_PATH/bin/clang++" --version
+            "$WASI_SDK_PATH/bin/clang-scan-deps" --version
+            cmake --version
+            node --version
+            wasmtime --version
+          } | tee build/wasm-environment.log
+      - name: Build C++26 module providers and consumers
+        run: |
+          cmake -S . -B build/wasm -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
+            -DCMAKE_BUILD_TYPE=Release -DNATIVE_BUILD_TESTS=ON \
+            -DNATIVE_TEST_ISA=WASM_SIMD128 '-DNATIVE_PROFILES=WASM_SIMD128;WASM_RELAXED_SIMD'
+          cmake --build build/wasm --parallel
+      - name: Test runtime, constant evaluation, codegen and feature boundaries
+        run: |
+          ctest --test-dir build/wasm --show-only=json-v1 > build/wasm-tests.json
+          ctest --test-dir build/wasm -LE engine-conformance --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/wasm-tests.xml"
+      - name: Install and physically relocate the package
+        run: |
+          cmake --install build/wasm --prefix build/install
+          cmake -E rename build/install 'build/relocated wasm package'
+          for suite in wasm_simd wasm_relaxed wasm_boundaries; do
+            cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
+              -DCMAKE_BUILD_TYPE=Release \
+              -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated wasm package/lib/cmake/native" \
+              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+            cmake --build "build/$suite" --parallel
+            ctest --test-dir "build/$suite" -LE engine-conformance --no-tests=error --output-on-failure \
+              --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
+          done
+      - name: Verify defaults from each configured compiler minimum
+        run: |
+          for level in 0 1 2; do
+            flags=''
+            if [[ "$level" == 1 ]]; then flags=-msimd128; fi
+            if [[ "$level" == 2 ]]; then flags=-mrelaxed-simd; fi
+            provider="build/minimum-$level/provider"
+            consumer="build/minimum-$level/consumer"
+            package="build/minimum-$level/relocated package"
+            cmake -S . -B "$provider" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
+              -DCMAKE_BUILD_TYPE=Release -DNATIVE_BUILD_TESTS=OFF \
+              -DNATIVE_PROFILES=WASM_SIMD128 -DNATIVE_TEST_ISA=WASM_SIMD128 \
+              "-DNATIVE_MINIMAL_COMPILE_OPTIONS=$flags"
+            cmake --build "$provider" --parallel
+            cmake --install "$provider" --prefix "build/minimum-$level/install"
+            cmake -E rename "build/minimum-$level/install" "$package"
+            cmake -S tests/wasm_minimum -B "$consumer" -G Ninja \
+              -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
+              -DCMAKE_BUILD_TYPE=Release "-DNATIVE_EXPECTED_WASM_BASELINE=$level" \
+              "-Dnative_DIR=$GITHUB_WORKSPACE/$package/lib/cmake/native" \
+              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF
+            cmake --build "$consumer" --parallel
+            ctest --test-dir "$consumer" --no-tests=error --output-on-failure \
+              --output-junit "$GITHUB_WORKSPACE/build/wasm-minimum-$level-tests.xml"
+          done
+      - name: Check raw engine conformance against the core specification
+        run: |
+          ctest --test-dir build/wasm -L engine-conformance --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/wasm-engine-tests.xml"
+      - name: Retain Wasm artifacts and validation logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wasm-${{ matrix.platform.name }}
+          if-no-files-found: ignore
+          path: |
+            build/wasm-environment.log
+            build/*-tests.json
+            build/*-tests.xml
+            build/wasm/CMakeCache.txt
+            build/wasm/compile_commands.json
+            build/wasm/CMakeFiles/CMakeConfigureLog.yaml
+            build/wasm/tests/wasm_*/**/*.disassembly
+            build/wasm/tests/wasm_*/**/*.log
+            build/wasm/tests/wasm_*/**/*.txt
+            build/wasm/tests/wasm_*/**/*.json
+            build/wasm/tests/wasm_*/native_test*
+            build/wasm/Testing/Temporary/
+            build/wasm_*/Testing/Temporary/
+            build/wasm_boundaries/boundaries/

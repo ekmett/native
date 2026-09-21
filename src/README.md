@@ -40,7 +40,9 @@ interfaces. X86-only observation and wait modules are omitted from ARM builds.
 `native.wasm.features` is independent of the native host architecture.
 Its public `native/wasm/features.h` header owns the pure decoder and validation
 probes; `native/wasm/features.mjs` supplies the optional JavaScript adapter.
-It does not add a Wasm vector backend or application loader.
+The WebAssembly `native.simd` backend and `native.wasm` hub supply SIMD128
+values separately from observation. Applications still own module loading; see
+[the SIMD128 guide](../docs/wasm-simd.md).
 
 ## Native definitions
 

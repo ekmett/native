@@ -13,6 +13,12 @@
 #define NATIVE_HOST_NEON 0
 #endif
 
+#if defined(__wasm__)
+#define NATIVE_HOST_WASM 1
+#else
+#define NATIVE_HOST_WASM 0
+#endif
+
 namespace native {
   /// Instruction-set families; an ISA value belongs to exactly one family.
   enum class architecture { x86, arm, wasm, unknown };

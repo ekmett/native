@@ -3,7 +3,7 @@
 
 
 namespace native {
-#if NATIVE_HAS_AVX2 || NATIVE_HAS_ARM_NEON
+#if NATIVE_HAS_AVX2 || NATIVE_HAS_ARM_NEON || NATIVE_HAS_WASM_SIMD128
   /// Truncate unsigned lanes to half their width and concatenate a then b.
   /// This preserves lane order and low bits; it does not saturate.
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa<> Arch>
@@ -33,7 +33,14 @@ namespace native {
       }
       return result(lanes);
     }
-#if NATIVE_HAS_ARM_NEON
+#if NATIVE_HAS_WASM_SIMD128
+    return [&]<std::size_t... I>(std::index_sequence<I...>) {
+      using V=To __attribute__((ext_vector_type(2*N)));
+      auto first=__builtin_bit_cast(V,a.to_native());
+      auto second=__builtin_bit_cast(V,b.to_native());
+      return result::from_native(__builtin_bit_cast(v128_t,__builtin_shufflevector(first,second,(2*I)...,(2*N+2*I)...)));
+    }(std::make_index_sequence<N>{});
+#elif NATIVE_HAS_ARM_NEON
     if constexpr (sizeof(From) == 8)
       return result::from_native(vreinterpretq_u8_u32(vcombine_u32(
         vmovn_u64(vreinterpretq_u64_u8(a.to_native())),

@@ -5,7 +5,7 @@ Use an instruction family when the algorithm needs a particular operation or
 its exact arithmetic contract: a saturating dot product, a carry-less product,
 a conversion with specified rounding, or a checksum update.
 
-Import the family module directly, or use `native.x86`, `native.arm`, or the
+Import the family module directly, or use `native.x86`, `native.arm`, `native.wasm`, or the
 host's `native` hub. Vector operands and results use `simd<T,N,Arch>`; scalar
 forms use ordinary C++ values. Operations constrain the feature bits in `Arch`
 and require a compatible compiler target. Different ISA values remain different
@@ -18,6 +18,13 @@ all requirements of the containing function before entering it. Importing a
 module does not enable a compiler target or perform runtime dispatch. See
 [the call-boundary example](modules.md#features-compiler-targets-and-runtime-admission)
 and [target-list dispatch](omnibus.md).
+
+On WebAssembly, the engine admits the complete module before execution.
+[SIMD128](wasm-simd.md) supplies the ordinary 128-bit integer and floating
+instruction families. [Relaxed SIMD](wasm-relaxed.md) adds operations whose
+results can depend on the engine and its host. Build separate modules for
+different feature levels; a branch inside a module cannot hide an unsupported
+instruction from validation.
 
 ## Dot products and small matrices
 
