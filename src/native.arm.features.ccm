@@ -34,8 +34,8 @@ export namespace native {
 
   /// \ingroup arm_capabilities
   /// Normalized OS-advertised ARM features; unknown platforms reject.
-  /// Admission reads present/observed. The catalog retains compiler bundles such
-  /// as AES+PMULL, not independent raw architectural extension bits.
+  /// Admission reads present/observed. Crypto capabilities are independent;
+  /// target_features expands compiler bundles before admitting a compiled target.
   struct arm_capabilities {
     /// Features whose queries succeeded and reported support; no compiler closure.
     feature_set<arm_feature> present{};
@@ -62,9 +62,9 @@ export namespace native {
       /// True only after an OS enhanced BF16 feature query succeeds.
       bool ebf16_observed = false;
       /// OS advertises enhanced BF16 behavior, usable when the caller sets FPCR.EBF.
-      /// Informational: NEON_BF16 admission does not require this extension.
+      /// Also exposed as arm_feature::ebf16; NEON_BF16 does not require it.
       bool ebf16 = false;
-      /// Additional source-target queries, retaining the current compiler bundles.
+      /// Additional independent instruction-feature queries.
       /// A feature must occur in both sets; failed queries never authorize it.
       feature_set<arm_feature> extra_observed{}, extra_features{};
     };
@@ -107,11 +107,12 @@ namespace native {
       if(observed) result.raw.extra_observed.set(f,true);
       if(observed && a && b) result.raw.extra_features.set(f,true);
     };
-    // Clang AES includes PMULL, SHA2 includes SHA1/SHA256, and SHA3 includes
-    // SHA512. Query every component rather than assuming one implies another.
-    extra(arm_feature::aes,"hw.optional.arm.FEAT_AES","hw.optional.arm.FEAT_PMULL");
-    extra(arm_feature::sha2,"hw.optional.arm.FEAT_SHA1","hw.optional.arm.FEAT_SHA256");
-    extra(arm_feature::sha3,"hw.optional.arm.FEAT_SHA3","hw.optional.arm.FEAT_SHA512");
+    extra(arm_feature::aes,"hw.optional.arm.FEAT_AES");
+    extra(arm_feature::pmull,"hw.optional.arm.FEAT_PMULL");
+    extra(arm_feature::sha1,"hw.optional.arm.FEAT_SHA1");
+    extra(arm_feature::sha2,"hw.optional.arm.FEAT_SHA256");
+    extra(arm_feature::sha3,"hw.optional.arm.FEAT_SHA3");
+    extra(arm_feature::sha512,"hw.optional.arm.FEAT_SHA512");
     extra(arm_feature::crc,"hw.optional.armv8_crc32");
     extra(arm_feature::lse,"hw.optional.arm.FEAT_LSE");
     extra(arm_feature::rdm,"hw.optional.arm.FEAT_RDM");
@@ -135,8 +136,10 @@ namespace native {
       result.raw.extra_observed.set(f,true);
       if((hwcap&mask)==mask) result.raw.extra_features.set(f,true);
     };
-    extra(arm_feature::aes,HWCAP_AES|HWCAP_PMULL);
-    extra(arm_feature::sha2,HWCAP_SHA1|HWCAP_SHA2);
+    extra(arm_feature::aes,HWCAP_AES);
+    extra(arm_feature::pmull,HWCAP_PMULL);
+    extra(arm_feature::sha1,HWCAP_SHA1);
+    extra(arm_feature::sha2,HWCAP_SHA2);
     extra(arm_feature::crc,HWCAP_CRC32);
     extra(arm_feature::lse,HWCAP_ATOMICS);
 #ifdef HWCAP_ASIMDRDM
@@ -157,8 +160,11 @@ namespace native {
 #ifdef HWCAP_LRCPC
     extra(arm_feature::rcpc,HWCAP_LRCPC);
 #endif
-#if defined(HWCAP_SHA3) && defined(HWCAP_SHA512)
-    extra(arm_feature::sha3,HWCAP_SHA3|HWCAP_SHA512);
+#ifdef HWCAP_SHA3
+    extra(arm_feature::sha3,HWCAP_SHA3);
+#endif
+#ifdef HWCAP_SHA512
+    extra(arm_feature::sha512,HWCAP_SHA512);
 #endif
 #if defined(HWCAP_PACA) && defined(HWCAP_PACG)
     extra(arm_feature::pauth,HWCAP_PACA|HWCAP_PACG);
@@ -195,16 +201,22 @@ namespace native {
       result.raw.extra_observed.set(f,true);
       if(IsProcessorFeaturePresent(selector)) result.raw.extra_features.set(f,true);
     };
-    extra(arm_feature::aes,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
-    extra(arm_feature::sha2,PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
+    // A positive bundle establishes every component. A negative bundle cannot
+    // distinguish absent components from independently available ones.
+    constexpr arm_feature crypto[]{arm_feature::aes,arm_feature::pmull,arm_feature::sha1,arm_feature::sha2};
+    if(IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
+      for(auto feature:crypto) {
+        result.raw.extra_observed.set(feature,true);
+        result.raw.extra_features.set(feature,true);
+      }
     extra(arm_feature::crc,PF_ARM_V8_CRC32_INSTRUCTIONS_AVAILABLE);
     extra(arm_feature::lse,PF_ARM_V81_ATOMIC_INSTRUCTIONS_AVAILABLE);
     extra(arm_feature::dotprod,43); // PF_ARM_V82_DP_INSTRUCTIONS_AVAILABLE
     extra(arm_feature::jsconv,44); // PF_ARM_V83_JSCVT_INSTRUCTIONS_AVAILABLE
     extra(arm_feature::rcpc,45); // PF_ARM_V83_LRCPC_INSTRUCTIONS_AVAILABLE
-    result.raw.extra_observed.set(arm_feature::sha3,true);
-    if(IsProcessorFeaturePresent(64) && IsProcessorFeaturePresent(65))
-      result.raw.extra_features.set(arm_feature::sha3,true); // SHA3 and SHA512
+    extra(arm_feature::sha3,64); // PF_ARM_SHA3_INSTRUCTIONS_AVAILABLE
+    extra(arm_feature::sha512,65); // PF_ARM_SHA512_INSTRUCTIONS_AVAILABLE
+    extra(arm_feature::i8mm,66); // PF_ARM_V82_I8MM_INSTRUCTIONS_AVAILABLE
     // Windows exposes no selectors for the remaining catalog entries here;
     // leave them unobserved, even if a CPU model is usually known to have them.
 #endif

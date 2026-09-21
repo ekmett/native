@@ -19,16 +19,16 @@ namespace native {
     avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq,
     vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16
   };
-  /// ARM instruction features and compiler bundles, using local bit indices.
+  /// Independently observable ARM instruction features, using local bit indices.
   enum class arm_feature : std::uint64_t {
     neon, neon_fp16, neon_bf16, aes, sha2, sha3,
     crc, lse, rdm, fp16fml, dotprod, complxnum,
-    jsconv, rcpc, pauth, i8mm
+    jsconv, rcpc, pauth, i8mm, pmull, sha1, sha512, ebf16
   };
   /// Number of named x86 feature values.
   inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avxvnniint16)+1;
   /// Number of named ARM feature values.
-  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::i8mm)+1;
+  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::ebf16)+1;
 
   namespace detail {
     template<class T> concept instruction_feature=
@@ -260,6 +260,18 @@ namespace native {
     constexpr bool get_avxvnniint16() const noexcept { return get(x86_feature::avxvnniint16); }
     constexpr void set_avxvnniint16(bool value) noexcept { set(x86_feature::avxvnniint16,value); }
     __declspec(property(get=get_avxvnniint16,put=set_avxvnniint16)) bool avxvnniint16;
+    constexpr bool get_arm_pmull() const noexcept { return get(arm_feature::pmull); }
+    constexpr void set_arm_pmull(bool value) noexcept { set(arm_feature::pmull,value); }
+    __declspec(property(get=get_arm_pmull,put=set_arm_pmull)) bool arm_pmull;
+    constexpr bool get_arm_sha1() const noexcept { return get(arm_feature::sha1); }
+    constexpr void set_arm_sha1(bool value) noexcept { set(arm_feature::sha1,value); }
+    __declspec(property(get=get_arm_sha1,put=set_arm_sha1)) bool arm_sha1;
+    constexpr bool get_arm_sha512() const noexcept { return get(arm_feature::sha512); }
+    constexpr void set_arm_sha512(bool value) noexcept { set(arm_feature::sha512,value); }
+    __declspec(property(get=get_arm_sha512,put=set_arm_sha512)) bool arm_sha512;
+    constexpr bool get_arm_ebf16() const noexcept { return get(arm_feature::ebf16); }
+    constexpr void set_arm_ebf16(bool value) noexcept { set(arm_feature::ebf16,value); }
+    __declspec(property(get=get_arm_ebf16,put=set_arm_ebf16)) bool arm_ebf16;
     constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
@@ -364,13 +376,17 @@ namespace native {
       feature_register location;
       unsigned bit;
       std::size_t index;
+      isa target_implies;
+      bool targetable;
       template<instruction_feature E>
       constexpr feature_record(E f,std::string_view spelling,isa implies,
-          feature_register location,unsigned bit) noexcept:
-        value(f),spelling(spelling),implies(implies),location(location),bit(bit),index(std::size_t(f)) {}
+          feature_register location,unsigned bit,isa target_implies={},bool targetable=true) noexcept:
+        value(f),spelling(spelling),implies(implies),location(location),bit(bit),index(std::size_t(f)),
+        target_implies(target_implies),targetable(targetable) {}
     };
-    // Clang target-feature dependencies, not an assertion that one CPU feature
-    // bit alone guarantees another. Admission checks every bit in the closure.
+    // Register and instruction prerequisites. X86 retains compiler feature dependencies.
+    // ARM crypto bits are independent; target_implies records Clang bundles separately.
+    // A hardware-only flag is not necessarily a valid compiler target spelling.
     inline constexpr feature_record feature_registry[] = {
       {x86_feature::mmx,"mmx",{},feature_register::leaf1_edx,23},
       {x86_feature::sse,"sse",isa(x86_feature::mmx),feature_register::leaf1_edx,25},
@@ -413,9 +429,9 @@ namespace native {
       {x86_feature::lzcnt,"lzcnt",{},feature_register::extended1_ecx,5},
       {x86_feature::movbe,"movbe",{},feature_register::leaf1_ecx,22},
       {x86_feature::sahf,"sahf",{},feature_register::extended1_ecx,0},
-      {arm_feature::aes,"aes",isa(arm_feature::neon),feature_register::arm,3},
-      {arm_feature::sha2,"sha2",isa(arm_feature::neon),feature_register::arm,4},
-      {arm_feature::sha3,"sha3",isa(arm_feature::sha2),feature_register::arm,5},
+      {arm_feature::aes,"aes",isa(arm_feature::neon),feature_register::arm,3,isa(arm_feature::pmull)},
+      {arm_feature::sha2,"sha2",isa(arm_feature::neon),feature_register::arm,4,isa(arm_feature::sha1)},
+      {arm_feature::sha3,"sha3",isa(arm_feature::neon),feature_register::arm,5,arm_feature::sha1&arm_feature::sha2&arm_feature::sha512},
       {arm_feature::crc,"crc",isa(arm_feature::neon),feature_register::arm,6},
       {arm_feature::lse,"lse",isa(arm_feature::neon),feature_register::arm,7},
       {arm_feature::rdm,"rdm",isa(arm_feature::neon),feature_register::arm,8},
@@ -425,7 +441,11 @@ namespace native {
       {arm_feature::jsconv,"jsconv",isa(arm_feature::neon),feature_register::arm,12},
       {arm_feature::rcpc,"rcpc",isa(arm_feature::neon),feature_register::arm,13},
       {arm_feature::pauth,"pauth",isa(arm_feature::neon),feature_register::arm,14},
-      {arm_feature::i8mm,"i8mm",isa(arm_feature::neon),feature_register::arm,15}
+      {arm_feature::i8mm,"i8mm",isa(arm_feature::neon),feature_register::arm,15},
+      {arm_feature::pmull,"pmull",isa(arm_feature::neon),feature_register::arm,16,{},false},
+      {arm_feature::sha1,"sha1",isa(arm_feature::neon),feature_register::arm,17,{},false},
+      {arm_feature::sha512,"sha512",isa(arm_feature::neon),feature_register::arm,18,{},false},
+      {arm_feature::ebf16,"ebf16",isa(arm_feature::neon_bf16),feature_register::arm,19,{},false}
     };
     inline constexpr isa arm_features=[] {
       isa result;
@@ -450,7 +470,8 @@ namespace native {
     }();
   }
 
-  /// Explicit compiler-implied closure, shared by presets and admission.
+  /// Add register and instruction prerequisites, shared by presets and admission.
+  /// ARM crypto siblings remain independent; target_features adds compiler bundles.
   constexpr isa feature_closure(isa bits) noexcept {
     isa previous;
     do {
@@ -488,9 +509,9 @@ namespace native {
       auto comma=text.find(',');
       auto token=text.substr(0,comma);
       bool found=false;
-      for(auto const & entry:detail::feature_registry) if(token==entry.spelling &&
+      for(auto const & entry:detail::feature_registry) if(entry.targetable && token==entry.spelling &&
           (entry.spelling!="aes" || (entry.location==detail::feature_register::arm)==arm_target)) {
-        bits=bits&entry.value; found=true; break;
+        bits=bits&entry.value&entry.target_implies; found=true; break;
       }
       if(!found) return detail::invalid_features;
       if(comma==std::string_view::npos) break;
@@ -588,7 +609,11 @@ namespace native {
       result.present.set(arm_feature::neon_fp16,cpu.fp16_observed && cpu.scalar_fp16 && cpu.vector_fp16);
       result.observed.set(arm_feature::neon_bf16,cpu.bf16_observed);
       result.present.set(arm_feature::neon_bf16,cpu.bf16_observed && cpu.bf16);
-      constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16;
+      if constexpr(requires { cpu.ebf16_observed; cpu.ebf16; }) {
+        result.observed.set(arm_feature::ebf16,cpu.ebf16_observed);
+        result.present.set(arm_feature::ebf16,cpu.ebf16_observed && cpu.ebf16);
+      }
+      constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16&arm_feature::ebf16;
       if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
         for(auto const & entry:feature_registry) {
           if(entry.location!=feature_register::arm || baseline.has(entry.value)) continue;

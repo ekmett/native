@@ -6,7 +6,8 @@ import native.arm.features;
 
 namespace {
   constexpr native::arm_feature extras[]{
-    native::arm_feature::aes, native::arm_feature::sha2, native::arm_feature::sha3,
+    native::arm_feature::aes, native::arm_feature::pmull, native::arm_feature::sha1,
+    native::arm_feature::sha2, native::arm_feature::sha3, native::arm_feature::sha512,
     native::arm_feature::crc, native::arm_feature::lse, native::arm_feature::rdm,
     native::arm_feature::fp16fml, native::arm_feature::dotprod,
     native::arm_feature::complxnum, native::arm_feature::jsconv,
@@ -31,6 +32,13 @@ namespace {
     auto cpu=full;
     cpu.fp16_observed=cpu.scalar_fp16=cpu.vector_fp16=false;
     if(!native::classify_isa(cpu,native::neon_bf16).admitted()) return false;
+    cpu=full;
+    cpu.ebf16=true;
+    if(native::classify_isa(cpu,native::arm_feature::ebf16).admitted()) return false;
+    cpu.ebf16_observed=true;
+    if(!native::classify_isa(cpu,native::arm_feature::ebf16).admitted()) return false;
+    cpu.bf16=false;
+    if(native::classify_isa(cpu,native::arm_feature::ebf16).admitted()) return false;
     for(unsigned bit=0;bit!=8;++bit) {
       cpu=full;
       switch(bit) {

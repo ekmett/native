@@ -57,7 +57,7 @@ namespace {
   constexpr auto i8mm=native::isa(native::arm_feature::i8mm);
   static_assert(std::uint64_t(native::arm_feature::pauth)==14);
   static_assert(std::uint64_t(native::arm_feature::i8mm)==15);
-  static_assert(native::arm_feature_count==16);
+  static_assert(native::arm_feature_count==20);
   static_assert(native::feature_closure(i8mm)==(native::neon&i8mm));
   static_assert(native::target_features("i8mm")==native::feature_closure(i8mm));
   static_assert([] {
@@ -68,6 +68,53 @@ namespace {
     features.arm_i8mm=false;
     return !features.arm_i8mm && features==native::isa(native::arm_feature::pauth);
   }());
+  static_assert(std::uint64_t(native::arm_feature::pmull)==16);
+  static_assert(std::uint64_t(native::arm_feature::sha1)==17);
+  static_assert(std::uint64_t(native::arm_feature::sha512)==18);
+  static_assert(std::uint64_t(native::arm_feature::ebf16)==19);
+  constexpr auto aes_bundle=native::neon&native::arm_feature::aes&native::arm_feature::pmull;
+  constexpr auto sha2_bundle=native::neon&native::arm_feature::sha1&native::arm_feature::sha2;
+  constexpr auto sha3_bundle=sha2_bundle&native::arm_feature::sha512&native::arm_feature::sha3;
+  static_assert(native::target_features("neon,aes")==aes_bundle);
+  static_assert(native::target_features("sha2")==sha2_bundle);
+  static_assert(native::target_features("sha3")==sha3_bundle);
+  static_assert([] {
+    constexpr native::arm_feature crypto[]{native::arm_feature::aes,native::arm_feature::pmull,
+      native::arm_feature::sha1,native::arm_feature::sha2,native::arm_feature::sha512,native::arm_feature::sha3};
+    for(auto feature:crypto) {
+      if(native::feature_closure(feature)!=(native::neon&feature)) return false;
+      arm_snapshot cpu;
+      cpu.extra_features=cpu.extra_observed=native::isa(feature);
+      if(!native::classify_isa(cpu,feature).admitted()) return false;
+      // One hardware capability never admits a whole compiler crypto bundle.
+      if(native::classify_isa(cpu,aes_bundle).admitted() ||
+         native::classify_isa(cpu,sha2_bundle).admitted() ||
+         native::classify_isa(cpu,sha3_bundle).admitted()) return false;
+      cpu.extra_observed={};
+      if(native::classify_isa(cpu,feature).admitted()) return false;
+    }
+    // These names describe hardware, but LLVM has no corresponding target switch.
+    constexpr char const * hardware_names[]{"pmull","sha1","sha512","ebf16"};
+    for(auto spelling:hardware_names)
+      if(native::target_features(spelling)<=native::detail::known_features) return false;
+    native::isa properties;
+    properties.arm_pmull=true; properties.arm_sha1=true;
+    properties.arm_sha512=true; properties.arm_ebf16=true;
+    return properties==(native::arm_feature::pmull&native::arm_feature::sha1&
+      native::arm_feature::sha512&native::arm_feature::ebf16);
+  }());
+  static_assert(native::feature_closure(native::arm_feature::ebf16)==
+    (native::neon_bf16&native::arm_feature::ebf16));
+  static_assert(!native::classify_isa(arm_snapshot{},native::arm_feature::ebf16).admitted());
+#ifdef __ARM_FEATURE_AES
+  static_assert(NATIVE_TARGET_MINIMUM.has(aes_bundle));
+#endif
+#ifdef __ARM_FEATURE_SHA2
+  static_assert(NATIVE_TARGET_MINIMUM.has(sha2_bundle));
+#endif
+#ifdef __ARM_FEATURE_SHA3
+  static_assert(NATIVE_TARGET_MINIMUM.has(sha3_bundle));
+#endif
   static_assert(!(native::target_features("avx2,no-fma")<=native::detail::known_features));
   static_assert(!(native::target_features("default")<=native::detail::known_features));
   static_assert(native::target_features("")==native::scalar);

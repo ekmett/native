@@ -243,3 +243,34 @@ Composed kernels whose callees have different lists need a common refinement
 that preserves each callee's first match. Those checks stay internal. See the
 [exp tests](../tests/exp_policy_refinement/README.md) for target, value and codegen
 coverage.
+
+## ARM capabilities and compiler targets
+
+ARM crypto features are reported independently: `aes`, `pmull`, `sha1`,
+`sha2` (SHA-256), `sha512` and `sha3`. For example, observing AES does not
+establish PMULL support. Each feature retains its own `present` and `observed`
+bit; an unavailable query stays unknown. On Windows, a positive legacy crypto
+query establishes AES, PMULL, SHA1 and SHA256 together. A negative result cannot
+identify the missing components, so their individual observations remain unknown.
+
+Compiler target names still describe bundles. `target_features("neon,aes")`
+requires both AES and PMULL; `target_features("sha2")` requires SHA1 and SHA256;
+`target_features("sha3")` also requires SHA512 and SHA3. These sets include NEON.
+The source-target macros retain the same requirements in their admission metadata
+and capture the translation unit's inherited crypto features.
+
+`feature_closure(arm_feature::aes)` only adds its register prerequisite, NEON.
+An instruction wrapper can therefore express an AES requirement independently,
+while the caller checks the full target used to compile its function. Check the
+compiler target's set before entering that function, even if its current body
+uses only one instruction from the bundle. Hardware-only names such as `pmull`,
+`sha1`, `sha512` and `ebf16` are rejected as target strings: LLVM does not provide
+matching standalone target switches.
+
+`ebf16` reports enhanced BF16 arithmetic support separately from `neon_bf16`.
+It does not set FPCR.EBF or otherwise change floating-point state. Ordinary BF16
+admission does not require it; requesting enhanced BF16 also requires BF16.
+
+The mappings follow [LLVM's AArch64 feature definitions](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/AArch64/AArch64Features.td),
+[ARM64 OS capabilities](https://docs.kernel.org/arch/arm64/elf_hwcaps.html), and
+[Windows processor-feature queries](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-isprocessorfeaturepresent).
