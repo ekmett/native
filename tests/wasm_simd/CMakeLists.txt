@@ -34,3 +34,11 @@ add_test(NAME native.wasm.simd.clients COMMAND "${NATIVE_WASM_NODE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_simd_clients>)
 set_tests_properties(native.wasm.simd.clients PROPERTIES
   SKIP_RETURN_CODE 77 LABELS "wasm;modules;simd128;wide")
+
+add_executable(native_test_wasm_simd_api api.cc)
+target_link_libraries(native_test_wasm_simd_api PRIVATE native::native)
+set_target_properties(native_test_wasm_simd_api PROPERTIES CXX_SCAN_FOR_MODULES ON)
+add_test(NAME native.wasm.simd.api COMMAND "${NATIVE_WASM_NODE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_simd_api>)
+set_tests_properties(native.wasm.simd.api PROPERTIES
+  SKIP_RETURN_CODE 77 LABELS "wasm;modules;simd128;api")

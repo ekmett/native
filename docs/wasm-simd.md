@@ -41,6 +41,11 @@ Shift counts are reduced modulo the lane width, including immediate counts.
 `shuffle` takes exactly one output register's lane indices from two concatenated
 inputs. Byte `swizzle` produces zero for every index above 15.
 
+Integer broadcasts and scalar arithmetic, bitwise and comparison operands accept
+the fixed-width integer element types. Conversion retains the low lane-width
+bits; floating, Boolean, enum and user-converted scalar inputs do not participate.
+Integer lane constructors apply the same conversion to each argument.
+
 Saturating arithmetic and rounded averaging operate on byte and halfword lanes.
 `narrow_sat<To>` consumes signed source lanes, including when the destination
 is unsigned; `narrow_concat<To>` truncates unsigned lanes instead. Widening
