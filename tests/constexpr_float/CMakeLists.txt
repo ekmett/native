@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+add_executable(native_constexpr_float main.cc)
+target_link_libraries(native_constexpr_float PRIVATE native::headers)
+target_compile_features(native_constexpr_float PRIVATE cxx_std_20)
+if(MSVC)
+  target_compile_options(native_constexpr_float PRIVATE /fp:strict)
+else()
+  target_compile_options(native_constexpr_float PRIVATE -ffp-model=strict)
+endif()
+add_test(NAME native.constexpr_float COMMAND native_constexpr_float)
