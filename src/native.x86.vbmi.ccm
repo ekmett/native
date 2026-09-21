@@ -6,4 +6,1365 @@ module;
 export module native.x86.vbmi;
 export import native.x86.features;
 export import native.simd;
-#include "native/x86/vbmi_body.h"
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  /** \defgroup x86_vbmi AVX512VBMI
+   * Byte permutations across whole vectors and circular qword bit windows.
+   * Runtime targets require AVX512F, AVX512BW and AVX512VBMI; 128/256-bit forms
+   * also require AVX512VL. Admit CPU features and OS ZMM state before entry.
+   * Single-table indices use log2(lanes) bits; two-table indices use one more.
+   * VPERMI2B merges inactive index lanes; VPERMT2B merges inactive first-table
+   * lanes. Multishift selects eight wrapping bits from the corresponding qword.
+   * Constant evaluation uses exact integer semantics. Weaker tags are accepted
+   * only at compile time and still require complete SIMD storage.
+   * \{ */
+
+  /// Permute bytes across the whole vector using the low index bits.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> vpermb(
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::vpermb<Arch>(
+          indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain source.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> mask_vpermb(
+    simd<std::uint8_t, 16, Arch> source,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 16, Arch>{}, source, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermb<Arch>(
+          source.to_native(), mask.to_bitset(), indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> maskz_vpermb(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermb<Arch>(
+          mask.to_bitset(), indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Permute bytes from two tables; the table index spans both complete vectors.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> vpermt2b(
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::vpermt2b<Arch>(
+          a.to_native(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain the first table a.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 16, Arch> a,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, a, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermt2b<Arch>(
+          a.to_native(), mask.to_bitset(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> maskz_vpermt2b(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermt2b<Arch>(
+          mask.to_bitset(), a.to_native(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Permute bytes from two tables with the index vector as the tied destination.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> vpermi2b(
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::vpermi2b<Arch>(
+          indices.to_native(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain the index vector.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 16, Arch> indices,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, indices, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermi2b<Arch>(
+          indices.to_native(), mask.to_bitset(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> maskz_vpermi2b(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermi2b<Arch>(
+          mask.to_bitset(), indices.to_native(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Select eight wrapping bits per control byte from its corresponding source qword.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::vpmultishiftqb<Arch>(
+          control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain source.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 16, Arch> source,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, source, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::mask_vpmultishiftqb<Arch>(
+          source.to_native(), mask.to_bitset(), control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 16, Arch> maskz_vpmultishiftqb(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpmultishiftqb<Arch>(
+          mask.to_bitset(), control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Permute bytes across the whole vector using the low index bits.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> vpermb(
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::vpermb<Arch>(
+          indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain source.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> mask_vpermb(
+    simd<std::uint8_t, 32, Arch> source,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 32, Arch>{}, source, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermb<Arch>(
+          source.to_native(), mask.to_bitset(), indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> maskz_vpermb(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermb<Arch>(
+          mask.to_bitset(), indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Permute bytes from two tables; the table index spans both complete vectors.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> vpermt2b(
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::vpermt2b<Arch>(
+          a.to_native(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain the first table a.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 32, Arch> a,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, a, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermt2b<Arch>(
+          a.to_native(), mask.to_bitset(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> maskz_vpermt2b(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermt2b<Arch>(
+          mask.to_bitset(), a.to_native(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Permute bytes from two tables with the index vector as the tied destination.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> vpermi2b(
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::vpermi2b<Arch>(
+          indices.to_native(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain the index vector.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 32, Arch> indices,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, indices, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermi2b<Arch>(
+          indices.to_native(), mask.to_bitset(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> maskz_vpermi2b(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermi2b<Arch>(
+          mask.to_bitset(), indices.to_native(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Select eight wrapping bits per control byte from its corresponding source qword.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::vpmultishiftqb<Arch>(
+          control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain source.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 32, Arch> source,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, source, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::mask_vpmultishiftqb<Arch>(
+          source.to_native(), mask.to_bitset(), control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  constexpr simd<std::uint8_t, 32, Arch> maskz_vpmultishiftqb(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpmultishiftqb<Arch>(
+          mask.to_bitset(), control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Permute bytes across the whole vector using the low index bits.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> vpermb(
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::vpermb<Arch>(
+          indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain source.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> mask_vpermb(
+    simd<std::uint8_t, 64, Arch> source,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 64, Arch>{}, source, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermb<Arch>(
+          source.to_native(), mask.to_bitset(), indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> maskz_vpermb(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<false>(
+        indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermb<Arch>(
+          mask.to_bitset(), indices.to_native(), value.to_native()));
+    }
+  }
+
+  /// Permute bytes from two tables; the table index spans both complete vectors.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> vpermt2b(
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::vpermt2b<Arch>(
+          a.to_native(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain the first table a.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 64, Arch> a,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, a, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermt2b<Arch>(
+          a.to_native(), mask.to_bitset(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> maskz_vpermt2b(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermt2b<Arch>(
+          mask.to_bitset(), a.to_native(), indices.to_native(), b.to_native()));
+    }
+  }
+
+  /// Permute bytes from two tables with the index vector as the tied destination.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> vpermi2b(
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::vpermi2b<Arch>(
+          indices.to_native(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain the index vector.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 64, Arch> indices,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, indices, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::mask_vpermi2b<Arch>(
+          indices.to_native(), mask.to_bitset(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> maskz_vpermi2b(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::permute<true>(
+        indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpermi2b<Arch>(
+          mask.to_bitset(), indices.to_native(), a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Select eight wrapping bits per control byte from its corresponding source qword.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::vpmultishiftqb<Arch>(
+          control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes retain source.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 64, Arch> source,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, source, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::mask_vpmultishiftqb<Arch>(
+          source.to_native(), mask.to_bitset(), control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Inactive destination bytes become zero.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi))
+  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  constexpr simd<std::uint8_t, 64, Arch> maskz_vpmultishiftqb(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    if consteval {
+      return detail::x86_vbmi_constant::multishift(
+        control, value, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vbmi::maskz_vpmultishiftqb<Arch>(
+          mask.to_bitset(), control.to_native(), value.to_native()));
+    }
+  }
+
+  /// Evaluate vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vpermb(
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpermb(
+    simd<std::uint8_t, 16, Arch> source,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 16, Arch>{}, source, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpermb(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vpermt2b(
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 16, Arch> a,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, a, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpermt2b(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vpermi2b(
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 16, Arch> indices,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, indices, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpermi2b(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 16, Arch> source,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, source, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpmultishiftqb(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vpermb(
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpermb(
+    simd<std::uint8_t, 32, Arch> source,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 32, Arch>{}, source, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpermb(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vpermt2b(
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 32, Arch> a,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, a, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpermt2b(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vpermi2b(
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 32, Arch> indices,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, indices, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpermi2b(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 32, Arch> source,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, source, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpmultishiftqb(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vpermb(
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpermb(
+    simd<std::uint8_t, 64, Arch> source,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 64, Arch>{}, source, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpermb(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vpermt2b(
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 64, Arch> a,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, a, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermt2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpermt2b(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vpermi2b(
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 64, Arch> indices,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, indices, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpermi2b at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpermi2b(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Evaluate vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate mask_vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 64, Arch> source,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, source, mask.to_bitset());
+  }
+
+  /// Evaluate maskz_vpmultishiftqb at compile time when its register storage is available.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpmultishiftqb(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void vpermb(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void mask_vpermb(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void maskz_vpermb(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void vpermt2b(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void mask_vpermt2b(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void maskz_vpermt2b(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void vpermi2b(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void mask_vpermi2b(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void maskz_vpermi2b(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void vpmultishiftqb(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void mask_vpmultishiftqb(Args...) = delete;
+
+  /// Reject unsupported signatures, including implicit raw-register conversions.
+  template<isa<x86> Arch, class... Args>
+  void maskz_vpmultishiftqb(Args...) = delete;
+
+  /// \}
+}
+#endif

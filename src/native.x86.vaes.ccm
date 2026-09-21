@@ -9,4 +9,287 @@ export module native.x86.vaes;
 export import native.x86.features;
 export import native.simd;
 
-#include "native/x86/vaes_body.h"
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  /// \defgroup x86_vaes Vector AES rounds
+  /// Independent 128-bit AES states in register order. The 128-bit VEX forms
+  /// require AES and AVX; the 256-bit forms require VAES and AVX; the 512-bit
+  /// forms require VAES and AVX512F. There are no instruction writemasks.
+  /// Arch records requirements; callers separately enable and admit the target.
+  /// Constant evaluation computes exact AES results. Missing-feature forms are
+  /// consteval-only and require complete SIMD storage for the selected width.
+  /// \{
+
+  /// One AES encryption round.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,aes")
+  constexpr simd<std::uint8_t, 16, Arch> vaesenc(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<false, false>(state, key);
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vaes::vaesenc<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vaesenc(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, false>(state, key);
+  }
+
+  /// Two independent AES encryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,vaes")
+  constexpr simd<std::uint8_t, 32, Arch> vaesenc(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<false, false>(state, key);
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vaes::vaesenc<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vaesenc(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, false>(state, key);
+  }
+
+  /// Four independent AES encryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f))
+  native_nodiscard native_inline native_const native_target("avx512f,vaes")
+  constexpr simd<std::uint8_t, 64, Arch> vaesenc(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<false, false>(state, key);
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vaes::vaesenc<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vaesenc(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, false>(state, key);
+  }
+
+  /// Reject raw registers, mixed tags and unsupported vector shapes.
+  template<isa<x86> Arch, class... Args>
+  void vaesenc(Args...) = delete;
+
+  /// One final AES encryption round.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,aes")
+  constexpr simd<std::uint8_t, 16, Arch> vaesenclast(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<false, true>(state, key);
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vaes::vaesenclast<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vaesenclast(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, true>(state, key);
+  }
+
+  /// Two independent final AES encryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,vaes")
+  constexpr simd<std::uint8_t, 32, Arch> vaesenclast(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<false, true>(state, key);
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vaes::vaesenclast<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vaesenclast(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, true>(state, key);
+  }
+
+  /// Four independent final AES encryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f))
+  native_nodiscard native_inline native_const native_target("avx512f,vaes")
+  constexpr simd<std::uint8_t, 64, Arch> vaesenclast(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<false, true>(state, key);
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vaes::vaesenclast<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vaesenclast(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, true>(state, key);
+  }
+
+  /// Reject raw registers, mixed tags and unsupported vector shapes.
+  template<isa<x86> Arch, class... Args>
+  void vaesenclast(Args...) = delete;
+
+  /// One AES decryption round.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,aes")
+  constexpr simd<std::uint8_t, 16, Arch> vaesdec(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<true, false>(state, key);
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vaes::vaesdec<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vaesdec(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, false>(state, key);
+  }
+
+  /// Two independent AES decryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,vaes")
+  constexpr simd<std::uint8_t, 32, Arch> vaesdec(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<true, false>(state, key);
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vaes::vaesdec<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vaesdec(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, false>(state, key);
+  }
+
+  /// Four independent AES decryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f))
+  native_nodiscard native_inline native_const native_target("avx512f,vaes")
+  constexpr simd<std::uint8_t, 64, Arch> vaesdec(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<true, false>(state, key);
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vaes::vaesdec<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vaesdec(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, false>(state, key);
+  }
+
+  /// Reject raw registers, mixed tags and unsupported vector shapes.
+  template<isa<x86> Arch, class... Args>
+  void vaesdec(Args...) = delete;
+
+  /// One final AES decryption round.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,aes")
+  constexpr simd<std::uint8_t, 16, Arch> vaesdeclast(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<true, true>(state, key);
+    } else {
+      return simd<std::uint8_t, 16, Arch>::from_native(
+        detail::x86_vaes::vaesdeclast<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 16, Arch> vaesdeclast(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, true>(state, key);
+  }
+
+  /// Two independent final AES decryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("avx,vaes")
+  constexpr simd<std::uint8_t, 32, Arch> vaesdeclast(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<true, true>(state, key);
+    } else {
+      return simd<std::uint8_t, 32, Arch>::from_native(
+        detail::x86_vaes::vaesdeclast<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 32, Arch> vaesdeclast(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, true>(state, key);
+  }
+
+  /// Four independent final AES decryption rounds.
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f))
+  native_nodiscard native_inline native_const native_target("avx512f,vaes")
+  constexpr simd<std::uint8_t, 64, Arch> vaesdeclast(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    if consteval {
+      return detail::x86_vaes_constant::round<true, true>(state, key);
+    } else {
+      return simd<std::uint8_t, 64, Arch>::from_native(
+        detail::x86_vaes::vaesdeclast<Arch>(state.to_native(), key.to_native()));
+    }
+  }
+
+  /// Evaluate constant operands without the instruction features.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+  native_nodiscard consteval simd<std::uint8_t, 64, Arch> vaesdeclast(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, true>(state, key);
+  }
+
+  /// Reject raw registers, mixed tags and unsupported vector shapes.
+  template<isa<x86> Arch, class... Args>
+  void vaesdeclast(Args...) = delete;
+
+  /// \}
+}
+#endif
