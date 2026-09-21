@@ -147,4 +147,92 @@ static_assert([] {
 }());
 #endif
 #endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__x86_64__) || defined(_M_X64)
+template<class T,std::size_t N> consteval bool integer_arithmetic() {
+  using V=native::simd<T,N,arithmetic_arch>;
+  using U=std::make_unsigned_t<T>;
+  V a(std::numeric_limits<T>::max()), b(1);
+  std::array<T,N> result{};
+  (a+b).store(result.data());
+  for(auto x:result) if(std::bit_cast<U>(x)!=U(U(std::numeric_limits<T>::max())+U(1))) return false;
+  (V(19)*V(23)).store(result.data());
+  for(auto x:result) if(std::bit_cast<U>(x)!=U(19*23)) return false;
+  if(!all((a&b)==b) || !all(V(3)<V(7))) return false;
+  (V(16)>>native::imm<2>).store(result.data());
+  for(auto x:result) if(x!=4) return false;
+  auto m=V::mask_type::from_bitset(5);
+  if(m.to_bitset()!=(5&((std::uint64_t(1)<<N)-1))) return false;
+  if(!all(m|~m) || !none(m&~m)) return false;
+  std::array<T,N> source{}; for(std::size_t i=0;i<N;++i) source[i]=T(i+1);
+  for(std::size_t n=0;n<=N;++n) {
+    auto value=V::load_partial(n?source.data():nullptr,n,T(42));
+    value.store(result.data());
+    for(std::size_t i=0;i<N;++i) if(result[i]!=(i<n?source[i]:T(42))) return false;
+    result.fill(T(99)); value.store_partial(n?result.data():nullptr,n);
+    for(std::size_t i=0;i<N;++i) if(result[i]!=(i<n?source[i]:T(99))) return false;
+  }
+  return true;
+}
+static_assert(integer_arithmetic<std::int8_t,16>() && integer_arithmetic<std::uint8_t,16>());
+static_assert(integer_arithmetic<std::int16_t,8>() && integer_arithmetic<std::uint16_t,8>());
+static_assert(integer_arithmetic<std::int32_t,4>() && integer_arithmetic<std::uint32_t,4>());
+static_assert(integer_arithmetic<std::int64_t,2>() && integer_arithmetic<std::uint64_t,2>());
+static_assert(integer_arithmetic<std::int32_t,2>() && integer_arithmetic<std::uint32_t,3>());
+
+template<std::size_t N> consteval bool float_storage() {
+  using V=native::simd<float,N,arithmetic_arch>;
+  std::array<std::uint32_t,N> words{};
+  for(std::size_t i=0;i<N;++i) words[i]=0x7f800001u+std::uint32_t(i);
+  std::array<std::uint32_t,N> result{};
+  V::from_native(V::load_bits(words.data()).to_native()).store_bits(result.data());
+  if(words!=result) return false;
+  std::array<float,N> values{}; for(std::size_t i=0;i<N;++i) values[i]=float(i+1);
+  std::array<float,N> actual{};
+  V(values).store(actual.data()); if(actual!=values) return false;
+  V(3.f).store(actual.data()); for(auto x:actual) if(x!=3.f) return false;
+  for(std::size_t n=0;n<=N;++n) {
+    auto value=V::load_partial(n?values.data():nullptr,n,7.f);
+    value.store(actual.data());
+    for(std::size_t i=0;i<N;++i) if(actual[i]!=(i<n?values[i]:7.f)) return false;
+    actual.fill(99.f); value.store_partial(n?actual.data():nullptr,n);
+    for(std::size_t i=0;i<N;++i) if(actual[i]!=(i<n?values[i]:99.f)) return false;
+  }
+  return true;
+}
+static_assert(float_storage<1>() && float_storage<2>() && float_storage<3>() && float_storage<4>());
+
+#if !NATIVE_CONSTEXPR_HEADERS
+template<class T,std::size_t N,native::isa<> A> consteval bool half_storage() {
+  using V=native::simd<T,N,A>;
+  std::array<std::uint16_t,N> words{};
+  for(std::size_t i=0;i<N;++i) words[i]=std::uint16_t(0x7c01u+i);
+  std::array<std::uint16_t,N> result{};
+  V::from_native(V::load_bits(words.data()).to_native()).store_bits(result.data());
+  if(result!=words) return false;
+  std::array<T,N> values{}; for(std::size_t i=0;i<N;++i) values[i]=T::from_bits(words[i]);
+  V(values).store_bits(result.data()); if(result!=words) return false;
+  V::load_bits(words.data()).store(values.data());
+  for(std::size_t i=0;i<N;++i) if(values[i].to_bits()!=words[i]) return false;
+  for(std::size_t n=0;n<=N;++n) {
+    auto value=V::load_partial(n?values.data():nullptr,n,T::from_bits(0x8000));
+    value.store_bits(result.data());
+    for(std::size_t i=0;i<N;++i) if(result[i]!=(i<n?words[i]:0x8000)) return false;
+    std::array<T,N> output{}; value.store_partial(n?output.data():nullptr,n);
+    for(std::size_t i=0;i<N;++i) if(output[i].to_bits()!=(i<n?words[i]:0)) return false;
+  }
+  return true;
+}
+#if defined(__aarch64__) || defined(_M_ARM64)
+static_assert(half_storage<native::fp16,8,native::neon_fp16>());
+static_assert(half_storage<native::bf16,8,native::neon_bf16>());
+#else
+static_assert(float_storage<8>());
+static_assert(half_storage<native::fp16,8,native::avx512_fp16>());
+static_assert(half_storage<native::fp16,32,native::avx512_fp16>());
+static_assert(half_storage<native::bf16,8,native::avx512_bf16>());
+static_assert(half_storage<native::bf16,32,native::avx512_bf16>());
+#endif
+#endif
+#endif
 int main() {}
