@@ -53,7 +53,10 @@ ctest --test-dir build-vaes-installed --output-on-failure
 
 Supply the same Clang toolchain and platform settings as the package build.
 The installed fixture runs six tests: metadata, direct-module and hub runtime
-entries, their baseline disassemblies, and the admission disassembly. Private
+entries, their baseline disassemblies, and disassembly of the same admission object linked into the metadata executable.
+That executable checks runtime positive and negative inputs through the inspected
+classifier helper. Object symbols remain available on Windows, where the linked
+executable does not retain their names. Private
 raw-helper boundaries and source-tree codegen pairs are source-only tests.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
