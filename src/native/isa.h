@@ -16,7 +16,7 @@ namespace native {
     sse42, popcnt, avx, avx2, fma, f16c,
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
-    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg
+    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32
   };
   /// ARM instruction features and compiler bundles, using local bit indices.
   enum class arm_feature : std::uint64_t {
@@ -25,7 +25,7 @@ namespace native {
     jsconv, rcpc, pauth
   };
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::waitpkg)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::crc32)+1;
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::pauth)+1;
 
@@ -235,6 +235,9 @@ namespace native {
     constexpr bool get_waitpkg() const noexcept { return get(x86_feature::waitpkg); }
     constexpr void set_waitpkg(bool value) noexcept { set(x86_feature::waitpkg,value); }
     __declspec(property(get=get_waitpkg,put=set_waitpkg)) bool waitpkg;
+    constexpr bool get_crc32() const noexcept { return get(x86_feature::crc32); }
+    constexpr void set_crc32(bool value) noexcept { set(x86_feature::crc32,value); }
+    __declspec(property(get=get_crc32,put=set_crc32)) bool crc32;
     constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
@@ -350,7 +353,7 @@ namespace native {
       {x86_feature::sse3,"sse3",isa(x86_feature::sse2),feature_register::leaf1_ecx,0},
       {x86_feature::ssse3,"ssse3",isa(x86_feature::sse3),feature_register::leaf1_ecx,9},
       {x86_feature::sse41,"sse4.1",isa(x86_feature::ssse3),feature_register::leaf1_ecx,19},
-      {x86_feature::sse42,"sse4.2",x86_feature::sse41&x86_feature::popcnt,feature_register::leaf1_ecx,20},
+      {x86_feature::sse42,"sse4.2",x86_feature::sse41&x86_feature::popcnt&x86_feature::crc32,feature_register::leaf1_ecx,20},
       {x86_feature::popcnt,"popcnt",{},feature_register::leaf1_ecx,23},
       {x86_feature::avx,"avx",isa(x86_feature::sse42),feature_register::leaf1_ecx,28},
       {x86_feature::avx2,"avx2",isa(x86_feature::avx),feature_register::leaf7_ebx,5},
@@ -360,6 +363,7 @@ namespace native {
       {x86_feature::bmi2,"bmi2",{},feature_register::leaf7_ebx,8},
       {x86_feature::mwaitx,"mwaitx",{},feature_register::extended1_ecx,29},
       {x86_feature::waitpkg,"waitpkg",{},feature_register::leaf7_ecx,5},
+      {x86_feature::crc32,"crc32",{},feature_register::leaf1_ecx,20},
       {x86_feature::avx512f,"avx512f",x86_feature::avx2&x86_feature::f16c&x86_feature::fma,feature_register::leaf7_ebx,16},
       {x86_feature::avx512dq,"avx512dq",isa(x86_feature::avx512f),feature_register::leaf7_ebx,17},
       {x86_feature::avx512bw,"avx512bw",isa(x86_feature::avx512f),feature_register::leaf7_ebx,30},
