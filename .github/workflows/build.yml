@@ -207,7 +207,7 @@ jobs:
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
           suites=(public_headers omnibus api half_storage source_targets native_cutover)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c)
+            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_gfni)
           else
             suites+=(neon_fp16 neon_bf16)
           fi
