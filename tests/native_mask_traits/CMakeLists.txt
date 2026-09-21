@@ -20,3 +20,16 @@ foreach(suite IN ITEMS header import types scalar mixed)
   set_tests_properties(native.mask_traits.${suite} PROPERTIES
     LABELS "host;modules;baseline;mask_traits")
 endforeach()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+  add_executable(native_test_compact_mask_baseline compact_baseline.cc)
+  target_link_libraries(native_test_compact_mask_baseline PRIVATE native::native)
+  set_target_properties(native_test_compact_mask_baseline PROPERTIES
+    CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(COMMAND native_link_clang_cl_asan)
+    native_link_clang_cl_asan(native_test_compact_mask_baseline)
+  endif()
+  add_test(NAME native.mask_traits.compact_baseline COMMAND native_test_compact_mask_baseline)
+  set_tests_properties(native.mask_traits.compact_baseline PROPERTIES
+    LABELS "host;modules;baseline;mask_traits;x86")
+endif()
