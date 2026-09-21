@@ -83,7 +83,8 @@ target_compile_definitions(native_minimal PRIVATE
 target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
   FILES native.isa.ccm native.scalar.ccm native.wide.ccm native.static_string.ccm
-    native.memory.ccm native.types.ccm native.numerics.ccm native.features.ccm)
+    native.memory.ccm native.types.ccm native.numerics.ccm native.features.ccm
+    native.wasm.features.ccm)
 
 # Architecture utilities are independent of every SIMD profile.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")

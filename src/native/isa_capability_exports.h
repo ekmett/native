@@ -5,8 +5,10 @@
 export namespace native {
   using ::native::x86_feature;
   using ::native::arm_feature;
+  using ::native::wasm_feature;
   using ::native::x86_feature_count;
   using ::native::arm_feature_count;
+  using ::native::wasm_feature_count;
   using ::native::feature_closure;
   using ::native::isa;
   using ::native::feature_set;

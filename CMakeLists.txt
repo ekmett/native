@@ -54,7 +54,7 @@ target_compile_options(native_headers INTERFACE
 target_sources(native_headers INTERFACE
   FILE_SET headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src"
   FILES src/native/config.h src/native/attributes.h src/native/isa.h src/native/targets.h
-    src/native/mask_traits.h)
+    src/native/mask_traits.h src/native/wasm/features.h)
 target_include_directories(native_headers INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
@@ -119,6 +119,7 @@ if(NATIVE_BUILD_HOST AND NATIVE_BUILD_TESTS)
     add_subdirectory(tests/arm_crc)
     add_subdirectory(tests/arm_crypto)
   endif()
+  add_subdirectory(tests/wasm_features)
   add_subdirectory(tests/abi_lookup)
   add_subdirectory(tests/wide_construction)
   add_subdirectory(tests/exp_policy_refinement)
@@ -131,7 +132,8 @@ endif()
 configure_file(etc/cmake/nativeProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/nativeProfile.cmake" COPYONLY)
 configure_package_config_file(etc/cmake/nativeConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/nativeConfig.cmake"
-  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native"
+  PATH_VARS CMAKE_INSTALL_DATADIR)
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/nativeConfigVersion.cmake"
   VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/nativeProfile.cmake"
@@ -140,3 +142,6 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/nativeProfile.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
 
 install(FILES LICENSE.md DESTINATION "${CMAKE_INSTALL_DATADIR}/native")
+
+install(FILES src/native/wasm/features.mjs
+  DESTINATION "${CMAKE_INSTALL_DATADIR}/native/wasm")

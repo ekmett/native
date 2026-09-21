@@ -101,3 +101,8 @@ New implementation code uses the standard library, including `std::forward_like`
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
 `native.arm.crc` provides the scalar CRC32 and CRC32C instruction updates.
+
+`native.wasm.features` is independent of the host architecture. Its public
+`native/wasm/features.h` header owns the pure decoder and validation-probe data;
+`native/wasm/features.mjs` supplies the optional JavaScript validation adapter.
+The [detector guide](../docs/wasm-features.md) describes observation and admission.

@@ -3,9 +3,15 @@
 #include <native/isa.h>
 #include <native/mask_traits.h>
 #include <native/targets.h>
+#include <native/wasm/features.h>
 
 static_assert(std::is_same_v<native::mask<float const&>, bool>);
 static_assert(std::is_same_v<native::mask<std::array<float, 3>>, std::array<bool, 3>>);
+
+constexpr auto wasm=native::decode_wasm_capabilities({true,true,true,false});
+static_assert(native::classify_isa(wasm,native::wasm_feature::simd128).admitted());
+static_assert(!native::classify_isa(wasm,native::wasm_feature::relaxed_simd).admitted());
+static_assert(native::wasm_feature_probe(native::wasm_feature::simd128).size()==43);
 
 static_assert(NATIVE_TARGET_ISA(avx2) == native::avx2);
 static_assert(NATIVE_TARGET_ISA(neon) == native::neon);

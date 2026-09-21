@@ -25,6 +25,10 @@ namespace native {
     crc, lse, rdm, fp16fml, dotprod, complxnum,
     jsconv, rcpc, pauth, i8mm, pmull, sha1, sha512, ebf16
   };
+  /// WebAssembly validation capabilities, using local bit indices.
+  enum class wasm_feature : std::uint64_t { simd128, relaxed_simd };
+  /// Number of named Wasm feature values.
+  inline constexpr std::size_t wasm_feature_count=std::size_t(wasm_feature::relaxed_simd)+1;
   /// Number of named x86 feature values.
   inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avxvnniint16)+1;
   /// Number of named ARM feature values.
@@ -32,21 +36,24 @@ namespace native {
 
   namespace detail {
     template<class T> concept instruction_feature=
-      std::same_as<T,x86_feature> || std::same_as<T,arm_feature>;
+      std::same_as<T,x86_feature> || std::same_as<T,arm_feature> || std::same_as<T,wasm_feature>;
     template<instruction_feature E> inline constexpr std::size_t feature_count=
-      std::same_as<E,x86_feature> ? x86_feature_count : arm_feature_count;
-    inline constexpr std::size_t invalid_feature_index=x86_feature_count+arm_feature_count;
+      std::same_as<E,x86_feature> ? x86_feature_count :
+      std::same_as<E,arm_feature> ? arm_feature_count : wasm_feature_count;
+    inline constexpr std::size_t invalid_feature_index=x86_feature_count+arm_feature_count+wasm_feature_count;
     constexpr std::size_t feature_index(instruction_feature auto f) noexcept {
       auto i=std::uint64_t(f);
       if constexpr(std::same_as<decltype(f),x86_feature>)
         return i<x86_feature_count ? std::size_t(i) : invalid_feature_index;
-      else
+      else if constexpr(std::same_as<decltype(f),arm_feature>)
         return i<arm_feature_count ? x86_feature_count+std::size_t(i) : invalid_feature_index;
+      else
+        return i<wasm_feature_count ? x86_feature_count+arm_feature_count+std::size_t(i) : invalid_feature_index;
     }
   }
 
   /// A structural set of one architecture's features, without prerequisite closure.
-  /// E must be x86_feature or arm_feature; the other family's values are rejected.
+  /// E is x86_feature, arm_feature or wasm_feature; other families are rejected.
   template<detail::instruction_feature E> struct feature_set {
     /// Local feature bits and a private invalid marker; not a serialized ABI.
     std::array<std::uint64_t,(detail::feature_count<E>+1+63)/64> flags{};
@@ -91,12 +98,12 @@ namespace native {
 
   /// A structural instruction-feature set. Construction never adds prerequisites.
   /// Each registered feature has a mutable Boolean property, e.g. a.avx2.
-  /// ARM extras retain their arm_ prefix to distinguish the two architectures.
+  /// ARM extras retain their arm_ prefix to distinguish the architecture families.
   /// Properties read and update flags through their
   /// accessors; they occupy no additional storage. See docs/abi-lookup.md for
   /// feature conjunction, property assignment and subset selection.
   struct isa {
-    /// Shared bit storage for both architectures and a private invalid marker.
+    /// Shared bit storage for all architecture families and a private invalid marker.
     /// This representation is structural, not a persistent serialization format.
     std::array<std::uint64_t,(detail::invalid_feature_index+1+63)/64> flags{};
 
@@ -311,10 +318,17 @@ namespace native {
     constexpr bool get_arm_i8mm() const noexcept { return get(arm_feature::i8mm); }
     constexpr void set_arm_i8mm(bool value) noexcept { set(arm_feature::i8mm,value); }
     __declspec(property(get=get_arm_i8mm,put=set_arm_i8mm)) bool arm_i8mm;
+    constexpr bool get_wasm_simd128() const noexcept { return get(wasm_feature::simd128); }
+    constexpr void set_wasm_simd128(bool value) noexcept { set(wasm_feature::simd128,value); }
+    __declspec(property(get=get_wasm_simd128,put=set_wasm_simd128)) bool wasm_simd128;
+    constexpr bool get_wasm_relaxed_simd() const noexcept { return get(wasm_feature::relaxed_simd); }
+    constexpr void set_wasm_relaxed_simd(bool value) noexcept { set(wasm_feature::relaxed_simd,value); }
+    __declspec(property(get=get_wasm_relaxed_simd,put=set_wasm_relaxed_simd)) bool wasm_relaxed_simd;
   };
 
   template<class T> concept arch=detail::instruction_feature<T> || std::same_as<T,isa> ||
-    std::same_as<T,feature_set<x86_feature>> || std::same_as<T,feature_set<arm_feature>>;
+    std::same_as<T,feature_set<x86_feature>> || std::same_as<T,feature_set<arm_feature>> ||
+    std::same_as<T,feature_set<wasm_feature>>;
 
   /// Requirements compose by union: both operands must be available.
   constexpr isa operator&(arch auto left,arch auto right) noexcept {
@@ -368,12 +382,17 @@ namespace native {
       for(std::size_t i=0;i<a.flags.size();++i) a.flags[i]&=b.flags[i];
       return a;
     }
-    enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, leaf7_1_edx, extended1_ecx, arm };
+    enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, leaf7_1_edx, extended1_ecx, arm, wasm };
+    enum class feature_family { x86, arm, wasm };
+    template<instruction_feature E> inline constexpr feature_family family_of=
+      std::same_as<E,x86_feature> ? feature_family::x86 :
+      std::same_as<E,arm_feature> ? feature_family::arm : feature_family::wasm;
     struct feature_record {
       isa value;
       std::string_view spelling;
       isa implies;
       feature_register location;
+      feature_family family;
       unsigned bit;
       std::size_t index;
       isa target_implies;
@@ -381,7 +400,7 @@ namespace native {
       template<instruction_feature E>
       constexpr feature_record(E f,std::string_view spelling,isa implies,
           feature_register location,unsigned bit,isa target_implies={},bool targetable=true) noexcept:
-        value(f),spelling(spelling),implies(implies),location(location),bit(bit),index(std::size_t(f)),
+        value(f),spelling(spelling),implies(implies),location(location),family(family_of<E>),bit(bit),index(std::size_t(f)),
         target_implies(target_implies),targetable(targetable) {}
     };
     // Register and instruction prerequisites. X86 retains compiler feature dependencies.
@@ -445,27 +464,27 @@ namespace native {
       {arm_feature::pmull,"pmull",isa(arm_feature::neon),feature_register::arm,16,{},false},
       {arm_feature::sha1,"sha1",isa(arm_feature::neon),feature_register::arm,17,{},false},
       {arm_feature::sha512,"sha512",isa(arm_feature::neon),feature_register::arm,18,{},false},
-      {arm_feature::ebf16,"ebf16",isa(arm_feature::neon_bf16),feature_register::arm,19,{},false}
+      {arm_feature::ebf16,"ebf16",isa(arm_feature::neon_bf16),feature_register::arm,19,{},false},
+      {wasm_feature::simd128,"simd128",{},feature_register::wasm,0},
+      {wasm_feature::relaxed_simd,"relaxed-simd",isa(wasm_feature::simd128),feature_register::wasm,1}
     };
-    inline constexpr isa arm_features=[] {
+    template<instruction_feature E> inline constexpr isa family_features=[] {
       isa result;
       for(auto const & entry:feature_registry)
-        if(entry.location==feature_register::arm) result=result&entry.value;
+        if(entry.family==family_of<E>) result=result&entry.value;
       return result;
     }();
-    inline constexpr isa x86_features=[] {
-      isa result;
-      for(auto const & entry:feature_registry)
-        if(entry.location!=feature_register::arm) result=result&entry.value;
-      return result;
-    }();
-    inline constexpr isa known_features=arm_features&x86_features;
+    inline constexpr isa arm_features=family_features<arm_feature>;
+    inline constexpr isa x86_features=family_features<x86_feature>;
+    inline constexpr isa wasm_features=family_features<wasm_feature>;
+    inline constexpr isa known_features=arm_features&x86_features&wasm_features;
     inline constexpr isa invalid_features=static_cast<x86_feature>(-1);
     // A shared value keeps repeated source constraints equivalent across
     // declarations; an immediately invoked macro lambda would not.
     template<isa A> inline constexpr isa source_isa=[]() consteval {
       static_assert(A<=known_features,"source target contains an unregistered ISA feature");
-      static_assert(A<=x86_features || A<=arm_features,"source target combines x86 and ARM features");
+      static_assert(A<=x86_features || A<=arm_features || A<=wasm_features,
+        "source target combines features from different architecture families");
       return A;
     }();
   }
@@ -510,7 +529,7 @@ namespace native {
       auto token=text.substr(0,comma);
       bool found=false;
       for(auto const & entry:detail::feature_registry) if(entry.targetable && token==entry.spelling &&
-          (entry.spelling!="aes" || (entry.location==detail::feature_register::arm)==arm_target)) {
+          (entry.spelling!="aes" || (entry.family==detail::feature_family::arm)==arm_target)) {
         bits=bits&entry.value&entry.target_implies; found=true; break;
       }
       if(!found) return detail::invalid_features;
@@ -592,7 +611,7 @@ namespace native {
               observed=cpu.max_extended_leaf>=0x80000001u; word=cpu.extended1_ecx;
             }
             break;
-          case feature_register::arm: continue;
+          case feature_register::arm: case feature_register::wasm: continue;
         }
         auto f=static_cast<x86_feature>(entry.index);
         result.observed.set(f,observed);
@@ -616,7 +635,7 @@ namespace native {
       constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16&arm_feature::ebf16;
       if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
         for(auto const & entry:feature_registry) {
-          if(entry.location!=feature_register::arm || baseline.has(entry.value)) continue;
+          if(entry.family!=feature_family::arm || baseline.has(entry.value)) continue;
           auto f=static_cast<arm_feature>(entry.index);
           auto observed=cpu.extra_observed.has(f);
           result.observed.set(f,observed);
@@ -627,7 +646,7 @@ namespace native {
     template<instruction_feature E>
     constexpr isa_admission classify_features(feature_set<E> present,feature_set<E> observed,isa bits) noexcept {
       isa_admission result;
-      auto known=std::same_as<E,x86_feature> ? x86_features : arm_features;
+      auto known=family_features<E>;
       result.invalid_features=!present.valid() || !observed.valid() || !(bits<=known);
       auto available=intersection(isa(present),isa(observed));
       result.missing_features=intersection(bits,known);
@@ -660,6 +679,13 @@ namespace native {
   template<class C> requires detail::normalized_features<C,arm_feature>
   constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
     return detail::classify_features(cpu.present,cpu.observed,feature_closure(requested&minimum));
+  }
+
+  /// Classify normalized Wasm observations. Relaxed SIMD also requires SIMD128.
+  /// Unknown observations reject; raw diagnostics and compiler flags are not read.
+  template<class C> requires detail::normalized_features<C,wasm_feature>
+  constexpr isa_admission classify_isa(C const & runtime,isa requested,isa minimum={}) noexcept {
+    return detail::classify_features(runtime.present,runtime.observed,feature_closure(requested&minimum));
   }
 
   /// Decode a structural raw x86 snapshot before applying the same admission rules.

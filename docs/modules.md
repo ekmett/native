@@ -6,7 +6,9 @@ uses; compiler target scopes let it emit those instructions; runtime capability
 checks determine whether the machine can execute them. The
 [source target-list guide](omnibus.md) puts these pieces together.
 Import `native.math` separately for numerical kernels that work on scalars,
-vectors and batches.
+vectors and batches. The [WebAssembly detector](wasm-features.md) is available
+through `native.wasm.features` on every host; it observes engine capabilities
+without adding a SIMD implementation.
 
 ## Identity and generic algorithms
 

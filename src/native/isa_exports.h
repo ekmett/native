@@ -14,4 +14,5 @@ export namespace native::detail {
   using ::native::detail::known_features;
   using ::native::detail::x86_features;
   using ::native::detail::arm_features;
+  using ::native::detail::wasm_features;
 }

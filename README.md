@@ -96,6 +96,7 @@ custom element types and application dispatch.
 | `native.x86.vnni` | [VNNI integer dot products](docs/x86-vnni.md), including saturation, EVEX masks and INT8/INT16 signedness extensions |
 | `native.arm.crc` | [CRC32 and CRC32C updates](docs/arm-crc.md) for unsigned 8-, 16-, 32- and 64-bit operands |
 | `native.arm.aes`, `native.arm.pmull`, `native.arm.sha` | [AES rounds, polynomial products and SHA instruction helpers](docs/arm-crypto.md) |
+| `native.wasm.features` | [WebAssembly SIMD128 and relaxed-SIMD runtime observations](docs/wasm-features.md), pure decoding and admission |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
 | `native.arm.dotprod` | [Signed and unsigned byte dot products](docs/arm-dotprod.md) |
 | `native.arm.rdm` | [Rounding, saturating fixed-point multiply-add and multiply-subtract](docs/arm-rdm.md) |
