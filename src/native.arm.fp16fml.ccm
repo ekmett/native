@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/fp16fml.h"
+export module native.arm.fp16fml;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_fp16fml
+  /// \{
+  using ::native::fmlal;
+  using ::native::fmlal2;
+  using ::native::fmlsl;
+  using ::native::fmlsl2;
+  using ::native::fmlal_lane;
+  using ::native::fmlal2_lane;
+  using ::native::fmlsl_lane;
+  using ::native::fmlsl2_lane;
+  /// \}
+}
