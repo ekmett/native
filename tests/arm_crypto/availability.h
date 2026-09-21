@@ -57,7 +57,8 @@ namespace crypto_fixture {
   static_assert(!available_sha_2<native::feature_closure(native::isa{native::arm_feature::sha1}), uint32x4_t, std::uint32_t, uint32x4_t>);
   template<native::isa A, class T0> concept available_sha_3 = requires(T0 a0) { native::sha1h<A>(a0); };
   static_assert(available_sha_3<native::feature_closure(native::isa{native::arm_feature::sha1}), std::uint32_t>);
-  static_assert(!available_sha_3<native::neon, std::uint32_t>);
+  // The weak overload is immediate-only; an actual runtime rejection is tested separately.
+  static_assert(available_sha_3<native::neon, std::uint32_t>);
   static_assert(!available_sha_3<native::feature_closure(native::isa{native::arm_feature::sha1}), double>);
   template<native::isa A, class T0, class T1, class T2> concept available_sha_4 = requires(T0 a0, T1 a1, T2 a2) { native::sha1su0<A>(a0, a1, a2); };
   static_assert(available_sha_4<native::feature_closure(native::isa{native::arm_feature::sha1}), native::simd<std::uint32_t, 4, native::feature_closure(native::isa{native::arm_feature::sha1})>, native::simd<std::uint32_t, 4, native::feature_closure(native::isa{native::arm_feature::sha1})>, native::simd<std::uint32_t, 4, native::feature_closure(native::isa{native::arm_feature::sha1})>>);

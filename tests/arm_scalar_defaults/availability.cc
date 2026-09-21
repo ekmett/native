@@ -16,13 +16,15 @@ constexpr auto sha1 = native::feature_closure(arm_feature::sha1);
 constexpr auto provider = native::target_features("neon,crc,aes,sha2,rdm");
 constexpr bool present = NATIVE_ARM_DEFAULT_PRESENT;
 
+// Immediate-only weak overloads participate in unevaluated requires expressions.
+// reject.cc proves that nonconstant inputs still cannot use them at runtime.
 #define CRC_CONTRACT(name) \
   template<class A, class B> concept default_##name = requires(A a, B b) { native::name(a,b); }; \
   template<isa Arch, class A, class B> concept explicit_##name = requires(A a, B b) { native::name<Arch>(a,b); }; \
   template<class T> consteval bool name##_contract() { \
-    return default_##name<std::uint32_t,T> == present \
+    return default_##name<std::uint32_t,T> \
       && explicit_##name<crc,std::uint32_t,T> \
-      && !explicit_##name<isa(arm_feature::neon),std::uint32_t,T>; \
+      && explicit_##name<isa(arm_feature::neon),std::uint32_t,T>; \
   } \
   static_assert(name##_contract<std::uint8_t>() && name##_contract<std::uint16_t>() \
     && name##_contract<std::uint32_t>() && name##_contract<std::uint64_t>()); \
@@ -52,8 +54,8 @@ RDM_CONTRACT(sqrdmlsh)
 
 template<class T> concept default_sha1h = requires(T x) { native::sha1h(x); };
 template<isa Arch, class T> concept explicit_sha1h = requires(T x) { native::sha1h<Arch>(x); };
-static_assert(default_sha1h<std::uint32_t> == present);
-static_assert(explicit_sha1h<sha1,std::uint32_t> && !explicit_sha1h<isa(arm_feature::neon),std::uint32_t>);
+static_assert(default_sha1h<std::uint32_t>);
+static_assert(explicit_sha1h<sha1,std::uint32_t> && explicit_sha1h<isa(arm_feature::neon),std::uint32_t>);
 static_assert(!default_sha1h<std::int32_t> && !default_sha1h<std::uint16_t>
   && !default_sha1h<std::uint64_t> && !explicit_sha1h<sha1,std::int32_t>);
 
@@ -87,9 +89,9 @@ template<class V> concept valid_lane = requires(V v) { native::sqrdmlah_lane<rdm
 static_assert(!valid_lane<rdm_words>);
 // Function targets enable instructions, but do not replace module defaults.
 __attribute__((target("crc,rdm,aes,sha2"))) consteval bool scoped_contract() {
-  return default_crc32<std::uint32_t,std::uint64_t> == present
+  return default_crc32<std::uint32_t,std::uint64_t>
     && default_sqrdmlah<std::int32_t,std::int32_t,std::int32_t> == present
-    && default_sha1h<std::uint32_t> == present
+    && default_sha1h<std::uint32_t>
     && default_pmull<std::uint64_t,std::uint64_t> == present;
 }
 static_assert(scoped_contract());

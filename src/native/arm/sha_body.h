@@ -41,9 +41,15 @@ export namespace native {
   /// Rotate a SHA-1 state word right by two bits; Arch defaults to the module baseline.
   template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::sha1))
   native_nodiscard native_inline native_const native_target("sha2")
-  std::uint32_t sha1h(std::uint32_t a) noexcept {
-    auto result = detail::arm_sha::sha1h<Arch>(a);
-    return result;
+  constexpr std::uint32_t sha1h(std::uint32_t a) noexcept {
+    if consteval { return (a>>2)|(a<<30); }
+    else { return detail::arm_sha::sha1h<Arch>(a); }
+  }
+
+  /// Evaluate the SHA-1 rotation at compile time without requiring SHA instructions.
+  template<isa Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::sha1))
+  native_nodiscard consteval std::uint32_t sha1h(std::uint32_t a) noexcept {
+    return (a>>2)|(a<<30);
   }
 
   /// Compute the first part of the SHA-1 schedule update for four consecutive words.

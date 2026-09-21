@@ -6,12 +6,25 @@ for the IEEE polynomial and `crc32c` for the Castagnoli polynomial. Both return
 an unsigned 32-bit accumulator and require `arm_feature::crc`.
 
 Imported scalar calls may omit `Arch`, as in `crc32c(crc, word)`. The default
-is captured from `NATIVE_BASELINE` when `native.arm.crc` is compiled, and the call
-participates only if that baseline contains CRC. A target scope in the importing
+is captured from `NATIVE_BASELINE` when `native.arm.crc` is compiled. Runtime
+inputs require CRC in that baseline. A target scope in the importing
 file does not change the captured default; use an explicit ISA as below for an
 optional instruction leaf. Standalone `native/arm/crc.h` calls keep explicit ISA
 arguments so different translation-unit flags cannot give the same declaration
 different defaults.
+
+Both polynomial families support constant evaluation at every operand width.
+With a CRC-capable ISA, the `constexpr` overload computes constants in the
+compiler and retains the CRC instruction for runtime inputs. Without CRC, a
+separate `consteval` overload accepts only constant inputs: it supplies no runtime
+software fallback. A `requires` expression can see this immediate overload;
+an actual call with a runtime value is rejected. Exact unsigned operand types
+are required in both cases. Ordinary headers retain C++20 compatibility.
+
+```cpp
+static_assert(native::crc32<native::isa{}>(
+  std::uint32_t{0}, std::uint8_t{1}) == 0x77073096);
+```
 
 Each update consumes the operand's bits from least to most significant. The
 reflected polynomials are `0xedb88320` and `0x82f63b78` respectively. The functions

@@ -7,11 +7,19 @@ feature tag throughout each operation. Scalar SHA-1 and polynomial operands
 use C++ integer types. Each module reexports `native.simd`.
 The scalar `sha1h(word)` and scalar-input `pmull(a,b)` forms may omit `Arch`.
 Their defaults are captured from `NATIVE_BASELINE` by the owning module, and
-remain constrained by SHA-1 or PMULL respectively. The polynomial result keeps
+retain their respective runtime SHA-1 and PMULL requirements. The polynomial result keeps
 that exact default tag in `simd<std::uint64_t,2,Arch>`. An importing target scope
 does not change a module's default; optional instruction leaves can still give
 an explicit ISA. Vector arguments continue to deduce their own `Arch`.
 They perform integer operations without changing FPCR, FPSR or NZCV.
+
+`sha1h` also supports constant evaluation. Its feature-capable overload is
+`constexpr` and still emits SHA1H for runtime input. A separate `consteval`
+overload permits constant words with an ISA that lacks SHA-1, using the same
+32-bit rotation. Runtime values with that ISA are rejected, even though the
+immediate overload can appear in an unevaluated `requires` expression. Scalar
+width and signedness checks remain exact. Other SHA, AES and polynomial
+operations retain their existing instruction requirements.
 
 These operations do not implement a cipher mode, key expansion, message padding,
 byte-order conversion or a complete hash. Their input state and prepared round

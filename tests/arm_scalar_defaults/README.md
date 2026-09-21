@@ -23,3 +23,8 @@ A changed importer must either retain the provider's default ISA or fail with th
 compiler's BMI configuration diagnostic. It never disables Clang's compatibility
 checks. Target-attributed scopes in the ordinary consumer also assert that they
 do not change the imported defaults.
+
+CRC and SHA1H now have immediate-only overloads for a baseline without the
+instruction. Their availability expressions intentionally see those overloads;
+negative fixtures pass runtime parameters to prove there is no runtime fallback.
+RDM and PMULL still require their feature even for constant arguments.

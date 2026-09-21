@@ -72,10 +72,15 @@ foreach(kind RANGE 0 7)
     arm_scalar_baseline(${target} 1)
   endif()
   target_compile_definitions(${target} PRIVATE NATIVE_ARM_DEFAULT_REJECT=${kind})
+  if(kind EQUAL 0 OR kind EQUAL 2)
+    set(diagnostic "call to consteval function.*is not a constant expression")
+  else()
+    set(diagnostic "deleted function|no matching function")
+  endif()
   add_test(NAME native.arm.scalar_defaults.reject_${kind} COMMAND "${Python3_EXECUTABLE}"
     "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py" --cmake "${CMAKE_COMMAND}"
     --build "${CMAKE_BINARY_DIR}" --target "${target}" --config "$<CONFIG>"
-    --diagnostic "deleted function|no matching function"
+    --diagnostic "${diagnostic}"
     --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-$<CONFIG>.log")
   set_tests_properties(native.arm.scalar_defaults.reject_${kind} PROPERTIES
     RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;arm;modules;negative")

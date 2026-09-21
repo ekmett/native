@@ -4,13 +4,13 @@ import native.arm.crc;
 import native.arm.rdm;
 import native.arm.pmull;
 import native.arm.sha;
-void reject() {
+void reject(std::uint32_t a,std::uint64_t b) {
 #if NATIVE_ARM_DEFAULT_REJECT == 0
-  (void)native::crc32(std::uint32_t{},std::uint64_t{});
+  (void)native::crc32(a,b);
 #elif NATIVE_ARM_DEFAULT_REJECT == 1
   (void)native::sqrdmlah(std::int16_t{},std::int16_t{},std::int16_t{});
 #elif NATIVE_ARM_DEFAULT_REJECT == 2
-  (void)native::sha1h(std::uint32_t{});
+  (void)native::sha1h(a);
 #elif NATIVE_ARM_DEFAULT_REJECT == 3
   (void)native::pmull(std::uint64_t{},std::uint64_t{});
 #elif NATIVE_ARM_DEFAULT_REJECT == 4
