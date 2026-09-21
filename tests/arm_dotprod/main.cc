@@ -69,58 +69,60 @@ std::array<T, N> sample(std::uint64_t & state, unsigned iteration, unsigned oper
   }
   return result;
 }
+// Immediate-only overloads participate in requires expressions. Separate
+// negative compilations prove missing-feature runtime operands are rejected.
 static_assert(has_sdot<requirements, int32x2_t, int8x8_t>);
 static_assert(has_sdot<native::isa<native::arm>(native::arm_feature::dotprod), int32x2_t, int8x8_t>);
 static_assert(!has_sdot<native::scalar, int32x2_t, int8x8_t>);
-static_assert(!has_sdot<native::neon, int32x2_t, int8x8_t>);
-static_assert(!has_sdot<native::isa<native::arm>(native::arm_feature::rdm), int32x2_t, int8x8_t>);
+static_assert(has_sdot<native::neon, int32x2_t, int8x8_t>);
+static_assert(has_sdot<native::isa<native::arm>(native::arm_feature::rdm), int32x2_t, int8x8_t>);
 static_assert(has_sdot_lane<requirements, 1, int32x2_t, int8x8_t, int8x8_t>);
 static_assert(!has_sdot_lane<requirements, -1, int32x2_t, int8x8_t, int8x8_t>);
 static_assert(!has_sdot_lane<requirements, 2, int32x2_t, int8x8_t, int8x8_t>);
-static_assert(!has_sdot_lane<native::neon, 0, int32x2_t, int8x8_t, int8x8_t>);
+static_assert(has_sdot_lane<native::neon, 0, int32x2_t, int8x8_t, int8x8_t>);
 static_assert(has_sdot_lane<requirements, 3, int32x2_t, int8x8_t, int8x16_t>);
 static_assert(!has_sdot_lane<requirements, -1, int32x2_t, int8x8_t, int8x16_t>);
 static_assert(!has_sdot_lane<requirements, 4, int32x2_t, int8x8_t, int8x16_t>);
-static_assert(!has_sdot_lane<native::neon, 0, int32x2_t, int8x8_t, int8x16_t>);
+static_assert(has_sdot_lane<native::neon, 0, int32x2_t, int8x8_t, int8x16_t>);
 static_assert(has_sdot<requirements, int32x4_t, int8x16_t>);
 static_assert(has_sdot<native::isa<native::arm>(native::arm_feature::dotprod), int32x4_t, int8x16_t>);
 static_assert(!has_sdot<native::scalar, int32x4_t, int8x16_t>);
-static_assert(!has_sdot<native::neon, int32x4_t, int8x16_t>);
-static_assert(!has_sdot<native::isa<native::arm>(native::arm_feature::rdm), int32x4_t, int8x16_t>);
+static_assert(has_sdot<native::neon, int32x4_t, int8x16_t>);
+static_assert(has_sdot<native::isa<native::arm>(native::arm_feature::rdm), int32x4_t, int8x16_t>);
 static_assert(has_sdot_lane<requirements, 1, int32x4_t, int8x16_t, int8x8_t>);
 static_assert(!has_sdot_lane<requirements, -1, int32x4_t, int8x16_t, int8x8_t>);
 static_assert(!has_sdot_lane<requirements, 2, int32x4_t, int8x16_t, int8x8_t>);
-static_assert(!has_sdot_lane<native::neon, 0, int32x4_t, int8x16_t, int8x8_t>);
+static_assert(has_sdot_lane<native::neon, 0, int32x4_t, int8x16_t, int8x8_t>);
 static_assert(has_sdot_lane<requirements, 3, int32x4_t, int8x16_t, int8x16_t>);
 static_assert(!has_sdot_lane<requirements, -1, int32x4_t, int8x16_t, int8x16_t>);
 static_assert(!has_sdot_lane<requirements, 4, int32x4_t, int8x16_t, int8x16_t>);
-static_assert(!has_sdot_lane<native::neon, 0, int32x4_t, int8x16_t, int8x16_t>);
+static_assert(has_sdot_lane<native::neon, 0, int32x4_t, int8x16_t, int8x16_t>);
 static_assert(has_udot<requirements, uint32x2_t, uint8x8_t>);
 static_assert(has_udot<native::isa<native::arm>(native::arm_feature::dotprod), uint32x2_t, uint8x8_t>);
 static_assert(!has_udot<native::scalar, uint32x2_t, uint8x8_t>);
-static_assert(!has_udot<native::neon, uint32x2_t, uint8x8_t>);
-static_assert(!has_udot<native::isa<native::arm>(native::arm_feature::rdm), uint32x2_t, uint8x8_t>);
+static_assert(has_udot<native::neon, uint32x2_t, uint8x8_t>);
+static_assert(has_udot<native::isa<native::arm>(native::arm_feature::rdm), uint32x2_t, uint8x8_t>);
 static_assert(has_udot_lane<requirements, 1, uint32x2_t, uint8x8_t, uint8x8_t>);
 static_assert(!has_udot_lane<requirements, -1, uint32x2_t, uint8x8_t, uint8x8_t>);
 static_assert(!has_udot_lane<requirements, 2, uint32x2_t, uint8x8_t, uint8x8_t>);
-static_assert(!has_udot_lane<native::neon, 0, uint32x2_t, uint8x8_t, uint8x8_t>);
+static_assert(has_udot_lane<native::neon, 0, uint32x2_t, uint8x8_t, uint8x8_t>);
 static_assert(has_udot_lane<requirements, 3, uint32x2_t, uint8x8_t, uint8x16_t>);
 static_assert(!has_udot_lane<requirements, -1, uint32x2_t, uint8x8_t, uint8x16_t>);
 static_assert(!has_udot_lane<requirements, 4, uint32x2_t, uint8x8_t, uint8x16_t>);
-static_assert(!has_udot_lane<native::neon, 0, uint32x2_t, uint8x8_t, uint8x16_t>);
+static_assert(has_udot_lane<native::neon, 0, uint32x2_t, uint8x8_t, uint8x16_t>);
 static_assert(has_udot<requirements, uint32x4_t, uint8x16_t>);
 static_assert(has_udot<native::isa<native::arm>(native::arm_feature::dotprod), uint32x4_t, uint8x16_t>);
 static_assert(!has_udot<native::scalar, uint32x4_t, uint8x16_t>);
-static_assert(!has_udot<native::neon, uint32x4_t, uint8x16_t>);
-static_assert(!has_udot<native::isa<native::arm>(native::arm_feature::rdm), uint32x4_t, uint8x16_t>);
+static_assert(has_udot<native::neon, uint32x4_t, uint8x16_t>);
+static_assert(has_udot<native::isa<native::arm>(native::arm_feature::rdm), uint32x4_t, uint8x16_t>);
 static_assert(has_udot_lane<requirements, 1, uint32x4_t, uint8x16_t, uint8x8_t>);
 static_assert(!has_udot_lane<requirements, -1, uint32x4_t, uint8x16_t, uint8x8_t>);
 static_assert(!has_udot_lane<requirements, 2, uint32x4_t, uint8x16_t, uint8x8_t>);
-static_assert(!has_udot_lane<native::neon, 0, uint32x4_t, uint8x16_t, uint8x8_t>);
+static_assert(has_udot_lane<native::neon, 0, uint32x4_t, uint8x16_t, uint8x8_t>);
 static_assert(has_udot_lane<requirements, 3, uint32x4_t, uint8x16_t, uint8x16_t>);
 static_assert(!has_udot_lane<requirements, -1, uint32x4_t, uint8x16_t, uint8x16_t>);
 static_assert(!has_udot_lane<requirements, 4, uint32x4_t, uint8x16_t, uint8x16_t>);
-static_assert(!has_udot_lane<native::neon, 0, uint32x4_t, uint8x16_t, uint8x16_t>);
+static_assert(has_udot_lane<native::neon, 0, uint32x4_t, uint8x16_t, uint8x16_t>);
 __attribute__((target("dotprod"), noinline))
 bool check_sdot_int32x2(std::uint64_t & state) {
   for (unsigned iteration = 0; iteration < 2048; ++iteration) {

@@ -3,7 +3,9 @@
 // Repeated under each source target scope; no vector crosses a target boundary.
 namespace integer_test::INTEGER_CASE_NAME {
   constexpr auto arch = NATIVE_TARGET_ISA(INTEGER_CASE_NAME);
+#include "constexpr.h"
   template<class T, std::size_t N> bool integer_shape() {
+    if(!integer_properties<T,N>() || !memory_properties<T,N>()) return false;
     using V = native::simd<T,N,arch>;
     static_assert(std::same_as<decltype(native::popcount(std::declval<V>())),V>);
     static_assert(noexcept(native::popcount(std::declval<V>())));
@@ -61,6 +63,7 @@ namespace integer_test::INTEGER_CASE_NAME {
     return true;
   }
   template<class To,class From,std::size_t N> bool packing_shape() {
+    if(!packing_properties<To,From,N>()) return false;
     using V=native::simd<From,N,arch>;
     using R=native::simd<To,2*N,arch>;
     static_assert(std::same_as<decltype(native::narrow_concat<To>(std::declval<V>(),std::declval<V>())),R>);
@@ -98,6 +101,10 @@ namespace integer_test::INTEGER_CASE_NAME {
     return good;
   }
   __attribute__((noinline)) bool run() {
+    if(!memory_properties<std::int8_t,1>() || !memory_properties<std::int16_t,1>() ||
+       !memory_properties<std::int32_t,1>() || !memory_properties<std::int64_t,1>()) return false;
+    if(!mask_memory_shapes<1>() || !mask_memory_shapes<2>() || !mask_memory_shapes<3>() || !mask_memory_shapes<4>() ||
+       !mask_memory_shapes<8>() || !mask_memory_shapes<16>() || !mask_memory_shapes<32>() || !mask_memory_shapes<64>()) return false;
     if(!integer_shape<std::uint8_t,1>() || !integer_shape<std::uint16_t,1>() ||
        !integer_shape<std::uint32_t,1>() || !integer_shape<std::uint64_t,1>()) return false;
     if constexpr(integer_test::can_popcount<std::uint32_t,2,arch>)

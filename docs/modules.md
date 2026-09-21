@@ -23,6 +23,10 @@ that ISA. This records compiler permissions, not runtime CPU detection. A
 stronger function target or importer does not change a previously built
 module's default.
 
+One-lane values retain that tag even when its features select no vector
+arithmetic profile. They use scalar operations; wider values still require
+the features for their storage and operations.
+
 Choose an explicit ISA for kernels with different requirements:
 
 ```cpp
@@ -80,6 +84,18 @@ authorize those operations or change its scalar conversion policy.
 Keep dependent mathematical calls unqualified so ADL can select the register's
 overload. There is no runtime architecture branch in individual operations.
 
+FP16 vector arithmetic also works during constant evaluation: addition,
+subtraction, multiplication, division, square root and FMA use round-to-nearest,
+ties-to-even with gradual underflow. Comparisons, sign changes and selection
+preserve their lane semantics. Constant evaluation does not read or change the
+floating-point control or status registers. Runtime operations retain the
+caller's architectural environment. NaN payload selection during arithmetic
+is not a portable cross-platform promise.
+
+BF16 `dot2` is constant-evaluable with the architecture's instruction semantics.
+ARM uses legacy BFDOT behavior with EBF clear; x86 retains VDPBF16PS's
+high-product-first ordering. Their fixed rounding and denormal rules differ.
+
 ## Masks and memory
 
 `V::mask` is the type produced by comparisons of `V`. AVX2 and NEON use vector
@@ -130,6 +146,9 @@ Alignment policies are caller promises. Use `load_simd_partial<V>(p,count,fill)`
 and `store_simd_partial(p,value,count)` for tails. Only the requested logical
 lanes are accessed; the load supplies `fill` for the rest. The streaming policy
 currently uses ordinary accesses, so it carries no non-temporal-store guarantee.
+The count must not exceed the logical lane count. Clang diagnoses a count it can
+prove too large at the call site, including through module imports. Dynamic
+counts remain a caller precondition; this diagnostic adds no runtime check.
 
 ## Short vectors and swizzles
 
@@ -241,6 +260,28 @@ next stage begins, rather than finishing one `exp` call per element. Results
 preserve the input scalar, SIMD, array, or `native::wide` shape, including
 empty and one-element containers.
 These kernels support binary32 elements.
+
+Binary32 arithmetic, comparisons, selection, fused multiply-add, square root,
+rounding and exponent scaling support constant evaluation, including short
+vectors. The promoted exponential and trigonometric kernels evaluate their
+existing polynomial graphs with the same input bounds and approximation
+contracts. Scalar, array and empty-array forms retain their shapes.
+
+Constant evaluation uses round-to-nearest with ties to even and gradual
+underflow. Numerical arithmetic quiets signaling NaNs, preserves the selected NaN's sign
+and payload, and uses positive quiet NaN for invalid operations. Signaling NaNs
+are selected before quiet NaNs; otherwise operand order decides, with the
+addend first for FMA. An infinite-times-zero FMA product yields the canonical
+NaN even with a quiet NaN addend. `scaleb` retains its exceptional scaling rule:
+a quiet NaN scaled by positive or negative infinity becomes positive infinity
+or positive zero; a signaling NaN is quieted instead.
+Comparisons are ordered, while inequality is true for
+unordered operands. Negation and `abs` change only the sign bit; bit transport and selection preserve
+representations, including signaling NaNs.
+These computations do not read or change floating-point controls or exception
+flags. Runtime operations continue to use native instructions and the caller's
+environment; constant evaluation does not promise the runtime target's NaN
+precedence or status flags.
 
 Promotion owns its values. Demotion uses the original type to restore shape,
 while retaining transformed element types: a scalar comparison demotes to

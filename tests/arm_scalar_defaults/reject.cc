@@ -8,7 +8,7 @@ void reject(std::uint32_t a,std::uint64_t b) {
 #if NATIVE_ARM_DEFAULT_REJECT == 0
   (void)native::crc32(a,b);
 #elif NATIVE_ARM_DEFAULT_REJECT == 1
-  (void)native::sqrdmlah(std::int16_t{},std::int16_t{},std::int16_t{});
+  (void)native::sqrdmlah(static_cast<std::int16_t>(a),std::int16_t{},std::int16_t{});
 #elif NATIVE_ARM_DEFAULT_REJECT == 2
   (void)native::sha1h(a);
 #elif NATIVE_ARM_DEFAULT_REJECT == 3

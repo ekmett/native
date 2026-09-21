@@ -20,22 +20,24 @@ template<native::isa<native::x86> A, std::size_t N> concept has_qword = requires
   { native::mask_vpopcntq<A>(v,m,v) } noexcept -> std::same_as<decltype(v)>;
   { native::maskz_vpopcntq<A>(m,v) } noexcept -> std::same_as<decltype(v)>;
 };
+// This probes syntactic participation, including immediate-only weak tags.
+// Runtime rejection is checked separately with nonconstant operands.
 template<native::isa<native::x86> A, bool Zmm, bool Vl> consteval bool availability() {
   return has_dword<A,16> == Zmm && has_qword<A,8> == Zmm &&
     has_dword<A,8> == Vl && has_qword<A,4> == Vl &&
     has_dword<A,4> == Vl && has_qword<A,2> == Vl;
 }
-static_assert(availability<exact_512, true, false>());
+static_assert(availability<exact_512, true, true>());
 static_assert(availability<exact_vl, true, true>());
-static_assert(availability<requirements_512, true, false>());
+static_assert(availability<requirements_512, true, true>());
 static_assert(availability<requirements_vl, true, true>());
 static_assert(availability<native::isa<native::x86>{}, false, false>());
 static_assert(availability<native::isa<native::x86>(native::x86_feature::avx512vpopcntdq), false, false>());
 static_assert(availability<native::x86_feature::avx512vpopcntdq & native::x86_feature::avx512vl, false, false>());
 static_assert(availability<native::isa<native::x86>(native::x86_feature::avx512f), false, false>());
 static_assert(availability<native::x86_feature::avx512f & native::x86_feature::avx512vl, false, false>());
-static_assert(availability<native::avx512, false, false>());
-static_assert(availability<native::avx512 & native::x86_feature::popcnt, false, false>());
+static_assert(availability<native::avx512, true, true>());
+static_assert(availability<native::avx512 & native::x86_feature::popcnt, true, true>());
 
 
 template<auto A> concept accepts_family = requires(native::simd<std::uint32_t,4,exact_vl> x) { native::vpopcntd<A>(x); };

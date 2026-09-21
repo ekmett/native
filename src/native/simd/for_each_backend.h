@@ -2,7 +2,7 @@
 #define NATIVE_BACKEND scalar_backend
 #define NATIVE_BACKEND_NAMESPACE native::detail::NATIVE_BACKEND
 #define NATIVE_RAW_TARGET (::native::abi_lookup<::native::scalar,::native::detail::raw_kernel_policies>::index)
-#define NATIVE_ARCH_REQUIRES(A) (A == ::native::scalar)
+#define NATIVE_ARCH_REQUIRES(A) (::native::abi_lookup<A,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET)
 #define NATIVE_DEFAULT_ARCH ::native::scalar
 #define NATIVE_HAS_AVX2 0
 #define NATIVE_HAS_AVX512F 0
@@ -12,7 +12,7 @@
 #define NATIVE_HAS_ARM_NEON 0
 static_assert(::native::abi_lookup<NATIVE_DEFAULT_ARCH,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
 static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGET_0));
-#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_DEFAULT_ARCH != ::native::scalar || (__VA_ARGS__) == ::native::scalar))
+#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET)
 #include NATIVE_BACKEND_BODY
 #undef NATIVE_COMMON_ARCH
 #undef NATIVE_BACKEND
@@ -42,7 +42,7 @@ static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGE
 #pragma clang attribute push(__attribute__((target(NATIVE_KERNEL_TARGET_1))), apply_to=function)
 static_assert(::native::abi_lookup<NATIVE_DEFAULT_ARCH,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
 static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGET_1));
-#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_DEFAULT_ARCH != ::native::scalar || (__VA_ARGS__) == ::native::scalar))
+#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET)
 #include NATIVE_BACKEND_BODY
 #undef NATIVE_COMMON_ARCH
 #pragma clang attribute pop
@@ -74,7 +74,7 @@ static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGE
 #pragma clang attribute push(__attribute__((target(NATIVE_KERNEL_TARGET_2))), apply_to=function)
 static_assert(::native::abi_lookup<NATIVE_DEFAULT_ARCH,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
 static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGET_2));
-#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_DEFAULT_ARCH != ::native::scalar || (__VA_ARGS__) == ::native::scalar))
+#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET)
 #include NATIVE_BACKEND_BODY
 #undef NATIVE_COMMON_ARCH
 #pragma clang attribute pop
@@ -106,7 +106,7 @@ static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGE
 #pragma clang attribute push(__attribute__((target(NATIVE_KERNEL_TARGET_3))), apply_to=function)
 static_assert(::native::abi_lookup<NATIVE_DEFAULT_ARCH,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
 static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGET_3));
-#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_DEFAULT_ARCH != ::native::scalar || (__VA_ARGS__) == ::native::scalar))
+#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET)
 #include NATIVE_BACKEND_BODY
 #undef NATIVE_COMMON_ARCH
 #pragma clang attribute pop
@@ -138,7 +138,7 @@ static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGE
 #pragma clang attribute push(__attribute__((target(NATIVE_KERNEL_TARGET_4))), apply_to=function)
 static_assert(::native::abi_lookup<NATIVE_DEFAULT_ARCH,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
 static_assert(NATIVE_DEFAULT_ARCH==::native::target_features(NATIVE_KERNEL_TARGET_4));
-#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_DEFAULT_ARCH != ::native::scalar || (__VA_ARGS__) == ::native::scalar))
+#define NATIVE_COMMON_ARCH(...) (::native::abi_lookup<__VA_ARGS__,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET)
 #include NATIVE_BACKEND_BODY
 #undef NATIVE_COMMON_ARCH
 #pragma clang attribute pop

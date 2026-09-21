@@ -8,7 +8,7 @@ the package keeps implementation headers private for BMI regeneration.
 
 Every operation takes a `template<native::isa<native::x86> Arch>` argument and typed
 `native::simd` vectors. Use `target_features<native::x86>(...)` or `feature_closure(...)`
-to include register prerequisites in the tag. `Arch` must contain `avx512f` and `avx512vpopcntdq`;
+to include register prerequisites in the tag. At runtime, `Arch` must contain `avx512f` and `avx512vpopcntdq`;
 128-bit and 256-bit overloads also require `avx512vl`.
 
 | Operation | Result in each lane |
@@ -29,6 +29,14 @@ and carry constant-function and target attributes. The intrinsic definitions
 follow LLVM's [512-bit](https://clang.llvm.org/doxygen/avx512vpopcntdqintrin_8h_source.html)
 and [VL](https://clang.llvm.org/doxygen/avx512vpopcntdqvlintrin_8h_source.html)
 interfaces.
+
+All forms support constant evaluation with the same lane and mask semantics.
+When `Arch` supplies the instruction features, the overload is `constexpr` and
+runtime calls still use the native instruction. A tag without those features
+can use a `consteval` overload if its SIMD storage exists: SSE2 for 128 bits,
+AVX for 256 bits, or AVX512F for 512 bits, including their register prerequisites.
+The result retains the exact input tag. These weaker tags accept compile-time
+operands only; they do not provide a software fallback for runtime data.
 
 ```cpp
 #include <cstdint>

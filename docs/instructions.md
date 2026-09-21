@@ -99,12 +99,38 @@ feature set.
 Vector families link `native::native` and import `native.simd`. Scalar-only
 families and feature observation link `native::minimal`. The
 [module guide](modules.md#imports-and-build-targets) gives the common imports.
-These operations do not dispatch or provide a software fallback internally.
+Runtime calls do not dispatch or provide a software fallback internally.
 Keep an optional kernel behind admission and select another implementation when
 its requirements are unavailable.
 
 Each guide links its validation fixture. Compile and assembly checks establish
 compiler behavior; runtime tests execute only after admission. An unsupported
 runtime skip does not qualify the instruction's behavior on that machine.
+
+## Constant evaluation
+
+Instruction families provide semantic implementations for constant evaluation.
+With the required features in `Arch`, the same `constexpr` overload evaluates
+at compile time or emits the native instruction at runtime. Without those
+features, a separate `consteval` overload accepts constant inputs only.
+Vector storage must still exist for the element type, lane count and architecture
+tag. Constant evaluation does not grant a vector type registers that its tag
+does not supply.
+
+The immediate-only overload may appear in an unevaluated `requires` expression;
+that does not establish that a later call with runtime inputs is valid. Feature
+constraints and runtime admission remain necessary for executable kernels.
+
+Floating-point constant evaluation uses nearest-even rounding, gradual
+underflow and masked exceptions, with ARM's DN, AHP, AH and EBF controls clear.
+An instruction's fixed rules or rounding immediate take precedence: legacy ARM
+BF16 dot products, for example, round to odd and flush subnormals. The family
+guides specify NaN selection and other instruction-specific details. Constant
+evaluation neither reads nor changes the calling thread's floating-point
+environment; runtime operations retain that environment's behavior.
+
+Hardware observations, waits and control-register operations remain runtime
+operations. A semantic result at compile time does not reproduce a hardware
+side effect such as a sticky saturation or floating-point exception flag.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

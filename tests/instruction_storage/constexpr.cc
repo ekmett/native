@@ -6,9 +6,26 @@
 #include <type_traits>
 #if NATIVE_CONSTEXPR_HEADERS
 #include <native/vec.h>
+#include <native/wide.h>
 #else
 import native.simd;
 #endif
+
+static_assert([] {
+  native::wide<int,2> a{{1,2}},b{{3,4}};
+  native::wide<bool,2> masks{{true,false}};
+  auto r=native::select(masks,a,b);
+  native::wide<int,0> empty{};
+  return r.registers[0]==1 && r.registers[1]==4 &&
+    native::select(native::wide<bool,0>{},empty,empty).registers.empty();
+}());
+static_assert([] {
+  using V=native::simd<std::int32_t,1,native::scalar>;
+  native::wide<V,2> a{{V(1),V(2)}},b{{V(3),V(4)}};
+  native::wide<typename V::mask_type,2> masks{{V::mask_type(true),V::mask_type(false)}};
+  auto r=native::select(masks,a,b);
+  return r.registers[0].to_native()==1 && r.registers[1].to_native()==4;
+}());
 
 template<class T> consteval bool scalar_integer() {
   using V=native::simd<T,1,native::scalar>;
@@ -146,5 +163,141 @@ static_assert([] {
   return bits==result;
 }());
 #endif
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__x86_64__) || defined(_M_X64)
+template<class T,std::size_t N> consteval bool integer_arithmetic() {
+  using V=native::simd<T,N,arithmetic_arch>;
+  using U=std::make_unsigned_t<T>;
+  V a(std::numeric_limits<T>::max()), b(1);
+  std::array<T,N> result{};
+  (a+b).store(result.data());
+  for(auto x:result) if(std::bit_cast<U>(x)!=U(U(std::numeric_limits<T>::max())+U(1))) return false;
+  (V(19)*V(23)).store(result.data());
+  for(auto x:result) if(std::bit_cast<U>(x)!=U(19*23)) return false;
+  if(!all((a&b)==b) || !all(V(3)<V(7))) return false;
+  (V(16)>>native::imm<2>).store(result.data());
+  for(auto x:result) if(x!=4) return false;
+  auto m=V::mask_type::from_bitset(5);
+  if(m.to_bitset()!=(5&((std::uint64_t(1)<<N)-1))) return false;
+  if(!all(m|~m) || !none(m&~m)) return false;
+  std::array<T,N> source{}; for(std::size_t i=0;i<N;++i) source[i]=T(i+1);
+  for(std::size_t n=0;n<=N;++n) {
+    auto value=V::load_partial(n?source.data():nullptr,n,T(42));
+    value.store(result.data());
+    for(std::size_t i=0;i<N;++i) if(result[i]!=(i<n?source[i]:T(42))) return false;
+    result.fill(T(99)); value.store_partial(n?result.data():nullptr,n);
+    for(std::size_t i=0;i<N;++i) if(result[i]!=(i<n?source[i]:T(99))) return false;
+  }
+  return true;
+}
+static_assert(integer_arithmetic<std::int8_t,16>() && integer_arithmetic<std::uint8_t,16>());
+static_assert(integer_arithmetic<std::int16_t,8>() && integer_arithmetic<std::uint16_t,8>());
+static_assert(integer_arithmetic<std::int32_t,4>() && integer_arithmetic<std::uint32_t,4>());
+static_assert(integer_arithmetic<std::int64_t,2>() && integer_arithmetic<std::uint64_t,2>());
+static_assert(integer_arithmetic<std::int32_t,2>() && integer_arithmetic<std::uint32_t,3>());
+
+template<std::size_t N> consteval bool float_storage() {
+  using V=native::simd<float,N,arithmetic_arch>;
+  std::array<std::uint32_t,N> words{};
+  for(std::size_t i=0;i<N;++i) words[i]=0x7f800001u+std::uint32_t(i);
+  std::array<std::uint32_t,N> result{};
+  V::from_native(V::load_bits(words.data()).to_native()).store_bits(result.data());
+  if(words!=result) return false;
+  std::array<float,N> values{}; for(std::size_t i=0;i<N;++i) values[i]=float(i+1);
+  std::array<float,N> actual{};
+  V(values).store(actual.data()); if(actual!=values) return false;
+  V(3.f).store(actual.data()); for(auto x:actual) if(x!=3.f) return false;
+  for(std::size_t n=0;n<=N;++n) {
+    auto value=V::load_partial(n?values.data():nullptr,n,7.f);
+    value.store(actual.data());
+    for(std::size_t i=0;i<N;++i) if(actual[i]!=(i<n?values[i]:7.f)) return false;
+    actual.fill(99.f); value.store_partial(n?actual.data():nullptr,n);
+    for(std::size_t i=0;i<N;++i) if(actual[i]!=(i<n?values[i]:99.f)) return false;
+  }
+  return true;
+}
+static_assert(float_storage<1>() && float_storage<2>() && float_storage<3>() && float_storage<4>());
+
+#if !NATIVE_CONSTEXPR_HEADERS
+template<class T,std::size_t N,native::isa<> A> consteval bool half_storage() {
+  using V=native::simd<T,N,A>;
+  std::array<std::uint16_t,N> words{};
+  for(std::size_t i=0;i<N;++i) words[i]=std::uint16_t(0x7c01u+i);
+  std::array<std::uint16_t,N> result{};
+  V::from_native(V::load_bits(words.data()).to_native()).store_bits(result.data());
+  if(result!=words) return false;
+  std::array<T,N> values{}; for(std::size_t i=0;i<N;++i) values[i]=T::from_bits(words[i]);
+  V(values).store_bits(result.data()); if(result!=words) return false;
+  V::load_bits(words.data()).store(values.data());
+  for(std::size_t i=0;i<N;++i) if(values[i].to_bits()!=words[i]) return false;
+  for(std::size_t n=0;n<=N;++n) {
+    auto value=V::load_partial(n?values.data():nullptr,n,T::from_bits(0x8000));
+    value.store_bits(result.data());
+    for(std::size_t i=0;i<N;++i) if(result[i]!=(i<n?words[i]:0x8000)) return false;
+    std::array<T,N> output{}; value.store_partial(n?output.data():nullptr,n);
+    for(std::size_t i=0;i<N;++i) if(output[i].to_bits()!=(i<n?words[i]:0)) return false;
+  }
+  return true;
+}
+#if defined(__aarch64__) || defined(_M_ARM64)
+static_assert(half_storage<native::fp16,8,native::neon_fp16>());
+static_assert(half_storage<native::bf16,8,native::neon_bf16>());
+#else
+static_assert(float_storage<8>());
+static_assert(half_storage<native::fp16,8,native::avx512_fp16>());
+static_assert(half_storage<native::fp16,32,native::avx512_fp16>());
+static_assert(half_storage<native::bf16,8,native::avx512_bf16>());
+static_assert(half_storage<native::bf16,32,native::avx512_bf16>());
+#endif
+#endif
+#endif
+
+#if defined(__aarch64__) || defined(_M_ARM64) || defined(__x86_64__) || defined(_M_X64)
+static_assert([] {
+  native::simd<float,4,arithmetic_arch> x(1.f,2.f,3.f,4.f);
+  x.xy=x.yx;
+  auto y=x.zyx;
+  return x.x==2.f && x.y==1.f && y.x==3.f && y.y==1.f && y.z==2.f;
+}());
+static_assert([] {
+  native::simd<std::int32_t,3,arithmetic_arch> x(1,2,3);
+  x.yz=x.xy;
+  auto y=x.zyxx;
+  return x.x==1 && x.y==1 && x.z==2 && y.w==1 && x.value[3]==0;
+}());
+
+template<class T,std::size_t N,native::isa<> A> consteval bool compact_lanes() {
+  using V=native::simd<T,N,A>;
+  std::array<T,N> input{};
+  for(std::size_t i=0;i<N;++i) {
+    if constexpr(std::same_as<T,float>) input[i]=std::bit_cast<float>(0x7f800001u+std::uint32_t(i));
+    else input[i]=T(i+1);
+  }
+  auto source=V::load(input.data());
+  for(unsigned bits=0;bits<(1u<<N);++bits) {
+    auto mask=V::mask::from_bitset(bits);
+    auto result=native::compress(mask,source,T{});
+    if(result.count!=std::popcount(bits)) return false;
+    auto restored=native::expand(mask,result.value,V(T{}));
+    std::array<T,N> actual{}; restored.store(actual.data());
+    for(std::size_t i=0;i<N;++i)
+      if(std::bit_cast<std::uint32_t>(actual[i])!=std::bit_cast<std::uint32_t>((bits>>i)&1?input[i]:T{})) return false;
+    std::array<T,N+2> output{};
+    for(std::size_t capacity=0;capacity<=N+1;++capacity) {
+      output.fill(T{});
+      auto written=native::compress_store(capacity?output.data()+1:nullptr,capacity,mask,source);
+      auto expected=result.count<capacity?result.count:capacity;
+      if(written!=expected || output.front()!=T{} || output.back()!=T{}) return false;
+      std::array<T,N> packed{}; result.value.store(packed.data());
+      for(std::size_t i=0;i<N;++i)
+        if(std::bit_cast<std::uint32_t>(output[i+1])!=std::bit_cast<std::uint32_t>(i<written?packed[i]:T{})) return false;
+    }
+  }
+  return true;
+}
+static_assert(compact_lanes<float,1,native::scalar>() && compact_lanes<std::int32_t,1,native::scalar>());
+static_assert(compact_lanes<float,2,arithmetic_arch>() && compact_lanes<std::int32_t,3,arithmetic_arch>());
+static_assert(compact_lanes<float,4,arithmetic_arch>() && compact_lanes<std::uint32_t,4,arithmetic_arch>());
 #endif
 int main() {}

@@ -32,13 +32,21 @@ immediate. Masks use `native::predicate<N,Arch>`.
 Mask bit `i` selects byte `i`; an inactive byte is copied from `src` or
 cleared, respectively. Register-only functions have no memory side effects.
 
+All forms support constant evaluation with the same lane and mask semantics.
+When `Arch` supplies the instruction features, the overload is `constexpr` and
+runtime calls still use the native instruction. A tag without those features
+can use a `consteval` overload if its SIMD storage exists: SSE2 for 128 bits,
+AVX for 256 bits, or AVX512F for 512 bits, including their register prerequisites.
+The result retains the exact input tag. These weaker tags accept compile-time
+operands only; they do not provide a software fallback for runtime data.
+
 ## Feature and target requirements
 
 Use `target_features<native::x86>(...)` or `feature_closure(...)` to include the register
 prerequisites in `Arch`, along with every feature listed below. Function target
 attributes establish the corresponding compiler requirements.
 
-| Form | Required features in `Arch` | Function target |
+| Form | Runtime features in `Arch` | Function target |
 | --- | --- | --- |
 | Unmasked 128-bit | GFNI | `gfni` |
 | Unmasked 256-bit | GFNI, AVX | `avx,gfni` |

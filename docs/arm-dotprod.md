@@ -18,10 +18,12 @@ wraps modulo 2^32 for both operations. Signed overflow has the instruction's
 wrapping result; it is not C++ signed-overflow undefined behavior. Lane forms
 reuse the selected four-byte group for every accumulator lane.
 
-Each function requires `Arch.has(arm_feature::dotprod)` and a Clang `dotprod`
+Runtime calls require `Arch.has(arm_feature::dotprod)` and a Clang `dotprod`
 function target. DotProd can be requested independently of RDM, FP16, I8MM or a
-CPU-model bundle. Missing feature bits and invalid lane indices are rejected at
-compile time; the operations have no runtime dispatch or software fallback.
+CPU-model bundle. Invalid lane indices are rejected at compile time. All forms
+support constant evaluation with the same modular arithmetic. An ISA without DotProd exposes only
+immediate (`consteval`) overloads, provided its SIMD storage shapes exist; runtime
+operands are rejected. The operations have no runtime dispatch or software fallback.
 
 Before calling the kernel, check both the requested feature and the
 translation unit's minimum requirements:
@@ -63,3 +65,9 @@ benchmark or a guarantee about surrounding application code.
 
 The instruction mapping follows the [Arm Advanced SIMD intrinsic
 reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#dot-product).
+
+Generated properties compare 40 constant-evaluated cases for every width and lane
+with native execution and an independent wide-integer reference. Runtime cases
+also accept `NATIVE_TEST_SEED` and `NATIVE_TEST_CASES`; failures print the seed,
+case index and operands. Actual failing compilations cover every immediate-only
+overload with runtime operands.

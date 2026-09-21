@@ -31,7 +31,9 @@
  * \snippet api.cc memory
  */
 /** \defgroup vector_math Raw vector math
- * Raw float operations inherit the caller's floating-point environment.
+ * At runtime, raw float operations inherit the caller's floating-point environment.
+ * Constant evaluation uses nearest-even rounding and gradual underflow, without
+ * accessing floating-point controls or status flags.
  * They do not establish FTZ policy or a reproducible scalar type. Use unqualified
  * calls in generic code so the element library can supply its own operations.
  * \snippet api.cc arithmetic

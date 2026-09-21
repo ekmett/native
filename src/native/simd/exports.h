@@ -125,6 +125,7 @@ export namespace native {
   using ::native::reduce_add_widened;
   using ::native::mask_bits;
   using ::native::mask_cast;
+  using ::native::to_bool;
   using ::native::to_predicate;
   using ::native::to_vector_mask;
   /// Make the corresponding native overload set visible through this module.

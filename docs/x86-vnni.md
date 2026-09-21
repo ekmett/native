@@ -33,7 +33,15 @@ intrinsics specify these arithmetic rules:
 [LLVM INT8](https://clang.llvm.org/doxygen/avxvnniint8intrin_8h_source.html),
 [LLVM INT16](https://clang.llvm.org/doxygen/avxvnniint16intrin_8h_source.html).
 
-| Forms | Register widths | Exact features in `Arch` |
+All forms support constant evaluation with the same lane and mask semantics.
+When `Arch` supplies the instruction features, the overload is `constexpr` and
+runtime calls still use the native instruction. A tag without those features
+can use a `consteval` overload if its SIMD storage exists: SSE2 for 128 bits,
+AVX for 256 bits, or AVX512F for 512 bits, including their register prerequisites.
+The result retains the exact input tag. These weaker tags accept compile-time
+operands only; they do not provide a software fallback for runtime data.
+
+| Forms | Register widths | Runtime features in `Arch` |
 | --- | --- | --- |
 | Core, unmasked VEX | 128, 256 | `avxvnni` |
 | Core, unmasked EVEX | 128, 256 | `avx512f`, `avx512vnni`, `avx512vl` |

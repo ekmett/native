@@ -44,6 +44,40 @@ foreach(mode IN LISTS constexpr_modes)
   set_tests_properties(native.simd.constexpr_${mode} PROPERTIES LABELS "host;modules;constexpr")
 endforeach()
 
+
+# diagnose_if is retained in exported declarations, so module clients receive
+# the same call-site diagnostics without importing any annotation macros.
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+foreach(mode IN LISTS constexpr_modes)
+  set(target native_test_simd_diagnostics_${mode})
+  add_executable(${target} diagnostics.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  if(mode STREQUAL "headers")
+    target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_HEADERS=1)
+  endif()
+  set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.simd.diagnostics_${mode} COMMAND ${target})
+  set_tests_properties(native.simd.diagnostics_${mode} PROPERTIES LABELS "host;modules;diagnostics")
+  foreach(index RANGE 1 12)
+    set(target native_test_simd_reject_count_${mode}_${index})
+    add_library(${target} OBJECT EXCLUDE_FROM_ALL diagnostics.cc)
+    target_link_libraries(${target} PRIVATE native::native)
+    target_compile_definitions(${target} PRIVATE NATIVE_DIAGNOSTIC_CASE=${index})
+    if(mode STREQUAL "headers")
+      target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_HEADERS=1)
+    endif()
+    set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+    add_test(NAME native.simd.reject_count_${mode}_${index} COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/../source_targets/check_negative.py"
+      --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
+      --target ${target} --config "$<CONFIG>"
+      --log "${CMAKE_CURRENT_BINARY_DIR}/reject-count-${mode}-${index}-$<CONFIG>.log"
+      --diagnostic "partial SIMD count exceeds the lane count")
+    set_tests_properties(native.simd.reject_count_${mode}_${index} PROPERTIES
+      LABELS "host;modules;diagnostics;negative" RUN_SERIAL TRUE TIMEOUT 180)
+  endforeach()
+endforeach()
+
 # The package consumer exercises logical storage; private code-generation checks
 # additionally prevent physical-padding normalization in register bit bridges.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)

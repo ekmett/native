@@ -3,7 +3,9 @@
 <!-- SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-C++26 SIMD values and native instructions for x86-64 and AArch64.
+C++26 SIMD values and native instructions for x86-64 and AArch64, with a shared
+feature detection and admission API for x86, ARM and WebAssembly.
+
 `simd<T,N,Arch>` keeps the element type, lane count and instruction requirements
 in the type. Omitting `Arch` uses the `native.simd` module's compiler baseline.
 Comparisons produce masks; `wide<V,M>` groups registers into
@@ -119,9 +121,13 @@ in the [value guide](docs/modules.md#promoted-math-batches). Floating-point
 controls remain under application ownership. The separate FTZ package builds
 reproducible binary32 arithmetic on this library's element extension.
 
-The [WebAssembly detector](docs/wasm-features.md) observes SIMD support in a
-particular engine. It provides admission data for an application's loader;
-it does not supply a WebAssembly SIMD implementation or load code automatically.
+The [WebAssembly detector](docs/wasm-features.md), available through
+`native.wasm.features`, `native.features` or `native`, describes `simd128` and
+`relaxed_simd` with `isa<wasm>`. It accepts engine observations through a C++
+validation callback or an optional JavaScript adapter. On Wasm compiler targets,
+`NATIVE_BASELINE` records the SIMD features enabled by the compiler separately
+from runtime engine support. Applications compile and load the appropriate Wasm
+bodies; a WebAssembly `simd<>` backend is not yet provided.
 
 [Compiled examples](tests/api/README.md) exercise the public API. The
 [validation record](docs/validation.md) distinguishes compilation, native

@@ -26,6 +26,17 @@ foreach(suite IN LISTS suites)
   set_tests_properties(native.arm.i8mm.${suite} PROPERTIES LABELS "host;modules;baseline;i8mm" SKIP_RETURN_CODE 77)
 endforeach()
 
+add_executable(native_test_arm_i8mm_constexpr constexpr.cc)
+target_link_libraries(native_test_arm_i8mm_constexpr PRIVATE native::native)
+set_target_properties(native_test_arm_i8mm_constexpr PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(COMMAND native_link_clang_cl_asan)
+  native_link_clang_cl_asan(native_test_arm_i8mm_constexpr)
+endif()
+add_test(NAME native.arm.i8mm.constexpr COMMAND native_test_arm_i8mm_constexpr)
+set_tests_properties(native.arm.i8mm.constexpr PROPERTIES
+  SKIP_RETURN_CODE 77 LABELS "host;modules;arm;i8mm;constexpr;properties")
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
@@ -42,6 +53,8 @@ foreach(kind IN ITEMS codegen minimum no_feature no_target bad_lane)
     target_compile_definitions(native_test_arm_i8mm_${kind} PRIVATE TEST_${definition})
     if(kind STREQUAL "no_target")
       set(diagnostic "requires target feature|target specific option mismatch")
+    elseif(kind STREQUAL "no_feature")
+      set(diagnostic "call to consteval function.*is not a constant expression")
     else()
       set(diagnostic "deleted function|constraints not satisfied|no matching function")
     endif()
@@ -78,3 +91,19 @@ add_test(NAME native.arm.i8mm.zero_overhead
     $<TARGET_OBJECTS:native_test_arm_i8mm_codegen> COMMAND_EXPAND_LISTS)
 set_tests_properties(native.arm.i8mm.zero_overhead PROPERTIES
   LABELS "host;arm;i8mm;codegen")
+
+# Every missing-feature overload rejects a call with runtime operands.
+foreach(kind RANGE 0 12)
+  set(target native_test_arm_i8mm_constexpr_reject_${kind})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL constexpr_reject.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  target_compile_definitions(${target} PRIVATE NATIVE_INTEGER_REJECT=${kind})
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.arm.i8mm.constexpr_reject_${kind}
+    COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py"
+      --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
+      --config "$<CONFIG>" --diagnostic "call to consteval function.*is not a constant expression"
+      --log "${CMAKE_CURRENT_BINARY_DIR}/constexpr-reject-${kind}.log")
+  set_tests_properties(native.arm.i8mm.constexpr_reject_${kind} PROPERTIES
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;i8mm;constexpr")
+endforeach()

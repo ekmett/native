@@ -9,14 +9,26 @@ export namespace native {
  * the half of b. Other immediate bits are ignored. Imm8 must be in [0,255].
  * Arch records requirements; the caller must separately enable and admit its
  * target. These pure integer operations do not affect floating-point status.
+ * Constant evaluation uses exact integer semantics. Tags without the instruction
+ * features are accepted only at compile time and require complete SIMD storage.
  * \{ */
 
   /// Multiply the selected 64-bit halves into one 128-bit polynomial product.
   /// Requires PCLMUL. An AVX-enabled caller may use the VEX encoding.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("pclmul")
-  simd<std::uint64_t, 2, Arch> pclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
-    return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_pclmul::pclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+  constexpr simd<std::uint64_t, 2, Arch> pclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
+    else {
+      return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_pclmul::pclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Evaluate pclmulqdq at compile time when its register storage is available.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::pclmul))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 2, Arch> pclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
   }
 
   // Reject implicit register conversions, mixed tags and wrong element types.

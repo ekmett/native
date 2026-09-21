@@ -837,7 +837,7 @@
   /// \ingroup wide_values
   /// Choose from `a` or `b` according to the corresponding element mask.
   template <class R, std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX)
-  native_nodiscard native_inline wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
+  native_nodiscard native_inline constexpr wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
       wide<R, N> const & a, wide<R, N> const & b)
       noexcept([] {
         if constexpr (N == 0)

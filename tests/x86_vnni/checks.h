@@ -112,7 +112,7 @@ namespace vnni_fixture {
   static_assert(check_scalar_reference());
 
   template<std::size_t N, std::size_t O>
-  outputs<N, O> oracle(inputs<N> const& input, std::array<operation, O> const& operations) {
+  constexpr outputs<N, O> oracle(inputs<N> const& input, std::array<operation, O> const& operations) {
     outputs<N, O> result{};
     for (std::size_t op = 0; op != O; ++op)
       for (std::size_t lane = 0; lane != N / 4; ++lane)

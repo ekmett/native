@@ -27,6 +27,18 @@ Each instruction family also checks its public SIMD calls against the matching
 raw instruction sequence. Runtime checks report a skip when the host lacks the
 required feature; compiling an operation does not establish hardware behavior.
 
+Constant-evaluation fixtures compare public calls with independent integer
+references or admitted hardware results. They cover integer and cryptographic
+families, [floating instructions](floating_instructions_constexpr/README.md),
+[half-vector arithmetic](half_constexpr/README.md), and ordinary SIMD storage
+and masks. Below-feature calls have separate compile-failure checks with runtime
+inputs.
+
+Generated property tests use reproducible seeds and report the seed, case index
+and input bits on failure. Suites using `property_config` accept
+`NATIVE_TEST_SEED` and `NATIVE_TEST_CASES` to replay or extend a run. Compile-time
+corpora use fixed seeds so every build checks the same cases.
+
 Generated packets, compiler output and machine reports belong in build
 directories. Correctness and code-generation checks do not establish measured
 performance.

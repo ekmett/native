@@ -20,9 +20,19 @@ namespace native {
 #endif
       ) &&
       requires { sizeof(simd<From, N, Arch>); sizeof(simd<To, 2 * N, Arch>); })
-  native_nodiscard native_inline native_const simd<To, 2 * N, Arch> narrow_concat(
+  native_nodiscard native_inline constexpr native_const simd<To, 2 * N, Arch> narrow_concat(
       simd<From, N, Arch> a, simd<From, N, Arch> b) noexcept {
     using result = simd<To, 2 * N, Arch>;
+    if consteval {
+      std::array<From,N> first{},second{};
+      a.store(first.data()); b.store(second.data());
+      std::array<To,2*N> lanes{};
+      for(std::size_t i=0;i<N;++i) {
+        lanes[i]=static_cast<To>(first[i]);
+        lanes[N+i]=static_cast<To>(second[i]);
+      }
+      return result(lanes);
+    }
 #if NATIVE_HAS_ARM_NEON
     if constexpr (sizeof(From) == 8)
       return result::from_native(vreinterpretq_u8_u32(vcombine_u32(

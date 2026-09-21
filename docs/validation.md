@@ -67,6 +67,13 @@ fixture rejects runtime inputs. Feature-enabled runtime calls retain their
 native implementation. The [instruction guide](instructions.md) and individual
 family pages describe which operations provide this support.
 
+Generated property tests use reproducible seeds and print the seed, case index
+and operand bits on failure. `NATIVE_TEST_SEED` selects a seed and
+`NATIVE_TEST_CASES` adjusts the runtime corpus size. Constant corpora also compare
+public results evaluated at compile time with hardware results at runtime;
+independent integer oracles cover wrapping, saturation, lane selection and
+polynomial arithmetic.
+
 ## Numerical contracts
 
 Scalar half-format tests cover every 16-bit representation, finite round trips,

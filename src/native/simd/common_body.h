@@ -5,12 +5,12 @@ namespace detail {
   struct register_memory<simd<T,N,Arch>,L> {
     using V=simd<T,N,Arch>;
     static constexpr std::size_t lanes = L;
-    native_nodiscard static native_inline native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept {
+    native_nodiscard static native_inline constexpr native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept native_diagnose_if(n > L,"partial SIMD count exceeds the lane count") {
       alignas(64) std::array<float, L> a; a.fill(fill);
       for (std::size_t i = 0; i < n; ++i) a[i] = p[i];
       return V::load(a.data());
     }
-    native_inline void store_partial(native_noescape float * p, std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(native_noescape float * p, std::size_t n) const noexcept native_diagnose_if(n > L,"partial SIMD count exceeds the lane count") {
       alignas(64) std::array<float, L> a; static_cast<V const &>(*this).store(a.data());
       for (std::size_t i = 0; i < n; ++i) p[i] = a[i];
     }
@@ -37,7 +37,7 @@ namespace detail {
   /// Exceptions propagate from the selected `V::load_memory<A>` operation.
   template <class V, class U, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && requires(U const * p) { V::template load_memory<A>(p); }
-  native_nodiscard native_inline V load_simd(U const * p, simd_memory<A,Access> = {})
+  native_nodiscard native_inline constexpr V load_simd(U const * p, simd_memory<A,Access> = {})
       noexcept(noexcept(V::template load_memory<A>(p))) {
     return V::template load_memory<A>(p);
   }
@@ -46,7 +46,7 @@ namespace detail {
   /// The customization owns any normalization; this is not an arbitrary pointer cast.
   template <class V, simd_custom_element U, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && std::same_as<typename V::value_type,typename simd_traits<U>::storage_type>
-  native_nodiscard native_inline V load_simd(U const * p, simd_memory<A,Access> = {})
+  native_nodiscard native_inline constexpr V load_simd(U const * p, simd_memory<A,Access> = {})
       noexcept(noexcept(V::template rebind<U>::template load_memory<A>(p).to_native())) {
     return V::template rebind<U>::template load_memory<A>(p).to_native();
   }
@@ -55,7 +55,7 @@ namespace detail {
   /// \pre `p` addresses that many writable elements and meets alignment `A`.
   template <class U, class V, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && requires(V value,U * p) { value.template store_memory<A>(p); }
-  native_inline void store_simd(U * p,V value,simd_memory<A,Access> = {})
+  native_inline constexpr void store_simd(U * p,V value,simd_memory<A,Access> = {})
       noexcept(noexcept(value.template store_memory<A>(p))) {
     value.template store_memory<A>(p);
   }
@@ -64,7 +64,7 @@ namespace detail {
   /// Construction and storage both contribute to the exception specification.
   template <simd_custom_element U, class V, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && std::same_as<typename V::value_type,typename simd_traits<U>::storage_type>
-  native_inline void store_simd(U * p,V value,simd_memory<A,Access> = {})
+  native_inline constexpr void store_simd(U * p,V value,simd_memory<A,Access> = {})
       noexcept(noexcept(typename V::template rebind<U>(value).template store_memory<A>(p))) {
     typename V::template rebind<U>(value).template store_memory<A>(p);
   }
@@ -72,7 +72,7 @@ namespace detail {
   /// Load an array or fixed-extent span whose extent equals the lane count.
   template<class V,class U,std::size_t N> requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) &&(N==V::lanes) &&
     requires(U const * p) { ::native::load_simd<V>(p); }
-  native_nodiscard native_inline V load_simd(std::array<U,N> const & values)
+  native_nodiscard native_inline constexpr V load_simd(std::array<U,N> const & values)
       noexcept(noexcept(::native::load_simd<V>(values.data()))) {
     return ::native::load_simd<V>(values.data());
   }
@@ -80,7 +80,7 @@ namespace detail {
   /// Load an array or fixed-extent span whose extent equals the lane count.
   template<class V,class U,std::size_t N> requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) &&(N==V::lanes) &&
     requires(U * p) { ::native::load_simd<V>(p); }
-  native_nodiscard native_inline V load_simd(std::span<U,N> values)
+  native_nodiscard native_inline constexpr V load_simd(std::span<U,N> values)
       noexcept(noexcept(::native::load_simd<V>(values.data()))) {
     return ::native::load_simd<V>(values.data());
   }
@@ -93,11 +93,11 @@ namespace detail {
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && std::default_initializable<U> &&
       std::constructible_from<U,typename V::value_type &> && std::is_copy_assignable_v<U> &&
       requires(U const * p) { ::native::load_simd<V>(p); }
-  native_nodiscard native_inline V load_simd_partial(U const * p,std::size_t count,
+  native_nodiscard native_inline constexpr V load_simd_partial(U const * p,std::size_t count,
       typename V::value_type fill={},simd_memory<A,Access> = {})
       noexcept(std::is_nothrow_default_constructible_v<U> &&
         std::is_nothrow_constructible_v<U,typename V::value_type &> &&
-        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::load_simd<V>(p))) {
+        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::load_simd<V>(p))) native_diagnose_if(count > V::lanes,"partial SIMD count exceeds the lane count") {
     std::array<U,V::lanes> temporary; temporary.fill(U(fill));
     for(std::size_t i=0;i<count;++i) temporary[i]=p[i];
     return ::native::load_simd<V>(temporary.data());
@@ -109,9 +109,9 @@ namespace detail {
   template <class U, class V, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && std::default_initializable<U> && std::is_copy_assignable_v<U> &&
       requires(U * p,V value) { ::native::store_simd(p,value); }
-  native_inline void store_simd_partial(U * p,V value,std::size_t count,simd_memory<A,Access> = {})
+  native_inline constexpr void store_simd_partial(U * p,V value,std::size_t count,simd_memory<A,Access> = {})
       noexcept(std::is_nothrow_default_constructible_v<U> &&
-        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::store_simd(p,value))) {
+        std::is_nothrow_copy_assignable_v<U> && noexcept(::native::store_simd(p,value))) native_diagnose_if(count > V::lanes,"partial SIMD count exceeds the lane count") {
     std::array<U,V::lanes> temporary; ::native::store_simd(temporary.data(),value);
     for(std::size_t i=0;i<count;++i) p[i]=temporary[i];
   }

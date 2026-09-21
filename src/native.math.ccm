@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/simd_import.h"
 #include <native/simd/math/exp.h>
 #include <native/simd/math/bits.h>
 #if NATIVE_HOST_X86

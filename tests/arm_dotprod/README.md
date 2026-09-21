@@ -5,7 +5,7 @@ for twelve SDOT/UDOT overloads and every immediate lane. Each of the four base
 shapes uses 2,048 directed/edge/random input sets. The oracle multiplies scalar
 bytes and accumulates as `uint32_t`, explicitly checking signed and unsigned
 wraparound. Direct public type checks reject raw registers and mixed architectures.
-Compile-time checks reject absent/unrelated features and invalid lanes, and synthetic observations reject unavailable or unobserved capabilities.
+Compile-time checks reject invalid lanes; actual runtime-operand compilations reject absent instruction features, and synthetic observations reject unavailable or unobserved capabilities.
 
 Runtime entry requires `observe_arm_capabilities()` and `classify_isa()` to admit
 both DotProd and the translation-unit minimum; unavailable observations return
@@ -31,3 +31,10 @@ not newly qualified. See [the API](../../docs/arm-dotprod.md).
 The zero-overhead test compares paired public `simd` and raw-helper leaves under
 the same target and calling context. It requires identical full instruction
 sequences, including register moves and memory traffic.
+
+The `constexpr` consumer checks all 28 width/lane forms against independent
+integer references. Forty generated constant inputs per form exercise strong
+and feature-absent immediate overloads, then compare with native hardware.
+Additional seeded runtime properties honor `NATIVE_TEST_SEED` and
+`NATIVE_TEST_CASES`; failures print reproducible operands. Actual negative
+compilations prove that feature-absent overloads cannot accept runtime inputs.

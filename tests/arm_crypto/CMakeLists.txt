@@ -8,9 +8,9 @@ endif()
 if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   return()
 endif()
-set(suites module arm main)
+set(suites module arm main constexpr)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  set(suites module arm main)
+  set(suites module arm main constexpr)
 endif()
 foreach(suite IN LISTS suites)
   set(target native_test_arm_crypto_${suite})
@@ -66,4 +66,20 @@ foreach(index RANGE ${negative_last})
     --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-$<CONFIG>.log")
   set_tests_properties(native.arm.crypto.reject_${kind} PROPERTIES
     LABELS "host;arm;crypto;negative" RUN_SERIAL TRUE)
+endforeach()
+
+# Every immediate-only vector overload must reject runtime operands, even
+# though its call expression is visible to an unevaluated requires expression.
+foreach(kind RANGE 0 35)
+  set(target native_test_arm_crypto_constexpr_reject_${kind})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL constexpr_reject.cc)
+  crypto_baseline(${target})
+  target_compile_definitions(${target} PRIVATE NATIVE_ARM_CRYPTO_REJECT=${kind})
+  add_test(NAME native.arm.crypto.constexpr_reject_${kind} COMMAND "${Python3_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py"
+    --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
+    --config "$<CONFIG>" --diagnostic "call to consteval function.*is not a constant expression"
+    --log "${CMAKE_CURRENT_BINARY_DIR}/constexpr-reject-${kind}-$<CONFIG>.log")
+  set_tests_properties(native.arm.crypto.constexpr_reject_${kind} PROPERTIES
+    LABELS "host;arm;crypto;constexpr;negative" RUN_SERIAL TRUE)
 endforeach()

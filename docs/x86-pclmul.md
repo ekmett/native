@@ -23,7 +23,15 @@ overflowing and runtime immediates are rejected. Operands must have the exact
 unsigned 64-bit element type, architecture tag and lane count. Floating-point
 vectors, raw registers and mixed tags are rejected.
 
-| Operation | Vector | Required `Arch` bits | Function target |
+All forms support constant evaluation with the same lane and mask semantics.
+When `Arch` supplies the instruction features, the overload is `constexpr` and
+runtime calls still use the native instruction. A tag without those features
+can use a `consteval` overload if its SIMD storage exists: SSE2 for 128 bits,
+AVX for 256 bits, or AVX512F for 512 bits, including their register prerequisites.
+The result retains the exact input tag. These weaker tags accept compile-time
+operands only; they do not provide a software fallback for runtime data.
+
+| Operation | Vector | Runtime `Arch` bits | Function target |
 | --- | --- | --- | --- |
 | `pclmulqdq` | `simd<uint64_t,2,Arch>` | `pclmul` | `pclmul` |
 | `vpclmulqdq` | `simd<uint64_t,2,Arch>` | `pclmul`, `avx` | `avx,pclmul` |

@@ -26,7 +26,7 @@ one scalar half from `b`. The source `b` may have four or eight half lanes;
 indices are rejected at compile time. The widening result has the same
 binary32 shape as `acc`.
 
-The API requires `Arch.has(arm_feature::fp16fml)` and a `"fp16fml"` compiler
+Runtime calls require `Arch.has(arm_feature::fp16fml)` and a `"fp16fml"` compiler
 target. Runtime admission includes the compiler prerequisites NEON and FP16.
 The `neon_fp16` preset, BF16 and FCMA do not supply the FHM feature. Compile the
 caller for the matching target and check its requirements before entering it;
@@ -54,7 +54,18 @@ NATIVE_TARGET_POP()
 //   widen(output, a, b);
 ```
 
-The instructions retain their architectural floating-point behavior: FPCR is
+
+Constant evaluation uses a fixed floating-point environment: nearest-even
+rounding, gradual inputs and results, payload-preserving NaNs, standard IEEE
+half precision, and masked exceptions. FPCR controls DN, AH, AHP, FZ, FZ16, FIZ,
+and EBF are zero. No status flags, traps, or control-register accesses occur.
+An architecture tag lacking the instruction feature admits a `consteval`-only
+overload when every operand/result storage type is complete; runtime inputs
+remain compile-time errors. Lane, rotation, element-type and architecture
+requirements still apply. With the feature present, the same function is
+`constexpr` and its runtime branch executes the native instruction.
+
+The instructions retain their architectural floating-point behavior at runtime: FPCR is
 read and left unchanged, and applicable exception flags accumulate in FPSR.
 The wrappers do not install a rounding mode, flush subnormals in software,
 canonicalize NaNs, clear flags, or save/restore the environment. Signed zero,
