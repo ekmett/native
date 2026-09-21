@@ -1,5 +1,20 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-foreach(suite IN ITEMS header module main)
+cmake_minimum_required(VERSION 4.4)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_arm_i8mm_consumer LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+  enable_testing()
+endif()
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  return()
+endif()
+
+set(suites header module main)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  # Installed consumers use public modules, not private implementation headers.
+  set(suites module main)
+endif()
+foreach(suite IN LISTS suites)
   set(target native_test_arm_i8mm_${suite})
   add_executable(${target} ${suite}.cc)
   if(suite STREQUAL "main")
@@ -14,6 +29,11 @@ foreach(suite IN ITEMS header module main)
   add_test(NAME native.arm.i8mm.${suite} COMMAND ${target})
   set_tests_properties(native.arm.i8mm.${suite} PROPERTIES LABELS "host;modules;baseline;i8mm" SKIP_RETURN_CODE 77)
 endforeach()
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  return()
+endif()
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(i8mm_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
 find_program(i8mm_objdump NAMES llvm-objdump HINTS "${i8mm_compiler_dir}" REQUIRED)
