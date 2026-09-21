@@ -43,7 +43,7 @@ set(DOXYGEN_PREDEFINED
   "native_artificial:=" "native_noescape:=" "native_reinitializes:="
   "native_empty_bases:=" "native_restrict:=" "native_hidden:="
   "native_nonnull(x):=" "native_null_terminated_string_arg(x):="
-  "native_target(x):=")
+  "native_target(x):=" "native_diagnose_if(condition,message):=")
 # The compiler includes wide's fragments once per target family. Doxygen scans
 # input headers independently and cannot reconstruct their class context. Stage
 # one expansion in the actual owning header, retaining signatures and comments;
@@ -132,11 +132,17 @@ foreach(family IN ITEMS dotprod rdm fp16fml fcma i8mm)
   set(export_block "export {\n${body_include}\n}")
   string(FIND "${module_text}" "${export_block}" export_offset)
   string(FIND "${body_text}" "\nnamespace native {" namespace_offset)
-  if(export_offset EQUAL -1 OR namespace_offset EQUAL -1)
-    message(FATAL_ERROR "Doxygen instruction staging could not find the export scope for ${family}")
+  if(NOT export_offset EQUAL -1 AND NOT namespace_offset EQUAL -1)
+    string(REPLACE "${export_block}" "\n${body_include}\n" module_text "${module_text}")
+    string(REPLACE "\nnamespace native {" "\nexport namespace native {" body_text "${body_text}")
+  else()
+    # Bodies with private semantic helpers already export their public namespace.
+    string(FIND "${body_text}" "\nexport namespace native {" public_namespace_offset)
+    string(FIND "${module_text}" "${body_include}" include_offset)
+    if(public_namespace_offset EQUAL -1 OR include_offset EQUAL -1)
+      message(FATAL_ERROR "Doxygen instruction staging could not find the export scope for ${family}")
+    endif()
   endif()
-  string(REPLACE "${export_block}" "\n${body_include}\n" module_text "${module_text}")
-  string(REPLACE "\nnamespace native {" "\nexport namespace native {" body_text "${body_text}")
   file(MAKE_DIRECTORY "${docs_source_root}/src/native/arm")
   file(WRITE "${docs_source_root}/${module_path}" "${module_text}")
   file(WRITE "${docs_source_root}/${body_path}" "${body_text}")
