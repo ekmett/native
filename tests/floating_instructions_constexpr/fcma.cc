@@ -15,7 +15,7 @@ namespace {
     return x;
   }
   template<class T,std::size_t N,native::isa<native::arm> A>
-  constexpr auto load(std::array<word<T>,8> const & x) {
+  constexpr __attribute__((target("complxnum,fullfp16"))) auto load(std::array<word<T>,8> const & x) {
     if constexpr(std::same_as<T,double>) {
       auto values=std::bit_cast<std::array<double,8>>(x);
       return native::simd<T,N,A>::load(values.data());

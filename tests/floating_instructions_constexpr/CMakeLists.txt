@@ -16,6 +16,15 @@ foreach(family IN LISTS families)
   set(target native_constexpr_${family})
   add_executable(${target} ${family}.cc)
   target_link_libraries(${target} PRIVATE native::native)
+  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+    # The driver must remain baseline-safe even when the compiler defaults to a
+    # newer CPU; each runtime leaf owns its instruction target explicitly.
+    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+      target_compile_options(${target} PRIVATE /clang:-march=armv8-a)
+    else()
+      target_compile_options(${target} PRIVATE -march=armv8-a)
+    endif()
+  endif()
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON
     INTERPROCEDURAL_OPTIMIZATION FALSE)
   add_test(NAME native.constexpr.${family} COMMAND ${target})
