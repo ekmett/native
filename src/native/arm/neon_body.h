@@ -19,7 +19,7 @@ export namespace native {
   sqadd(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -59,7 +59,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch> sqadd(simd<T, N, Arch> a,
@@ -78,7 +78,7 @@ export namespace native {
   uqadd(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -118,7 +118,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch> uqadd(simd<T, N, Arch> a,
@@ -137,7 +137,7 @@ export namespace native {
   sqsub(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -177,7 +177,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch> sqsub(simd<T, N, Arch> a,
@@ -196,7 +196,7 @@ export namespace native {
   uqsub(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -236,7 +236,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch> uqsub(simd<T, N, Arch> a,
@@ -378,7 +378,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -397,7 +397,7 @@ export namespace native {
   srshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -437,7 +437,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -457,7 +457,7 @@ export namespace native {
   sqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -497,7 +497,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -517,7 +517,7 @@ export namespace native {
   sqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -557,7 +557,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -617,7 +617,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -636,7 +636,7 @@ export namespace native {
   urshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -676,7 +676,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -696,7 +696,7 @@ export namespace native {
   uqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -736,7 +736,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>
@@ -756,7 +756,7 @@ export namespace native {
   uqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
-      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
+        a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
     } else {
       if constexpr (sizeof(T) == 1 && N == 8)
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
@@ -796,7 +796,7 @@ export namespace native {
   /// Evaluate constant operands when NEON is absent or the big-endian runtime shape is unavailable.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires((!Arch.has(arm_feature::neon) ||
-       (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
+        (__BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__ && sizeof(T) == 8 && N == 2)) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   native_nodiscard consteval simd<T, N, Arch>

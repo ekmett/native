@@ -5,7 +5,7 @@
 Compile exact production instruction and storage-bridge bodies freestanding.
 The ACLE leaf retains its result through side-effecting asm, so its call cannot
 be deleted when discarded; the tested noinline leaf still executes its QC update.
-Report instruction costs separately; public64x2 restrictions do not hide the
+Report instruction costs separately; public 64x2 restrictions do not hide the
 private lowering under investigation.
 Only standard type/sequence declarations and attributes are supplied locally;
 no target sysroot or differently configured named-module provider is needed.
