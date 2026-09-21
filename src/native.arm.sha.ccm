@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/sha.h"
+export module native.arm.sha;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_sha
+  /// \{
+  using ::native::sha1c;
+  using ::native::sha1p;
+  using ::native::sha1m;
+  using ::native::sha1h;
+  using ::native::sha1su0;
+  using ::native::sha1su1;
+  using ::native::sha256h;
+  using ::native::sha256h2;
+  using ::native::sha256su0;
+  using ::native::sha256su1;
+  using ::native::sha512h;
+  using ::native::sha512h2;
+  using ::native::sha512su0;
+  using ::native::sha512su1;
+  using ::native::eor3;
+  using ::native::bcax;
+  using ::native::rax1;
+  using ::native::xar;
+  /// \}
+}

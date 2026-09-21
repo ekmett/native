@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/aes.h"
+export module native.arm.aes;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_aes
+  /// \{
+  using ::native::aese;
+  using ::native::aesd;
+  using ::native::aesmc;
+  using ::native::aesimc;
+  /// \}
+}
