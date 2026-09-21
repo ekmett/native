@@ -275,7 +275,15 @@ jobs:
             build/core/tests/x86_vpopcntdq/*.disassembly
             build/core/tests/x86_vpopcntdq/reject-*.log
             build/x86_vpopcntdq/*.disassembly
+            build/core/tests/x86_vpopcntdq/*-paired-*.txt
+            build/core/tests/x86_aes/*.disassembly
+            build/core/tests/x86_aes/*-paired-*.txt
+            build/core/tests/x86_aes/*-reject-*.log
+            build/x86_aes/*.disassembly
+            build/core/tests/x86_avx512cd/*.disassembly
             build/core/tests/x86_avx512cd/*-paired-*.txt
+            build/core/tests/x86_avx512cd/reject-*.log
+            build/x86_avx512cd/*.disassembly
             build/core/tests/x86_crc32c/*.disassembly
             build/core/tests/x86_crc32c/reject-*.log
             build/x86_crc32c/*.disassembly
