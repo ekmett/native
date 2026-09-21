@@ -17,13 +17,13 @@ constexpr auto Arch = native::neon_fp16;
 #else
 constexpr auto Arch = native::neon;
 #endif
-using V=native::vec<float,4,Arch>;
-static_assert(std::same_as<decltype(native::vec<float,4,Arch>(1.f,2.f,3.f,4.f)),V>);
+using V=native::simd<float,4,Arch>;
+static_assert(std::same_as<decltype(native::simd<float,4,Arch>(1.f,2.f,3.f,4.f)),V>);
 static_assert(std::same_as<decltype(V{}<V{}),V::mask>);
 static_assert(sizeof(V)==16);
 #if TEST_AVX512 && TEST_BOTH_X86
-static_assert(!std::same_as<native::vec<float,4,native::avx2>,V>);
-static_assert(!native::vec<float,4,native::avx2>::mask::compact);
+static_assert(!std::same_as<native::simd<float,4,native::avx2>,V>);
+static_assert(!native::simd<float,4,native::avx2>::mask::compact);
 static_assert(V::mask::compact);
 #else
 static_assert(!V::mask::compact);
@@ -40,7 +40,7 @@ extern "C" int omnibus_kernel(float const *input,float *output) {
   auto reversed=x.wzyx;
   native::store_simd(output+12,reversed);
 #if TEST_AVX512 && TEST_BOTH_X86
-  using A=native::vec<float,4,native::avx2>;
+  using A=native::simd<float,4,native::avx2>;
   auto other=fma(native::load_simd<A>(input),A(2.f),A(1.f));
   native::store_simd(output+16,other);
   return 20;

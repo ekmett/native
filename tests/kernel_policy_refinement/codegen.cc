@@ -9,7 +9,7 @@ static_assert(NATIVE_TARGET_MINIMUM<=native::avx2,
   NATIVE_TARGET_PUSH(name) \
   extern "C" __attribute__((noinline)) void refined_codegen_kernel_##name( \
       float const * a,float const * b,float const * c,float * output) { \
-    using V=native::vec<float,width,NATIVE_TARGET_ISA(name)>; \
+    using V=native::simd<float,width,NATIVE_TARGET_ISA(name)>; \
     native::wide<V,2> x{V::loadu(a),V::loadu(a+width)}; \
     native::wide<V,2> y{V::loadu(b),V::loadu(b+width)}; \
     native::wide<V,2> z{V::loadu(c),V::loadu(c+width)}; \

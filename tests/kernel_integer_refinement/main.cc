@@ -21,11 +21,11 @@ import native.arm.features;
 #endif
 
 namespace integer_test {
-  template<class T,std::size_t N,native::isa A> concept has_shape=requires { typename native::vec<T,N,A>::native_type; };
-  template<class To,class From,std::size_t N,native::isa A> concept can_pack=requires(native::vec<From,N,A> a) {
+  template<class T,std::size_t N,native::isa A> concept has_shape=requires { typename native::simd<T,N,A>::native_type; };
+  template<class To,class From,std::size_t N,native::isa A> concept can_pack=requires(native::simd<From,N,A> a) {
     native::narrow_concat<To>(a,a);
   };
-  template<class To,class From,std::size_t N,native::isa A> concept can_reinterpret=requires(native::vec<From,N,A> a) {
+  template<class To,class From,std::size_t N,native::isa A> concept can_reinterpret=requires(native::simd<From,N,A> a) {
     native::reinterpret_bits<To>(a);
   };
   static_assert(!has_shape<std::uint32_t,0,native::scalar>);
@@ -78,13 +78,13 @@ static_assert(integer_test::can_reinterpret<std::int32_t,std::uint32_t,2,native:
 #define INTEGER_CODEGEN(name) \
   NATIVE_TARGET_PUSH(name) \
   extern "C" __attribute__((noinline)) void integer_codegen_##name##_u32(std::uint32_t const * p,std::uint32_t * q) { \
-    native::popcount(native::vec<std::uint32_t,16,NATIVE_TARGET_ISA(name)>::loadu(p)).storeu(q); \
+    native::popcount(native::simd<std::uint32_t,16,NATIVE_TARGET_ISA(name)>::loadu(p)).storeu(q); \
   } \
   extern "C" __attribute__((noinline)) void integer_codegen_##name##_u64(std::uint64_t const * p,std::uint64_t * q) { \
-    native::popcount(native::vec<std::uint64_t,8,NATIVE_TARGET_ISA(name)>::loadu(p)).storeu(q); \
+    native::popcount(native::simd<std::uint64_t,8,NATIVE_TARGET_ISA(name)>::loadu(p)).storeu(q); \
   } \
   extern "C" __attribute__((noinline)) void integer_codegen_##name##_pack(std::uint64_t const * a,std::uint64_t const * b,std::uint32_t * q) { \
-    using V=native::vec<std::uint64_t,8,NATIVE_TARGET_ISA(name)>; \
+    using V=native::simd<std::uint64_t,8,NATIVE_TARGET_ISA(name)>; \
     native::narrow_concat<std::uint32_t>(V::loadu(a),V::loadu(b)).storeu(q); \
   } \
   NATIVE_TARGET_POP()

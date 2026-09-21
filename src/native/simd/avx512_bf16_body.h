@@ -3,7 +3,7 @@
 export namespace native {
   namespace detail {
     template<std::size_t N,::native::isa A> requires NATIVE_ARCH_REQUIRES(A) &&(N==8 || N==16 || N==32)
-    struct value_traits<vec<bf16,N,A>> {
+    struct value_traits<simd<bf16,N,A>> {
       static constexpr isa value=avx512_bf16;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
@@ -17,17 +17,17 @@ export namespace native {
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
   template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
-  struct vec<bf16,N,Arch> {
+  struct simd<bf16,N,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
     /// The distinct compile-time AVX512_BF16 instruction profile.
     static constexpr isa architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
-    using register_type = vec;
+    using register_type = simd;
     /// Native register-width BF16 register representation; native bridges copy bits.
     using native_type = std::conditional_t<N == 8,__m128bh,std::conditional_t<N == 16,__m256bh,__m512bh>>;
     /// Unsigned 16-bit lanes in the same profile and lane order.
-    using bits_type = vec<std::uint16_t,N,architecture>;
+    using bits_type = simd<std::uint16_t,N,architecture>;
     /// Compact predicate with bit i selecting BF16 lane i.
     using mask = predicate<N,architecture>;
     /// Generic mask spelling for the compact lane predicate.
@@ -35,27 +35,27 @@ export namespace native {
     /// Explicit predicate spelling for the same compact mask type.
     using predicate_type = mask;
     /// Full-register mask shape with zero or all-one 16-bit lanes.
-    using vector_mask_type = vec<mask16,N,architecture>;
+    using vector_mask_type = simd<mask16,N,architecture>;
     /// Replace the element type while retaining N lanes and this profile.
     /// Unsupported resulting shapes remain incomplete.
-    template<class T> using rebind = vec<T,N,architecture>;
+    template<class T> using rebind = simd<T,N,architecture>;
     /// Number of logical BF16 lanes, with no padding lanes.
     static constexpr std::size_t lanes = N;
   private:
     native_type value_;
   public:
     /// Default initialization leaves storage unspecified; braces zero it.
-    vec() noexcept = default;
+    simd() noexcept = default;
     /// Broadcast the exact representation of value to all N lanes.
-    native_inline explicit vec(bf16 value) noexcept
+    native_inline explicit simd(bf16 value) noexcept
       : value_(std::bit_cast<native_type>(bits_type(value.to_bits()).to_native())) {}
     /// Copy array element i into lane i without conversion or representation changes.
-    native_inline explicit vec(std::array<bf16,lanes> const & values) noexcept : vec(load(values.data())) {}
+    native_inline explicit simd(std::array<bf16,lanes> const & values) noexcept : simd(load(values.data())) {}
     /// Construct all N lanes from BF16 values in argument order, preserving their bits.
     template<class... T> requires(sizeof...(T) == lanes && (std::same_as<T,bf16> && ...))
-    native_inline vec(T... values) noexcept : vec(std::array<bf16,lanes>{values...}) {}
+    native_inline simd(T... values) noexcept : simd(std::array<bf16,lanes>{values...}) {}
     /// Adopt a native register without conversion or representation changes.
-    native_inline vec(native_type value) noexcept : value_(value) {}
+    native_inline simd(native_type value) noexcept : value_(value) {}
     /// Project the native register for direct intrinsic interoperability.
     native_nodiscard native_inline operator native_type() const noexcept { return value_; }
     // Native interoperability must not add elementwise BF16 arithmetic.
@@ -63,8 +63,8 @@ export namespace native {
     /// Return all lane bits as a native register, without conversion or lane reordering.
     native_nodiscard native_inline native_type to_native() const noexcept { return value_; }
     /// Copy a native BF16 register into this vector, preserving every representation bit.
-    native_nodiscard static native_inline vec from_native(native_type value) noexcept {
-      vec result; result.value_ = value; return result;
+    native_nodiscard static native_inline simd from_native(native_type value) noexcept {
+      simd result; result.value_ = value; return result;
     }
     /// Return the 16-bit representation of each lane in an unsigned vector.
     native_nodiscard native_inline bits_type bits() const noexcept {
@@ -73,12 +73,12 @@ export namespace native {
     /// Synonym for bits(); this is a representation bridge, not a numeric conversion.
     native_nodiscard native_inline bits_type to_bits() const noexcept { return bits(); }
     /// Interpret each unsigned lane as a BF16 representation without changing its bits.
-    native_nodiscard static native_inline vec from_bits(bits_type value) noexcept {
+    native_nodiscard static native_inline simd from_bits(bits_type value) noexcept {
       return from_native(std::bit_cast<native_type>(value.to_native()));
     }
     /// Read exactly N accessible uint16_t objects into corresponding BF16 lane bits.
     /// No alignment beyond that of uint16_t is required; p must not be null.
-    native_nodiscard static native_inline vec load_bits(std::uint16_t const * p) noexcept {
+    native_nodiscard static native_inline simd load_bits(std::uint16_t const * p) noexcept {
       return from_bits(bits_type::load(p));
     }
     /// Write every lane representation to N accessible uint16_t objects in lane order.
@@ -89,7 +89,7 @@ export namespace native {
     /// check. The default imposes no alignment beyond that required for BF16 objects.
     /// p must not be null.
     template<std::size_t Alignment = 1>
-    native_nodiscard static native_inline vec load_memory(bf16 const * p) noexcept {
+    native_nodiscard static native_inline simd load_memory(bf16 const * p) noexcept {
       static_assert(Alignment > 0 && (Alignment & (Alignment - 1)) == 0);
       native_type value; std::memcpy(&value, p, sizeof(value)); return from_native(value);
     }
@@ -103,18 +103,18 @@ export namespace native {
       std::memcpy(p, &value_, sizeof(value_));
     }
     /// Load N BF16 objects with the default alignment contract of load_memory().
-    native_nodiscard static native_inline vec load(bf16 const * p) noexcept { return load_memory(p); }
+    native_nodiscard static native_inline simd load(bf16 const * p) noexcept { return load_memory(p); }
     /// Store N BF16 objects with the default alignment contract of store_memory().
     native_inline void store(bf16 * p) const noexcept { store_memory(p); }
     /// Synonym for load(); no register-width alignment is required.
-    native_nodiscard static native_inline vec loadu(bf16 const * p) noexcept { return load(p); }
+    native_nodiscard static native_inline simd loadu(bf16 const * p) noexcept { return load(p); }
     /// Synonym for store(); no register-width alignment is required.
     native_inline void storeu(bf16 * p) const noexcept { store(p); }
     /// Read exactly the first n accessible BF16 objects, where n <= N.
     /// Copy their representations to lanes [0,n); remaining lanes receive fill's
     /// exact representation. The default fill is positive zero. No access occurs
     /// for n == 0, when p may be null; otherwise p must address n BF16 objects.
-    native_nodiscard static native_inline vec load_partial(bf16 const * p, std::size_t n,
+    native_nodiscard static native_inline simd load_partial(bf16 const * p, std::size_t n,
         bf16 fill = bf16::from_bits(0)) noexcept {
       assert(n <= lanes);
       std::array<bf16,lanes> values; values.fill(fill);
@@ -138,10 +138,10 @@ export namespace native {
   /// This is not a single-rounding three-term sum. NaN propagation follows
   /// the instruction, with low input lanes taking priority over high lanes.
   template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
-  native_nodiscard native_inline vec<float,N/2,Arch> dot2(
-      vec<bf16,N,Arch> a, vec<bf16,N,Arch> b,
-      vec<float,N/2,Arch> accumulator) noexcept {
-    return vec<float,N/2,Arch>::from_native(
+  native_nodiscard native_inline simd<float,N/2,Arch> dot2(
+      simd<bf16,N,Arch> a, simd<bf16,N,Arch> b,
+      simd<float,N/2,Arch> accumulator) noexcept {
+    return simd<float,N/2,Arch>::from_native(
       detail::avx512_bf16_backend::dot2_native(a.to_native(), b.to_native(), accumulator.to_native()));
   }
 }

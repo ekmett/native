@@ -34,7 +34,7 @@ constexpr auto arch = native::neon;
 #else
 constexpr auto arch = native::scalar;
 #endif
-template<std::size_t N> using V = native::vec<float,N,arch>;
+template<std::size_t N> using V = native::simd<float,N,arch>;
 enum class direction { down, up, zero };
 static std::size_t checks;
 
@@ -108,7 +108,7 @@ template<std::size_t N> static void shape(std::vector<std::uint32_t> const & wor
   }
 }
 template<class T> concept has_rounding = requires(T x) { native::floor(x); native::ceil(x); native::trunc(x); };
-static_assert(!has_rounding<native::vec<std::int32_t,1,arch>>);
+static_assert(!has_rounding<native::simd<std::int32_t,1,arch>>);
 static_assert(!has_rounding<native::wide<int,2>>);
 
 // Ordinary native object witnesses: input/output memory avoids scalar-wrapper

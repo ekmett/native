@@ -9,10 +9,10 @@ namespace native {
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From) == 2 * sizeof(To) && N * sizeof(From) >= 16 &&
-      requires { sizeof(vec<From, N, Arch>); sizeof(vec<To, 2 * N, Arch>); })
-  native_nodiscard native_inline native_const vec<To, 2 * N, Arch> narrow_concat(
-      vec<From, N, Arch> a, vec<From, N, Arch> b) noexcept {
-    using result = vec<To, 2 * N, Arch>;
+      requires { sizeof(simd<From, N, Arch>); sizeof(simd<To, 2 * N, Arch>); })
+  native_nodiscard native_inline native_const simd<To, 2 * N, Arch> narrow_concat(
+      simd<From, N, Arch> a, simd<From, N, Arch> b) noexcept {
+    using result = simd<To, 2 * N, Arch>;
 #if NATIVE_HAS_ARM_NEON
     if constexpr (sizeof(From) == 8)
       return result::from_native(vreinterpretq_u8_u32(vcombine_u32(

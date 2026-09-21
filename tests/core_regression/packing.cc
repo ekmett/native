@@ -137,7 +137,7 @@ namespace {
 #if NATIVE_TEST_PROFILE != 0
   template <class To, class From, unsigned Bytes> void narrow_test() {
     constexpr auto n = Bytes / sizeof(From);
-    using V = native::vec<From,n,test_arch>;
+    using V = native::simd<From,n,test_arch>;
     std::array<From,n> a{}, b{};
     std::array<To,2*n> actual{};
     for (unsigned round = 0; round != 257; ++round) {

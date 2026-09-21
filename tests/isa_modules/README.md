@@ -11,7 +11,7 @@ This standalone fixture uses small SIMD and wide implementations to exercise
 native operations, CTAD, ADL, module imports and archive linkage. It does not
 replace or claim complete coverage of the production API.
 
-The `native::vec<T,N,Arch>` fixture specializations have
+The `native::simd<T,N,Arch>` fixture specializations have
 private ISA flags.
 One generic `fixture::engine<Arch,Lanes>` supplies the architecture value
 and finds arithmetic through ADL. The dispatcher has no ISA imports or IPO;

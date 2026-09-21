@@ -21,7 +21,7 @@ import native.math;
 #include <native/wide_math.h>
 #endif
 
-using scalar = native::vec<float, 1, native::scalar>;
+using scalar = native::simd<float, 1, native::scalar>;
 extern "C" void promoted_trig_reference(unsigned, float const *, float *, float *, float *, float *);
 
 template<class P, class T> concept can_constant = requires(P const & p, T value) {
@@ -335,12 +335,12 @@ int main() {
     empty_shapes(sine); empty_shapes(cosine); empty_shapes(paired_sine); empty_shapes(paired_cosine); empty_shapes(flush);
     check_width<scalar>(trig, words);
 #if defined(__AVX2__)
-    check_width<native::vec<float, 2, native::avx2>>(trig, words);
-    check_width<native::vec<float, 3, native::avx2>>(trig, words);
-    check_width<native::vec<float, 4, native::avx2>>(trig, words);
-    check_width<native::vec<float, 8, native::avx2>>(trig, words);
+    check_width<native::simd<float, 2, native::avx2>>(trig, words);
+    check_width<native::simd<float, 3, native::avx2>>(trig, words);
+    check_width<native::simd<float, 4, native::avx2>>(trig, words);
+    check_width<native::simd<float, 8, native::avx2>>(trig, words);
 #elif defined(__ARM_NEON)
-    check_width<native::vec<float, 4, native::neon>>(trig, words);
+    check_width<native::simd<float, 4, native::neon>>(trig, words);
 #endif
     require(scope.controls_match(), "promoted math changed FP controls");
   }

@@ -251,7 +251,7 @@ namespace wide {
   namespace detail {
     template<class T> inline constexpr bool binary32_register = false;
     template<std::size_t N, ::native::isa A>
-    inline constexpr bool binary32_register<::native::vec<float, N, A>> = true;
+    inline constexpr bool binary32_register<::native::simd<float, N, A>> = true;
     template<class P> inline constexpr bool binary32_array = false;
     template<class V, std::size_t N>
     inline constexpr bool binary32_array<std::array<V, N>> = binary32_register<V>;

@@ -37,14 +37,14 @@ namespace CASE_NAMESPACE {
   }
   template<std::size_t L,std::size_t N> bool run() {
     constexpr auto A = NATIVE_TARGET_ISA(CASE_TARGET);
-    using V=native::vec<float,L,A>;
+    using V=native::simd<float,L,A>;
     using W=native::wide<V,N>;
     static_assert(!addable<W,native::wide<V,N+1>>);
-    using OtherWidth=native::vec<float,L==1?2:1,A>;
+    using OtherWidth=native::simd<float,L==1?2:1,A>;
     static_assert(!addable<W,native::wide<OtherWidth,N>>);
 #if defined(__x86_64__) || defined(_M_X64)
     constexpr auto OtherArch=A==native::avx2?native::avx512:native::avx2;
-    if constexpr (L<=8) static_assert(!addable<W,native::wide<native::vec<float,L,OtherArch>,N>>);
+    if constexpr (L<=8) static_assert(!addable<W,native::wide<native::simd<float,L,OtherArch>,N>>);
 #endif
 #if !NATIVE_TEST_IMPORT
     static_assert(native::detail::wide_features<std::pair<V &,int>>::value==NATIVE_TARGET_ISA(CASE_SCOPE));

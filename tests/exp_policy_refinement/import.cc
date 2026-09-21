@@ -9,7 +9,7 @@ import native.math;
 
 NATIVE_TARGET_PUSH(avx2)
 bool check_import() {
-  using V=native::vec<float,8,native::avx2>;
+  using V=native::simd<float,8,native::avx2>;
   using W=native::wide<V,2>;
   using F=W (*)(W const &);
   static_assert(static_cast<F>(&native::exp<false>)==static_cast<F>(&native::exp<false,8,2,native::avx2>));
@@ -33,7 +33,7 @@ NATIVE_TARGET_POP()
   NATIVE_TARGET_PUSH(name) \
   bool check_half_tag_##name() { \
     constexpr auto A=native::feature_closure(NATIVE_TARGET_ISA(name)&native::x86_feature::avx512bf16&native::x86_feature::avx512fp16); \
-    using V=native::vec<float,8,A>; \
+    using V=native::simd<float,8,A>; \
     using W=native::wide<V,2>; \
     using F=W (*)(W const &); \
     static_assert(static_cast<F>(&native::exp<false>)==static_cast<F>(&native::exp<false,8,2,A>)); \

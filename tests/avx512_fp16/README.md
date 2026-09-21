@@ -2,7 +2,7 @@
 
 The x86 hub exposes this API through `import native;` at the configured minimum.
 The `avx512_fp16` tag selects
-`vec<fp16,32,avx512_fp16>`: one 512-bit register, unsigned bit bridges, exact
+`simd<fp16,32,avx512_fp16>`: one 512-bit register, unsigned bit bridges, exact
 representation loads/stores, bounded partial memory, native add/sub/mul/div/FMA and `sqrt(x)` (found by ADL),
 ordered comparisons, bitwise sign negation and representation-preserving select.
 Its mask is `predicate<32,avx512_fp16>`. Only the 32-lane half shape is provided;

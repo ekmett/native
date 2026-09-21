@@ -12,12 +12,12 @@ namespace {
   struct nonstatic_architecture { isa architecture{}; };
   struct mutable_architecture { inline static isa architecture{}; };
   template<isa A,isa Expected> consteval bool raw_value_requirements() {
-    return (value_architecture_v<vec<float,1,A>> == Expected) &&
-      (value_architecture_v<vec<float,16,A> const> == Expected) &&
-      (value_architecture_v<vec<std::uint16_t,32,A>> == Expected) &&
-      (value_architecture_v<vec<mask_lane<std::uint32_t>,16,A>> == Expected) &&
+    return (value_architecture_v<simd<float,1,A>> == Expected) &&
+      (value_architecture_v<simd<float,16,A> const> == Expected) &&
+      (value_architecture_v<simd<std::uint16_t,32,A>> == Expected) &&
+      (value_architecture_v<simd<mask_lane<std::uint32_t>,16,A>> == Expected) &&
       (value_architecture_v<predicate<16,A>> == Expected) &&
-      (value_architecture_v<vec<custom_element,16,A>> == A);
+      (value_architecture_v<simd<custom_element,16,A>> == A);
   }
   static_assert(raw_value_requirements<kernel_full_half,avx512>());
   static_assert(raw_value_requirements<kernel_bw_half,kernel_bw>());
@@ -28,10 +28,10 @@ namespace {
   static_assert(!value_traits<int>::known && !value_traits<malformed_value>::known &&
     !value_traits<malformed_constant>::known &&
     !value_traits<nonstatic_architecture>::known && !value_traits<mutable_architecture>::known);
-  static_assert(value_traits<vec<float,1,kernel_full_half>>::aggregate_default);
-  static_assert(!value_traits<vec<float,2,kernel_full_half>>::aggregate_default &&
-    !value_traits<vec<std::uint32_t,1,kernel_full_half>>::aggregate_default &&
-    !value_traits<vec<custom_element,1,kernel_full_half>>::aggregate_default &&
+  static_assert(value_traits<simd<float,1,kernel_full_half>>::aggregate_default);
+  static_assert(!value_traits<simd<float,2,kernel_full_half>>::aggregate_default &&
+    !value_traits<simd<std::uint32_t,1,kernel_full_half>>::aggregate_default &&
+    !value_traits<simd<custom_element,1,kernel_full_half>>::aggregate_default &&
     !value_traits<custom_value>::aggregate_default);
   // Independent description of the original declaration boundaries. Checking
   // every subset catches priority mistakes hidden by the named presets.

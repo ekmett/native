@@ -10,8 +10,7 @@
 // These primaries belong to the global module fragment, including when wide
 // needs their exact-type traits before the hub defines the specializations.
 namespace native {
-  template<class T,std::size_t N,isa Arch> struct vec;
-  template<class T,std::size_t N,isa Arch> using simd=vec<T,N,Arch>;
+  template<class T,std::size_t N,isa Arch> struct simd;
   template<std::size_t N,isa Arch> struct predicate;
   template<class U> requires (std::is_unsigned_v<U> && !std::same_as<U,bool> && (sizeof(U)==1 || sizeof(U)==2 || sizeof(U)==4 || sizeof(U)==8))
   struct mask_lane;
@@ -35,7 +34,7 @@ namespace native {
       static constexpr bool aggregate_default=false;
     };
     template<class T,std::size_t N,isa A>
-    struct value_traits<vec<T,N,A>> {
+    struct value_traits<simd<T,N,A>> {
       static constexpr isa value=A;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
@@ -46,7 +45,7 @@ namespace native {
         std::same_as<T,std::int16_t> || std::same_as<T,std::uint16_t> ||
         std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t> ||
         std::same_as<T,std::int64_t> || std::same_as<T,std::uint64_t>)
-    struct value_traits<vec<T,N,A>> {
+    struct value_traits<simd<T,N,A>> {
       static constexpr isa value=abi_lookup<A,raw_kernel_policies>::architecture;
       static constexpr bool known=true;
       // float's one-lane specialization has a +0 member initializer. Bypassing

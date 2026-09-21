@@ -59,9 +59,9 @@ constexpr std::size_t lanes=16;
 constexpr std::size_t lanes=4;
 #endif
 constexpr auto advertised=NATIVE_TARGET_ISA(FP_TARGET)&NATIVE_TARGET_ISA(BF_TARGET);
-using raw=native::vec<float,lanes,advertised>;
-using half=native::vec<native::fp16,lanes*2,advertised>;
-using brain=native::vec<native::bf16,lanes*2,advertised>;
+using raw=native::simd<float,lanes,advertised>;
+using half=native::simd<native::fp16,lanes*2,advertised>;
+using brain=native::simd<native::bf16,lanes*2,advertised>;
 static_assert(raw::architecture==advertised);
 static_assert(half::architecture==advertised);
 static_assert(brain::architecture==advertised);

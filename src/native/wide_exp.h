@@ -10,10 +10,10 @@ export namespace native {
   NATIVE_TARGET_PUSH(name) \
   template<bool Flush=false,std::size_t L,std::size_t N,isa Arch> \
     requires (detail::exp_target<Arch> == i) \
-  native_nodiscard native_inline constexpr wide<vec<float,L,Arch>,N> \
-  exp(wide<vec<float,L,Arch>,N> const & input) \
-      noexcept(noexcept(wide<vec<float,L,Arch>,N>{::native::exp<Flush>(input.registers)})) { \
-    return wide<vec<float,L,Arch>,N>{::native::exp<Flush>(input.registers)}; \
+  native_nodiscard native_inline constexpr wide<simd<float,L,Arch>,N> \
+  exp(wide<simd<float,L,Arch>,N> const & input) \
+      noexcept(noexcept(wide<simd<float,L,Arch>,N>{::native::exp<Flush>(input.registers)})) { \
+    return wide<simd<float,L,Arch>,N>{::native::exp<Flush>(input.registers)}; \
   } \
   NATIVE_TARGET_POP()
   NATIVE_EXP_TARGETS(NATIVE_EMIT_WIDE_EXP)

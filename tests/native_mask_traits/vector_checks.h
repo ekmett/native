@@ -22,7 +22,7 @@ namespace mask_fixture {
     static_assert(std::same_as<typename native::mask_traits<V>::type, M>);
     static_assert(std::same_as<native::mask<V>, M>);
     static_assert(std::same_as<native::mask<V const volatile&>, M>);
-    static_assert(std::same_as<native::mask<native::vec<T, N, A>>, M>);
+    static_assert(std::same_as<native::mask<native::simd<T, N, A>>, M>);
     static_assert(std::same_as<native::mask<std::array<V, 2>>, std::array<M, 2>>);
     return true;
   }
@@ -39,8 +39,8 @@ namespace mask_fixture {
   static_assert(std::same_as<native::mask<native::mask16>, native::mask16>);
   static_assert(std::same_as<native::mask<native::mask32 const&>, native::mask32>);
   static_assert(std::same_as<native::mask<native::mask64>, native::mask64>);
-  static_assert(!has_mask<native::vec<double, 4, native::scalar>>);
-  static_assert(!has_mask<native::vec<unsupported, 1, native::scalar>>);
+  static_assert(!has_mask<native::simd<double, 4, native::scalar>>);
+  static_assert(!has_mask<native::simd<unsupported, 1, native::scalar>>);
   static_assert(!has_mask<native::predicate<0, native::scalar>>);
   static_assert(!has_mask<native::predicate<65, native::scalar>>);
 
@@ -62,7 +62,7 @@ namespace mask_fixture {
   static_assert(std::same_as<native::mask<native::simd<custom_element, 8, native::avx2>>,
     native::mask<native::simd<float, 8, native::avx2>>>);
   static_assert(std::same_as<native::mask<native::simd<float, 4, native::avx2>>,
-    native::vec<native::mask32, 4, native::avx2>>);
+    native::simd<native::mask32, 4, native::avx2>>);
   static_assert(std::same_as<native::mask<native::simd<float, 4, native::avx512>>,
     native::predicate<4, native::avx512>>);
   static_assert(std::same_as<native::mask<native::simd<float, 16, native::avx512>>,
@@ -71,7 +71,7 @@ namespace mask_fixture {
     native::predicate<3, native::avx512>>);
   static_assert(std::same_as<native::mask<native::predicate<16, native::avx512>>,
     native::predicate<16, native::avx512>>);
-  static_assert(!has_mask<native::vec<float, 5, native::avx2>>);
+  static_assert(!has_mask<native::simd<float, 5, native::avx2>>);
   static_assert(!has_mask<native::predicate<0, native::avx512>>);
   static_assert(!has_mask<native::predicate<65, native::avx512>>);
 #elif !defined(NATIVE_MASK_TRAITS_SCALAR_ONLY) && (defined(__aarch64__) || defined(_M_ARM64))
@@ -87,7 +87,7 @@ namespace mask_fixture {
   static_assert(std::same_as<native::mask<native::simd<custom_element, 4, native::neon>>,
     native::mask<native::simd<float, 4, native::neon>>>);
   static_assert(std::same_as<native::mask<native::simd<float, 4, native::neon>>,
-    native::vec<native::mask32, 4, native::neon>>);
-  static_assert(!has_mask<native::vec<float, 5, native::neon>>);
+    native::simd<native::mask32, 4, native::neon>>);
+  static_assert(!has_mask<native::simd<float, 5, native::neon>>);
 #endif
 }

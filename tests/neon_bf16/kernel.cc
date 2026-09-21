@@ -12,20 +12,20 @@
 #include "support/guarded_pages.h"
 #include "../half_storage/native_bridge.h"
 import native;
-using B = native::vec<native::bf16,8,native::neon_bf16>;
+using B = native::simd<native::bf16,8,native::neon_bf16>;
 static_assert(native::test::native_bridge<B>);
 static_assert(native::test::bf16_storage_only<B>);
 static_assert(sizeof(B) == 16 && alignof(B) == 16 && std::is_trivially_copyable_v<B>);
 static_assert(sizeof(native::bf16) == 2 && !B::mask::compact);
-static_assert(std::same_as<decltype(native::vec<native::bf16,8,native::neon_bf16>(std::array<native::bf16,8>{})),B>);
-using F = native::vec<float,4,native::neon_bf16>;
+static_assert(std::same_as<decltype(native::simd<native::bf16,8,native::neon_bf16>(std::array<native::bf16,8>{})),B>);
+using F = native::simd<float,4,native::neon_bf16>;
 static_assert(std::same_as<decltype(native::dot2(B{},B{},F{})),F>);
 static_assert(noexcept(native::dot2(B{},B{},F{})));
 template<class V> concept addable = requires(V a) { a+a; };
 static_assert(!addable<B>);
 
 template<std::size_t... I> auto lane_construction(std::index_sequence<I...>) {
-  return native::vec<native::bf16,sizeof...(I),native::neon_bf16>(native::bf16::from_bits(std::uint16_t(I))...);
+  return native::simd<native::bf16,sizeof...(I),native::neon_bf16>(native::bf16::from_bits(std::uint16_t(I))...);
 }
 static_assert(std::same_as<decltype(lane_construction(std::make_index_sequence<8>{})),B>);
 

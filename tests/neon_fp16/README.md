@@ -7,7 +7,7 @@ in one translation unit, or compile a separate kernel with
 `native_target_profile(kernel NEON_FP16)` as this fixture does. Common modules
 keep one provider. Importing the hub does not admit optional instructions.
 
-`vec<fp16,8,neon_fp16>` provides exact representation storage, addition,
+`simd<fp16,8,neon_fp16>` provides exact representation storage, addition,
 subtraction, multiplication, division, `sqrt(x)` (found by ADL), unary negation, comparisons, selection, and
 `fma(a,b,c)`. FMA computes a*b+c with one half rounding. Arithmetic follows the
 calling thread's FPCR, including rounding and FZ16 (half input/output subnormal

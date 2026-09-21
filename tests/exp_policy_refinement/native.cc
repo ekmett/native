@@ -52,7 +52,7 @@ namespace refinement_test {
   template<bool Reference,bool Flush,std::size_t L,std::size_t N,native::isa A> \
     requires (native::abi_lookup<A,policies>::index == i) \
   __attribute__((noinline)) void function(std::uint32_t const * input,std::uint32_t * output) { \
-    using V=native::vec<float,L,A>; \
+    using V=native::simd<float,L,A>; \
     auto values=[&]<std::size_t... K>(std::index_sequence<K...>) { \
       if constexpr(N==0) return native::wide<V,0>{std::array<V,0>{{}}}; \
       else return native::wide<V,N>{V::load_bits(input+K*L)...}; \
@@ -75,13 +75,13 @@ namespace refinement_test {
   NATIVE_TARGET_PUSH(name) \
   EXP_EVALUATE(evaluate,caller_targets,i) \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_narrow(float const * input,float * output) { \
-    using V=native::vec<float,8,NATIVE_TARGET_ISA(name)>; \
+    using V=native::simd<float,8,NATIVE_TARGET_ISA(name)>; \
     auto value=native::exp(native::wide<V,2>{V::load(input),V::load(input+8)}); \
     value.registers[0].store(output);value.registers[1].store(output+8); \
   } \
   extern "C" __attribute__((noinline)) void refined_codegen_##name##_native(float const * input,float * output) { \
     constexpr std::size_t lanes=NATIVE_TARGET_ISA(name).has(NATIVE_TARGET_ISA(exp_base))?16:8; \
-    using V=native::vec<float,lanes,NATIVE_TARGET_ISA(name)>; \
+    using V=native::simd<float,lanes,NATIVE_TARGET_ISA(name)>; \
     auto value=native::exp(native::wide<V,2>{V::load(input),V::load(input+lanes)}); \
     value.registers[0].store(output);value.registers[1].store(output+lanes); \
   } \

@@ -40,7 +40,7 @@ void check(bool value) { if (!value) std::abort(); }
 //! [vector_construction]
 template<native::isa Arch>
 void vector_construction() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   V zero{};
   V repeated(2.f);
   auto lanes = V{1.f, 2.f, 3.f, 4.f};
@@ -53,7 +53,7 @@ void vector_construction() {
 //! [masks]
 template<native::isa Arch>
 void masks() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   V x{1.f, 2.f, 3.f, 4.f};
   typename V::mask active = x < V(3.f);
   auto chosen = select(active, x, V(-1.f));
@@ -69,7 +69,7 @@ void masks() {
 //! [memory]
 template<native::isa Arch>
 void memory() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   std::array<float, 4> input{1.f, 2.f, 3.f, 4.f};
   auto full = native::load_simd<V>(input);
   auto tail = native::load_simd_partial<V>(input.data(), 3, -1.f);
@@ -84,7 +84,7 @@ void memory() {
 //! [compaction]
 template<native::isa Arch>
 void compaction() {
-  using V = native::vec<std::uint32_t, 4, Arch>;
+  using V = native::simd<std::uint32_t, 4, Arch>;
   auto active = V::mask::from_bitset(0b1010);
   V input{10u, 20u, 30u, 40u};
   auto packed = native::compress(active, input, 99u);
@@ -100,12 +100,12 @@ void compaction() {
 //! [swizzles]
 template<native::isa Arch>
 void swizzles() {
-  using V = native::vec<float, 3, Arch>;
+  using V = native::simd<float, 3, Arch>;
   V position{1.f, 2.f, 3.f};
   auto saved = position.xy;             // an owning two-lane value
   position.xyz = position.zyx;          // snapshot, then scatter
   position.x = 4.f;
-  check(all(saved == native::vec<float, 2, Arch>{1.f, 2.f}));
+  check(all(saved == native::simd<float, 2, Arch>{1.f, 2.f}));
   check(all(position == V{4.f, 2.f, 1.f}));
 }
 //! [swizzles]
@@ -113,7 +113,7 @@ void swizzles() {
 //! [arithmetic]
 template<native::isa Arch>
 void arithmetic() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   auto y = fma(V(2.f), V(3.f), V(1.f));
   check(all(y == V(7.f)));
   check(all(sqrt(V(4.f)) == V(2.f)));
@@ -127,7 +127,7 @@ void arithmetic() {
 //! [rounding]
 template<native::isa Arch>
 void rounding() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   V x{-1.75f, -0.25f, 0.25f, 1.75f};
   check(all(native::floor(x) == V{-2.f, -1.f, 0.f, 1.f}));
   check(all(native::ceil(x) == V{-1.f, -0.f, 1.f, 2.f}));
@@ -138,7 +138,7 @@ void rounding() {
 //! [exponential]
 template<native::isa Arch>
 void exponential() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   std::array<V, 2> registers{V(0.f), V(1.f)};
   auto result = native::exp(registers);
   check(all(result[0] == V(1.f)));
@@ -149,7 +149,7 @@ void exponential() {
 //! [bit_transport]
 template<native::isa Arch>
 void bit_transport() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   auto tiny = V::from_bits(0x80000001u);
   auto zero = native::flush_to_zero(tiny);
   std::array<std::uint32_t, 4> words{};
@@ -161,7 +161,7 @@ void bit_transport() {
 //! [wide_values]
 template<native::isa Arch>
 void wide_values() {
-  using V = native::vec<float, 4, Arch>;
+  using V = native::simd<float, 4, Arch>;
   native::wide batch{V(1.f), V(2.f), V(3.f)};
   auto result = fma(batch, batch, batch);
   static_assert(std::tuple_size_v<decltype(result)> == 3);

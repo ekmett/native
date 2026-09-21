@@ -40,9 +40,9 @@ namespace wide {
     // Element adaptation does not add an outer dimension. All construction is
     // dependent, so this header may precede the complete SIMD definitions.
     template<class T> struct element_traits {};
-    template<> struct element_traits<float> { using type=::native::vec<float,1,::native::scalar>; };
+    template<> struct element_traits<float> { using type=::native::simd<float,1,::native::scalar>; };
     template<class T,std::size_t N,::native::isa A>
-    struct element_traits<::native::vec<T,N,A>> { using type=::native::vec<T,N,A>; };
+    struct element_traits<::native::simd<T,N,A>> { using type=::native::simd<T,N,A>; };
     template<std::size_t N,::native::isa A>
     struct element_traits<::native::predicate<N,A>> { using type=::native::predicate<N,A>; };
     template<class T> using adapted_t=typename element_traits<std::remove_cvref_t<T>>::type;
@@ -84,10 +84,10 @@ namespace wide {
 
   namespace detail {
     template<class T> inline constexpr bool scalar_vector=false;
-    template<class T> inline constexpr bool scalar_vector<::native::vec<T,1,::native::scalar>> = true;
+    template<class T> inline constexpr bool scalar_vector<::native::simd<T,1,::native::scalar>> = true;
     template<class T> inline constexpr bool scalar_mask=false;
     template<class T> requires (std::same_as<T,bool> || ::native::detail::is_mask_lane<T>)
-    inline constexpr bool scalar_mask<::native::vec<T,1,::native::scalar>> = true;
+    inline constexpr bool scalar_mask<::native::simd<T,1,::native::scalar>> = true;
     template<> inline constexpr bool scalar_mask<::native::predicate<1,::native::scalar>> = true;
 
     template<class Original,class P> consteval bool compatible_pack() {

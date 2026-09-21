@@ -6,11 +6,11 @@ using namespace native;
 static_assert("abi"_ss.size() == 3);
 #if PROFILE_AVX2
 import native;
-using V=native::vec<float,8,native::avx2>;
+using V=native::simd<float,8,native::avx2>;
 #define PAIR_ENTRY pair_avx2
 #else
 import native;
-using V=native::vec<float,16,native::avx512>;
+using V=native::simd<float,16,native::avx512>;
 #define PAIR_ENTRY pair_avx512
 #endif
 // Import-only generic wide and raw math consumer.

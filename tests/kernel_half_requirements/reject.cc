@@ -24,13 +24,13 @@ constexpr auto advertised=NATIVE_TARGET_ISA(FP_TARGET)&NATIVE_TARGET_ISA(BF_TARG
 NATIVE_TARGET_PUSH(RAW_TARGET)
 #if TEST_FP16
 void missing_half_target(std::uint16_t const * input,std::uint16_t * output) {
-  using H=native::vec<native::fp16,lanes*2,advertised>;
+  using H=native::simd<native::fp16,lanes*2,advertised>;
   sqrt(H::load_bits(input)).store_bits(output);
 }
 #else
 void missing_half_target(std::uint16_t const * input,float * output) {
-  using B=native::vec<native::bf16,lanes*2,advertised>;
-  using V=native::vec<float,lanes,advertised>;
+  using B=native::simd<native::bf16,lanes*2,advertised>;
+  using V=native::simd<float,lanes,advertised>;
   auto value=B::load_bits(input);
   dot2(value,value,V(0.f)).store(output);
 }
