@@ -653,7 +653,7 @@ namespace native {
       auto comma=text.find(',');
       auto token=text.substr(0,comma);
       bool found=false;
-      for(auto const & entry:detail::feature_registry<Family>) if(entry.targetable && token==entry.spelling) {
+      for(auto const & entry:detail::feature_registry<Family>) if(entry.targetable && token.compare(entry.spelling)==0) {
         bits=bits&entry.value&entry.target_implies; found=true; break;
       }
       if(!found) return detail::invalid_features<Family>;
