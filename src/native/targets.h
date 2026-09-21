@@ -294,6 +294,16 @@
 #else
 #define NATIVE_DETAIL_MIN_ARM_SHA512 (::native::isa<>{})
 #endif
+#ifdef __ARM_FEATURE_SM3
+#define NATIVE_DETAIL_MIN_ARM_SM3 (::native::isa<>(::native::arm_feature::sm3))
+#else
+#define NATIVE_DETAIL_MIN_ARM_SM3 (::native::isa<>{})
+#endif
+#ifdef __ARM_FEATURE_SM4
+#define NATIVE_DETAIL_MIN_ARM_SM4 (::native::isa<>(::native::arm_feature::sm4))
+#else
+#define NATIVE_DETAIL_MIN_ARM_SM4 (::native::isa<>{})
+#endif
 #ifdef __ARM_FEATURE_CRC32
 #define NATIVE_DETAIL_MIN_ARM_CRC (::native::isa<>(::native::arm_feature::crc))
 #else
@@ -390,6 +400,7 @@
 // operations are available only when the vector register target is enabled.
 #define NATIVE_DETAIL_MIN_ARM_SIMD_EXTRAS (NATIVE_DETAIL_MIN_NEON_BF16& \
   NATIVE_DETAIL_MIN_ARM_AES&NATIVE_DETAIL_MIN_ARM_SHA2&NATIVE_DETAIL_MIN_ARM_SHA3&NATIVE_DETAIL_MIN_ARM_SHA512& \
+  NATIVE_DETAIL_MIN_ARM_SM3&NATIVE_DETAIL_MIN_ARM_SM4& \
   NATIVE_DETAIL_MIN_ARM_RDM&NATIVE_DETAIL_MIN_ARM_FP16FML&NATIVE_DETAIL_MIN_ARM_DOTPROD& \
   NATIVE_DETAIL_MIN_ARM_COMPLEX&NATIVE_DETAIL_MIN_ARM_I8MM)
 #ifdef __ARM_NEON

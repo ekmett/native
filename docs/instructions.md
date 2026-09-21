@@ -91,6 +91,11 @@ hash. ARM's hardware feature bits are independent. Clang's ARM `aes`, `sha2` and
 `sha3` targets enable bundles, so admission must cover each whole compiler
 target even when the source calls only one of its operations.
 
+[ARM SM3 and SM4](arm-sm-crypto.md) supply hash-round, message-schedule,
+data-round and key-schedule instructions on four-word vectors. Their hardware
+bits are independent; Clang's `sm4` target enables both and admission covers
+that complete pair together with NEON.
+
 ## Shapes, masks and execution
 
 The family guides list supported element types, lane counts and compile-time
