@@ -112,5 +112,26 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   native_baseline_case(aes 6 -march=armv8-a+aes)
   native_baseline_case(sha3 7 -march=armv8-a+sha3)
   native_baseline_case(scalar_fp16 8 -march=armv8-a+fp16+nosimd)
-  native_baseline_case(general_regs 9 -march=armv8.3-a -mgeneral-regs-only)
+  if(WIN32)
+    # The Windows ARM64 CRT includes NEON intrinsics even for ISA metadata.
+    # Capture the real disabled-register macros before importing that metadata,
+    # then check the expanded assertions with the ordinary Windows ABI.
+    set(general_regs_source "${CMAKE_CURRENT_BINARY_DIR}/baseline_general_regs.cc")
+    add_custom_command(OUTPUT "${general_regs_source}"
+      COMMAND "${CMAKE_COMMAND}"
+        "-DCOMPILER=${CMAKE_CXX_COMPILER}"
+        "-DCOMPILER_TARGET=${CMAKE_CXX_COMPILER_TARGET}"
+        "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/baseline.cc"
+        "-DINCLUDE=${PROJECT_SOURCE_DIR}/src"
+        "-DOUTPUT=${general_regs_source}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/snapshot_general_regs.cmake"
+      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/baseline.cc" "${PROJECT_SOURCE_DIR}/src/native/targets.h"
+        "${CMAKE_CURRENT_SOURCE_DIR}/snapshot_general_regs.cmake"
+      VERBATIM)
+    add_library(native_baseline_general_regs OBJECT "${general_regs_source}")
+    target_link_libraries(native_baseline_general_regs PRIVATE native::common)
+    set_target_properties(native_baseline_general_regs PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  else()
+    native_baseline_case(general_regs 9 -march=armv8.3-a -mgeneral-regs-only)
+  endif()
 endif()
