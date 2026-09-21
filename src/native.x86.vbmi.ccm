@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/x86/vbmi.h"
+#include "native/x86/vbmi_constant.h"
+export module native.x86.vbmi;
+export import native.x86.features;
+export import native.simd;
+#include "native/x86/vbmi_body.h"
