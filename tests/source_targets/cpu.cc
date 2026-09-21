@@ -1,5 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <cstdio>
 import native.features;
 
 // Both feature families are available through the CPU-only umbrella.
@@ -51,6 +52,17 @@ int main() {
   int calls=0;
   auto selected=native::with_isa(native::isa_list<native::scalar>{},cpu,
     [&]<native::isa A> { static_assert(A==native::scalar); ++calls; });
-  return selected && calls==1 ? 0 : 1;
+  if(!selected || calls!=1) {
+    auto admission=native::classify_isa(cpu,native::scalar);
+    std::fprintf(stderr,"Scalar selection failed: selected=%d calls=%d present_valid=%d observed_valid=%d reason=%s\n",
+      int(selected),calls,int(cpu.present.valid()),int(cpu.observed.valid()),admission.reason());
+    std::fputs("present:",stderr);
+    for(auto word:cpu.present.flags) std::fprintf(stderr," %016llx",static_cast<unsigned long long>(word));
+    std::fputs("\nobserved:",stderr);
+    for(auto word:cpu.observed.flags) std::fprintf(stderr," %016llx",static_cast<unsigned long long>(word));
+    std::fputc('\n',stderr);
+    return 1;
+  }
+  return 0;
 #endif
 }

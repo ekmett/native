@@ -37,17 +37,24 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 foreach(interface IN LISTS interfaces)
   set(target native_test_x86_vpopcntdq_${interface})
-  add_executable(${target} main.cc)
+  set(body ${target}_body)
+  # Inspect the same object linked into the runtime consumer. PE executables
+  # need not retain the COFF symbol names used by the disassembly check.
+  add_library(${body} OBJECT main.cc)
   # Importers retain the provider baseline so all consumers share its BMI.
   # Textual probes below explicitly disable optional features.
-  target_compile_definitions(${target} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
+  target_compile_definitions(${body} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
   if(interface STREQUAL "hub")
-    target_link_libraries(${target} PRIVATE native::native)
+    set(provider native::native)
   else()
-    target_link_libraries(${target} PRIVATE native::minimal)
+    set(provider native::minimal)
   endif()
-  set_target_properties(${target} PROPERTIES
+  target_link_libraries(${body} PRIVATE ${provider})
+  set_target_properties(${body} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_executable(${target} $<TARGET_OBJECTS:${body}>)
+  target_link_libraries(${target} PRIVATE ${provider})
+  set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(COMMAND native_link_clang_cl_asan)
     native_link_clang_cl_asan(${target})
   endif()
@@ -58,7 +65,7 @@ foreach(interface IN LISTS interfaces)
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/check_codegen.py"
       --objdump "${NATIVE_VPOPCNTDQ_OBJDUMP}" --baseline-only
       --output "${CMAKE_CURRENT_BINARY_DIR}/${interface}-baseline-$<CONFIG>.disassembly"
-      $<TARGET_FILE:${target}>)
+      $<TARGET_OBJECTS:${body}> COMMAND_EXPAND_LISTS)
   set_tests_properties(native.x86.vpopcntdq.${interface}.baseline PROPERTIES
     LABELS "host;modules;codegen;baseline;x86;vpopcntdq")
   math(EXPR interface_number "${interface_number}+1")
