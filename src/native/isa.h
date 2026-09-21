@@ -18,7 +18,7 @@ namespace native {
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
     avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq,
-    vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16, avx512bitalg
+    vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16, avx512bitalg, avx512vbmi, avx512vbmi2
   };
   /// Independently observable ARM instruction features, using local bit indices.
   enum class arm_feature : std::uint64_t {
@@ -31,7 +31,7 @@ namespace native {
   /// Number of named Wasm feature values.
   inline constexpr std::size_t wasm_feature_count=std::size_t(wasm_feature::relaxed_simd)+1;
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avx512bitalg)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avx512vbmi2)+1;
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::ebf16)+1;
 
@@ -267,6 +267,12 @@ namespace native {
     constexpr bool get_avx512bitalg() const noexcept { return get(x86_feature::avx512bitalg); }
     constexpr void set_avx512bitalg(bool value) noexcept { set(x86_feature::avx512bitalg, value); }
     __declspec(property(get=get_avx512bitalg,put=set_avx512bitalg)) bool avx512bitalg;
+    constexpr bool get_avx512vbmi() const noexcept { return get(x86_feature::avx512vbmi); }
+    constexpr void set_avx512vbmi(bool value) noexcept { set(x86_feature::avx512vbmi, value); }
+    __declspec(property(get=get_avx512vbmi,put=set_avx512vbmi)) bool avx512vbmi;
+    constexpr bool get_avx512vbmi2() const noexcept { return get(x86_feature::avx512vbmi2); }
+    constexpr void set_avx512vbmi2(bool value) noexcept { set(x86_feature::avx512vbmi2, value); }
+    __declspec(property(get=get_avx512vbmi2,put=set_avx512vbmi2)) bool avx512vbmi2;
   };
 
   /// Exact ARM feature requirements; construction does not add prerequisites.
@@ -562,6 +568,8 @@ namespace native {
       {x86_feature::avx512vl,"avx512vl",isa(x86_feature::avx512f),feature_register::leaf7_ebx,31},
       {x86_feature::avx512bf16,"avx512bf16",isa(x86_feature::avx512bw),feature_register::leaf7_1_eax,5},
       {x86_feature::avx512fp16,"avx512fp16",isa(x86_feature::avx512bw),feature_register::leaf7_edx,23},
+      {x86_feature::avx512vbmi,"avx512vbmi",isa(x86_feature::avx512bw),feature_register::leaf7_ecx,1},
+      {x86_feature::avx512vbmi2,"avx512vbmi2",isa(x86_feature::avx512bw),feature_register::leaf7_ecx,6},
       {x86_feature::avx512bitalg,"avx512bitalg",isa(x86_feature::avx512bw),feature_register::leaf7_ecx,12},
       {x86_feature::avx512vpopcntdq,"avx512vpopcntdq",isa(x86_feature::avx512f),feature_register::leaf7_ecx,14},
       {x86_feature::avxvnni,"avxvnni",isa(x86_feature::avx2),feature_register::leaf7_1_eax,4},
