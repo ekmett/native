@@ -28,10 +28,10 @@ out.mkdir(parents=True, exist_ok=True)
 header = args.header.read_text()
 for line in ('#pragma once', '#include "native/config.h"', '#include "native/attributes.h"', '#include "native/isa.h"'):
     header = header.replace(line, '')
-prefix = '#define NATIVE_HOST_NEON 1\n#define native_inline inline __attribute__((always_inline))\n#define native_nodiscard [[nodiscard]]\nnamespace native { enum class arm_feature { rdm }; struct isa { constexpr bool has(arm_feature) const { return true; } }; }\n'
+prefix = '#define NATIVE_HOST_NEON 1\n#define native_inline inline __attribute__((always_inline))\n#define native_nodiscard [[nodiscard]]\nnamespace native { enum class architecture { arm }; inline constexpr auto arm=architecture::arm; enum class arm_feature { rdm }; template<architecture Family=arm> struct isa { constexpr bool has(arm_feature) const { return true; } }; }\n'
 fixture = args.source.read_text()
 fixture = fixture[fixture.index('extern "C"'):]
-fixture = fixture.replace('requirements', 'native::isa{}')
+fixture = fixture.replace('requirements', 'native::isa<native::arm>{}').replace('rdm_api::', 'native::detail::')
 refs = []
 wrappers = []
 records = []

@@ -5,11 +5,11 @@ using namespace native;
 #if INVALID_ORDER == 0
 constexpr int chosen=target<avx512,avx2,avx512>;
 #elif INVALID_ORDER == 1
-constexpr int chosen=target<neon,avx2,avx512>;
+constexpr int chosen=target<isa<x86>{},avx2,avx512>;
 #elif INVALID_ORDER == 2
 constexpr int chosen=target<avx2,avx2,avx2>;
 #elif INVALID_ORDER == 3
-constexpr int chosen=target<avx512,avx2,neon,avx512>;
+constexpr int chosen=target<avx512,avx2,x86_feature::aes,avx512>;
 #elif INVALID_ORDER == 4
-constexpr int chosen=target<avx2,scalar,avx2>;
+constexpr int chosen=target<avx2,isa<x86>{},avx2>;
 #endif

@@ -12,8 +12,7 @@ defaults, assignment, swap and fast conversion through imports. Run with
 `ctest --test-dir <build> -R native.numerics --output-on-failure` after the normal
 root build. Use separate exception-ON/OFF and ASan configurations as needed.
 
-The three `*_legacy_checks.h` files retain embedded Catch bodies as test-only
-reference banks; they are not additional active CTests. `native.numerics.scalef` pairs constant evaluation and volatile runtime calls through
+`native.numerics.scalef` pairs constant evaluation and volatile runtime calls through
 `import native.numerics` for float and double, including both signs, normal and
 subnormal boundaries, ties-to-even, signed underflow, overflow, fractional
 exponents, extreme valid int exponents, zeros, infinities and quiet NaNs.

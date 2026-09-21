@@ -53,19 +53,24 @@ import native;
     first.store(output+i);second.store(output+i+lanes); \
   }
 #endif
+#if defined(__aarch64__) || defined(_M_ARM64)
+#define NATIVE_FIXTURE_LANES(tag) 4
+#else
+#define NATIVE_FIXTURE_LANES(tag) ((tag).has(native::x86_feature::avx512f)?16:8)
+#endif
 #define DOUBLE_BODY(name,tag) \
-  template<native::isa A,class V> requires(A == tag) \
+  template<native::isa<> A,class V> requires(A == tag) \
   __attribute__((always_inline)) inline V name##_native(V value) { \
     NATIVE_DOUBLE(value) \
   } \
-  template<native::isa A> requires(A == tag) \
+  template<native::isa<> A> requires(A == tag) \
   __attribute__((noinline)) void name(float * output,float const * input) { \
-    constexpr unsigned lanes=tag.has(native::x86_feature::avx512f)?16: \
-      tag.has(native::arm_feature::neon)?4:8; \
+    constexpr unsigned lanes=NATIVE_FIXTURE_LANES(tag); \
     DOUBLE_STEP(name,tag,lanes) \
   }
 NATIVE_TARGET_VARIANTS(source_kernel,SELECTED_TARGETS,DOUBLE_BODY)
 #undef DOUBLE_BODY
+#undef NATIVE_FIXTURE_LANES
 #undef DOUBLE_STEP
 #undef NATIVE_DOUBLE
 
@@ -120,9 +125,9 @@ int main() {
   SELECTED_TARGETS(RUN_EACH)
 #undef RUN_EACH
   unsigned calls=0;
-  native::isa selected_features{};
+  native::isa<> selected_features{};
   clear();
-  auto selected=native::with_isa(NATIVE_TARGET_LIST(SELECTED_TARGETS),cpu,[&]<native::isa A> {
+  auto selected=native::with_isa(NATIVE_TARGET_LIST(SELECTED_TARGETS),cpu,[&]<native::isa<> A> {
     ++calls;selected_features=A;
     source_kernel<A>(output,input);
   });

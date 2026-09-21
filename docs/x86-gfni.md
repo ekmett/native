@@ -1,10 +1,9 @@
 # GFNI byte operations
 
 GFNI multiplies bytes in a finite field and applies affine transformations
-to their bits. `import native.x86.gfni;` provides these operations on raw
-registers; `native.x86` and `native` re-export them. Link `native::minimal`
-for the granular module or `native::native` for the hub. The implementation
-header is `native/x86/gfni.h`.
+to their bits. `import native.x86.gfni;` provides these operations on
+`native::simd` byte vectors; `native.x86` and `native` re-export them. Link `native::native` for all three interfaces. Intrinsic registers remain
+private implementation details.
 
 | Operation | Result for each input byte |
 | --- | --- |
@@ -25,16 +24,18 @@ template argument in [0,255], shared by all lanes.
 These semantics follow Intel's
 [instruction reference](https://cdrdv2-public.intel.com/868140/253666-089-sdm-vol-2a.pdf).
 
-All operations overload `__m128i`, `__m256i` and `__m512i`.
+Byte operands and results use `simd<std::uint8_t,N,Arch>` with N = 16, 32 or 64.
+Affine matrices use `simd<std::uint64_t,N/8,Arch>`.
 Each also has `_mask(src,k,a,b)` and `_maskz(k,a,b)` variants;
 affine variants use `matrix` in place of `b` and retain the same template
-immediate. Mask types are `__mmask16`, `__mmask32` and `__mmask64`.
+immediate. Masks use `native::predicate<N,Arch>`.
 Mask bit `i` selects byte `i`; an inactive byte is copied from `src` or
 cleared, respectively. Register-only functions have no memory side effects.
 
 ## Feature and target requirements
 
-`Arch` must explicitly contain every feature listed below. Function target
+Use `target_features<native::x86>(...)` or `feature_closure(...)` to include the register
+prerequisites in `Arch`, along with every feature listed below. Function target
 attributes establish the corresponding compiler requirements.
 
 | Form | Required features in `Arch` | Function target |
@@ -68,21 +69,20 @@ dispatch at runtime.
 
 ```cpp
 #include <native/attributes.h>
-#include <immintrin.h>
+#include <cstdint>
 import native.x86.gfni;
 
-constexpr native::isa requirements =
-    native::x86_feature::gfni & native::x86_feature::avx;
+constexpr auto requirements = native::target_features<native::x86>("avx,gfni");
+using bytes = native::simd<std::uint8_t,32,requirements>;
 
 native_noinline native_target("avx,gfni")
-void multiply_bytes(void* out, void const* a, void const* b) {
-  auto x = _mm256_loadu_si256(static_cast<__m256i const*>(a));
-  auto y = _mm256_loadu_si256(static_cast<__m256i const*>(b));
-  _mm256_storeu_si256(static_cast<__m256i*>(out),
-                     native::gf2p8mulb<requirements>(x,y));
+void multiply_bytes(std::uint8_t* out, std::uint8_t const* a, std::uint8_t const* b) {
+  auto x = bytes::load(a);
+  auto y = bytes::load(b);
+  native::gf2p8mulb<requirements>(x,y).store(out);
 }
 
-bool try_multiply(void* out, void const* a, void const* b) {
+bool try_multiply(std::uint8_t* out, std::uint8_t const* a, std::uint8_t const* b) {
   auto cpu = native::observe_x86_capabilities();
   if (!native::classify_isa(cpu,requirements).admitted()) return false;
   multiply_bytes(out,a,b);
@@ -92,12 +92,13 @@ bool try_multiply(void* out, void const* a, void const* b) {
 
 ## Validation
 
-`tests/x86_gfni` uses the header, granular module and hub from baseline
+`tests/x86_gfni` uses the granular module and hub from baseline
 translation units. It compares multiplication, affine and inverse-affine
 results with independent scalar polynomial and binary-matrix calculations,
 using selected byte and matrix cases plus deterministic random vectors.
 Runtime tests check CPU and OS support before executing optional instructions.
 
+Both private register probes and public SIMD probes check instruction selection.
 Compiler fixtures check feature constraints, constant immediate bounds and
 target mismatches. Assembly checks distinguish legacy XMM, VEX YMM and EVEX
 forms with optional features disabled at the translation-unit baseline.

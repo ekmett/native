@@ -5,55 +5,50 @@
 #define NATIVE_TARGET_test_vpopcntdq_vl "avx512f,avx512vpopcntdq,avx512vl"
 inline constexpr auto requirements_512 = NATIVE_TARGET_ISA(test_vpopcntdq);
 inline constexpr auto requirements_vl = NATIVE_TARGET_ISA(test_vpopcntdq_vl);
-inline constexpr auto exact_512 = native::x86_feature::avx512f & native::x86_feature::avx512vpopcntdq;
+inline constexpr auto exact_512 = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vpopcntdq);
 inline constexpr auto exact_vl = exact_512 & native::x86_feature::avx512vl;
 
-template<native::isa A, class V, class M, bool Expected>
-consteval bool dword_availability() {
-  return (requires(V v) {
-    { native::vpopcntd<A>(v) } noexcept -> std::same_as<V>;
-  }) == Expected && (requires(V src, M mask, V v) {
-    { native::mask_vpopcntd<A>(src, mask, v) } noexcept -> std::same_as<V>;
-  }) == Expected && (requires(M mask, V v) {
-    { native::maskz_vpopcntd<A>(mask, v) } noexcept -> std::same_as<V>;
-  }) == Expected;
+template<native::isa<native::x86> A, std::size_t N> concept has_dword = requires(
+    native::simd<std::uint32_t,N,A> v, native::predicate<N,A> m) {
+  { native::vpopcntd<A>(v) } noexcept -> std::same_as<decltype(v)>;
+  { native::mask_vpopcntd<A>(v,m,v) } noexcept -> std::same_as<decltype(v)>;
+  { native::maskz_vpopcntd<A>(m,v) } noexcept -> std::same_as<decltype(v)>;
+};
+template<native::isa<native::x86> A, std::size_t N> concept has_qword = requires(
+    native::simd<std::uint64_t,N,A> v, native::predicate<N,A> m) {
+  { native::vpopcntq<A>(v) } noexcept -> std::same_as<decltype(v)>;
+  { native::mask_vpopcntq<A>(v,m,v) } noexcept -> std::same_as<decltype(v)>;
+  { native::maskz_vpopcntq<A>(m,v) } noexcept -> std::same_as<decltype(v)>;
+};
+template<native::isa<native::x86> A, bool Zmm, bool Vl> consteval bool availability() {
+  return has_dword<A,16> == Zmm && has_qword<A,8> == Zmm &&
+    has_dword<A,8> == Vl && has_qword<A,4> == Vl &&
+    has_dword<A,4> == Vl && has_qword<A,2> == Vl;
 }
-
-template<native::isa A, class V, bool Expected>
-consteval bool qword_availability() {
-  return (requires(V v) {
-    { native::vpopcntq<A>(v) } noexcept -> std::same_as<V>;
-  }) == Expected && (requires(V src, __mmask8 mask, V v) {
-    { native::mask_vpopcntq<A>(src, mask, v) } noexcept -> std::same_as<V>;
-  }) == Expected && (requires(__mmask8 mask, V v) {
-    { native::maskz_vpopcntq<A>(mask, v) } noexcept -> std::same_as<V>;
-  }) == Expected;
-}
-
-template<native::isa A, bool Zmm, bool Vl>
-consteval bool availability() {
-  return dword_availability<A, __m512i, __mmask16, Zmm>() &&
-    qword_availability<A, __m512i, Zmm>() &&
-    dword_availability<A, __m256i, __mmask8, Vl>() &&
-    qword_availability<A, __m256i, Vl>() &&
-    dword_availability<A, __m128i, __mmask8, Vl>() &&
-    qword_availability<A, __m128i, Vl>();
-}
-
 static_assert(availability<exact_512, true, false>());
 static_assert(availability<exact_vl, true, true>());
 static_assert(availability<requirements_512, true, false>());
 static_assert(availability<requirements_vl, true, true>());
-static_assert(availability<native::scalar, false, false>());
-static_assert(availability<native::isa(native::x86_feature::avx512vpopcntdq), false, false>());
+static_assert(availability<native::isa<native::x86>{}, false, false>());
+static_assert(availability<native::isa<native::x86>(native::x86_feature::avx512vpopcntdq), false, false>());
 static_assert(availability<native::x86_feature::avx512vpopcntdq & native::x86_feature::avx512vl, false, false>());
-static_assert(availability<native::isa(native::x86_feature::avx512f), false, false>());
+static_assert(availability<native::isa<native::x86>(native::x86_feature::avx512f), false, false>());
 static_assert(availability<native::x86_feature::avx512f & native::x86_feature::avx512vl, false, false>());
 static_assert(availability<native::avx512, false, false>());
 static_assert(availability<native::avx512 & native::x86_feature::popcnt, false, false>());
 
+
+template<auto A> concept accepts_family = requires(native::simd<std::uint32_t,4,exact_vl> x) { native::vpopcntd<A>(x); };
+static_assert(accepts_family<exact_vl>);
+static_assert(!accepts_family<native::isa<native::arm>{}>);
+static_assert(!accepts_family<native::isa<native::wasm>{}>);
+
 // Only scalar pointers and an integer mask cross the target boundary.
 // A separate instantiation handles each lane width; no vector ABI reaches main.
+template<class V> concept raw_popcount = requires(V v) { native::vpopcntd<exact_vl>(v); };
+static_assert(!raw_popcount<__m128i> && !raw_popcount<__m256i>);
+static_assert(!raw_popcount<native::simd<std::int32_t,4,exact_vl>>);
+
 #define NATIVE_TEST_VPOPCNT_WRAPPER(Name, Vector, Requirements) \
   template<class T> native_noinline void Name( \
       T* plain, T* merged, T* zeroed, T const* source, T const* input, unsigned mask) noexcept { \
@@ -62,17 +57,17 @@ static_assert(availability<native::avx512 & native::x86_feature::popcnt, false, 
     __builtin_memcpy(&src, source, sizeof(src)); \
     __builtin_memcpy(&value, input, sizeof(value)); \
     if constexpr (std::same_as<T, std::uint32_t>) { \
-      auto a = native::vpopcntd<Requirements>(value); \
-      auto b = native::mask_vpopcntd<Requirements>(src, static_cast<M>(mask), value); \
-      auto c = native::maskz_vpopcntd<Requirements>(static_cast<M>(mask), value); \
+      auto a = native::vpopcntd<Requirements>(native::simd<std::uint32_t, sizeof(value) / sizeof(std::uint32_t), Requirements>::from_native(value)).to_native(); \
+      auto b = native::mask_vpopcntd<Requirements>(native::simd<std::uint32_t, sizeof(src) / sizeof(std::uint32_t), Requirements>::from_native(src), native::predicate<sizeof(src) / sizeof(std::uint32_t), Requirements>::from_bitset(static_cast<M>(mask)), native::simd<std::uint32_t, sizeof(value) / sizeof(std::uint32_t), Requirements>::from_native(value)).to_native(); \
+      auto c = native::maskz_vpopcntd<Requirements>(native::predicate<sizeof(value) / sizeof(std::uint32_t), Requirements>::from_bitset(static_cast<M>(mask)), native::simd<std::uint32_t, sizeof(value) / sizeof(std::uint32_t), Requirements>::from_native(value)).to_native(); \
       __builtin_memcpy(plain, &a, sizeof(a)); \
       __builtin_memcpy(merged, &b, sizeof(b)); \
       __builtin_memcpy(zeroed, &c, sizeof(c)); \
     } else { \
       static_assert(std::same_as<T, std::uint64_t>); \
-      auto a = native::vpopcntq<Requirements>(value); \
-      auto b = native::mask_vpopcntq<Requirements>(src, static_cast<M>(mask), value); \
-      auto c = native::maskz_vpopcntq<Requirements>(static_cast<M>(mask), value); \
+      auto a = native::vpopcntq<Requirements>(native::simd<std::uint64_t, sizeof(value) / sizeof(std::uint64_t), Requirements>::from_native(value)).to_native(); \
+      auto b = native::mask_vpopcntq<Requirements>(native::simd<std::uint64_t, sizeof(src) / sizeof(std::uint64_t), Requirements>::from_native(src), native::predicate<sizeof(src) / sizeof(std::uint64_t), Requirements>::from_bitset(static_cast<M>(mask)), native::simd<std::uint64_t, sizeof(value) / sizeof(std::uint64_t), Requirements>::from_native(value)).to_native(); \
+      auto c = native::maskz_vpopcntq<Requirements>(native::predicate<sizeof(value) / sizeof(std::uint64_t), Requirements>::from_bitset(static_cast<M>(mask)), native::simd<std::uint64_t, sizeof(value) / sizeof(std::uint64_t), Requirements>::from_native(value)).to_native(); \
       __builtin_memcpy(plain, &a, sizeof(a)); \
       __builtin_memcpy(merged, &b, sizeof(b)); \
       __builtin_memcpy(zeroed, &c, sizeof(c)); \

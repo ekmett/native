@@ -3,114 +3,57 @@
 <!-- SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-C++26 native operations and CPU capability detection for x86-64 and AArch64.
-`import native;` exposes operations for the compilation target and a detector
-for their CPU and OS-state requirements. Compile each kernel for the instructions
-it uses, and check optional requirements before calling it.
+C++26 SIMD values and native instructions for x86-64 and AArch64.
+`simd<T,N,Arch>` keeps the element type, lane count and instruction requirements
+in the type. Omitting `Arch` uses the `native.simd` module's compiler baseline.
+Comparisons produce masks; `wide<V,M>` groups registers into
+independent instruction chains. Operations have no runtime dispatch inside them.
 
-`native::simd<T,N,Arch>` describes one register; `native::wide<V,M>` describes a
-pack of registers. Element type, lane count and ISA remain explicit, so an
-algorithm can use short vectors, native widths and independent instruction
-chains without changing its arithmetic.
+Compile a kernel for the instructions it uses, then check that the CPU and OS
+can execute it before entering. This example loads four floats, computes
+`2*x + 1`, and replaces negative inputs with zero:
 
 ```cpp
+#include <native/config.h>
 #include <native/targets.h>
 import native;
 using namespace native;
 
-NATIVE_TARGET_PUSH(avx2)
-void arithmetic(float * output) {
-  using V = simd<float, 8, avx2>;
-  using M = V::mask;
+#if NATIVE_HOST_X86
+#define NATIVE_TARGET_example "avx2,fma"
+#elif NATIVE_HOST_NEON
+#define NATIVE_TARGET_example "neon"
+#endif
+constexpr auto example_isa = NATIVE_TARGET_ISA(example);
 
-  V x(2.f), y(3.f);
-  M active = x < y;
-  auto z = select(active, fma(x, y, V(1.f)), x);
-  z.store(output);
+NATIVE_TARGET_PUSH(example)
+void transform_four(float* out, float const* in) {
+  using V = simd<float, 4, example_isa>;
+  V x = V::load(in);
+  mask<V> negative = x < V(0.f);
+  auto y = select(negative, V(0.f), fma(x, V(2.f), V(1.f)));
+  y.store(out);
 }
 NATIVE_TARGET_POP()
+
+int main() {
+  auto cpu = observe_cpu();
+  if (!classify_isa(cpu, example_isa, NATIVE_TARGET_MINIMUM).admitted())
+    return 0; // This application has no fallback kernel.
+  float input[4]{-1.f, 0.f, 1.f, 2.f};
+  float output[4]{};
+  transform_four(output, input); // {0, 1, 3, 5}
+  return 0;
+}
 ```
 
-This example targets x86 AVX2. Check that the CPU and OS admit `avx2` before
-calling it; the import only makes the API visible. The following snippets use
-the same `using namespace native;` directive.
+The import makes the API visible. The target scope permits the compiler to use
+those instructions; the capability check admits execution. None substitutes for
+the others. Applications with several kernels can make this choice once at
+startup; the [dispatch guide](docs/omnibus.md) shows how to compile and select a
+list of variants.
 
-The ISA value is part of the type. `native::avx2`, `native::avx512`, `native::neon` and
-`native::scalar` are `constexpr isa` presets; operations have no runtime dispatch.
-An AVX-512 profile can also use 128-bit and 256-bit registers. Comparisons return
-`V::mask`, retaining the profile's vector-mask or compact-predicate representation.
-
-Feature requirements compose with `&` and compare by inclusion:
-
-```cpp
-constexpr isa needs = x86_feature::avx2 & x86_feature::fma;
-static_assert(needs.has(x86_feature::fma));
-static_assert(needs <= avx2);
-static_assert(target<avx2, avx512, avx2> == 1);
-
-auto requirements = avx2;
-requirements.f16c = true;
-```
-
-`&` unions the required bits. A single feature sets exactly one bit;
-`feature_closure` adds compiler prerequisites explicitly. The presets already
-include their closure. [ISA values and target selection](docs/abi-lookup.md)
-covers properties, partial ordering, and the checked first-match selector.
-
-Short vectors have a logical lane count: a three-float load touches twelve bytes.
-Named swizzles return owning values and support overlapping assignment:
-
-```cpp
-// Inside an AVX2-targeted function, as above:
-using V3 = simd<float, 3, avx2>;
-V3 position{1.f, 2.f, 3.f};
-auto saved = position.xy;
-position.xyz = position.zyx;
-```
-
-Reads may repeat components; writes require distinct destinations on a mutable
-lvalue. `saved` remains independent of subsequent changes to `position`.
-The [module guide](docs/modules.md) covers construction, masks, memory, swizzles,
-custom element types and application dispatch.
-
-## Modules
-
-| Module | Public interface |
-| --- | --- |
-| `native` | All native ISA variants for the host architecture and common utilities |
-| `native.simd` | SIMD registers, masks, primitive operations and common utilities |
-| `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
-| `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
-| `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `native.x86` | x86 feature detection, integer and byte operations, and wait utilities |
-| `native.arm` | AArch64 feature detection, admission and independently targeted instruction families |
-| `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
-| `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
-| `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
-| `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
-| `native.x86.crc32c` | [Raw CRC32C updates](docs/x86-crc32c.md) for 8-, 16-, 32- and 64-bit operands |
-| `native.x86.gfni` | [GFNI byte operations](docs/x86-gfni.md): field multiplication, affine maps and inverse-affine maps |
-| `native.x86.vpopcntdq` | [VPOPCNTDQ](docs/x86-vpopcntdq.md) for 32- and 64-bit lanes, including merge and zero masks |
-| `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
-| `native.arm.dotprod` | [Signed and unsigned byte dot products](docs/arm-dotprod.md) |
-| `native.arm.rdm` | [Rounding, saturating fixed-point multiply-add and multiply-subtract](docs/arm-rdm.md) |
-| `native.arm.fp16fml` | [FP16 products accumulated in FP32](docs/arm-fp16fml.md) |
-| `native.arm.fcma` | [Complex multiply-add and rotated addition](docs/arm-fcma.md) |
-| `native.arm.i8mm` | [I8MM matrix and mixed-sign dot products](docs/arm-i8mm.md) |
-| `native.scalar` | `simd<T,1,scalar>`, baseline scalar operations and extension declarations |
-| `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
-| `native.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
-| `native.types`, `native.memory`, `native.static_string` | Type, memory and string utilities |
-| `native.x86.features`, `native.x86.wait` | x86 CPU/OS capability observation, shared ISA admission and wait utilities |
-
-The hub exposes the common vector template, ISA values and `wide`. Import
-`native.math` separately for `math::exp`, `math::sin`, `math::cos`, `math::sincos`
-and their batch forms. Generic math uses argument-dependent lookup, allowing an
-element library to supply its own arithmetic and batched kernels. The separately
-versioned FTZ library uses this extension for reproducible binary32 arithmetic.
-Native arithmetic leaves the floating-point environment under application control.
-
-## Build and consume
+## Build and use
 
 The tested toolchain is Clang 23, CMake 4.4 and Ninja. Configuration checks C++26
 structured-binding packs and the Clang property extension used by ISA values
@@ -119,82 +62,72 @@ and swizzles.
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
   -DCMAKE_BUILD_TYPE=Release -DNATIVE_ENABLE_IPO=ON
-cmake --build build/core --parallel 2
+cmake --build build/core --parallel
 ctest --test-dir build/core --output-on-failure
 cmake --install build/core --prefix /path/to/native
 ```
 
 Use `clang-cl` on Windows. Exceptions default to disabled; set
-`NATIVE_ENABLE_EXCEPTIONS=ON` when building for an exception-enabled application.
-Producer and consumer compiler, standard-library and runtime modes must agree.
+`NATIVE_ENABLE_EXCEPTIONS=ON` for an exception-enabled application. Producer and
+consumer compiler, standard-library and runtime modes must agree.
+
+In an application configured with that installation on `CMAKE_PREFIX_PATH`:
 
 ```cmake
+cmake_minimum_required(VERSION 4.4)
+project(example LANGUAGES CXX)
 find_package(native CONFIG REQUIRED COMPONENTS native)
 add_executable(example example.cc)
 target_link_libraries(example PRIVATE native::native)
 ```
 
-The hub compiles once at the toolchain's default baseline. Set
-`NATIVE_MINIMAL_COMPILE_OPTIONS` in project setup to choose a stronger minimum.
-The process must satisfy that minimum before any runtime selection can help.
-Stronger implementations carry their own Clang target requirements; importing
-them leaves the ordinary caller's target unchanged.
+`native::native` supplies SIMD and vector instruction modules. It links
+`native::minimal`, which supplies capability detection, scalar instruction
+utilities and common types. A detector-only application can import
+`native.features` and link `native::minimal` (`native::common` is an alias).
+Headers such as `<native/targets.h>` supply macros, which modules cannot export.
 
-Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
-you choose. `native::observe_cpu()` supplies the current platform's capability
-record; pass it and the matching list to `with_isa` to select the first entry
-whose CPU and OS-state requirements are met. The callback takes the selected
-ISA as a template argument: `[]<native::isa A> { ... }`.
+The package uses the toolchain's default baseline unless
+`NATIVE_MINIMAL_COMPILE_OPTIONS` chooses a stronger one. The process must already
+satisfy that minimum before runtime selection can help. Importing stronger
+operations does not strengthen an ordinary caller's compiler target.
+[Build details](doc/building.md) cover installation, compiler settings and PCH/LTO.
 
-Selection does not change the callback's compiler target. Keep native operations
-in the generated overloads, or put your own functions inside
-`NATIVE_TARGET_PUSH(name)` / `NATIVE_TARGET_POP()` scopes from
-`<native/targets.h>`. Use `classify_isa` when checking one set of requirements.
-The generated variants use constrained overloads and function attributes, so
-they need no separate CMake targets or BMIs.
+## Working with values and instructions
 
-Presets include AVX2, AVX-512, AVX-512 BF16/FP16, NEON and NEON BF16/FP16. They
-are ISA values; supported feature combinations can have their own source names.
-CPU-model bundles remain future work. The native half operations retain their
-instruction contracts: [AVX-512 FP16](tests/avx512_fp16/README.md),
-[AVX-512 BF16](tests/bf16_profile/README.md),
-[NEON FP16](tests/neon_fp16/README.md), and [NEON BF16](tests/neon_bf16/README.md).
-Check their requirements at the call boundary, as for the other optional
-instructions.
+Start with [SIMD values, masks and memory](docs/modules.md) for construction,
+short vectors, tails, swizzles and packs. A three-float vector has three logical
+lanes: its load touches twelve bytes even if its register has room for four.
+`native::mask<V>` names the mask associated with `V`.
 
-`native::native` owns the hub and links `native::minimal`, which supplies the
-common utilities and ABI. `native::common` is an alias for `native::minimal`;
-linking either propagates its configured minimum to consumers. Old profile
-target names are aliases to the hub. The former
-`simd.avx2`, `simd.avx512` and native-half modules are replaced by `import native;`.
-`NATIVE_PROFILES` selects regression coverage, not the public API or BMI set.
-Applications that prefer separately compiled kernels may still use
-`native_target_profile`; the source target-list helper needs no such setup.
+[ISA values](docs/abi-lookup.md) describe requirements, from an individual feature
+to presets such as `avx2`, `avx512` and `neon`. Each `isa<Family>` belongs to one
+architecture: `isa<>` uses `target_arch`, while `isa<x86>`, `isa<arm>` and
+`isa<wasm>` name it explicitly. `NATIVE_BASELINE` records the current translation
+unit's enabled compiler features; runtime CPU observation is a
+separate operation. [Target lists and dispatch](docs/omnibus.md) connect those
+requirements to compiled kernels and runtime selection.
 
-`native::headers` exposes configuration, attributes, ISA metadata and
-`<native/targets.h>` for source generation. It supports `LANGUAGES NONE`
-consumers and a headers-only installation with `NATIVE_BUILD_HOST=OFF`.
-Include `<native/attributes.h>` when using macros such as `native_inline`;
-imports do not carry macros. Using `isa.h` without modules requires C++20,
-while host modules require C++26. The configuration and attribute headers
-impose no new C++ language mode.
+Use the [instruction guide](docs/instructions.md) when an algorithm needs a
+particular dot product, conversion, polynomial operation or checksum. Vector
+forms take `simd` values; scalar forms take ordinary C++ values. Their feature
+requirements and arithmetic contracts remain specific to the instruction.
 
-The cutover changes module names, the C++ namespace, public header prefixes,
-target macros and CMake package names from `simd` to `native`. The register class
-template is now `native::simd`; the former `native::vec` class name is removed.
-Update extension specializations as well as ordinary uses, and use matching
-`native` imports and package versions throughout downstream libraries. Earlier
-`simd` packages are not interchangeable with this one. Rebuild BMIs and all
-code that exchanges vector types across library boundaries. The GitHub
-repository remains `ekmett/simd`.
+Import `native.math` separately for promoted numerical kernels such as
+`math::exp` and `math::sincos`. Their domains and batching behavior are described
+in the [value guide](docs/modules.md#promoted-math-batches). Floating-point
+controls remain under application ownership. The separate FTZ package builds
+reproducible binary32 arithmetic on this library's element extension.
 
-[Compiled API examples](tests/api/README.md) exercise vector construction, masks,
-memory, swizzles, wide values and the common utilities. [Build details](doc/building.md)
-cover profiles, installation and PCH/LTO.
-The [source guide](src/README.md) explains definition ownership, and
-[validation](docs/validation.md) records tested configurations and their limits.
-Linux x86-64 installed-package checks use LLVM 23.1.1 with libc++ 23; AVX2
-execution and AVX-512 compile coverage are recorded separately.
+The [WebAssembly detector](docs/wasm-features.md) observes SIMD support in a
+particular engine. It provides admission data for an application's loader;
+it does not supply a WebAssembly SIMD implementation or load code automatically.
+
+[Compiled examples](tests/api/README.md) exercise the public API. The
+[validation record](docs/validation.md) distinguishes compilation, native
+execution and numerical checks; the [source guide](src/README.md) explains where
+definitions belong. The [dispatch guide](docs/omnibus.md#native-intrinsics-and-packages)
+also covers intrinsic interoperation and package requirements.
 
 ## License and contact
 

@@ -13,7 +13,7 @@ jobs:
   build:
     name: ${{ matrix.platform.name }} / exceptions=${{ matrix.exceptions }}
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: 25
+    timeout-minutes: 45
     env:
       SCCACHE_GHA_ENABLED: "true"
     defaults:
@@ -151,18 +151,29 @@ jobs:
           fi
           echo "Native CPU package tests: $RUNNER_OS / $(uname -m) / $TEST_PROFILE. AVX-512 compilation is not proof of AVX-512 execution; profile tests report unsupported hardware as skipped." >> "$GITHUB_STEP_SUMMARY"
       - name: Check compiler cache launcher
+        run: |
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            python -B .github/scripts/test_sccache_launcher.py
+          else
+            python3 -B .github/scripts/test_sccache_launcher.py
+          fi
+      - name: Check PCH cache invalidation
         if: runner.os != 'Windows'
         run: |
-          python3 -B .github/scripts/test_sccache_launcher.py
           python3 -B .github/scripts/test_sccache_pch.py "$(command -v clang++)" "$GITHUB_WORKSPACE/build/sccache-pch-probe"
+      - name: Check Windows module cache invalidation
+        if: runner.os == 'Windows'
+        run: |
+          python -B .github/scripts/test_sccache_modules.py --compiler clang-cl \
+            --output build/sccache-modules --cmake-arg=-DCMAKE_LINKER_TYPE=LLD
       - name: Configure modules
         shell: bash
         run: |
           compiler=clang++
-          launcher=sccache
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then
             compiler=clang-cl
+            launcher="python;$GITHUB_WORKSPACE/.github/scripts/sccache_launcher.py"
             extra+=(-DCMAKE_LINKER_TYPE=LLD)
           else
             launcher="$(command -v python3);$GITHUB_WORKSPACE/.github/scripts/sccache_launcher.py"
@@ -205,11 +216,11 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          suites=(public_headers omnibus api half_storage source_targets native_cutover)
+          suites=(public_headers omnibus api half_storage instruction_storage source_targets native_cutover wasm_features)
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_gfni x86_vpopcntdq)
+            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_gfni x86_vpopcntdq x86_pclmul x86_vnni x86_f16c x86_scalar_defaults x86_constexpr)
           else
-            suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm)
+            suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_bf16 arm_crc arm_crypto arm_scalar_defaults arm_constexpr)
           fi
           for suite in "${suites[@]}"; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \

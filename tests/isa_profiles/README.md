@@ -13,8 +13,7 @@ Each current capture contains eight operation-major columns of 96 words: add,
 multiply, FMA, sign selection, wide exp, integer arithmetic, masked scaling and
 square root. Scalar references check the elementary operations; wide exp is
 compared with the direct raw kernel. Header/import captures and admitted profiles
-must agree exactly on this finite bank. The generated capture is not a frozen
-historical golden. Protected-page tails, fill lanes, empty null-pointer access
+must agree exactly on this finite bank. Protected-page tails, fill lanes, empty null-pointer access
 and caller FP-state restoration are also checked.
 
 Configure the root with `-DNATIVE_PROFILES="AVX2;AVX512" -DNATIVE_BUILD_TESTS=ON`, build

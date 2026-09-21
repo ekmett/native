@@ -134,11 +134,12 @@ namespace wide::detail {
     }
   };
   struct encode {
-    template<class V> requires std::same_as<typename V::value_type,float>
+    template<class V> requires std::same_as<typename V::value_type,float> && requires(V a) { a.bits(); }
     native_inline auto operator()(V const & a) const { return native_ops<V>::encode(a); }
   };
   struct decode {
-    template<class V> requires std::same_as<typename V::value_type,std::uint32_t>
+    template<class V> requires std::same_as<typename V::value_type,std::uint32_t> &&
+      requires(V a) { V::template rebind<float>::from_bits(a); }
     native_inline auto operator()(V const & a) const { return native_ops<V>::decode(a); }
   };
   template<unsigned Shift> struct shift_left {
@@ -250,8 +251,9 @@ namespace wide {
 
   namespace detail {
     template<class T> inline constexpr bool binary32_register = false;
-    template<std::size_t N, ::native::isa A>
-    inline constexpr bool binary32_register<::native::simd<float, N, A>> = true;
+    template<std::size_t N, ::native::isa<> A>
+    inline constexpr bool binary32_register<::native::simd<float, N, A>> =
+      requires(::native::simd<float,N,A> a) { { a+a } -> std::same_as<::native::simd<float,N,A>>; };
     template<class P> inline constexpr bool binary32_array = false;
     template<class V, std::size_t N>
     inline constexpr bool binary32_array<std::array<V, N>> = binary32_register<V>;

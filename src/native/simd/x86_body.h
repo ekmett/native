@@ -2,8 +2,8 @@
 namespace native {
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct native_empty_bases simd<float, 4,Arch> : detail::register_memory<simd<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
-    static constexpr isa architecture=Arch;
+  template <::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct native_empty_bases simd<float, 4,Arch> : detail::register_memory<simd<float,4,Arch>, 4>, detail::swizzle_access<float,4,Arch> {
+    static constexpr isa<> architecture=Arch;
     template <class T> using rebind = simd<T,4,Arch>;
     using vector_mask_type=simd<mask32,4,Arch>;
     using mask_type=std::conditional_t<bool(NATIVE_HAS_AVX512VL),predicate<4,Arch>,simd<mask32,4,Arch>>;
@@ -19,7 +19,7 @@ namespace native {
     /// Broadcast x to all lanes.
     native_inline simd(float x) : value(_mm_set1_ps(x)) {}
     /// Adopt native lane storage without numerical conversion.
-    native_inline constexpr simd(__m128 x) : value(x) {}
+    native_inline native_target("sse") constexpr simd(__m128 x) : value(x) {}
     /// Load every logical lane; no extra alignment is required.
     native_nodiscard static native_inline native_pure simd load(native_noescape float const * p) { return load_memory<1>(p); }
     /// Store every logical lane; no extra alignment is required.
@@ -87,9 +87,9 @@ namespace native {
     using native_type = __m128;
     using bits_type = simd<uint32_t,4,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline native_pure operator native_type() const noexcept { return value; }
+    native_nodiscard native_inline native_pure native_target("sse") operator native_type() const noexcept { return value; }
     /// Project native register storage without a numerical conversion.
-    native_nodiscard native_inline native_pure native_type to_native() const noexcept { return value; }
+    native_nodiscard native_inline native_pure native_target("sse") native_type to_native() const noexcept { return value; }
     /// Project exact binary32 lane words into the unsigned vector.
     native_artificial native_nodiscard native_inline native_pure bits_type bits() const noexcept { return bits_type::from_native(_mm_castps_si128(value)); }
     /// Synonym for bits(): preserve all binary32 representation bits.
@@ -101,9 +101,9 @@ namespace native {
     /// Broadcast one binary32 value to every lane.
     native_nodiscard static native_inline native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native register storage without changing its bits.
-    native_nodiscard static native_inline native_const simd from_native(native_type x) noexcept { return simd(x); }
+    native_nodiscard static native_inline native_const native_target("sse") simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt native raw float storage; this raw type adds no normalization.
-    native_nodiscard static native_inline native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    native_nodiscard static native_inline native_const native_target("sse") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Synonym for an unaligned full-vector load.
     native_nodiscard static native_inline native_pure simd loadu(native_noescape float const * p) { return load_memory<1>(p); }
     /// Synonym for an unaligned full-vector store.
@@ -145,8 +145,8 @@ namespace native {
 
   /// \ingroup vectors
   /// Raw x86 float storage; the Arch argument fixes comparison-mask representation.
-  template <::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<float, 8,Arch> : detail::register_memory<simd<float,8,Arch>, 8> {
-    static constexpr isa architecture=Arch;
+  template <::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<float, 8,Arch> : detail::register_memory<simd<float,8,Arch>, 8> {
+    static constexpr isa<> architecture=Arch;
     template <class T> using rebind = simd<T,8,Arch>;
     using vector_mask_type=simd<mask32,8,Arch>;
     using mask_type=std::conditional_t<bool(NATIVE_HAS_AVX512VL),predicate<8,Arch>,simd<mask32,8,Arch>>;
@@ -162,7 +162,7 @@ namespace native {
     /// Broadcast x to all lanes.
     native_inline simd(float x) : value(_mm256_set1_ps(x)) {}
     /// Adopt native lane storage without numerical conversion.
-    native_inline constexpr simd(__m256 x) : value(x) {}
+    native_inline native_target("avx") constexpr simd(__m256 x) : value(x) {}
     /// Load every logical lane; no extra alignment is required.
     native_nodiscard static native_inline native_pure simd load(native_noescape float const * p) { return load_memory<1>(p); }
     /// Store every logical lane; no extra alignment is required.
@@ -230,9 +230,9 @@ namespace native {
     using native_type = __m256;
     using bits_type = simd<uint32_t,8,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline native_pure operator native_type() const noexcept { return value; }
+    native_nodiscard native_inline native_pure native_target("avx") operator native_type() const noexcept { return value; }
     /// Project native register storage without a numerical conversion.
-    native_nodiscard native_inline native_pure native_type to_native() const noexcept { return value; }
+    native_nodiscard native_inline native_pure native_target("avx") native_type to_native() const noexcept { return value; }
     /// Project exact binary32 lane words into the unsigned vector.
     native_artificial native_nodiscard native_inline native_pure bits_type bits() const noexcept { return bits_type::from_native(_mm256_castps_si256(value)); }
     /// Synonym for bits(): preserve all binary32 representation bits.
@@ -244,9 +244,9 @@ namespace native {
     /// Broadcast one binary32 value to every lane.
     native_nodiscard static native_inline native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native register storage without changing its bits.
-    native_nodiscard static native_inline native_const simd from_native(native_type x) noexcept { return simd(x); }
+    native_nodiscard static native_inline native_const native_target("avx") simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt native raw float storage; this raw type adds no normalization.
-    native_nodiscard static native_inline native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    native_nodiscard static native_inline native_const native_target("avx") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Synonym for an unaligned full-vector load.
     native_nodiscard static native_inline native_pure simd loadu(native_noescape float const * p) { return load_memory<1>(p); }
     /// Synonym for an unaligned full-vector store.

@@ -5,13 +5,13 @@
 x86-64. Source-tree header consumers can include `<native/x86/bmi1.h>`; the
 installed public API uses the named modules.
 
-Every overload takes an explicit `template<native::isa Arch>` argument and
-requires only `Arch.has(native::x86_feature::bmi1)`. Calls are `noexcept`,
+The template argument `Arch` has type `native::isa<native::x86>`. Runtime
+overloads require only `Arch.has(native::x86_feature::bmi1)`. Calls are `noexcept`,
 side-effect-free, and always inline, with compiler target `"bmi"`. Call from a
 matching target scope after CPU admission:
 
 ```cpp
-constexpr native::isa bits{native::x86_feature::bmi1};
+constexpr native::isa<native::x86> bits{native::x86_feature::bmi1};
 
 __attribute__((target("bmi")))
 std::uint32_t clear_lowest(std::uint32_t value) {
@@ -24,6 +24,19 @@ if (native::classify_isa(cpu, bits).admitted()) {
   auto result = clear_lowest(0x18u); // 0x10
 }
 ```
+
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. A function target attribute on the caller
+does not change that captured value.
+Explicit `Arch` arguments are supported, and standalone headers require them.
+
+`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
+All operand widths support constant evaluation. If `Arch` lacks the feature,
+the selected overload is `consteval`: a constant call is accepted, while a call
+with runtime inputs is ill-formed. With the feature present, the overload is
+`constexpr` and uses the instruction implementation at runtime. Runtime calls
+still require a matching compiler target and admitted CPU support; there is
+no runtime software fallback.
 
 The five bit operations have `std::uint32_t` and `std::uint64_t` overloads.
 `tzcnt` additionally supports `std::uint16_t`. Each returns the operand type.

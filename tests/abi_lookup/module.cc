@@ -8,13 +8,13 @@ import native;
 #include "cases.h"
 
 namespace abi_lookup_test {
-  template<native::isa A,std::size_t L,std::size_t N>
+#if defined(__x86_64__) || defined(_M_X64)
+  template<native::isa<native::x86> A,std::size_t L,std::size_t N>
     requires (exp_target<A> == 0)
   native::wide<native::simd<float,L,A>,N> preserve_shape(
     native::wide<native::simd<float,L,A>,N> const &);
   // Deduction retains the full caller ISA in a vector pack, including extra
   // features ignored by this operation's selected policy.
-#if defined(__x86_64__) || defined(_M_X64)
   using pack=native::wide<native::simd<float,4,extra>,3>;
   static_assert(std::same_as<decltype(preserve_shape(std::declval<pack const &>())),pack>);
 #endif

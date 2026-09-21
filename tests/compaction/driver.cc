@@ -20,7 +20,7 @@ int main(int argc,char ** argv) {
   constexpr auto profile = NATIVE_TEST_PROFILE == 512 ? native::avx512 : native::avx2;
 #endif
   auto admission=native::classify_isa(native::observe_x86_capabilities(),profile);
-  if(!admission.admitted()) { std::puts(admission.reason());return 77; }
+  if(!admission.admitted()) { std::puts(admission.reason());return admission.invalid_features ? 1 : 77; }
 #endif
 #if NATIVE_TEST_PROFILE == 128 && NATIVE_TEST_BF16
   auto admission=native::classify_isa(native::observe_arm_capabilities(),native::neon_bf16);

@@ -6,3 +6,8 @@ export import native.arm.rdm;
 export import native.arm.fp16fml;
 export import native.arm.fcma;
 export import native.arm.i8mm;
+export import native.arm.bf16;
+export import native.arm.crc;
+export import native.arm.aes;
+export import native.arm.pmull;
+export import native.arm.sha;

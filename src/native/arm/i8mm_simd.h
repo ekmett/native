@@ -1,0 +1,213 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#pragma once
+// Included by native.arm.i8mm after native.simd.
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+namespace native {
+  /// \defgroup arm_i8mm I8MM
+  /// Advanced SIMD integer matrix and mixed-sign dot products. Requires I8MM,
+  /// independently of DotProd, FP16 and BF16. All sums wrap modulo 2^32;
+  /// signed results interpret the resulting bits as two's complement.
+  /// Matrix operands hold two rows of eight bytes in a and two columns of
+  /// eight bytes in b. Result lane 2*r+c accumulates sum(a[8*r+k]*b[8*c+k]).
+  /// \{
+
+  // All vector operands share Arch; native registers remain implementation details.
+  /// Signed 2x8 times 8x2 matrix multiply-accumulate.
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> smmla(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::int8_t, 16, Arch> a,
+      simd<std::int8_t, 16, Arch> b) noexcept {
+    auto result = detail::smmla<Arch>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(int8x16_t, a.to_native()),
+      __builtin_bit_cast(int8x16_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Unsigned 2x8 times 8x2 matrix multiply-accumulate.
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::uint32_t, 4, Arch> ummla(
+      simd<std::uint32_t, 4, Arch> acc,
+      simd<std::uint8_t, 16, Arch> a,
+      simd<std::uint8_t, 16, Arch> b) noexcept {
+    auto result = detail::ummla<Arch>(
+      __builtin_bit_cast(uint32x4_t, acc.to_native()),
+      __builtin_bit_cast(uint8x16_t, a.to_native()),
+      __builtin_bit_cast(uint8x16_t, b.to_native()));
+    return simd<std::uint32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::uint32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Unsigned left matrix times signed right matrix, with signed accumulator.
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> usmmla(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::uint8_t, 16, Arch> a,
+      simd<std::int8_t, 16, Arch> b) noexcept {
+    auto result = detail::usmmla<Arch>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(uint8x16_t, a.to_native()),
+      __builtin_bit_cast(int8x16_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Accumulate each corresponding group of four unsigned a bytes times signed b bytes.
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 2, Arch> usdot(
+      simd<std::int32_t, 2, Arch> acc,
+      simd<std::uint8_t, 8, Arch> a,
+      simd<std::int8_t, 8, Arch> b) noexcept {
+    auto result = detail::usdot<Arch>(
+      vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
+      __builtin_bit_cast(uint8x8_t, a.to_native()),
+      __builtin_bit_cast(int8x8_t, b.to_native()));
+    return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 2, Arch> usdot_lane(
+      simd<std::int32_t, 2, Arch> acc,
+      simd<std::uint8_t, 8, Arch> a,
+      simd<std::int8_t, 8, Arch> b) noexcept {
+    auto result = detail::usdot_lane<Arch, Lane>(
+      vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
+      __builtin_bit_cast(uint8x8_t, a.to_native()),
+      __builtin_bit_cast(int8x8_t, b.to_native()));
+    return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 2, Arch> sudot_lane(
+      simd<std::int32_t, 2, Arch> acc,
+      simd<std::int8_t, 8, Arch> a,
+      simd<std::uint8_t, 8, Arch> b) noexcept {
+    auto result = detail::sudot_lane<Arch, Lane>(
+      vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
+      __builtin_bit_cast(int8x8_t, a.to_native()),
+      __builtin_bit_cast(uint8x8_t, b.to_native()));
+    return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 2, Arch> usdot_lane(
+      simd<std::int32_t, 2, Arch> acc,
+      simd<std::uint8_t, 8, Arch> a,
+      simd<std::int8_t, 16, Arch> b) noexcept {
+    auto result = detail::usdot_lane<Arch, Lane>(
+      vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
+      __builtin_bit_cast(uint8x8_t, a.to_native()),
+      __builtin_bit_cast(int8x16_t, b.to_native()));
+    return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 2, Arch> sudot_lane(
+      simd<std::int32_t, 2, Arch> acc,
+      simd<std::int8_t, 8, Arch> a,
+      simd<std::uint8_t, 16, Arch> b) noexcept {
+    auto result = detail::sudot_lane<Arch, Lane>(
+      vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
+      __builtin_bit_cast(int8x8_t, a.to_native()),
+      __builtin_bit_cast(uint8x16_t, b.to_native()));
+    return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+  }
+
+  /// Accumulate each corresponding group of four unsigned a bytes times signed b bytes.
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> usdot(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::uint8_t, 16, Arch> a,
+      simd<std::int8_t, 16, Arch> b) noexcept {
+    auto result = detail::usdot<Arch>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(uint8x16_t, a.to_native()),
+      __builtin_bit_cast(int8x16_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> usdot_lane(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::uint8_t, 16, Arch> a,
+      simd<std::int8_t, 8, Arch> b) noexcept {
+    auto result = detail::usdot_lane<Arch, Lane>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(uint8x16_t, a.to_native()),
+      __builtin_bit_cast(int8x8_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> sudot_lane(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::int8_t, 16, Arch> a,
+      simd<std::uint8_t, 8, Arch> b) noexcept {
+    auto result = detail::sudot_lane<Arch, Lane>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(int8x16_t, a.to_native()),
+      __builtin_bit_cast(uint8x8_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> usdot_lane(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::uint8_t, 16, Arch> a,
+      simd<std::int8_t, 16, Arch> b) noexcept {
+    auto result = detail::usdot_lane<Arch, Lane>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(uint8x16_t, a.to_native()),
+      __builtin_bit_cast(int8x16_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  native_nodiscard native_inline native_const __attribute__((target("i8mm")))
+  simd<std::int32_t, 4, Arch> sudot_lane(
+      simd<std::int32_t, 4, Arch> acc,
+      simd<std::int8_t, 16, Arch> a,
+      simd<std::uint8_t, 16, Arch> b) noexcept {
+    auto result = detail::sudot_lane<Arch, Lane>(
+      __builtin_bit_cast(int32x4_t, acc.to_native()),
+      __builtin_bit_cast(int8x16_t, a.to_native()),
+      __builtin_bit_cast(uint8x16_t, b.to_native()));
+    return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
+  }
+
+  /// \cond
+  template<isa<arm> Arch, class A, class B, class C>
+  void smmla(A, B, C) = delete;
+  template<isa<arm> Arch, class A, class B, class C>
+  void ummla(A, B, C) = delete;
+  template<isa<arm> Arch, class A, class B, class C>
+  void usmmla(A, B, C) = delete;
+  template<isa<arm> Arch, class A, class B, class C>
+  void usdot(A, B, C) = delete;
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
+  void usdot_lane(A, B, C) = delete;
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
+  void sudot_lane(A, B, C) = delete;
+  /// \endcond
+  /// \}
+}
+#endif

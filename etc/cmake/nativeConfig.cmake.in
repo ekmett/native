@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 @PACKAGE_INIT@
+# Optional engine-validation adapter; no JavaScript runtime is a library dependency.
+set(native_WASM_FEATURES_JS "@PACKAGE_CMAKE_INSTALL_DATADIR@/native/wasm/features.mjs")
 include("${CMAKE_CURRENT_LIST_DIR}/nativeHeaderTargets.cmake")
 set(native_headers_FOUND TRUE)
 if(NOT native_FIND_COMPONENTS OR "native" IN_LIST native_FIND_COMPONENTS)

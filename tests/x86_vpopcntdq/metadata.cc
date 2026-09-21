@@ -7,16 +7,16 @@
 
 namespace {
   using native::isa, native::x86_feature;
-  constexpr auto instruction = isa(x86_feature::avx512vpopcntdq);
-  constexpr auto full_width = native::target_features("avx512vpopcntdq");
-  constexpr auto short_width = native::target_features("avx512vpopcntdq,avx512vl");
+  constexpr auto instruction = isa<native::x86>(x86_feature::avx512vpopcntdq);
+  constexpr auto full_width = native::target_features<native::x86>("avx512vpopcntdq");
+  constexpr auto short_width = native::target_features<native::x86>("avx512vpopcntdq,avx512vl");
 
   // Existing public enum values stay fixed when an independent feature is added.
   static_assert(static_cast<unsigned>(x86_feature::popcnt) == 7);
   static_assert(static_cast<unsigned>(x86_feature::avx512f) == 14);
   static_assert(static_cast<unsigned>(x86_feature::waitpkg) == 29);
-  static_assert(native::x86_feature_count == static_cast<unsigned>(x86_feature::avx512vpopcntdq) + 1);
-  static_assert(instruction != isa(x86_feature::popcnt));
+  static_assert(native::x86_feature_count > static_cast<unsigned>(x86_feature::avx512vpopcntdq));
+  static_assert(instruction != isa<native::x86>(x86_feature::popcnt));
   static_assert(!instruction.has(x86_feature::avx512f));
   static_assert(full_width == native::feature_closure(instruction));
   static_assert(full_width.has(x86_feature::avx512f));
@@ -27,33 +27,33 @@ namespace {
   static_assert(!full_width.has(x86_feature::bmi2));
   static_assert(short_width == (full_width & x86_feature::avx512vl));
   static_assert(!native::avx512.has(x86_feature::avx512vpopcntdq));
-  static_assert(native::target_features("no-avx512vpopcntdq") == native::detail::invalid_features);
-  static_assert(native::target_features("avx512vpopcntdq,") == native::detail::invalid_features);
+  static_assert(native::target_features<native::x86>("no-avx512vpopcntdq") == native::detail::invalid_features<native::x86>);
+  static_assert(native::target_features<native::x86>("avx512vpopcntdq,") == native::detail::invalid_features<native::x86>);
 
 #define NATIVE_TARGET_metadata_vpopcntdq "avx512vpopcntdq"
   static_assert(NATIVE_TARGET_ISA(metadata_vpopcntdq) == full_width);
 #if defined(NATIVE_TEST_EXPECT_VPOPCNTDQ_MINIMUM)
   static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::avx512vpopcntdq));
   static_assert(full_width <= NATIVE_TARGET_MINIMUM);
-  static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features);
+  static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>);
 #else
   static_assert(!NATIVE_TARGET_MINIMUM.has(x86_feature::avx512vpopcntdq));
 #endif
 
   constexpr bool properties() {
-    isa features = x86_feature::popcnt;
+    isa<native::x86> features = x86_feature::popcnt;
     features.avx512vpopcntdq = true;
     if (!features.avx512vpopcntdq || features != (x86_feature::popcnt & instruction)) return false;
     features.avx512vpopcntdq = false;
-    if (features != isa(x86_feature::popcnt)) return false;
-    native::feature_set<x86_feature> bits(x86_feature::avx512vpopcntdq);
+    if (features != isa<native::x86>(x86_feature::popcnt)) return false;
+    native::isa<native::x86> bits(x86_feature::avx512vpopcntdq);
     return bits.valid() && bits.has(x86_feature::avx512vpopcntdq) &&
-      !bits.has(x86_feature::popcnt) && isa(bits) == instruction;
+      !bits.has(x86_feature::popcnt) && isa<native::x86>(bits) == instruction;
   }
   static_assert(properties());
 
   struct normalized_snapshot {
-    native::feature_set<x86_feature> present{}, observed{};
+    native::isa<native::x86> present{}, observed{};
     std::uint64_t xcr0 = 0xe6;
     bool xcr0_observed = true;
   };
@@ -174,7 +174,7 @@ namespace {
     cpu.leaf7_ebx |= 1u << 31;
     cpu.xcr0 = 0x6; // AVX state alone cannot execute even the 128-bit EVEX forms.
     auto result = native::classify_isa(cpu, short_width);
-    return !result.admitted() && result.missing_features == native::scalar && result.missing_xcr0 == 0xe0;
+    return !result.admitted() && result.missing_features == native::isa<native::x86>{} && result.missing_xcr0 == 0xe0;
   }
   static_assert(raw_admission());
 }

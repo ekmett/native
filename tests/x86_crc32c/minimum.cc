@@ -5,7 +5,7 @@
 
 static_assert(static_cast<unsigned>(native::x86_feature::waitpkg) == 29);
 static_assert(native::feature_closure(native::x86_feature::crc32) ==
-              native::isa(native::x86_feature::crc32));
+              native::isa<native::x86>(native::x86_feature::crc32));
 #if NATIVE_TEST_MINIMUM == 1
 #ifndef __CRC32__
 #error CRC32 compiler feature was not enabled.

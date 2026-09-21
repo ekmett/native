@@ -11,7 +11,7 @@
 
 namespace native::detail {
   // Every callee in the binary32 graph uses this same five-way split.
-  template<isa A> inline constexpr auto exp_target=
+  template<isa<x86> A> inline constexpr auto exp_target=
     target<A,avx512,kernel_bw,kernel_vl,kernel_base,avx2>;
 }
 
@@ -24,6 +24,6 @@ namespace native::detail {
   X(4,avx2)
 
 #define CHECK_EXP_TARGET(i,name) \
-  static_assert(::native::detail::exp_target<NATIVE_TARGET_ISA(name)> == i);
+  static_assert(::native::detail::exp_target<::native::target_features<::native::x86>(NATIVE_TARGET_STRING(name))> == i);
 NATIVE_EXP_TARGETS(CHECK_EXP_TARGET)
 #undef CHECK_EXP_TARGET

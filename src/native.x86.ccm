@@ -8,4 +8,8 @@ export import native.x86.lzcnt;
 export import native.x86.crc32c;
 export import native.x86.gfni;
 export import native.x86.vpopcntdq;
+export import native.x86.vnni;
+export import native.x86.f16c;
 export import native.x86.wait;
+export import native.x86.pclmul;
+export import native.x86.vpclmul;

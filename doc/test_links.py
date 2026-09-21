@@ -43,6 +43,28 @@ class LinkTests(unittest.TestCase):
     def test_existing_file_outside_upload(self):
         self.assertTrue(self.result('../unpublished.md'))
 
+    def test_graph_assets_and_destinations(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'index.html').write_text(
+                '<h1 id="api">API</h1><iframe src="graph.svg"></iframe>', encoding='utf-8')
+            graph = root / 'graph.svg'
+            script = root / 'svg.min.js'
+            graph.write_text(
+                '<svg xmlns:xlink="http://www.w3.org/1999/xlink">'
+                '<a xlink:href="index.html#api">API</a>'
+                '<script xlink:href="svg.min.js"/></svg>', encoding='utf-8')
+            script.write_text('// Interactive graph support.', encoding='utf-8')
+            with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
+                self.assertFalse(check(root))
+                graph.write_text(graph.read_text().replace('#api', '#missing'), encoding='utf-8')
+                self.assertTrue(check(root))
+                graph.write_text(graph.read_text().replace('#missing', '#api'), encoding='utf-8')
+                script.unlink()
+                self.assertTrue(check(root))
+                graph.unlink()
+                self.assertTrue(check(root))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -6,13 +6,15 @@
 This is deliberately not a general response-file parser. Unknown response or
 PCH syntax runs the original compiler invocation without caching. Explicit PCH
 binary inputs are hashed through SCCACHE_EXTRAFILES. CMake's files are never
-rewritten. Unsupported POSIX compiler names bypass caching directly; Windows
-retains its original arguments and direct sccache routing.
+rewritten. Windows clang-cl module, PCH and response-file invocations bypass
+caching with their original arguments; ordinary compilations remain cacheable.
+Unsupported compiler names bypass caching directly.
 """
 import errno
 import os
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 
@@ -22,6 +24,7 @@ MODULE_NAME = r'[A-Za-z_][A-Za-z0-9_.:]*'
 OUTPUT = re.compile(r'-fmodule-output="(' + MODULE_PATH + r')"')
 IMPORT = re.compile(r'-fmodule-file="(' + MODULE_NAME + '=' + MODULE_PATH + r')"')
 COMPILER = re.compile(r'clang(?:\+\+)?(?:-[0-9]+)?')
+CL_COMPILER = re.compile(r'clang-cl(?:-[0-9]+)?(?:\.exe)?', re.IGNORECASE)
 
 
 def parse_modmap(contents):
@@ -134,13 +137,59 @@ def pch_inputs(arguments):
     return result
 
 
+def windows_cacheable(arguments):
+    """Keep opaque clang-cl module/PCH inputs out of the compiler cache.
+
+    sccache 0.16's MSVC parser treats raw -fmodule-file as an unknown flag;
+    its path enters the key, but the BMI bytes do not. Forwarded /clang: and
+    -Xclang module flags instead reject caching. Bypass both forms, providers,
+    and every response file without interpreting or rewriting their contents.
+    """
+    compiler = arguments[0].replace('\\', '/').rsplit('/', 1)[-1]
+    if not CL_COMPILER.fullmatch(compiler):
+        return False
+    for argument in arguments[1:]:
+        # Recognize forwarded flags only to decline caching, never to expand
+        # them or reconstruct the compiler command.
+        while True:
+            prefix = next((p for p in ('/clang:', '-clang:', '-Xclang=')
+                           if argument.startswith(p)), None)
+            if prefix is None:
+                break
+            argument = argument[len(prefix):]
+        if argument.startswith('@'):
+            return False
+        if argument.startswith(('/Fp', '-Fp', '/Yu', '-Yu', '/Yc', '-Yc')):
+            return False
+        lower = argument.lower()
+        if lower.startswith(('-fmodule', '-fprebuilt-module', '-fimplicit-module',
+                             '-fno-implicit-module', '-emit-module', '--precompile',
+                             '-include-pch', '-include-pth',
+                             '/ifc', '-ifc', '/reference', '-reference',
+                             '/headerunit', '-headerunit', '/stdifcdir', '-stdifcdir',
+                             '/exportheader', '-exportheader', '/interface', '-interface',
+                             '/internalpartition', '-internalpartition',
+                             '/experimental:module', '-experimental:module')):
+            return False
+        if lower.startswith(('c++-module', 'c++-header', '-xc++-module', '-xc++-header')) or lower.endswith((
+                '.ccm', '.cppm', '.cxxm', '.c++m', '.ixx', '.mpp', '.mxx',
+                '.pcm', '.bmi', '.ifc', '.pch', '.pth')):
+            return False
+    return True
+
+
 def main(arguments):
     if not arguments:
         print('usage: sccache_launcher.py COMPILER [ARGUMENT ...]', file=sys.stderr)
         return 2
+    if os.name == 'nt':
+        command = ['sccache', *arguments] if windows_cacheable(arguments) else arguments
+        # Windows execvp does not provide POSIX process-replacement semantics
+        # to the waiting build tool. Wait explicitly and forward the exit code.
+        return subprocess.run(command).returncode
     # An alias may still resolve to Clang, but its PCH syntax has not been
     # checked. Never send it through the cache without dependency hashing.
-    if os.name != 'nt' and not COMPILER.fullmatch(Path(arguments[0]).name):
+    if not COMPILER.fullmatch(Path(arguments[0]).name):
         os.execvp(arguments[0], arguments)
         return 0
     original = ['sccache', *arguments]

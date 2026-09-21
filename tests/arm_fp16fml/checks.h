@@ -1,25 +1,27 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include "simd_adapter.h"
+#include "simd_contract.h"
 namespace fp16fml_fixture {
-  constexpr native::isa arch{native::arm_feature::fp16fml};
-  template<native::isa A, class F, class H> concept available = requires(F f, H h) {
-    { native::fmlal<A>(f, h, h) } noexcept -> std::same_as<F>;
-    { native::fmlal2<A>(f, h, h) } noexcept -> std::same_as<F>;
-    { native::fmlsl<A>(f, h, h) } noexcept -> std::same_as<F>;
-    { native::fmlsl2<A>(f, h, h) } noexcept -> std::same_as<F>;
+  constexpr native::isa<native::arm> arch{native::arm_feature::fp16fml};
+  template<native::isa<native::arm> A, class F, class H> concept available = requires(F f, H h) {
+    { fp16fml_api::fmlal<A>(f, h, h) } noexcept -> std::same_as<F>;
+    { fp16fml_api::fmlal2<A>(f, h, h) } noexcept -> std::same_as<F>;
+    { fp16fml_api::fmlsl<A>(f, h, h) } noexcept -> std::same_as<F>;
+    { fp16fml_api::fmlsl2<A>(f, h, h) } noexcept -> std::same_as<F>;
   };
-  template<native::isa A, unsigned L, class F, class H, class B>
+  template<native::isa<native::arm> A, unsigned L, class F, class H, class B>
   concept lane_available = requires(F f, H h, B b) {
-    native::fmlal_lane<A, L>(f, h, b);
-    native::fmlal2_lane<A, L>(f, h, b);
-    native::fmlsl_lane<A, L>(f, h, b);
-    native::fmlsl2_lane<A, L>(f, h, b);
+    fp16fml_api::fmlal_lane<A, L>(f, h, b);
+    fp16fml_api::fmlal2_lane<A, L>(f, h, b);
+    fp16fml_api::fmlsl_lane<A, L>(f, h, b);
+    fp16fml_api::fmlsl2_lane<A, L>(f, h, b);
   };
   static_assert(available<arch, float32x2_t, float16x4_t>);
   static_assert(!available<native::scalar, float32x2_t, float16x4_t>);
   static_assert(!available<native::neon, float32x2_t, float16x4_t>);
   static_assert(!available<native::neon_fp16, float32x2_t, float16x4_t>);
-  static_assert(!available<native::isa{native::arm_feature::complxnum}, float32x2_t, float16x4_t>);
+  static_assert(!available<native::isa<native::arm>{native::arm_feature::complxnum}, float32x2_t, float16x4_t>);
   static_assert(!available<native::neon_bf16, float32x2_t, float16x4_t>);
   static_assert(lane_available<arch, 3, float32x2_t, float16x4_t, float16x4_t>);
   static_assert(!lane_available<arch, 4, float32x2_t, float16x4_t, float16x4_t>);
@@ -29,7 +31,7 @@ namespace fp16fml_fixture {
   static_assert(!available<native::scalar, float32x4_t, float16x8_t>);
   static_assert(!available<native::neon, float32x4_t, float16x8_t>);
   static_assert(!available<native::neon_fp16, float32x4_t, float16x8_t>);
-  static_assert(!available<native::isa{native::arm_feature::complxnum}, float32x4_t, float16x8_t>);
+  static_assert(!available<native::isa<native::arm>{native::arm_feature::complxnum}, float32x4_t, float16x8_t>);
   static_assert(!available<native::neon_bf16, float32x4_t, float16x8_t>);
   static_assert(lane_available<arch, 3, float32x4_t, float16x8_t, float16x4_t>);
   static_assert(!lane_available<arch, 4, float32x4_t, float16x8_t, float16x4_t>);
@@ -68,10 +70,10 @@ namespace fp16fml_fixture {
   __attribute__((target("fp16fml"), noinline))
   bool check(F acc, H a, B b) {
     constexpr unsigned n = sizeof(F) / sizeof(float);
-    auto l = native::fmlal_lane<arch, Lane>(acc, a, b);
-    auto h = native::fmlal2_lane<arch, Lane>(acc, a, b);
-    auto sl = native::fmlsl_lane<arch, Lane>(acc, a, b);
-    auto sh = native::fmlsl2_lane<arch, Lane>(acc, a, b);
+    auto l = fp16fml_api::fmlal_lane<arch, Lane>(acc, a, b);
+    auto h = fp16fml_api::fmlal2_lane<arch, Lane>(acc, a, b);
+    auto sl = fp16fml_api::fmlsl_lane<arch, Lane>(acc, a, b);
+    auto sh = fp16fml_api::fmlsl2_lane<arch, Lane>(acc, a, b);
     for(unsigned i = 0; i != n; ++i) {
       float bv = float(b[Lane]);
       if(!same(l[i], std::fma(float(a[i]), bv, acc[i])) ||
@@ -85,10 +87,10 @@ namespace fp16fml_fixture {
   __attribute__((target("fp16fml"), noinline))
   bool check(F acc, H a, H b) {
     constexpr unsigned n = sizeof(F) / sizeof(float);
-    auto l = native::fmlal<arch>(acc, a, b);
-    auto h = native::fmlal2<arch>(acc, a, b);
-    auto sl = native::fmlsl<arch>(acc, a, b);
-    auto sh = native::fmlsl2<arch>(acc, a, b);
+    auto l = fp16fml_api::fmlal<arch>(acc, a, b);
+    auto h = fp16fml_api::fmlal2<arch>(acc, a, b);
+    auto sl = fp16fml_api::fmlsl<arch>(acc, a, b);
+    auto sh = fp16fml_api::fmlsl2<arch>(acc, a, b);
     for(unsigned i = 0; i != n; ++i) {
       if(!same(l[i], std::fma(float(a[i]), float(b[i]), acc[i])) ||
          !same(h[i], std::fma(float(a[i+n]), float(b[i+n]), acc[i])) ||
@@ -146,15 +148,15 @@ namespace fp16fml_fixture {
     if(!check(acc, a, b)) return false;
     a[0] = 0; b[0] = __builtin_bit_cast(__fp16, std::uint16_t(0x7c00));
     std::feclearexcept(FE_ALL_EXCEPT);
-    volatile auto invalid = native::fmlal<arch>(acc, a, b);
+    volatile auto invalid = fp16fml_api::fmlal<arch>(acc, a, b);
     (void)invalid;
     if(!(std::fetestexcept(FE_INVALID) & FE_INVALID)) return false;
     std::feclearexcept(FE_ALL_EXCEPT);
-    (void)native::fmlal<arch>(acc, a, b);
+    (void)fp16fml_api::fmlal<arch>(acc, a, b);
     if(!(std::fetestexcept(FE_INVALID) & FE_INVALID)) return false;
     if(std::feraiseexcept(FE_DIVBYZERO) != 0) return false;
     b[0] = 1;
-    (void)native::fmlal<arch>(acc, a, b);
+    (void)fp16fml_api::fmlal<arch>(acc, a, b);
     if(!(std::fetestexcept(FE_DIVBYZERO) & FE_DIVBYZERO)) return false;
     return fpcr() == control;
   }

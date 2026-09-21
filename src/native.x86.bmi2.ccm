@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/isa_import.h"
 #include "native/x86/bmi2.h"
+#include "native/x86/bmi2_defaults.h"
 export module native.x86.bmi2;
 export import native.x86.features;
 export namespace native {

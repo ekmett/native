@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include "native/config.h"
 #include <array>
 #include <concepts>
 #include <cstddef>
@@ -16,126 +17,139 @@ namespace native {
     sse42, popcnt, avx, avx2, fma, f16c,
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
-    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq
+    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq,
+    vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16
   };
-  /// ARM instruction features and compiler bundles, using local bit indices.
+  /// Independently observable ARM instruction features, using local bit indices.
   enum class arm_feature : std::uint64_t {
     neon, neon_fp16, neon_bf16, aes, sha2, sha3,
     crc, lse, rdm, fp16fml, dotprod, complxnum,
-    jsconv, rcpc, pauth, i8mm
+    jsconv, rcpc, pauth, i8mm, pmull, sha1, sha512, ebf16
   };
+  /// WebAssembly validation capabilities, using local bit indices.
+  enum class wasm_feature : std::uint64_t { simd128, relaxed_simd };
+  /// Number of named Wasm feature values.
+  inline constexpr std::size_t wasm_feature_count=std::size_t(wasm_feature::relaxed_simd)+1;
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avx512vpopcntdq)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avxvnniint16)+1;
   /// Number of named ARM feature values.
-  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::i8mm)+1;
+  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::ebf16)+1;
+
+  /// A structural set of one family's features, without prerequisite closure.
+  template<architecture Family=target_arch> struct isa;
 
   namespace detail {
     template<class T> concept instruction_feature=
-      std::same_as<T,x86_feature> || std::same_as<T,arm_feature>;
+      std::same_as<T,x86_feature> || std::same_as<T,arm_feature> || std::same_as<T,wasm_feature>;
     template<instruction_feature E> inline constexpr std::size_t feature_count=
-      std::same_as<E,x86_feature> ? x86_feature_count : arm_feature_count;
-    inline constexpr std::size_t invalid_feature_index=x86_feature_count+arm_feature_count;
-    constexpr std::size_t feature_index(instruction_feature auto f) noexcept {
-      auto i=std::uint64_t(f);
-      if constexpr(std::same_as<decltype(f),x86_feature>)
-        return i<x86_feature_count ? std::size_t(i) : invalid_feature_index;
-      else
-        return i<arm_feature_count ? x86_feature_count+std::size_t(i) : invalid_feature_index;
-    }
+      std::same_as<E,x86_feature> ? x86_feature_count :
+      std::same_as<E,arm_feature> ? arm_feature_count : wasm_feature_count;
+    template<instruction_feature E> inline constexpr architecture family_of=
+      std::same_as<E,x86_feature> ? x86 : std::same_as<E,arm_feature> ? arm : wasm;
+    template<architecture Family> struct feature_traits;
+    template<> struct feature_traits<x86> { using type=x86_feature; static constexpr auto count=x86_feature_count; };
+    template<> struct feature_traits<arm> { using type=arm_feature; static constexpr auto count=arm_feature_count; };
+    template<> struct feature_traits<wasm> { using type=wasm_feature; static constexpr auto count=wasm_feature_count; };
+    enum class unknown_feature : std::uint64_t {};
+    template<> struct feature_traits<architecture::unknown> { using type=unknown_feature; static constexpr std::size_t count=0; };
   }
 
-  /// A structural set of one architecture's features, without prerequisite closure.
-  /// E must be x86_feature or arm_feature; the other family's values are rejected.
-  template<detail::instruction_feature E> struct feature_set {
-    /// Local feature bits and a private invalid marker; not a serialized ABI.
-    std::array<std::uint64_t,(detail::feature_count<E>+1+63)/64> flags{};
-    /// Construct an empty set.
-    constexpr feature_set() noexcept = default;
-    /// Construct exactly one feature; an invalid value records an invalid set.
-    constexpr feature_set(E f) noexcept { set(f,true); }
-    /// Read a feature; out-of-range values are absent.
-    constexpr bool get(E f) const noexcept {
+  /// Exact requirements for an unrecognized target family; only the empty set is valid.
+  template<architecture Family> struct isa {
+    /// Feature enum accepted by this ISA family.
+    using feature_type=typename detail::feature_traits<Family>::type;
+    /// Architecture family, independent of the compiler target.
+    static constexpr architecture family=Family;
+    /// Number of registered features in this family.
+    static constexpr auto feature_count=detail::feature_traits<Family>::count;
+    /// Public structural bits; invalid enum values and padding fail validation.
+    std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Construct the empty requirement set.
+    constexpr isa() noexcept=default;
+    /// Require exactly one feature of this family, without prerequisite closure.
+    constexpr isa(feature_type f) noexcept { set(f,true); }
+    /// Read one feature; out-of-range values are absent.
+    constexpr bool get(feature_type f) const noexcept {
       auto i=std::uint64_t(f);
-      return i<detail::feature_count<E> && ((flags[i/64]>>(i%64))&1);
+      return i<feature_count && ((flags[i/64]>>(i%64))&1);
     }
-    /// Set or clear a feature. Requiring an invalid value records an invalid set;
-    /// clearing one leaves the set unchanged. Neither operation indexes outside flags.
-    constexpr void set(E f,bool value) noexcept {
+    /// Set or clear one feature. Requiring an invalid enum records an invalid set.
+    /// Clearing an invalid enum does nothing; neither case indexes outside storage.
+    constexpr void set(feature_type f,bool value) noexcept {
       auto i=std::uint64_t(f);
-      if(i>=detail::feature_count<E>) {
+      if(i>=feature_count) {
         if(!value) return;
-        i=detail::feature_count<E>;
+        i=feature_count;
       }
       auto mask=std::uint64_t{1}<<(i%64);
       auto & word=flags[i/64];
       word=(word&~mask)|(value?mask:0);
     }
-    /// True when the named feature is present.
-    constexpr bool has(E f) const noexcept { return get(f); }
-    /// True when every bit in other is present.
-    constexpr bool has(feature_set other) const noexcept {
+    /// True when the feature is present.
+    constexpr bool has(feature_type f) const noexcept { return get(f); }
+    /// True when every bit in a same-family requirement is present.
+    constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
       return true;
     }
     /// True when no invalid marker or unregistered padding bit is set.
     constexpr bool valid() const noexcept {
-      constexpr auto used=detail::feature_count<E>%64;
+      constexpr auto used=feature_count%64;
       constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
       return (flags.back()&~mask)==0;
     }
-    /// Compare all stored bits for exact equality.
-    constexpr bool operator==(feature_set const &) const = default;
+    /// Compare every stored bit, including invalid requirements.
+    constexpr bool operator==(isa const &) const=default;
   };
 
-  /// A structural instruction-feature set. Construction never adds prerequisites.
-  /// Each registered feature has a mutable Boolean property, e.g. a.avx2.
-  /// ARM extras retain their arm_ prefix to distinguish the two architectures.
-  /// Properties read and update flags through their
-  /// accessors; they occupy no additional storage. See docs/abi-lookup.md for
-  /// feature conjunction, property assignment and subset selection.
-  struct isa {
-    /// Shared bit storage for both architectures and a private invalid marker.
-    /// This representation is structural, not a persistent serialization format.
-    std::array<std::uint64_t,(detail::invalid_feature_index+1+63)/64> flags{};
-
+  /// Exact X86 feature requirements; construction does not add prerequisites.
+  template<> struct isa<x86> {
+    /// Feature enum accepted by this ISA family.
+    using feature_type=typename detail::feature_traits<x86>::type;
+    /// Architecture family, independent of the compiler target.
+    static constexpr architecture family=x86;
+    /// Number of registered features in this family.
+    static constexpr auto feature_count=detail::feature_traits<x86>::count;
+    /// Public structural bits; invalid enum values and padding fail validation.
+    std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
     /// Construct the empty requirement set.
-    constexpr isa() noexcept = default;
-    /// Require exactly one feature, without prerequisite closure.
-    constexpr isa(detail::instruction_feature auto f) noexcept { set(f,true); }
-    /// Convert a typed feature set exactly, preserving invalid requirements.
-    template<detail::instruction_feature E>
-    constexpr isa(feature_set<E> bits) noexcept {
-      for(std::size_t i=0;i<detail::feature_count<E>;++i)
-        if(bits.has(static_cast<E>(i))) set(static_cast<E>(i),true);
-      if(!bits.valid()) set(static_cast<E>(detail::feature_count<E>),true);
+    constexpr isa() noexcept=default;
+    /// Require exactly one feature of this family, without prerequisite closure.
+    constexpr isa(feature_type f) noexcept { set(f,true); }
+    /// Read one feature; out-of-range values are absent.
+    constexpr bool get(feature_type f) const noexcept {
+      auto i=std::uint64_t(f);
+      return i<feature_count && ((flags[i/64]>>(i%64))&1);
     }
-    /// Read one feature bit; out-of-range values are absent.
-    constexpr bool get(detail::instruction_feature auto f) const noexcept {
-      auto i=detail::feature_index(f);
-      return i!=detail::invalid_feature_index && ((flags[i/64]>>(i%64))&1);
-    }
-    /// Set or clear one feature bit without changing any other requirement.
-    /// Requiring an out-of-range value records an invalid requirement; clearing
-    /// such a value does nothing. Neither operation indexes outside flags.
-    constexpr void set(detail::instruction_feature auto f,bool value) noexcept {
-      auto i=detail::feature_index(f);
-      if(i==detail::invalid_feature_index && !value) return;
+    /// Set or clear one feature. Requiring an invalid enum records an invalid set.
+    /// Clearing an invalid enum does nothing; neither case indexes outside storage.
+    constexpr void set(feature_type f,bool value) noexcept {
+      auto i=std::uint64_t(f);
+      if(i>=feature_count) {
+        if(!value) return;
+        i=feature_count;
+      }
       auto mask=std::uint64_t{1}<<(i%64);
       auto & word=flags[i/64];
       word=(word&~mask)|(value?mask:0);
     }
-    /// True when the single feature is present.
-    constexpr bool has(detail::instruction_feature auto f) const noexcept { return get(f); }
-    /// True when every feature in other is present, including the empty set.
+    /// True when the feature is present.
+    constexpr bool has(feature_type f) const noexcept { return get(f); }
+    /// True when every bit in a same-family requirement is present.
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
       return true;
     }
-    /// Compare all stored bits for exact set equality.
-    constexpr bool operator==(isa const &) const = default;
-
+    /// True when no invalid marker or unregistered padding bit is set.
+    constexpr bool valid() const noexcept {
+      constexpr auto used=feature_count%64;
+      constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
+      return (flags.back()&~mask)==0;
+    }
+    /// Compare every stored bit, including invalid requirements.
+    constexpr bool operator==(isa const &) const=default;
     constexpr bool get_mmx() const noexcept { return get(x86_feature::mmx); }
     constexpr void set_mmx(bool value) noexcept { set(x86_feature::mmx,value); }
     __declspec(property(get=get_mmx,put=set_mmx)) bool mmx;
@@ -196,15 +210,6 @@ namespace native {
     constexpr bool get_avx512fp16() const noexcept { return get(x86_feature::avx512fp16); }
     constexpr void set_avx512fp16(bool value) noexcept { set(x86_feature::avx512fp16,value); }
     __declspec(property(get=get_avx512fp16,put=set_avx512fp16)) bool avx512fp16;
-    constexpr bool get_neon() const noexcept { return get(arm_feature::neon); }
-    constexpr void set_neon(bool value) noexcept { set(arm_feature::neon,value); }
-    __declspec(property(get=get_neon,put=set_neon)) bool neon;
-    constexpr bool get_neon_fp16() const noexcept { return get(arm_feature::neon_fp16); }
-    constexpr void set_neon_fp16(bool value) noexcept { set(arm_feature::neon_fp16,value); }
-    __declspec(property(get=get_neon_fp16,put=set_neon_fp16)) bool neon_fp16;
-    constexpr bool get_neon_bf16() const noexcept { return get(arm_feature::neon_bf16); }
-    constexpr void set_neon_bf16(bool value) noexcept { set(arm_feature::neon_bf16,value); }
-    __declspec(property(get=get_neon_bf16,put=set_neon_bf16)) bool neon_bf16;
     constexpr bool get_aes() const noexcept { return get(x86_feature::aes); }
     constexpr void set_aes(bool value) noexcept { set(x86_feature::aes,value); }
     __declspec(property(get=get_aes,put=set_aes)) bool aes;
@@ -241,56 +246,211 @@ namespace native {
     constexpr bool get_gfni() const noexcept { return get(x86_feature::gfni); }
     constexpr void set_gfni(bool value) noexcept { set(x86_feature::gfni,value); }
     __declspec(property(get=get_gfni,put=set_gfni)) bool gfni;
+    constexpr bool get_vpclmulqdq() const noexcept { return get(x86_feature::vpclmulqdq); }
+    constexpr void set_vpclmulqdq(bool value) noexcept { set(x86_feature::vpclmulqdq,value); }
+    __declspec(property(get=get_vpclmulqdq,put=set_vpclmulqdq)) bool vpclmulqdq;
     constexpr bool get_avx512vpopcntdq() const noexcept { return get(x86_feature::avx512vpopcntdq); }
     constexpr void set_avx512vpopcntdq(bool value) noexcept { set(x86_feature::avx512vpopcntdq,value); }
     __declspec(property(get=get_avx512vpopcntdq,put=set_avx512vpopcntdq)) bool avx512vpopcntdq;
-    constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
-    constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
-    __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
-    constexpr bool get_arm_sha2() const noexcept { return get(arm_feature::sha2); }
-    constexpr void set_arm_sha2(bool value) noexcept { set(arm_feature::sha2,value); }
-    __declspec(property(get=get_arm_sha2,put=set_arm_sha2)) bool arm_sha2;
-    constexpr bool get_arm_sha3() const noexcept { return get(arm_feature::sha3); }
-    constexpr void set_arm_sha3(bool value) noexcept { set(arm_feature::sha3,value); }
-    __declspec(property(get=get_arm_sha3,put=set_arm_sha3)) bool arm_sha3;
-    constexpr bool get_arm_crc() const noexcept { return get(arm_feature::crc); }
-    constexpr void set_arm_crc(bool value) noexcept { set(arm_feature::crc,value); }
-    __declspec(property(get=get_arm_crc,put=set_arm_crc)) bool arm_crc;
-    constexpr bool get_arm_lse() const noexcept { return get(arm_feature::lse); }
-    constexpr void set_arm_lse(bool value) noexcept { set(arm_feature::lse,value); }
-    __declspec(property(get=get_arm_lse,put=set_arm_lse)) bool arm_lse;
-    constexpr bool get_arm_rdm() const noexcept { return get(arm_feature::rdm); }
-    constexpr void set_arm_rdm(bool value) noexcept { set(arm_feature::rdm,value); }
-    __declspec(property(get=get_arm_rdm,put=set_arm_rdm)) bool arm_rdm;
-    constexpr bool get_arm_fp16fml() const noexcept { return get(arm_feature::fp16fml); }
-    constexpr void set_arm_fp16fml(bool value) noexcept { set(arm_feature::fp16fml,value); }
-    __declspec(property(get=get_arm_fp16fml,put=set_arm_fp16fml)) bool arm_fp16fml;
-    constexpr bool get_arm_dotprod() const noexcept { return get(arm_feature::dotprod); }
-    constexpr void set_arm_dotprod(bool value) noexcept { set(arm_feature::dotprod,value); }
-    __declspec(property(get=get_arm_dotprod,put=set_arm_dotprod)) bool arm_dotprod;
-    constexpr bool get_arm_complxnum() const noexcept { return get(arm_feature::complxnum); }
-    constexpr void set_arm_complxnum(bool value) noexcept { set(arm_feature::complxnum,value); }
-    __declspec(property(get=get_arm_complxnum,put=set_arm_complxnum)) bool arm_complxnum;
-    constexpr bool get_arm_jsconv() const noexcept { return get(arm_feature::jsconv); }
-    constexpr void set_arm_jsconv(bool value) noexcept { set(arm_feature::jsconv,value); }
-    __declspec(property(get=get_arm_jsconv,put=set_arm_jsconv)) bool arm_jsconv;
-    constexpr bool get_arm_rcpc() const noexcept { return get(arm_feature::rcpc); }
-    constexpr void set_arm_rcpc(bool value) noexcept { set(arm_feature::rcpc,value); }
-    __declspec(property(get=get_arm_rcpc,put=set_arm_rcpc)) bool arm_rcpc;
-    constexpr bool get_arm_pauth() const noexcept { return get(arm_feature::pauth); }
-    constexpr void set_arm_pauth(bool value) noexcept { set(arm_feature::pauth,value); }
-    __declspec(property(get=get_arm_pauth,put=set_arm_pauth)) bool arm_pauth;
-    constexpr bool get_arm_i8mm() const noexcept { return get(arm_feature::i8mm); }
-    constexpr void set_arm_i8mm(bool value) noexcept { set(arm_feature::i8mm,value); }
-    __declspec(property(get=get_arm_i8mm,put=set_arm_i8mm)) bool arm_i8mm;
+    constexpr bool get_avxvnni() const noexcept { return get(x86_feature::avxvnni); }
+    constexpr void set_avxvnni(bool value) noexcept { set(x86_feature::avxvnni,value); }
+    __declspec(property(get=get_avxvnni,put=set_avxvnni)) bool avxvnni;
+    constexpr bool get_avx512vnni() const noexcept { return get(x86_feature::avx512vnni); }
+    constexpr void set_avx512vnni(bool value) noexcept { set(x86_feature::avx512vnni,value); }
+    __declspec(property(get=get_avx512vnni,put=set_avx512vnni)) bool avx512vnni;
+    constexpr bool get_avxvnniint8() const noexcept { return get(x86_feature::avxvnniint8); }
+    constexpr void set_avxvnniint8(bool value) noexcept { set(x86_feature::avxvnniint8,value); }
+    __declspec(property(get=get_avxvnniint8,put=set_avxvnniint8)) bool avxvnniint8;
+    constexpr bool get_avxvnniint16() const noexcept { return get(x86_feature::avxvnniint16); }
+    constexpr void set_avxvnniint16(bool value) noexcept { set(x86_feature::avxvnniint16,value); }
+    __declspec(property(get=get_avxvnniint16,put=set_avxvnniint16)) bool avxvnniint16;
   };
 
-  template<class T> concept arch=detail::instruction_feature<T> || std::same_as<T,isa> ||
-    std::same_as<T,feature_set<x86_feature>> || std::same_as<T,feature_set<arm_feature>>;
+  /// Exact ARM feature requirements; construction does not add prerequisites.
+  template<> struct isa<arm> {
+    /// Feature enum accepted by this ISA family.
+    using feature_type=typename detail::feature_traits<arm>::type;
+    /// Architecture family, independent of the compiler target.
+    static constexpr architecture family=arm;
+    /// Number of registered features in this family.
+    static constexpr auto feature_count=detail::feature_traits<arm>::count;
+    /// Public structural bits; invalid enum values and padding fail validation.
+    std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Construct the empty requirement set.
+    constexpr isa() noexcept=default;
+    /// Require exactly one feature of this family, without prerequisite closure.
+    constexpr isa(feature_type f) noexcept { set(f,true); }
+    /// Read one feature; out-of-range values are absent.
+    constexpr bool get(feature_type f) const noexcept {
+      auto i=std::uint64_t(f);
+      return i<feature_count && ((flags[i/64]>>(i%64))&1);
+    }
+    /// Set or clear one feature. Requiring an invalid enum records an invalid set.
+    /// Clearing an invalid enum does nothing; neither case indexes outside storage.
+    constexpr void set(feature_type f,bool value) noexcept {
+      auto i=std::uint64_t(f);
+      if(i>=feature_count) {
+        if(!value) return;
+        i=feature_count;
+      }
+      auto mask=std::uint64_t{1}<<(i%64);
+      auto & word=flags[i/64];
+      word=(word&~mask)|(value?mask:0);
+    }
+    /// True when the feature is present.
+    constexpr bool has(feature_type f) const noexcept { return get(f); }
+    /// True when every bit in a same-family requirement is present.
+    constexpr bool has(isa other) const noexcept {
+      for(std::size_t i=0;i<flags.size();++i)
+        if((flags[i]&other.flags[i])!=other.flags[i]) return false;
+      return true;
+    }
+    /// True when no invalid marker or unregistered padding bit is set.
+    constexpr bool valid() const noexcept {
+      constexpr auto used=feature_count%64;
+      constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
+      return (flags.back()&~mask)==0;
+    }
+    /// Compare every stored bit, including invalid requirements.
+    constexpr bool operator==(isa const &) const=default;
+    constexpr bool get_neon() const noexcept { return get(arm_feature::neon); }
+    constexpr void set_neon(bool value) noexcept { set(arm_feature::neon,value); }
+    __declspec(property(get=get_neon,put=set_neon)) bool neon;
+    constexpr bool get_neon_fp16() const noexcept { return get(arm_feature::neon_fp16); }
+    constexpr void set_neon_fp16(bool value) noexcept { set(arm_feature::neon_fp16,value); }
+    __declspec(property(get=get_neon_fp16,put=set_neon_fp16)) bool neon_fp16;
+    constexpr bool get_neon_bf16() const noexcept { return get(arm_feature::neon_bf16); }
+    constexpr void set_neon_bf16(bool value) noexcept { set(arm_feature::neon_bf16,value); }
+    __declspec(property(get=get_neon_bf16,put=set_neon_bf16)) bool neon_bf16;
+    constexpr bool get_pmull() const noexcept { return get(arm_feature::pmull); }
+    constexpr void set_pmull(bool value) noexcept { set(arm_feature::pmull,value); }
+    __declspec(property(get=get_pmull,put=set_pmull)) bool pmull;
+    constexpr bool get_sha1() const noexcept { return get(arm_feature::sha1); }
+    constexpr void set_sha1(bool value) noexcept { set(arm_feature::sha1,value); }
+    __declspec(property(get=get_sha1,put=set_sha1)) bool sha1;
+    constexpr bool get_sha512() const noexcept { return get(arm_feature::sha512); }
+    constexpr void set_sha512(bool value) noexcept { set(arm_feature::sha512,value); }
+    __declspec(property(get=get_sha512,put=set_sha512)) bool sha512;
+    constexpr bool get_ebf16() const noexcept { return get(arm_feature::ebf16); }
+    constexpr void set_ebf16(bool value) noexcept { set(arm_feature::ebf16,value); }
+    __declspec(property(get=get_ebf16,put=set_ebf16)) bool ebf16;
+    constexpr bool get_aes() const noexcept { return get(arm_feature::aes); }
+    constexpr void set_aes(bool value) noexcept { set(arm_feature::aes,value); }
+    __declspec(property(get=get_aes,put=set_aes)) bool aes;
+    constexpr bool get_sha2() const noexcept { return get(arm_feature::sha2); }
+    constexpr void set_sha2(bool value) noexcept { set(arm_feature::sha2,value); }
+    __declspec(property(get=get_sha2,put=set_sha2)) bool sha2;
+    constexpr bool get_sha3() const noexcept { return get(arm_feature::sha3); }
+    constexpr void set_sha3(bool value) noexcept { set(arm_feature::sha3,value); }
+    __declspec(property(get=get_sha3,put=set_sha3)) bool sha3;
+    constexpr bool get_crc() const noexcept { return get(arm_feature::crc); }
+    constexpr void set_crc(bool value) noexcept { set(arm_feature::crc,value); }
+    __declspec(property(get=get_crc,put=set_crc)) bool crc;
+    constexpr bool get_lse() const noexcept { return get(arm_feature::lse); }
+    constexpr void set_lse(bool value) noexcept { set(arm_feature::lse,value); }
+    __declspec(property(get=get_lse,put=set_lse)) bool lse;
+    constexpr bool get_rdm() const noexcept { return get(arm_feature::rdm); }
+    constexpr void set_rdm(bool value) noexcept { set(arm_feature::rdm,value); }
+    __declspec(property(get=get_rdm,put=set_rdm)) bool rdm;
+    constexpr bool get_fp16fml() const noexcept { return get(arm_feature::fp16fml); }
+    constexpr void set_fp16fml(bool value) noexcept { set(arm_feature::fp16fml,value); }
+    __declspec(property(get=get_fp16fml,put=set_fp16fml)) bool fp16fml;
+    constexpr bool get_dotprod() const noexcept { return get(arm_feature::dotprod); }
+    constexpr void set_dotprod(bool value) noexcept { set(arm_feature::dotprod,value); }
+    __declspec(property(get=get_dotprod,put=set_dotprod)) bool dotprod;
+    constexpr bool get_complxnum() const noexcept { return get(arm_feature::complxnum); }
+    constexpr void set_complxnum(bool value) noexcept { set(arm_feature::complxnum,value); }
+    __declspec(property(get=get_complxnum,put=set_complxnum)) bool complxnum;
+    constexpr bool get_jsconv() const noexcept { return get(arm_feature::jsconv); }
+    constexpr void set_jsconv(bool value) noexcept { set(arm_feature::jsconv,value); }
+    __declspec(property(get=get_jsconv,put=set_jsconv)) bool jsconv;
+    constexpr bool get_rcpc() const noexcept { return get(arm_feature::rcpc); }
+    constexpr void set_rcpc(bool value) noexcept { set(arm_feature::rcpc,value); }
+    __declspec(property(get=get_rcpc,put=set_rcpc)) bool rcpc;
+    constexpr bool get_pauth() const noexcept { return get(arm_feature::pauth); }
+    constexpr void set_pauth(bool value) noexcept { set(arm_feature::pauth,value); }
+    __declspec(property(get=get_pauth,put=set_pauth)) bool pauth;
+    constexpr bool get_i8mm() const noexcept { return get(arm_feature::i8mm); }
+    constexpr void set_i8mm(bool value) noexcept { set(arm_feature::i8mm,value); }
+    __declspec(property(get=get_i8mm,put=set_i8mm)) bool i8mm;
+  };
 
-  /// Requirements compose by union: both operands must be available.
-  constexpr isa operator&(arch auto left,arch auto right) noexcept {
-    isa result=left, other=right;
+  /// Exact WebAssembly feature requirements; construction does not add prerequisites.
+  template<> struct isa<wasm> {
+    /// Feature enum accepted by this ISA family.
+    using feature_type=typename detail::feature_traits<wasm>::type;
+    /// Architecture family, independent of the compiler target.
+    static constexpr architecture family=wasm;
+    /// Number of registered features in this family.
+    static constexpr auto feature_count=detail::feature_traits<wasm>::count;
+    /// Public structural bits; invalid enum values and padding fail validation.
+    std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Construct the empty requirement set.
+    constexpr isa() noexcept=default;
+    /// Require exactly one feature of this family, without prerequisite closure.
+    constexpr isa(feature_type f) noexcept { set(f,true); }
+    /// Read one feature; out-of-range values are absent.
+    constexpr bool get(feature_type f) const noexcept {
+      auto i=std::uint64_t(f);
+      return i<feature_count && ((flags[i/64]>>(i%64))&1);
+    }
+    /// Set or clear one feature. Requiring an invalid enum records an invalid set.
+    /// Clearing an invalid enum does nothing; neither case indexes outside storage.
+    constexpr void set(feature_type f,bool value) noexcept {
+      auto i=std::uint64_t(f);
+      if(i>=feature_count) {
+        if(!value) return;
+        i=feature_count;
+      }
+      auto mask=std::uint64_t{1}<<(i%64);
+      auto & word=flags[i/64];
+      word=(word&~mask)|(value?mask:0);
+    }
+    /// True when the feature is present.
+    constexpr bool has(feature_type f) const noexcept { return get(f); }
+    /// True when every bit in a same-family requirement is present.
+    constexpr bool has(isa other) const noexcept {
+      for(std::size_t i=0;i<flags.size();++i)
+        if((flags[i]&other.flags[i])!=other.flags[i]) return false;
+      return true;
+    }
+    /// True when no invalid marker or unregistered padding bit is set.
+    constexpr bool valid() const noexcept {
+      constexpr auto used=feature_count%64;
+      constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
+      return (flags.back()&~mask)==0;
+    }
+    /// Compare every stored bit, including invalid requirements.
+    constexpr bool operator==(isa const &) const=default;
+    constexpr bool get_simd128() const noexcept { return get(wasm_feature::simd128); }
+    constexpr void set_simd128(bool value) noexcept { set(wasm_feature::simd128,value); }
+    __declspec(property(get=get_simd128,put=set_simd128)) bool simd128;
+    constexpr bool get_relaxed_simd() const noexcept { return get(wasm_feature::relaxed_simd); }
+    constexpr void set_relaxed_simd(bool value) noexcept { set(wasm_feature::relaxed_simd,value); }
+    __declspec(property(get=get_relaxed_simd,put=set_relaxed_simd)) bool relaxed_simd;
+  };
+
+  /// Deduce the family from a feature enum; explicit isa<> always names the host family.
+  template<detail::instruction_feature E> isa(E)->isa<detail::family_of<E>>;
+
+  namespace detail {
+    template<class T> inline constexpr bool is_isa=false;
+    template<architecture Family> inline constexpr bool is_isa<isa<Family>> = true;
+    template<class T> struct arch_family;
+    template<instruction_feature E> struct arch_family<E> : std::integral_constant<architecture,family_of<E>> {};
+    template<architecture Family> struct arch_family<isa<Family>> : std::integral_constant<architecture,Family> {};
+  }
+  /// A feature enum or an ISA value from one architecture family.
+  template<class T> concept arch=detail::instruction_feature<T> || detail::is_isa<T>;
+  namespace detail {
+    template<arch T> inline constexpr architecture arch_family_v=arch_family<T>::value;
+    template<class A,class B> concept same_arch=arch<A> && arch<B> && arch_family_v<A> == arch_family_v<B>;
+  }
+
+  /// Requirements compose by union within one family; both operands are required.
+  template<arch A,arch B> requires detail::same_arch<A,B>
+  constexpr auto operator&(A left,B right) noexcept {
+    isa<detail::arch_family_v<A>> result=left, other=right;
     for(std::size_t i=0;i<result.flags.size();++i) result.flags[i]|=other.flags[i];
     return result;
   }
@@ -311,19 +471,34 @@ namespace native {
   constexpr bool operator<=(arm_feature a,arm_feature b) noexcept { return a==b; }
   /// Reverse singleton inclusion holds exactly when both features are equal.
   constexpr bool operator>=(arm_feature a,arm_feature b) noexcept { return a==b; }
-  /// True when every feature required by a is present in b.
-  constexpr bool operator<=(arch auto a,arch auto b) noexcept { return isa(b).has(a); }
-  /// True when a contains every feature required by b.
-  constexpr bool operator>=(arch auto a,arch auto b) noexcept { return b<=a; }
-  /// True when a is a subset of b and their feature sets differ.
-  constexpr bool operator<(arch auto a,arch auto b) noexcept { return isa(a)!=isa(b) && a<=b; }
-  /// True when a strictly contains b.
-  constexpr bool operator>(arch auto a,arch auto b) noexcept { return b<a; }
+  /// A singleton feature is never a strict subset of another singleton.
+  constexpr bool operator<(wasm_feature,wasm_feature) noexcept { return false; }
+  /// A singleton feature is never a strict superset of another singleton.
+  constexpr bool operator>(wasm_feature,wasm_feature) noexcept { return false; }
+  /// Singleton inclusion holds exactly when both feature names are equal.
+  constexpr bool operator<=(wasm_feature a,wasm_feature b) noexcept { return a==b; }
+  /// Reverse singleton inclusion holds exactly when both features are equal.
+  constexpr bool operator>=(wasm_feature a,wasm_feature b) noexcept { return a==b; }
+  /// True when every feature required by a is present in b of the same family.
+  template<arch A,arch B> requires detail::same_arch<A,B>
+  constexpr bool operator<=(A a,B b) noexcept { return isa<detail::arch_family_v<A>>(b).has(a); }
+  /// True when a contains every feature required by b of the same family.
+  template<arch A,arch B> requires detail::same_arch<A,B>
+  constexpr bool operator>=(A a,B b) noexcept { return b<=a; }
+  /// True when a is a proper subset of b within the same family.
+  template<arch A,arch B> requires detail::same_arch<A,B>
+  constexpr bool operator<(A a,B b) noexcept { return isa<detail::arch_family_v<A>>(a)!=isa<detail::arch_family_v<A>>(b) && a<=b; }
+  /// True when a strictly contains b within the same family.
+  template<arch A,arch B> requires detail::same_arch<A,B>
+  constexpr bool operator>(A a,B b) noexcept { return b<a; }
 
   /// First matching requirement, with every later choice checked for shadowing.
-  template<arch auto A,arch auto... Choices>
+  // Explicit constraints let Clang merge the header with an imported declaration.
+  template<auto A,auto... Choices>
+    requires arch<decltype(A)> && ((detail::same_arch<decltype(A),decltype(Choices)>) && ...)
   inline constexpr int target=[]() consteval {
-    constexpr std::array<isa,sizeof...(Choices)> choices{isa(Choices)...};
+    using value_type=isa<detail::arch_family_v<decltype(A)>>;
+    constexpr std::array<value_type,sizeof...(Choices)> choices{value_type(Choices)...};
     static_assert([&] {
       for(std::size_t i=0;i<choices.size();++i)
         for(std::size_t j=i+1;j<choices.size();++j)
@@ -331,31 +506,35 @@ namespace native {
       return true;
     }(),"a later target is shadowed by an earlier one");
     for(std::size_t i=0;i<choices.size();++i)
-      if(choices[i]<=isa(A)) return int(i);
+      if(choices[i]<=value_type(A)) return int(i);
     return -1;
   }();
 
   namespace detail {
-    constexpr isa intersection(isa a,isa b) noexcept {
+    template<architecture Family>
+    constexpr isa<Family> intersection(isa<Family> a,isa<Family> b) noexcept {
       for(std::size_t i=0;i<a.flags.size();++i) a.flags[i]&=b.flags[i];
       return a;
     }
-    enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, extended1_ecx, arm };
-    struct feature_record {
-      isa value;
+    enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, leaf7_1_edx, extended1_ecx, arm, wasm };
+    template<architecture Family> struct feature_record {
+      isa<Family> value;
       std::string_view spelling;
-      isa implies;
+      isa<Family> implies;
       feature_register location;
+      static constexpr architecture family=Family;
       unsigned bit;
       std::size_t index;
-      template<instruction_feature E>
-      constexpr feature_record(E f,std::string_view spelling,isa implies,
-          feature_register location,unsigned bit) noexcept:
-        value(f),spelling(spelling),implies(implies),location(location),bit(bit),index(std::size_t(f)) {}
+      isa<Family> target_implies;
+      bool targetable;
+      constexpr feature_record(typename feature_traits<Family>::type f,std::string_view spelling,isa<Family> implies,
+          feature_register location,unsigned bit,isa<Family> target_implies={},bool targetable=true) noexcept:
+        value(f),spelling(spelling),implies(implies),location(location),bit(bit),index(std::size_t(f)),
+        target_implies(target_implies),targetable(targetable) {}
     };
-    // Clang target-feature dependencies, not an assertion that one CPU feature
-    // bit alone guarantees another. Admission checks every bit in the closure.
-    inline constexpr feature_record feature_registry[] = {
+    // Hardware prerequisites and compiler bundles are recorded separately.
+    template<architecture Family> inline constexpr auto feature_registry=std::array<feature_record<Family>,0>{};
+    template<> inline constexpr auto feature_registry<x86> = std::to_array<feature_record<x86>>({
       {x86_feature::mmx,"mmx",{},feature_register::leaf1_edx,23},
       {x86_feature::sse,"sse",isa(x86_feature::mmx),feature_register::leaf1_edx,25},
       {x86_feature::sse2,"sse2",isa(x86_feature::sse),feature_register::leaf1_edx,26},
@@ -381,21 +560,28 @@ namespace native {
       {x86_feature::avx512bf16,"avx512bf16",isa(x86_feature::avx512bw),feature_register::leaf7_1_eax,5},
       {x86_feature::avx512fp16,"avx512fp16",isa(x86_feature::avx512bw),feature_register::leaf7_edx,23},
       {x86_feature::avx512vpopcntdq,"avx512vpopcntdq",isa(x86_feature::avx512f),feature_register::leaf7_ecx,14},
-      {arm_feature::neon,"neon",{},feature_register::arm,0},
-      {arm_feature::neon_fp16,"fullfp16",isa(arm_feature::neon),feature_register::arm,1},
-      {arm_feature::neon_bf16,"bf16",isa(arm_feature::neon),feature_register::arm,2},
+      {x86_feature::avxvnni,"avxvnni",isa(x86_feature::avx2),feature_register::leaf7_1_eax,4},
+      {x86_feature::avx512vnni,"avx512vnni",isa(x86_feature::avx512f),feature_register::leaf7_ecx,11},
+      {x86_feature::avxvnniint8,"avxvnniint8",isa(x86_feature::avx2),feature_register::leaf7_1_edx,4},
+      {x86_feature::avxvnniint16,"avxvnniint16",isa(x86_feature::avx2),feature_register::leaf7_1_edx,10},
       {x86_feature::aes,"aes",isa(x86_feature::sse2),feature_register::leaf1_ecx,25},
       {x86_feature::pclmul,"pclmul",isa(x86_feature::sse2),feature_register::leaf1_ecx,1},
+      {x86_feature::vpclmulqdq,"vpclmulqdq",x86_feature::avx&x86_feature::pclmul,feature_register::leaf7_ecx,10},
       {x86_feature::cx16,"cx16",{},feature_register::leaf1_ecx,13},
       {x86_feature::avx512cd,"avx512cd",isa(x86_feature::avx512f),feature_register::leaf7_ebx,28},
       {x86_feature::avx512ifma,"avx512ifma",isa(x86_feature::avx512f),feature_register::leaf7_ebx,21},
       {x86_feature::lzcnt,"lzcnt",{},feature_register::extended1_ecx,5},
       {x86_feature::movbe,"movbe",{},feature_register::leaf1_ecx,22},
-      {x86_feature::sahf,"sahf",{},feature_register::extended1_ecx,0},
-      {arm_feature::aes,"aes",isa(arm_feature::neon),feature_register::arm,3},
-      {arm_feature::sha2,"sha2",isa(arm_feature::neon),feature_register::arm,4},
-      {arm_feature::sha3,"sha3",isa(arm_feature::sha2),feature_register::arm,5},
-      {arm_feature::crc,"crc",isa(arm_feature::neon),feature_register::arm,6},
+      {x86_feature::sahf,"sahf",{},feature_register::extended1_ecx,0}
+    });
+    template<> inline constexpr auto feature_registry<arm> = std::to_array<feature_record<arm>>({
+      {arm_feature::neon,"neon",{},feature_register::arm,0},
+      {arm_feature::neon_fp16,"fullfp16",isa(arm_feature::neon),feature_register::arm,1},
+      {arm_feature::neon_bf16,"bf16",isa(arm_feature::neon),feature_register::arm,2},
+      {arm_feature::aes,"aes",isa(arm_feature::neon),feature_register::arm,3,isa(arm_feature::pmull)},
+      {arm_feature::sha2,"sha2",isa(arm_feature::neon),feature_register::arm,4,isa(arm_feature::sha1)},
+      {arm_feature::sha3,"sha3",isa(arm_feature::neon),feature_register::arm,5,arm_feature::sha1&arm_feature::sha2&arm_feature::sha512},
+      {arm_feature::crc,"crc",{},feature_register::arm,6},
       {arm_feature::lse,"lse",isa(arm_feature::neon),feature_register::arm,7},
       {arm_feature::rdm,"rdm",isa(arm_feature::neon),feature_register::arm,8},
       {arm_feature::fp16fml,"fp16fml",isa(arm_feature::neon_fp16),feature_register::arm,9},
@@ -404,96 +590,96 @@ namespace native {
       {arm_feature::jsconv,"jsconv",isa(arm_feature::neon),feature_register::arm,12},
       {arm_feature::rcpc,"rcpc",isa(arm_feature::neon),feature_register::arm,13},
       {arm_feature::pauth,"pauth",isa(arm_feature::neon),feature_register::arm,14},
-      {arm_feature::i8mm,"i8mm",isa(arm_feature::neon),feature_register::arm,15}
-    };
-    inline constexpr isa arm_features=[] {
-      isa result;
-      for(auto const & entry:feature_registry)
-        if(entry.location==feature_register::arm) result=result&entry.value;
+      {arm_feature::i8mm,"i8mm",isa(arm_feature::neon),feature_register::arm,15},
+      {arm_feature::pmull,"pmull",isa(arm_feature::neon),feature_register::arm,16,{},false},
+      {arm_feature::sha1,"sha1",isa(arm_feature::neon),feature_register::arm,17,{},false},
+      {arm_feature::sha512,"sha512",isa(arm_feature::neon),feature_register::arm,18,{},false},
+      {arm_feature::ebf16,"ebf16",isa(arm_feature::neon_bf16),feature_register::arm,19,{},false}
+    });
+    template<> inline constexpr auto feature_registry<wasm> = std::to_array<feature_record<wasm>>({
+      {wasm_feature::simd128,"simd128",{},feature_register::wasm,0},
+      {wasm_feature::relaxed_simd,"relaxed-simd",isa(wasm_feature::simd128),feature_register::wasm,1}
+    });
+    template<architecture Family> inline constexpr isa<Family> known_features=[] {
+      isa<Family> result;
+      for(auto const & entry:feature_registry<Family>) result=result&entry.value;
       return result;
     }();
-    inline constexpr isa x86_features=[] {
-      isa result;
-      for(auto const & entry:feature_registry)
-        if(entry.location!=feature_register::arm) result=result&entry.value;
+    template<instruction_feature E> inline constexpr auto family_features=known_features<family_of<E>>;
+    inline constexpr auto arm_features=known_features<arm>;
+    inline constexpr auto x86_features=known_features<x86>;
+    inline constexpr auto wasm_features=known_features<wasm>;
+    template<architecture Family> inline constexpr isa<Family> invalid_features=[] {
+      isa<Family> result;
+      constexpr auto index=feature_traits<Family>::count;
+      result.flags[index/64]|=std::uint64_t{1}<<(index%64);
       return result;
     }();
-    inline constexpr isa known_features=arm_features&x86_features;
-    inline constexpr isa invalid_features=static_cast<x86_feature>(-1);
-    // A shared value keeps repeated source constraints equivalent across
-    // declarations; an immediately invoked macro lambda would not.
-    template<isa A> inline constexpr isa source_isa=[]() consteval {
-      static_assert(A<=known_features,"source target contains an unregistered ISA feature");
-      static_assert(A<=x86_features || A<=arm_features,"source target combines x86 and ARM features");
+    // Shared source constraints remain equivalent across repeated declarations.
+    template<isa<> A> inline constexpr isa<> source_isa=[]() consteval {
+      static_assert(A<=known_features<target_arch>,"source target contains an unregistered ISA feature");
       return A;
     }();
   }
 
-  /// Explicit compiler-implied closure, shared by presets and admission.
-  constexpr isa feature_closure(isa bits) noexcept {
-    isa previous;
+  /// Add the same family's register and instruction prerequisites.
+  /// ARM crypto siblings remain independent; target_features adds compiler bundles.
+  template<arch A> constexpr auto feature_closure(A input) noexcept {
+    constexpr auto family=detail::arch_family_v<A>;
+    isa<family> bits=input, previous;
     do {
       previous=bits;
-      for(auto const & entry:detail::feature_registry)
+      for(auto const & entry:detail::feature_registry<family>)
         if(bits.has(entry.value)) bits=bits&entry.implies;
     } while(previous!=bits);
     return bits;
   }
 
-  inline constexpr isa scalar{};
-  inline constexpr isa avx2=feature_closure(x86_feature::avx2&x86_feature::fma);
-  inline constexpr isa avx512=feature_closure(avx2&x86_feature::avx512f&x86_feature::avx512dq&x86_feature::avx512bw&x86_feature::avx512vl);
-  inline constexpr isa avx512_bf16=feature_closure(avx512&x86_feature::avx512bf16);
-  inline constexpr isa avx512_fp16=feature_closure(avx512&x86_feature::avx512fp16);
-  inline constexpr isa neon=feature_closure(arm_feature::neon);
-  inline constexpr isa neon_fp16=feature_closure(arm_feature::neon_fp16);
-  inline constexpr isa neon_bf16=feature_closure(arm_feature::neon_bf16);
+  inline constexpr isa<> scalar{};
+  inline constexpr auto avx2=feature_closure(x86_feature::avx2&x86_feature::fma);
+  inline constexpr auto avx512=feature_closure(avx2&x86_feature::avx512f&x86_feature::avx512dq&x86_feature::avx512bw&x86_feature::avx512vl);
+  inline constexpr auto avx512_bf16=feature_closure(avx512&x86_feature::avx512bf16);
+  inline constexpr auto avx512_fp16=feature_closure(avx512&x86_feature::avx512fp16);
+  inline constexpr auto neon=feature_closure(arm_feature::neon);
+  inline constexpr auto neon_fp16=feature_closure(arm_feature::neon_fp16);
+  inline constexpr auto neon_bf16=feature_closure(arm_feature::neon_bf16);
 
-  /// Parse a registered literal target feature list. CPU names, negative
-  /// features and unknown features fail closed rather than guessing admission.
-  constexpr isa target_features(std::string_view text) noexcept {
+  /// Parse registered target features for one family, defaulting to the compiler target.
+  /// CPU names, negative features and unknown or foreign features produce an invalid set.
+  template<architecture Family=target_arch>
+  constexpr isa<Family> target_features(std::string_view text) noexcept {
     if(text.empty()) return {};
-#if defined(__aarch64__) || defined(_M_ARM64)
-    bool arm_target=true;
-#else
-    bool arm_target=false;
-#endif
-    // Explicit ARM profile strings are also useful in synthetic metadata tests
-    // on an x86 host. AES is spelled identically by both compiler backends.
-    if(text.find("neon")!=std::string_view::npos || text.find("fullfp16")!=std::string_view::npos)
-      arm_target=true;
-    isa bits;
+    isa<Family> bits;
     while(!text.empty()) {
       auto comma=text.find(',');
       auto token=text.substr(0,comma);
       bool found=false;
-      for(auto const & entry:detail::feature_registry) if(token==entry.spelling &&
-          (entry.spelling!="aes" || (entry.location==detail::feature_register::arm)==arm_target)) {
-        bits=bits&entry.value; found=true; break;
+      for(auto const & entry:detail::feature_registry<Family>) if(entry.targetable && token.compare(entry.spelling)==0) {
+        bits=bits&entry.value&entry.target_implies; found=true; break;
       }
-      if(!found) return detail::invalid_features;
+      if(!found) return detail::invalid_features<Family>;
       if(comma==std::string_view::npos) break;
       text.remove_prefix(comma+1);
-      if(text.empty()) return detail::invalid_features;
+      if(text.empty()) return detail::invalid_features<Family>;
     }
     return feature_closure(bits);
   }
-
-  struct isa_admission {
-    isa missing_features{};
+  /// Admission result for requirements from one architecture family.
+  template<architecture Family=target_arch> struct isa_admission {
+    isa<Family> missing_features{};
     std::uint64_t missing_xcr0=0;
     bool invalid_features=false;
     bool missing_xcr0_observation=false;
     /// True only when every requested feature and OS state component is present.
     constexpr bool admitted() const noexcept {
-      return missing_features==scalar && !missing_xcr0 && !invalid_features && !missing_xcr0_observation;
+      return missing_features==isa<Family>{} && !missing_xcr0 && !invalid_features && !missing_xcr0_observation;
     }
     /// First missing feature's target spelling, or a missing OS-state description.
     /// The feature set and state mask retain all missing requirements. A feature
     /// is unavailable both when its query failed and when it was observed absent.
     constexpr char const * reason() const noexcept {
       if(invalid_features) return "invalid ISA features";
-      for(auto const & entry:detail::feature_registry)
+      for(auto const & entry:detail::feature_registry<Family>)
         if(missing_features.has(entry.value)) return entry.spelling.data();
       if(missing_xcr0_observation) return "XCR0 unavailable";
       if(missing_xcr0 & (1ull<<1)) return "XMM state unavailable";
@@ -515,17 +701,18 @@ namespace native {
       c.fp16_observed; c.scalar_fp16; c.vector_fp16;
       c.bf16_observed; c.bf16;
     };
-    template<class C,class E> concept normalized_features=requires(C const & c) {
-      { c.present } -> std::same_as<feature_set<E> const &>;
-      { c.observed } -> std::same_as<feature_set<E> const &>;
+    template<class C,architecture Family> concept normalized_features=requires(C const & c) {
+      { c.present } -> std::same_as<isa<Family> const &>;
+      { c.observed } -> std::same_as<isa<Family> const &>;
     };
-    template<instruction_feature E> struct feature_observation {
-      feature_set<E> present{},observed{};
+    template<class C> concept has_feature_observation=requires(C const & c) { c.present; c.observed; };
+    template<architecture Family> struct feature_observation {
+      isa<Family> present{},observed{};
     };
     template<x86_observation C>
-    constexpr feature_observation<x86_feature> decode_x86_features(C const & cpu) noexcept {
-      feature_observation<x86_feature> result;
-      for(auto const & entry:feature_registry) {
+    constexpr feature_observation<x86> decode_x86_features(C const & cpu) noexcept {
+      feature_observation<x86> result;
+      for(auto const & entry:feature_registry<x86>) {
         std::uint32_t word=0;
         bool observed=false;
         switch(entry.location) {
@@ -540,12 +727,17 @@ namespace native {
           case feature_register::leaf7_edx: observed=cpu.max_basic_leaf>=7; word=cpu.leaf7_edx; break;
           case feature_register::leaf7_1_eax:
             observed=cpu.max_basic_leaf>=7 && cpu.max_leaf7_subleaf>=1; word=cpu.leaf7_1_eax; break;
+          case feature_register::leaf7_1_edx:
+            if constexpr(requires { cpu.leaf7_1_edx; }) {
+              observed=cpu.max_basic_leaf>=7 && cpu.max_leaf7_subleaf>=1; word=cpu.leaf7_1_edx;
+            }
+            break;
           case feature_register::extended1_ecx:
             if constexpr(requires { cpu.max_extended_leaf; cpu.extended1_ecx; }) {
               observed=cpu.max_extended_leaf>=0x80000001u; word=cpu.extended1_ecx;
             }
             break;
-          case feature_register::arm: continue;
+          case feature_register::arm: case feature_register::wasm: continue;
         }
         auto f=static_cast<x86_feature>(entry.index);
         result.observed.set(f,observed);
@@ -554,18 +746,22 @@ namespace native {
       return result;
     }
     template<arm_observation C>
-    constexpr feature_observation<arm_feature> decode_arm_features(C const & cpu) noexcept {
-      feature_observation<arm_feature> result;
+    constexpr feature_observation<arm> decode_arm_features(C const & cpu) noexcept {
+      feature_observation<arm> result;
       result.observed.set(arm_feature::neon,cpu.baseline_observed);
       result.present.set(arm_feature::neon,cpu.baseline_observed && cpu.fp && cpu.asimd);
       result.observed.set(arm_feature::neon_fp16,cpu.fp16_observed);
       result.present.set(arm_feature::neon_fp16,cpu.fp16_observed && cpu.scalar_fp16 && cpu.vector_fp16);
       result.observed.set(arm_feature::neon_bf16,cpu.bf16_observed);
       result.present.set(arm_feature::neon_bf16,cpu.bf16_observed && cpu.bf16);
-      constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16;
+      if constexpr(requires { cpu.ebf16_observed; cpu.ebf16; }) {
+        result.observed.set(arm_feature::ebf16,cpu.ebf16_observed);
+        result.present.set(arm_feature::ebf16,cpu.ebf16_observed && cpu.ebf16);
+      }
+      constexpr auto baseline=arm_feature::neon&arm_feature::neon_fp16&arm_feature::neon_bf16&arm_feature::ebf16;
       if constexpr(requires { cpu.extra_observed; cpu.extra_features; })
-        for(auto const & entry:feature_registry) {
-          if(entry.location!=feature_register::arm || baseline.has(entry.value)) continue;
+        for(auto const & entry:feature_registry<arm>) {
+          if(baseline.has(entry.value)) continue;
           auto f=static_cast<arm_feature>(entry.index);
           auto observed=cpu.extra_observed.has(f);
           result.observed.set(f,observed);
@@ -573,19 +769,19 @@ namespace native {
         }
       return result;
     }
-    template<instruction_feature E>
-    constexpr isa_admission classify_features(feature_set<E> present,feature_set<E> observed,isa bits) noexcept {
-      isa_admission result;
-      auto known=std::same_as<E,x86_feature> ? x86_features : arm_features;
+    template<architecture Family>
+    constexpr isa_admission<Family> classify_features(isa<Family> present,isa<Family> observed,isa<Family> bits) noexcept {
+      isa_admission<Family> result;
+      auto known=known_features<Family>;
       result.invalid_features=!present.valid() || !observed.valid() || !(bits<=known);
-      auto available=intersection(isa(present),isa(observed));
+      auto available=intersection(present,observed);
       result.missing_features=intersection(bits,known);
       for(std::size_t i=0;i<available.flags.size();++i)
         result.missing_features.flags[i]&=~available.flags[i];
       return result;
     }
-    constexpr isa_admission classify_x86_features(feature_set<x86_feature> present,
-        feature_set<x86_feature> observed,std::uint64_t xcr0,bool readable,isa bits) noexcept {
+    constexpr isa_admission<x86> classify_x86_features(isa<x86> present,
+        isa<x86> observed,std::uint64_t xcr0,bool readable,isa<x86> bits) noexcept {
       auto result=classify_features(present,observed,bits);
       if(bits.has(x86_feature::avx)) {
         result.missing_xcr0_observation=!readable;
@@ -598,23 +794,30 @@ namespace native {
   /// Classify normalized x86 features and independently observed OS vector state.
   /// Both present and observed must contain each required feature. Raw diagnostics
   /// are not read; changing them does not change the normalized observation.
-  template<class C> requires detail::normalized_features<C,x86_feature> && requires(C const & c) { c.xcr0; c.xcr0_observed; }
-  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+  template<class C> requires detail::normalized_features<C,x86> && requires(C const & c) { c.xcr0; c.xcr0_observed; }
+  constexpr isa_admission<x86> classify_isa(C const & cpu,isa<x86> requested,isa<x86> minimum={}) noexcept {
     return detail::classify_x86_features(cpu.present,cpu.observed,cpu.xcr0,cpu.xcr0_observed,
       feature_closure(requested&minimum));
   }
 
   /// Classify normalized ARM features. A feature must be both present and observed.
   /// Raw query diagnostics do not override the normalized observation.
-  template<class C> requires detail::normalized_features<C,arm_feature>
-  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+  template<class C> requires detail::normalized_features<C,arm>
+  constexpr isa_admission<arm> classify_isa(C const & cpu,isa<arm> requested,isa<arm> minimum={}) noexcept {
     return detail::classify_features(cpu.present,cpu.observed,feature_closure(requested&minimum));
+  }
+
+  /// Classify normalized Wasm observations. Relaxed SIMD also requires SIMD128.
+  /// Unknown observations reject; raw diagnostics and compiler flags are not read.
+  template<class C> requires detail::normalized_features<C,wasm>
+  constexpr isa_admission<wasm> classify_isa(C const & runtime,isa<wasm> requested,isa<wasm> minimum={}) noexcept {
+    return detail::classify_features(runtime.present,runtime.observed,feature_closure(requested&minimum));
   }
 
   /// Decode a structural raw x86 snapshot before applying the same admission rules.
   /// Unsupported leaves and unread XCR0 cannot authorize stale positive values.
-  template<detail::x86_observation C> requires (!detail::normalized_features<C,x86_feature>) && requires(C const & c) { c.xcr0; c.xcr0_observed; }
-  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+  template<detail::x86_observation C> requires (!detail::has_feature_observation<C>) && requires(C const & c) { c.xcr0; c.xcr0_observed; }
+  constexpr isa_admission<x86> classify_isa(C const & cpu,isa<x86> requested,isa<x86> minimum={}) noexcept {
     auto features=detail::decode_x86_features(cpu);
     bool readable=cpu.max_basic_leaf>=1 && (cpu.leaf1_ecx&(1u<<26)) &&
       (cpu.leaf1_ecx&(1u<<27)) && cpu.xcr0_observed;
@@ -624,19 +827,26 @@ namespace native {
 
   /// Decode a structural raw ARM snapshot before applying the same admission rules.
   /// Failed OS queries cannot authorize stale positive values.
-  template<detail::arm_observation C> requires (!detail::normalized_features<C,arm_feature>)
-  constexpr isa_admission classify_isa(C const & cpu,isa requested,isa minimum={}) noexcept {
+  template<detail::arm_observation C> requires (!detail::has_feature_observation<C>)
+  constexpr isa_admission<arm> classify_isa(C const & cpu,isa<arm> requested,isa<arm> minimum={}) noexcept {
     auto features=detail::decode_arm_features(cpu);
     return detail::classify_features(features.present,features.observed,feature_closure(requested&minimum));
   }
 
   /// A source variant retains its requested ISA and inherited compiler minimum.
-  struct target_entry {
-    isa architecture;
-    isa minimum{};
+  template<architecture Family=target_arch> struct target_entry {
+    isa<Family> architecture;
+    isa<Family> minimum{};
     /// Compare the requested ISA and inherited compiler minimum exactly.
     constexpr bool operator==(target_entry const &) const = default;
   };
+  /// Deduce a source record from same-family ISA values.
+  template<architecture Family> target_entry(isa<Family>,isa<Family> = {})->target_entry<Family>;
+  /// Deduce a source record from a feature enum.
+  template<detail::instruction_feature E> target_entry(E)->target_entry<detail::family_of<E>>;
+  /// Deduce a source record from same-family feature and ISA operands.
+  template<arch A,arch B> requires detail::same_arch<A,B>
+  target_entry(A,B)->target_entry<detail::arch_family_v<A>>;
   template<auto... Entries> struct isa_list {};
   /// Concatenate ordered source metadata without sorting or deduplicating it.
   template<auto... A,auto... B>
@@ -644,22 +854,22 @@ namespace native {
 
   namespace detail {
     template<auto E,int I> struct abi_match {
-      static constexpr target_entry entry=[] {
-        if constexpr(arch<std::remove_cv_t<decltype(E)>>) return target_entry{E};
+      static constexpr auto entry=[] {
+        if constexpr(arch<std::remove_cv_t<decltype(E)>>) return target_entry<arch_family_v<std::remove_cv_t<decltype(E)>>>{E};
         else return E;
       }();
-      static constexpr isa architecture=entry.architecture;
-      static constexpr isa minimum=entry.minimum;
-      static_assert(architecture<=known_features,"ABI policy contains an unregistered ISA feature");
-      static_assert(minimum<=known_features,"ABI policy minimum contains an unregistered ISA feature");
-      static constexpr isa required_features=feature_closure(architecture&minimum);
+      static constexpr auto architecture=entry.architecture;
+      static constexpr auto minimum=entry.minimum;
+      static_assert(architecture<=known_features<decltype(architecture)::family>,"ABI policy contains an unregistered ISA feature");
+      static_assert(minimum<=known_features<decltype(minimum)::family>,"ABI policy minimum contains an unregistered ISA feature");
+      static constexpr auto required_features=feature_closure(architecture&minimum);
       static constexpr bool matched=true;
       static constexpr int index=I;
     };
     template<isa A,int I,auto... Entries> struct abi_lookup_impl {
       static constexpr bool matched=false;
       static constexpr int index=-1;
-      static constexpr isa architecture{},minimum{},required_features{};
+      static constexpr decltype(A) architecture{},minimum{},required_features{};
     };
     template<isa A,int I,auto E,auto... Rest>
     struct abi_lookup_impl<A,I,E,Rest...> : std::conditional_t<
@@ -670,11 +880,25 @@ namespace native {
   /// Unlike target's exact set selection, this includes prerequisite closure.
   template<isa A,class List> struct abi_lookup;
   template<isa A,auto... Entries>
+    requires ((decltype(detail::abi_match<Entries,0>::architecture)::family==decltype(A)::family) && ...)
   struct abi_lookup<A,isa_list<Entries...>> : detail::abi_lookup_impl<A,0,Entries...> {};
 
+  namespace detail {
+    template<class C> concept capability_observation=
+      normalized_features<C,x86> || normalized_features<C,arm> || normalized_features<C,wasm> ||
+      x86_observation<C> || arm_observation<C>;
+    template<capability_observation C> inline constexpr architecture observation_family=[] {
+      if constexpr(normalized_features<C,x86>) return x86;
+      else if constexpr(normalized_features<C,arm>) return arm;
+      else if constexpr(normalized_features<C,wasm>) return wasm;
+      else if constexpr(x86_observation<C>) return x86;
+      else return arm;
+    }();
+  }
   /// Admit the first available source variant and invoke callback.operator()<A>().
-  template<auto... Entries,class C,class F>
-  constexpr bool with_isa(isa_list<Entries...>,C const & cpu,F && callback,isa minimum={}) {
+  template<auto... Entries,detail::capability_observation C,class F>
+    requires ((decltype(detail::abi_match<Entries,0>::architecture)::family==detail::observation_family<C>) && ...)
+  constexpr bool with_isa(isa_list<Entries...>,C const & cpu,F && callback,isa<detail::observation_family<C>> minimum={}) {
     bool selected=false;
     auto try_entry=[&]<auto E>() {
       using entry=detail::abi_match<E,0>;

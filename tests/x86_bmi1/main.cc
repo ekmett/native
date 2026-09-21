@@ -18,10 +18,10 @@ import native.x86.bmi1;
 #error BMI1 admission must run in a baseline translation unit
 #endif
 
-constexpr native::isa bmi1{native::x86_feature::bmi1};
-constexpr native::isa bmi2{native::x86_feature::bmi2};
+constexpr native::isa<native::x86> bmi1{native::x86_feature::bmi1};
+constexpr native::isa<native::x86> bmi2{native::x86_feature::bmi2};
 
-template<native::isa A, class T> concept has_all_bmi1 = requires(T a, T b, unsigned c) {
+template<native::isa<native::x86> A, class T> concept has_all_bmi1 = requires(T a, T b, unsigned c) {
   { native::andn<A>(a, b) } noexcept -> std::same_as<T>;
   { native::bextr<A>(a, c) } noexcept -> std::same_as<T>;
   { native::bextr<A>(a, c, c) } noexcept -> std::same_as<T>;
@@ -30,23 +30,16 @@ template<native::isa A, class T> concept has_all_bmi1 = requires(T a, T b, unsig
   { native::blsr<A>(a) } noexcept -> std::same_as<T>;
   { native::tzcnt<A>(a) } noexcept -> std::same_as<T>;
 };
-template<native::isa A, class T> concept has_any_bmi1 =
-  requires(T a) { native::andn<A>(a, a); } ||
-  requires(T a) { native::bextr<A>(a, 0u); } ||
-  requires(T a) { native::bextr<A>(a, 0u, 0u); } ||
-  requires(T a) { native::blsi<A>(a); } ||
-  requires(T a) { native::blsmsk<A>(a); } ||
-  requires(T a) { native::blsr<A>(a); } ||
-  requires(T a) { native::tzcnt<A>(a); };
-template<native::isa A> concept has_tzcnt16 = requires(std::uint16_t a) {
+template<native::isa<native::x86> A> concept has_tzcnt16 = requires(std::uint16_t a) {
   { native::tzcnt<A>(a) } noexcept -> std::same_as<std::uint16_t>;
 };
+// Weak tags participate for constant evaluation; runtime calls are rejected separately.
 static_assert(has_all_bmi1<bmi1, std::uint32_t> && has_all_bmi1<bmi1, std::uint64_t>);
 static_assert(has_tzcnt16<bmi1>);
-static_assert(!has_any_bmi1<native::isa{}, std::uint32_t>);
-static_assert(!has_any_bmi1<native::isa{}, std::uint64_t>);
-static_assert(!has_any_bmi1<bmi2, std::uint32_t> && !has_any_bmi1<bmi2, std::uint64_t>);
-static_assert(!has_tzcnt16<native::isa{}> && !has_tzcnt16<bmi2>);
+static_assert(has_all_bmi1<native::isa<native::x86>{}, std::uint32_t>);
+static_assert(has_all_bmi1<native::isa<native::x86>{}, std::uint64_t>);
+static_assert(has_all_bmi1<bmi2, std::uint32_t> && has_all_bmi1<bmi2, std::uint64_t>);
+static_assert(has_tzcnt16<native::isa<native::x86>{}> && has_tzcnt16<bmi2>);
 
 // BMI1 does not require the AVX OS state or the independent BMI2 flag.
 static_assert([] {

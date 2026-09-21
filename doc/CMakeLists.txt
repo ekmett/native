@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024, 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
-find_package(Doxygen 1.18 REQUIRED)
+find_package(Doxygen 1.18 REQUIRED COMPONENTS doxygen dot)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(DOXYGEN_GENERATE_HTML YES)
 set(DOXYGEN_GENERATE_LATEX NO)
@@ -116,6 +116,34 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/src/native.wide.ccm")
 list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/native.wide.ccm")
 
+# Doxygen 1.18 assigns bodies included inside an export block to the module
+# file, but retains their header line numbers. Move the export to the namespace
+# in the rendering copies so source links name the header that owns each body.
+# The declarations, comments and line counts stay unchanged.
+set(docs_instruction_inputs)
+foreach(family IN ITEMS dotprod rdm fp16fml fcma i8mm)
+  set(module_path "src/native.arm.${family}.ccm")
+  set(body_path "src/native/arm/${family}_simd.h")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/${module_path}" "${PROJECT_SOURCE_DIR}/${body_path}")
+  file(READ "${PROJECT_SOURCE_DIR}/${module_path}" module_text)
+  file(READ "${PROJECT_SOURCE_DIR}/${body_path}" body_text)
+  set(body_include "#include \"native/arm/${family}_simd.h\"")
+  set(export_block "export {\n${body_include}\n}")
+  string(FIND "${module_text}" "${export_block}" export_offset)
+  string(FIND "${body_text}" "\nnamespace native {" namespace_offset)
+  if(export_offset EQUAL -1 OR namespace_offset EQUAL -1)
+    message(FATAL_ERROR "Doxygen instruction staging could not find the export scope for ${family}")
+  endif()
+  string(REPLACE "${export_block}" "\n${body_include}\n" module_text "${module_text}")
+  string(REPLACE "\nnamespace native {" "\nexport namespace native {" body_text "${body_text}")
+  file(MAKE_DIRECTORY "${docs_source_root}/src/native/arm")
+  file(WRITE "${docs_source_root}/${module_path}" "${module_text}")
+  file(WRITE "${docs_source_root}/${body_path}" "${body_text}")
+  list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/${module_path}" "${PROJECT_SOURCE_DIR}/${body_path}")
+  list(APPEND docs_instruction_inputs "${docs_source_root}/${module_path}" "${docs_source_root}/${body_path}")
+endforeach()
+
 set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
   "CPUID=@c CPUID" "PAUSE=@c PAUSE" "MONITOR=@c MONITOR" "MWAIT=@c MWAIT"
   "UMONITOR=@c UMONITOR" "UMWAIT=@c UMWAIT")
@@ -127,7 +155,9 @@ set(docs_markdown_root "${CMAKE_CURRENT_BINARY_DIR}/markdown")
 set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md src/README.md tests/api/README.md
   doc/building.md tests/omnibus/README.md tests/bf16_profile/README.md tests/neon_fp16/README.md tests/neon_bf16/README.md tests/avx512_fp16/README.md
   tests/exp_policy_refinement/README.md tests/wide_construction/README.md
-  tests/arm_dotprod/README.md tests/arm_rdm/README.md)
+  tests/arm_dotprod/README.md tests/arm_rdm/README.md tests/arm_bf16/README.md tests/arm_crypto/README.md
+  tests/x86_pclmul/README.md tests/x86_vnni/README.md tests/x86_f16c/README.md
+  tests/wasm_features/README.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")
 list(APPEND docs_pages ${docs_guides})
@@ -147,9 +177,15 @@ endforeach()
 # Render nested README files as pages, not implicit directory descriptions.
 # Directory descriptions otherwise leak build paths into link tooltips.
 set(DOXYGEN_IMPLICIT_DIR_DOCS NO)
+# Match the section fragments used by relative links in the Markdown guides.
+set(DOXYGEN_MARKDOWN_ID_STYLE GITHUB)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${docs_markdown_root}/README.md")
 set(DOXYGEN_STRIP_FROM_PATH "${docs_source_root}" "${docs_markdown_root}" "${PROJECT_SOURCE_DIR}")
-set(DOXYGEN_HAVE_DOT NO)
+set(DOXYGEN_HAVE_DOT YES)
+set(DOXYGEN_DOT_IMAGE_FORMAT svg)
+set(DOXYGEN_INTERACTIVE_SVG YES)
+set(DOXYGEN_DOT_GRAPH_MAX_NODES 100)
+set(DOXYGEN_CALLER_GRAPH YES)
 set(DOXYGEN_GENERATE_TREEVIEW YES)
 # Static menus avoid Doxygen 1.18 links to absent short-list/tilde sections.
 # API pages, alphabetical indices and the navigation tree remain available.
@@ -170,9 +206,18 @@ set(DOXYGEN_PROJECT_BRIEF "Vectors, masks and wide register packs for C++26")
 doxygen_add_docs(native_docs
   "${PROJECT_SOURCE_DIR}/src"
   "${docs_isa}" "${docs_wide}" "${docs_wide_adapter}"
+  ${docs_instruction_inputs}
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
   COMMENT "Build native API documentation and examples")
+
+# Doxygen leaves renamed pages and graphs in place. Regenerate the published
+# directories together so removed declarations cannot leave stale destinations.
+add_custom_target(native_docs_clean
+  COMMAND "${CMAKE_COMMAND}" -E rm -rf
+    "${PROJECT_BINARY_DIR}/docs/html" "${PROJECT_BINARY_DIR}/docs/xml"
+  VERBATIM)
+add_dependencies(native_docs native_docs_clean)
 
 # Module summaries need aliases for Doxygen 1.18 crawler/navigation destinations.
 add_custom_command(TARGET native_docs POST_BUILD

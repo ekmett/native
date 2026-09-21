@@ -5,17 +5,26 @@ and saturates the result. `import native.arm.rdm;` provides `sqrdmlah<Arch>`,
 `sqrdmlsh<Arch>` and their `_lane<Arch, Lane>` forms. The AArch64 `native.arm`
 and `native` hubs re-export them.
 
-These operations use scalar integers or raw NEON registers, independently of
-high-level `simd` shapes and CPU profiles. Each add/subtract operation has
+Scalar operations use ordinary C++ integers. Vector operands and results use
+`native::simd<T, N, Arch>`, including the vector source of a scalar lane operation.
+Scalar `sqrdmlah(a,b,c)` and `sqrdmlsh(a,b,c)` calls may omit `Arch` when the
+owning module's `NATIVE_BASELINE` contains RDM. This default is captured at module
+compilation; an importing function's target attribute does not change it. An
+explicit ISA remains available for optional target leaves. Clang 23 reports
+`__ARM_FEATURE_QRDMX` for an Armv8.1-A baseline, but not for `armv8-a+rdm`
+alone; the latter therefore requires an explicit ISA with the current macro-based
+baseline snapshot. Vector forms continue to deduce `Arch` from their operands,
+and lane forms retain `<Arch, Lane>` order.
+Every vector operand shares the operation's `Arch`. Each add/subtract operation has
 eighteen overloads: six shapes, each with an ordinary form and two selectable
 right-hand vector widths.
 
 | Accumulator, left operand and result | Right operand in ordinary form | Right operand in lane form |
 | --- | --- | --- |
-| `int16_t` | `int16_t` | `int16x4_t` or `int16x8_t` |
-| `int16x4_t`, `int16x8_t` | Same vector type | `int16x4_t` or `int16x8_t` |
-| `int32_t` | `int32_t` | `int32x2_t` or `int32x4_t` |
-| `int32x2_t`, `int32x4_t` | Same vector type | `int32x2_t` or `int32x4_t` |
+| `int16_t` | `int16_t` | `simd<std::int16_t, 4, Arch>` or `simd<std::int16_t, 8, Arch>` |
+| `simd<std::int16_t, 4, Arch>`, `simd<std::int16_t, 8, Arch>` | Same vector type | `simd<std::int16_t, 4, Arch>` or `simd<std::int16_t, 8, Arch>` |
+| `int32_t` | `int32_t` | `simd<std::int32_t, 2, Arch>` or `simd<std::int32_t, 4, Arch>` |
+| `simd<std::int32_t, 2, Arch>`, `simd<std::int32_t, 4, Arch>` | Same vector type | `simd<std::int32_t, 2, Arch>` or `simd<std::int32_t, 4, Arch>` |
 
 `Lane` must be in the right operand's range. Each result lane follows the signed
 fixed-point operation, for element width `w`:
@@ -58,6 +67,12 @@ The [tests](../tests/arm_rdm/README.md) cover all thirty-six overloads, every
 legal lane, signed ties, cancellation, saturation and FPSR.QC effects. Separate
 compilation checks exercise the feature constraints and instruction selection
 from a baseline AArch64 translation unit.
+
+Paired assembly checks compare the public `simd` call with its private native
+helper under identical target attributes and register signatures. The complete
+instruction sequences must match, including moves, loads, stores and calls.
+This checks abstraction overhead in the tested leaf contexts; it is not a
+benchmark or a guarantee about surrounding application code.
 
 Primary references are the [Arm Advanced SIMD intrinsic
 reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#sqrdmlah-intrinsics-from-armv81-a)

@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/arm/bf16.h"
+export module native.arm.bf16;
+export import native.arm.features;
+export import native.simd;
+#include "native/arm/bf16_body.h"

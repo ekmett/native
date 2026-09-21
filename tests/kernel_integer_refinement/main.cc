@@ -8,6 +8,9 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
+#if defined(__x86_64__) || defined(_M_X64)
+#include <immintrin.h>
+#endif
 #if NATIVE_TEST_IMPORT
 import native;
 #else
@@ -21,12 +24,21 @@ import native.arm.features;
 #endif
 
 namespace integer_test {
-  template<class T,std::size_t N,native::isa A> concept has_shape=requires { typename native::simd<T,N,A>::native_type; };
-  template<class To,class From,std::size_t N,native::isa A> concept can_pack=requires(native::simd<From,N,A> a) {
+  template<class T,std::size_t N,native::isa<> A> concept has_shape=requires { typename native::simd<T,N,A>::native_type; };
+  template<class To,class From,std::size_t N,native::isa<> A> concept can_pack=requires(native::simd<From,N,A> a) {
     native::narrow_concat<To>(a,a);
   };
-  template<class To,class From,std::size_t N,native::isa A> concept can_reinterpret=requires(native::simd<From,N,A> a) {
+  template<class To,class From,std::size_t N,native::isa<> A> concept can_reinterpret=requires(native::simd<From,N,A> a) {
     native::reinterpret_bits<To>(a);
+  };
+  template<class T,std::size_t N,native::isa<> A> concept can_popcount=requires(native::simd<T,N,A> a) {
+    native::popcount(a);
+  };
+  template<class T,std::size_t N,native::isa<> A> concept can_pairwise=requires(native::simd<T,N,A> a) {
+    native::pairwise_add_widened(a);
+  };
+  template<class T,std::size_t N,native::isa<> A> concept can_reduce=requires(native::simd<T,N,A> a) {
+    native::reduce_add_widened(a);
   };
   static_assert(!has_shape<std::uint32_t,0,native::scalar>);
 }
@@ -67,9 +79,38 @@ NATIVE_TARGET_POP()
 #undef INTEGER_CASE_NAME
 
 static_assert(integer_test::can_pack<std::uint32_t,std::uint64_t,8,NATIVE_TARGET_ISA(fdq)>);
+#if NATIVE_TEST_IMPORT
+// Module instruction storage supports these bit views and the F/DQ dword pack.
+static_assert(integer_test::has_shape<std::uint8_t,64,NATIVE_TARGET_ISA(fdq)>);
+static_assert(integer_test::has_shape<std::uint16_t,32,NATIVE_TARGET_ISA(fdq)>);
+static_assert(integer_test::can_pack<std::uint16_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)>);
+static_assert(integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)>);
+static_assert(integer_test::can_reinterpret<std::uint16_t,std::uint64_t,8,NATIVE_TARGET_ISA(fdq_vl)>);
+#else
 static_assert(!integer_test::can_pack<std::uint16_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)>);
 static_assert(!integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)>);
 static_assert(!integer_test::can_reinterpret<std::uint16_t,std::uint64_t,8,NATIVE_TARGET_ISA(fdq_vl)>);
+#endif
+// A storage-only byte or word register does not acquire integer arithmetic.
+static_assert(!integer_test::can_popcount<std::uint8_t,64,NATIVE_TARGET_ISA(fdq)>);
+static_assert(!integer_test::can_popcount<std::uint16_t,32,NATIVE_TARGET_ISA(fdq_vl)>);
+static_assert(!integer_test::can_pairwise<std::uint8_t,64,NATIVE_TARGET_ISA(fdq)>);
+static_assert(!integer_test::can_pairwise<std::uint16_t,32,NATIVE_TARGET_ISA(fdq_vl)>);
+static_assert(!integer_test::can_reduce<std::uint8_t,64,NATIVE_TARGET_ISA(fdq)>);
+static_assert(!integer_test::can_reduce<std::uint16_t,32,NATIVE_TARGET_ISA(fdq_vl)>);
+static_assert(!integer_test::can_pack<std::uint8_t,std::uint16_t,32,NATIVE_TARGET_ISA(fdq)>);
+// Without DQ, dispatch selects the 256-bit backend even when 512-bit storage exists.
+constexpr auto f_without_dq=native::target_features("avx2,fma,avx512f");
+static_assert(!integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,f_without_dq>);
+static_assert(!integer_test::can_popcount<std::uint32_t,16,f_without_dq>);
+static_assert(!integer_test::can_pairwise<std::uint32_t,16,f_without_dq>);
+static_assert(!integer_test::can_reduce<std::uint32_t,16,f_without_dq>);
+static_assert(!integer_test::can_pack<std::uint16_t,std::uint32_t,16,f_without_dq>);
+static_assert(!integer_test::can_pack<std::uint32_t,std::uint64_t,8,f_without_dq>);
+static_assert(integer_test::can_popcount<std::uint8_t,64,NATIVE_TARGET_ISA(fdq_bw)>);
+static_assert(integer_test::can_pairwise<std::uint8_t,64,NATIVE_TARGET_ISA(fdq_bw)>);
+static_assert(integer_test::can_reduce<std::uint8_t,64,NATIVE_TARGET_ISA(fdq_bw)>);
+static_assert(integer_test::can_pack<std::uint8_t,std::uint16_t,32,NATIVE_TARGET_ISA(fdq_bw)>);
 static_assert(integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq_bw)>);
 static_assert(!integer_test::can_reinterpret<std::uint64_t,std::uint32_t,2,native::avx2>);
 static_assert(!integer_test::can_reinterpret<std::uint32_t,std::uint64_t,1,native::avx2>);
@@ -93,6 +134,23 @@ INTEGER_CODEGEN(fdq_vl)
 INTEGER_CODEGEN(fdq_bw)
 INTEGER_CODEGEN(avx512)
 #undef INTEGER_CODEGEN
+#if NATIVE_TEST_IMPORT
+#define INTEGER_STORAGE_CODEGEN(name) \
+  NATIVE_TARGET_PUSH(name) \
+  extern "C" __attribute__((noinline)) void integer_codegen_##name##_pack_words(std::uint32_t const * a,std::uint32_t const * b,std::uint16_t * q) { \
+    using V=native::simd<std::uint32_t,16,NATIVE_TARGET_ISA(name)>; \
+    native::narrow_concat<std::uint16_t>(V::loadu(a),V::loadu(b)).storeu(q); \
+  } \
+  extern "C" __attribute__((noinline)) __m512i integer_codegen_##name##_identity(__m512i value) { return value; } \
+  extern "C" __attribute__((noinline)) __m512i integer_codegen_##name##_reinterpret(__m512i value) { \
+    using V=native::simd<std::uint32_t,16,NATIVE_TARGET_ISA(name)>; \
+    return native::reinterpret_bits<std::uint8_t>(V::from_native(value)).to_native(); \
+  } \
+  NATIVE_TARGET_POP()
+INTEGER_STORAGE_CODEGEN(fdq)
+INTEGER_STORAGE_CODEGEN(fdq_vl)
+#undef INTEGER_STORAGE_CODEGEN
+#endif
 #define INTEGER_NATIVE_CASES(X) X(avx2) X(fdq) X(fdq_vl) X(fdq_bw) X(avx512)
 #elif defined(__aarch64__) || defined(_M_ARM64)
 #define INTEGER_CASE_NAME neon

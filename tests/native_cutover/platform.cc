@@ -12,7 +12,7 @@ constexpr auto requirements = NATIVE_TARGET_ISA(platform_bmi2);
 static_assert(requirements.has(native::x86_feature::bmi2));
 static_assert(!requirements.has(native::x86_feature::avx2));
 
-template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
+template<native::isa<> A, class T> concept has_bmi2 = requires(T value, T mask) {
   { native::pdep<A>(value, mask) } noexcept -> std::same_as<T>;
   { native::pext<A>(value, mask) } noexcept -> std::same_as<T>;
   { native::bzhi<A>(value, 9u) } noexcept -> std::same_as<T>;
@@ -21,8 +21,12 @@ template<native::isa A, class T> concept has_bmi2 = requires(T value, T mask) {
 };
 static_assert(has_bmi2<requirements, std::uint32_t>);
 static_assert(has_bmi2<requirements, std::uint64_t>);
-static_assert(!has_bmi2<native::scalar, std::uint32_t>);
-static_assert(!has_bmi2<native::scalar, std::uint64_t>);
+static_assert(has_bmi2<native::scalar, std::uint32_t>);
+static_assert(has_bmi2<native::scalar, std::uint64_t>);
+// Below-feature calls are immediate-only; runtime-input rejection has its own fixtures.
+static_assert(native::pdep<native::scalar>(std::uint32_t{5}, std::uint32_t{0x52}) == 0x42);
+static_assert(native::pext<native::scalar>(std::uint64_t{0x100000002},
+                                         std::uint64_t{0x100000012}) == 5);
 
 #define NATIVE_TARGET_platform_lzcnt "lzcnt"
 constexpr auto lzcnt_requirements = NATIVE_TARGET_ISA(platform_lzcnt);
@@ -101,7 +105,8 @@ import native.arm;
 constexpr auto requirements = NATIVE_TARGET_ISA(platform_neon);
 static_assert(requirements.has(native::arm_feature::neon));
 static_assert(native::scalar <= requirements);
-static_assert(!requirements.has(native::x86_feature::bmi2));
+template<class A> concept accepts_x86_features=requires(A a) { a.has(native::x86_feature::bmi2); };
+static_assert(!accepts_x86_features<decltype(requirements)>);
 
 int main() {
   auto cpu = native::observe_arm_capabilities();

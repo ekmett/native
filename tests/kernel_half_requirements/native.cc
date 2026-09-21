@@ -29,12 +29,12 @@ static_assert(!can_load<malformed_constant> && !can_store<malformed_constant>);
 // on wide's generic ADL path rather than opting into compile-time ISA routing.
 namespace foreign {
   struct value {
-    native::isa architecture{};
+    native::isa<> architecture{};
     int number=0;
     friend constexpr value operator+(value a,value b) noexcept { return {{},a.number+b.number}; }
   };
   struct mutable_value {
-    inline static native::isa architecture{};
+    inline static native::isa<> architecture{};
     int number=0;
     friend constexpr mutable_value operator+(mutable_value a,mutable_value b) noexcept { return {a.number+b.number}; }
   };

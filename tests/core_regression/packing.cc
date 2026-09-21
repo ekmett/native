@@ -52,27 +52,43 @@ namespace {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_TARGET_bmi2 "bmi2"
   constexpr auto bmi2_arch = NATIVE_TARGET_ISA(bmi2);
-  template<native::isa Arch, class T> concept can_pdep = requires(T value) {
+  template<native::isa<> Arch, class T> concept can_pdep = requires(T value) {
     { native::pdep<Arch>(value,value) } noexcept -> std::same_as<T>;
   };
-  template<native::isa Arch, class T> concept can_pext = requires(T value) {
+  template<native::isa<> Arch, class T> concept can_pext = requires(T value) {
     { native::pext<Arch>(value,value) } noexcept -> std::same_as<T>;
   };
   static_assert(can_pdep<bmi2_arch,std::uint32_t> && can_pdep<bmi2_arch,std::uint64_t>);
-  static_assert(!can_pdep<native::avx2,std::uint32_t> && !can_pdep<native::avx2,std::uint64_t>);
+  static_assert(can_pdep<native::avx2,std::uint32_t> && can_pdep<native::avx2,std::uint64_t>);
   static_assert(can_pdep<native::avx2 & bmi2_arch,std::uint32_t> &&
                 can_pdep<native::avx2 & bmi2_arch,std::uint64_t>);
-  static_assert(!can_pdep<native::scalar,std::uint32_t> && !can_pdep<native::scalar,std::uint64_t>);
-  static_assert(!can_pdep<native::isa(native::x86_feature::avx2),std::uint32_t> &&
-                !can_pdep<native::isa(native::x86_feature::avx2),std::uint64_t>);
+  static_assert(can_pdep<native::scalar,std::uint32_t> && can_pdep<native::scalar,std::uint64_t>);
+  static_assert(can_pdep<native::isa(native::x86_feature::avx2),std::uint32_t> &&
+                can_pdep<native::isa(native::x86_feature::avx2),std::uint64_t>);
   static_assert(can_pext<bmi2_arch,std::uint32_t> && can_pext<bmi2_arch,std::uint64_t>);
-  static_assert(!can_pext<native::avx2,std::uint32_t> && !can_pext<native::avx2,std::uint64_t>);
+  static_assert(can_pext<native::avx2,std::uint32_t> && can_pext<native::avx2,std::uint64_t>);
   static_assert(can_pext<native::avx2 & bmi2_arch,std::uint32_t> &&
                 can_pext<native::avx2 & bmi2_arch,std::uint64_t>);
-  static_assert(!can_pext<native::scalar,std::uint32_t> && !can_pext<native::scalar,std::uint64_t>);
-  static_assert(!can_pext<native::isa(native::x86_feature::avx2),std::uint32_t> &&
-                !can_pext<native::isa(native::x86_feature::avx2),std::uint64_t>);
+  static_assert(can_pext<native::scalar,std::uint32_t> && can_pext<native::scalar,std::uint64_t>);
+  static_assert(can_pext<native::isa(native::x86_feature::avx2),std::uint32_t> &&
+                can_pext<native::isa(native::x86_feature::avx2),std::uint64_t>);
   static_assert(!bmi2_arch.has(native::x86_feature::avx2));
+
+  // Weak tags support immediate calls. Requires expressions do not distinguish
+  // these from runtime calls; x86_constexpr tests reject actual runtime inputs.
+  template<native::isa<> Arch, class T> consteval bool constant_bit_permutation() {
+    constexpr T high_bit = T{1} << (std::numeric_limits<T>::digits-1);
+    return native::pdep<Arch>(T{5},T{22}) == T{18} &&
+      native::pext<Arch>(T{18},T{22}) == T{5} &&
+      native::pdep<Arch>(T{1},high_bit) == high_bit &&
+      native::pext<Arch>(high_bit,high_bit) == T{1};
+  }
+  static_assert(constant_bit_permutation<native::scalar,std::uint32_t>() &&
+                constant_bit_permutation<native::scalar,std::uint64_t>());
+  static_assert(constant_bit_permutation<native::avx2,std::uint32_t>() &&
+                constant_bit_permutation<native::avx2,std::uint64_t>());
+  static_assert(constant_bit_permutation<native::isa(native::x86_feature::avx2),std::uint32_t>() &&
+                constant_bit_permutation<native::isa(native::x86_feature::avx2),std::uint64_t>());
 
   template<class T> T pdep_oracle(T value, T mask) {
     T result = 0;

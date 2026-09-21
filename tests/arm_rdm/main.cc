@@ -9,8 +9,7 @@
 #include <arm_neon.h>
 #include <native/targets.h>
 #if NATIVE_TEST_INTERFACE == 0
-#include <native/arm/rdm.h>
-import native.arm.features;
+import native.arm;
 #elif NATIVE_TEST_INTERFACE == 1
 import native.arm.rdm;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -18,6 +17,8 @@ import native;
 #else
 #error Select header, granular module or omnibus interface.
 #endif
+#include "simd_adapter.h"
+#include "simd_contract.h"
 constexpr auto requirements = native::feature_closure(native::arm_feature::rdm);
 consteval bool admission_contract() {
   native::arm_capabilities cpu{};
@@ -33,31 +34,31 @@ consteval bool admission_contract() {
   return !native::classify_isa(cpu, requirements).admitted();
 }
 static_assert(admission_contract());
-template<native::isa A, class R, class X>
+template<native::isa<native::arm> A, class R, class X>
 concept has_sqrdmlah = requires(R r, X x) {
-  { native::sqrdmlah<A>(r, x, x) } noexcept -> std::same_as<R>;
+  { rdm_api::sqrdmlah<A>(r, x, x) } noexcept -> std::same_as<R>;
 };
-template<native::isa A, int Lane, class R, class X, class Y>
+template<native::isa<native::arm> A, int Lane, class R, class X, class Y>
 concept has_sqrdmlah_lane = requires(R r, X x, Y y) {
-  { native::sqrdmlah_lane<A, Lane>(r, x, y) } noexcept -> std::same_as<R>;
+  { rdm_api::sqrdmlah_lane<A, Lane>(r, x, y) } noexcept -> std::same_as<R>;
 };
-template<native::isa A, class R, class X>
+template<native::isa<native::arm> A, class R, class X>
 concept has_sqrdmlsh = requires(R r, X x) {
-  { native::sqrdmlsh<A>(r, x, x) } noexcept -> std::same_as<R>;
+  { rdm_api::sqrdmlsh<A>(r, x, x) } noexcept -> std::same_as<R>;
 };
-template<native::isa A, int Lane, class R, class X, class Y>
+template<native::isa<native::arm> A, int Lane, class R, class X, class Y>
 concept has_sqrdmlsh_lane = requires(R r, X x, Y y) {
-  { native::sqrdmlsh_lane<A, Lane>(r, x, y) } noexcept -> std::same_as<R>;
+  { rdm_api::sqrdmlsh_lane<A, Lane>(r, x, y) } noexcept -> std::same_as<R>;
 };
 // Check ordinary call participation: a wrong return type alone must not hide
 // an invalid 32-bit lane falling through to a 16-bit instruction overload.
 template<int Lane, class R, class Y>
 concept calls_sqrdmlah_lane = requires(R a, Y c) {
-  native::sqrdmlah_lane<requirements, Lane>(a, a, c);
+  rdm_api::sqrdmlah_lane<requirements, Lane>(a, a, c);
 };
 template<int Lane, class R, class Y>
 concept calls_sqrdmlsh_lane = requires(R a, Y c) {
-  native::sqrdmlsh_lane<requirements, Lane>(a, a, c);
+  rdm_api::sqrdmlsh_lane<requirements, Lane>(a, a, c);
 };
 static_assert(!calls_sqrdmlah_lane<2, int32_t, int32x2_t>);
 static_assert(!calls_sqrdmlah_lane<3, int32_t, int32x2_t>);
@@ -154,27 +155,27 @@ bool check_saturation_flag() {
   auto clear = saved & ~qc;
   write_fpsr(clear);
   // An unused arithmetic result must still produce the architectural QC effect.
-  (void)native::sqrdmlah<requirements>(std::int16_t{0}, std::int16_t{-32768},
+  (void)rdm_api::sqrdmlah<requirements>(std::int16_t{0}, std::int16_t{-32768},
     std::int16_t{-32768});
   bool passed = (read_fpsr() & qc) != 0;
-  (void)native::sqrdmlsh<requirements>(std::int16_t{0}, std::int16_t{0},
+  (void)rdm_api::sqrdmlsh<requirements>(std::int16_t{0}, std::int16_t{0},
     std::int16_t{0});
   passed &= (read_fpsr() & qc) != 0;
   write_fpsr(clear);
-  (void)native::sqrdmlah<requirements>(std::int16_t{-32768}, std::int16_t{-32768},
+  (void)rdm_api::sqrdmlah<requirements>(std::int16_t{-32768}, std::int16_t{-32768},
     std::int16_t{-32768});
   passed &= (read_fpsr() & qc) == 0;
-  (void)native::sqrdmlsh_lane<requirements, 3>(vdupq_n_s32(-2147483647 - 1),
+  (void)rdm_api::sqrdmlsh_lane<requirements, 3>(vdupq_n_s32(-2147483647 - 1),
     vdupq_n_s32(-2147483647 - 1), vdupq_n_s32(-2147483647 - 1));
   passed &= (read_fpsr() & qc) != 0;
   write_fpsr(saved);
   return passed;
 }
 static_assert(has_sqrdmlah<requirements, int16_t, int16_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int16_t, int16_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int16_t, int16_t>);
 static_assert(!has_sqrdmlah<native::scalar, int16_t, int16_t>);
 static_assert(!has_sqrdmlah<native::neon, int16_t, int16_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int16_t, int16_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int16_t, int16_t>);
 static_assert(has_sqrdmlah_lane<requirements, 3, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 4, int16_t, int16_t, int16x4_t>);
@@ -184,10 +185,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int16_t, int16_t, int16x8_t>)
 static_assert(!has_sqrdmlah_lane<requirements, 8, int16_t, int16_t, int16x8_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int16_t, int16_t, int16x8_t>);
 static_assert(has_sqrdmlah<requirements, int16x4_t, int16x4_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int16x4_t, int16x4_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah<native::scalar, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah<native::neon, int16x4_t, int16x4_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
 static_assert(has_sqrdmlah_lane<requirements, 3, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 4, int16x4_t, int16x4_t, int16x4_t>);
@@ -197,10 +198,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int16x4_t, int16x4_t, int16x8
 static_assert(!has_sqrdmlah_lane<requirements, 8, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(has_sqrdmlah<requirements, int16x8_t, int16x8_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int16x8_t, int16x8_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlah<native::scalar, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlah<native::neon, int16x8_t, int16x8_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlah_lane<requirements, 3, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 4, int16x8_t, int16x8_t, int16x4_t>);
@@ -210,10 +211,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int16x8_t, int16x8_t, int16x8
 static_assert(!has_sqrdmlah_lane<requirements, 8, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlah<requirements, int32_t, int32_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int32_t, int32_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int32_t, int32_t>);
 static_assert(!has_sqrdmlah<native::scalar, int32_t, int32_t>);
 static_assert(!has_sqrdmlah<native::neon, int32_t, int32_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int32_t, int32_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int32_t, int32_t>);
 static_assert(has_sqrdmlah_lane<requirements, 1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 2, int32_t, int32_t, int32x2_t>);
@@ -223,10 +224,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int32_t, int32_t, int32x4_t>)
 static_assert(!has_sqrdmlah_lane<requirements, 4, int32_t, int32_t, int32x4_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int32_t, int32_t, int32x4_t>);
 static_assert(has_sqrdmlah<requirements, int32x2_t, int32x2_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int32x2_t, int32x2_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah<native::scalar, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah<native::neon, int32x2_t, int32x2_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
 static_assert(has_sqrdmlah_lane<requirements, 1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 2, int32x2_t, int32x2_t, int32x2_t>);
@@ -236,10 +237,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int32x2_t, int32x2_t, int32x4
 static_assert(!has_sqrdmlah_lane<requirements, 4, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(has_sqrdmlah<requirements, int32x4_t, int32x4_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int32x4_t, int32x4_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlah<native::scalar, int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlah<native::neon, int32x4_t, int32x4_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
 static_assert(has_sqrdmlah_lane<requirements, 1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 2, int32x4_t, int32x4_t, int32x2_t>);
@@ -249,10 +250,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int32x4_t, int32x4_t, int32x4
 static_assert(!has_sqrdmlah_lane<requirements, 4, int32x4_t, int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int32x4_t, int32x4_t, int32x4_t>);
 static_assert(has_sqrdmlsh<requirements, int16_t, int16_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int16_t, int16_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int16_t, int16_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int16_t, int16_t>);
 static_assert(!has_sqrdmlsh<native::neon, int16_t, int16_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int16_t, int16_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int16_t, int16_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 3, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int16_t, int16_t, int16x4_t>);
@@ -262,10 +263,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int16_t, int16_t, int16x8_t>)
 static_assert(!has_sqrdmlsh_lane<requirements, 8, int16_t, int16_t, int16x8_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int16_t, int16_t, int16x8_t>);
 static_assert(has_sqrdmlsh<requirements, int16x4_t, int16x4_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int16x4_t, int16x4_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh<native::neon, int16x4_t, int16x4_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 3, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int16x4_t, int16x4_t, int16x4_t>);
@@ -275,10 +276,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x4_t, int16x4_t, int16x8
 static_assert(!has_sqrdmlsh_lane<requirements, 8, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(has_sqrdmlsh<requirements, int16x8_t, int16x8_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int16x8_t, int16x8_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlsh<native::neon, int16x8_t, int16x8_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 3, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int16x8_t, int16x8_t, int16x4_t>);
@@ -288,10 +289,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x8_t, int16x8_t, int16x8
 static_assert(!has_sqrdmlsh_lane<requirements, 8, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlsh<requirements, int32_t, int32_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int32_t, int32_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int32_t, int32_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int32_t, int32_t>);
 static_assert(!has_sqrdmlsh<native::neon, int32_t, int32_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int32_t, int32_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int32_t, int32_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 2, int32_t, int32_t, int32x2_t>);
@@ -301,10 +302,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int32_t, int32_t, int32x4_t>)
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int32_t, int32_t, int32x4_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int32_t, int32_t, int32x4_t>);
 static_assert(has_sqrdmlsh<requirements, int32x2_t, int32x2_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int32x2_t, int32x2_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh<native::neon, int32x2_t, int32x2_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 2, int32x2_t, int32x2_t, int32x2_t>);
@@ -314,10 +315,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int32x2_t, int32x2_t, int32x4
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(has_sqrdmlsh<requirements, int32x4_t, int32x4_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int32x4_t, int32x4_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlsh<native::neon, int32x4_t, int32x4_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 2, int32x4_t, int32x4_t, int32x2_t>);
@@ -335,7 +336,7 @@ bool check_sqrdmlah_int16(std::uint64_t & state) {
     auto av = std::bit_cast<int16_t>(a);
     auto bv = std::bit_cast<int16_t>(b);
     auto cv = std::bit_cast<int16_t>(c);
-    auto result = std::bit_cast<std::array<std::int16_t, 1>>(native::sqrdmlah<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int16_t, 1>>(rdm_api::sqrdmlah<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 1; ++i)
       if (result[i] != reference(a[i], b[i], c[i], false)) return false;
     {
@@ -344,7 +345,7 @@ bool check_sqrdmlah_int16(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 1>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 1>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -358,7 +359,7 @@ bool check_sqrdmlah_int16(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 1>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 1>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -378,7 +379,7 @@ bool check_sqrdmlah_int16x4(std::uint64_t & state) {
     auto av = std::bit_cast<int16x4_t>(a);
     auto bv = std::bit_cast<int16x4_t>(b);
     auto cv = std::bit_cast<int16x4_t>(c);
-    auto result = std::bit_cast<std::array<std::int16_t, 4>>(native::sqrdmlah<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int16_t, 4>>(rdm_api::sqrdmlah<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 4; ++i)
       if (result[i] != reference(a[i], b[i], c[i], false)) return false;
     {
@@ -387,7 +388,7 @@ bool check_sqrdmlah_int16x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 4>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 4>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -401,7 +402,7 @@ bool check_sqrdmlah_int16x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 4>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 4>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -421,7 +422,7 @@ bool check_sqrdmlah_int16x8(std::uint64_t & state) {
     auto av = std::bit_cast<int16x8_t>(a);
     auto bv = std::bit_cast<int16x8_t>(b);
     auto cv = std::bit_cast<int16x8_t>(c);
-    auto result = std::bit_cast<std::array<std::int16_t, 8>>(native::sqrdmlah<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int16_t, 8>>(rdm_api::sqrdmlah<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 8; ++i)
       if (result[i] != reference(a[i], b[i], c[i], false)) return false;
     {
@@ -430,7 +431,7 @@ bool check_sqrdmlah_int16x8(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 8>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 8>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 8; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -444,7 +445,7 @@ bool check_sqrdmlah_int16x8(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 8>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 8>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 8; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -464,7 +465,7 @@ bool check_sqrdmlah_int32(std::uint64_t & state) {
     auto av = std::bit_cast<int32_t>(a);
     auto bv = std::bit_cast<int32_t>(b);
     auto cv = std::bit_cast<int32_t>(c);
-    auto result = std::bit_cast<std::array<std::int32_t, 1>>(native::sqrdmlah<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int32_t, 1>>(rdm_api::sqrdmlah<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 1; ++i)
       if (result[i] != reference(a[i], b[i], c[i], false)) return false;
     {
@@ -473,7 +474,7 @@ bool check_sqrdmlah_int32(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 1>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 1>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -487,7 +488,7 @@ bool check_sqrdmlah_int32(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 1>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 1>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -507,7 +508,7 @@ bool check_sqrdmlah_int32x2(std::uint64_t & state) {
     auto av = std::bit_cast<int32x2_t>(a);
     auto bv = std::bit_cast<int32x2_t>(b);
     auto cv = std::bit_cast<int32x2_t>(c);
-    auto result = std::bit_cast<std::array<std::int32_t, 2>>(native::sqrdmlah<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int32_t, 2>>(rdm_api::sqrdmlah<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 2; ++i)
       if (result[i] != reference(a[i], b[i], c[i], false)) return false;
     {
@@ -516,7 +517,7 @@ bool check_sqrdmlah_int32x2(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 2>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 2>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 2; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -530,7 +531,7 @@ bool check_sqrdmlah_int32x2(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 2>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 2>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 2; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -550,7 +551,7 @@ bool check_sqrdmlah_int32x4(std::uint64_t & state) {
     auto av = std::bit_cast<int32x4_t>(a);
     auto bv = std::bit_cast<int32x4_t>(b);
     auto cv = std::bit_cast<int32x4_t>(c);
-    auto result = std::bit_cast<std::array<std::int32_t, 4>>(native::sqrdmlah<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int32_t, 4>>(rdm_api::sqrdmlah<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 4; ++i)
       if (result[i] != reference(a[i], b[i], c[i], false)) return false;
     {
@@ -559,7 +560,7 @@ bool check_sqrdmlah_int32x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 4>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 4>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -573,7 +574,7 @@ bool check_sqrdmlah_int32x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 4>>(native::sqrdmlah_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 4>>(rdm_api::sqrdmlah_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], false)) passed = false;
         };
@@ -593,7 +594,7 @@ bool check_sqrdmlsh_int16(std::uint64_t & state) {
     auto av = std::bit_cast<int16_t>(a);
     auto bv = std::bit_cast<int16_t>(b);
     auto cv = std::bit_cast<int16_t>(c);
-    auto result = std::bit_cast<std::array<std::int16_t, 1>>(native::sqrdmlsh<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int16_t, 1>>(rdm_api::sqrdmlsh<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 1; ++i)
       if (result[i] != reference(a[i], b[i], c[i], true)) return false;
     {
@@ -602,7 +603,7 @@ bool check_sqrdmlsh_int16(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 1>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 1>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -616,7 +617,7 @@ bool check_sqrdmlsh_int16(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 1>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 1>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -636,7 +637,7 @@ bool check_sqrdmlsh_int16x4(std::uint64_t & state) {
     auto av = std::bit_cast<int16x4_t>(a);
     auto bv = std::bit_cast<int16x4_t>(b);
     auto cv = std::bit_cast<int16x4_t>(c);
-    auto result = std::bit_cast<std::array<std::int16_t, 4>>(native::sqrdmlsh<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int16_t, 4>>(rdm_api::sqrdmlsh<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 4; ++i)
       if (result[i] != reference(a[i], b[i], c[i], true)) return false;
     {
@@ -645,7 +646,7 @@ bool check_sqrdmlsh_int16x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 4>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 4>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -659,7 +660,7 @@ bool check_sqrdmlsh_int16x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 4>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 4>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -679,7 +680,7 @@ bool check_sqrdmlsh_int16x8(std::uint64_t & state) {
     auto av = std::bit_cast<int16x8_t>(a);
     auto bv = std::bit_cast<int16x8_t>(b);
     auto cv = std::bit_cast<int16x8_t>(c);
-    auto result = std::bit_cast<std::array<std::int16_t, 8>>(native::sqrdmlsh<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int16_t, 8>>(rdm_api::sqrdmlsh<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 8; ++i)
       if (result[i] != reference(a[i], b[i], c[i], true)) return false;
     {
@@ -688,7 +689,7 @@ bool check_sqrdmlsh_int16x8(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 8>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 8>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 8; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -702,7 +703,7 @@ bool check_sqrdmlsh_int16x8(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int16_t, 8>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int16_t, 8>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 8; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -722,7 +723,7 @@ bool check_sqrdmlsh_int32(std::uint64_t & state) {
     auto av = std::bit_cast<int32_t>(a);
     auto bv = std::bit_cast<int32_t>(b);
     auto cv = std::bit_cast<int32_t>(c);
-    auto result = std::bit_cast<std::array<std::int32_t, 1>>(native::sqrdmlsh<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int32_t, 1>>(rdm_api::sqrdmlsh<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 1; ++i)
       if (result[i] != reference(a[i], b[i], c[i], true)) return false;
     {
@@ -731,7 +732,7 @@ bool check_sqrdmlsh_int32(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 1>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 1>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -745,7 +746,7 @@ bool check_sqrdmlsh_int32(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 1>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 1>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 1; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -765,7 +766,7 @@ bool check_sqrdmlsh_int32x2(std::uint64_t & state) {
     auto av = std::bit_cast<int32x2_t>(a);
     auto bv = std::bit_cast<int32x2_t>(b);
     auto cv = std::bit_cast<int32x2_t>(c);
-    auto result = std::bit_cast<std::array<std::int32_t, 2>>(native::sqrdmlsh<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int32_t, 2>>(rdm_api::sqrdmlsh<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 2; ++i)
       if (result[i] != reference(a[i], b[i], c[i], true)) return false;
     {
@@ -774,7 +775,7 @@ bool check_sqrdmlsh_int32x2(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 2>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 2>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 2; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -788,7 +789,7 @@ bool check_sqrdmlsh_int32x2(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 2>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 2>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 2; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -808,7 +809,7 @@ bool check_sqrdmlsh_int32x4(std::uint64_t & state) {
     auto av = std::bit_cast<int32x4_t>(a);
     auto bv = std::bit_cast<int32x4_t>(b);
     auto cv = std::bit_cast<int32x4_t>(c);
-    auto result = std::bit_cast<std::array<std::int32_t, 4>>(native::sqrdmlsh<requirements>(av, bv, cv));
+    auto result = std::bit_cast<std::array<std::int32_t, 4>>(rdm_api::sqrdmlsh<requirements>(av, bv, cv));
     for (unsigned i = 0; i < 4; ++i)
       if (result[i] != reference(a[i], b[i], c[i], true)) return false;
     {
@@ -817,7 +818,7 @@ bool check_sqrdmlsh_int32x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 4>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 4>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };
@@ -831,7 +832,7 @@ bool check_sqrdmlsh_int32x4(std::uint64_t & state) {
       bool passed = true;
       [&]<std::size_t... Lane>(std::index_sequence<Lane...>) __attribute__((target("rdm"))) {
         auto check = [&]<std::size_t L>() __attribute__((target("rdm"))) {
-          auto result = std::bit_cast<std::array<std::int32_t, 4>>(native::sqrdmlsh_lane<requirements, L>(av, bv, cv));
+          auto result = std::bit_cast<std::array<std::int32_t, 4>>(rdm_api::sqrdmlsh_lane<requirements, L>(av, bv, cv));
           for (unsigned i = 0; i < 4; ++i)
             if (result[i] != reference(a[i], b[i], c[L], true)) passed = false;
         };

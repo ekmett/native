@@ -20,5 +20,5 @@ The maintained configure, build, test and installed-package commands are in
 GNUmakefile is an optional wrapper around the current presets.
 
 Documentation is optional: enable NATIVE_BUILD_DOCS and build native_docs with
-Doxygen 1.18 or newer. Neither Doxygen nor Graphviz is required for the library.
+Doxygen 1.18 or newer and Graphviz. Neither tool is required for the library.
 */

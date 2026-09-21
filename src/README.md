@@ -1,96 +1,86 @@
-# Definition ownership
+# Source and definition ownership
 
-C++ consumers import `native` for native operations and CPU capability
-detection, or individual common modules. The `native.simd` provider compiles
-at the project minimum and holds all supported host ISA families under Clang
-target attributes. Internal definition fragments are
-emitted under the matching scopes. They select structural ISA values instead
-of inheriting the importer's compiler macros.
+The public interface is organized around values, feature requirements and
+instruction families. This guide describes where their definitions belong;
+start with the [value guide](../docs/modules.md) or
+[instruction guide](../docs/instructions.md) for application code.
 
-| Path | Responsibility |
+| Source | Responsibility |
 | --- | --- |
-| `*.ccm` | C++26 module interfaces and common utilities |
-| `native/vec.h` | Raw float, integer, boolean and mask SIMD, with a custom-element extension |
-| `native/simd/` | SIMD implementations, shared element/memory policies and explicit exports |
-| `native/attributes.h` | Named compiler attributes, usable by downstream libraries |
-| `native.isa.ccm` | Sole module export provider for shared feature, ISA and admission declarations |
-| `native.math.ccm` | Optional promoted numerical kernels and targeted math forwarding |
+| `native.isa.ccm`, `native/isa.h` | Family-typed ISA values, target metadata and admission declarations |
+| `native/targets.h` | Textual macros for source targets and compiler-baseline snapshots |
+| `native.scalar.ccm` | Scalar register operations and common element extension declarations |
+| `native.wide.ccm`, `native/wide.h` | Register packs, tuple protocol and generic operation forwarding |
+| `native.simd.ccm`, `native/vec.h`, `native/simd/` | SIMD storage, masks, memory policies and native operations |
+| `native.math.ccm` | Promoted numerical kernels and targeted math forwarding |
+| `native.{x86,arm}.*.ccm`, `native/{x86,arm}/` | Capability observers and instruction families |
+| `native.numerics.ccm` | Scalar FP16/BF16 storage, conversions and numerical utilities |
+| `native/attributes.h` | Named compiler modifiers for textual inclusion |
 
 The implementation umbrella is named `vec.h` so it does not shadow Apple's
-SDK `<simd/simd.h>`; the SDK keeps ownership of that include path.
-
-The generic container, operators, forwarding and tuple protocol belong to
-`native.wide`. ADL selects an element's array kernel without a dependency on SIMD.
-`native.scalar` supplies the scalar register implementation and common extension
-declarations. `native.simd` adds constrained native families and half-vector operations
-after importing their numerical storage types. Intrinsic bridges stay in the
-global module fragment. `native/isa.h` owns feature metadata, exported to module
-consumers only by `native.isa`; `native/targets.h` supplies textual source-generation
-macros. Other modules re-export `native.isa` when they expose that vocabulary.
-Custom numerical elements use one common extension, independent of the ISA.
-
-`native` re-exports `native.simd`, `native.features`, and the host's `native.x86`
-or `native.arm` umbrella. `native.x86.features` and `native.arm.features` retain
-architecture-specific observation APIs; `native.features` adds `observe_cpu()`
-for portable callers. The `native.x86.bmi1`, `native.x86.bmi2`,
-`native.x86.popcnt` and `native.x86.lzcnt` modules expose independently constrained
-integer instructions. `native.x86.crc32c` adds scalar Castagnoli updates;
-`native.x86.gfni` adds byte field arithmetic and affine maps;
-`native.x86.vpopcntdq` counts bits in 32- and 64-bit vector lanes. These modules
-belong to `native::minimal`, use raw scalar or intrinsic register types, and keep
-their implementation headers in the global module fragment. Each operation
-constrains `Arch` and carries its own function target attribute. Their Doxygen
-groups use the corresponding feature names.
-`native.arm.dotprod`, `native.arm.rdm`, `native.arm.fp16fml`,
-`native.arm.fcma` and `native.arm.i8mm` follow the same ownership model for
-independent AArch64 instruction families. Their raw-register interfaces use
-`simd::to_native()` and `simd::from_native()` at the SIMD boundary.
-`native.x86.wait` supplies wait operations. The main hub does not re-export
-`native.math`; numerical consumers import it explicitly.
-
-Target selection is a first-match feature check: `target<A, avx512, avx2>`
-returns an `int` position whose requirements fit `A`, or `-1`. Every pair is
-checked for a weaker earlier choice that would make a later choice unreachable.
-The selector compares exact sets. Shared `isa_list` metadata describes raw operations, memory and wide
-storage; literal Clang attributes are checked against those requirements.
-`abi_lookup` retains compiler-prerequisite closure for those internal lists.
-Scalar raw vectors still require the empty `scalar` value.
-
-`x86_feature` and `arm_feature` enumerators are architecture-local bit indices. `isa` owns one public `flags`
-array; feature properties read and update that storage. `&` unions requirements,
-`has` checks containment, and comparisons use set inclusion. Construction from
-one feature is exact. Presets and compiler admission apply `feature_closure`
-explicitly. Generic native definitions use `template<isa A>` and
-`NATIVE_ARCH_REQUIRES(A)` constraints. The [ISA guide](../docs/abi-lookup.md)
-describes the public value API.
-
-Built-in values use internal traits to select their implementation scope.
-Ordinary float, integer and mask values ignore unrelated half features; native
-FP16 and BF16 values require their own extension. The complete caller ISA stays
-in the value's type. Custom domains keep their declared architecture without
-having to supply additional metadata. Arrays, nested packs and pairs contribute
-their element requirements to mixed-input operations.
-
-Generic `wide` preserves ADL, array-hook priority, result types and exception
-behavior. Requirements of arbitrary user callbacks and ADL functions remain
-the caller's responsibility. `log` and `sincos` remain extension adapters where
-no raw vector overload exists.
-
-`native.static_string`, `native.types`, `native.memory`, `native.x86.features`, `native.x86.wait` and
-`native.numerics` define their APIs directly in their modules. System and intrinsic
-headers remain in the global module fragment. The x86-only CPUID/wait modules
-are omitted from ARM builds. `native.numerics` owns fp16/bf16 and their explicit
-instantiations; there is no companion implementation translation unit.
-
-Reproducible FTZ arithmetic, CPU floating-point admission and HLSL math belong
-to the separate downstream `ftz` package. They are not part of `native.lib`.
-A consumer needing attribute macros includes `<native/attributes.h>` and links
-the header-only CMake target `native::headers`; modules cannot export macros.
-
+SDK `<simd/simd.h>`. The public class template is `native::simd`.
 Source files use `.h` for textual inputs, `.cc` for ordinary translation units,
-and `.ccm` for module interfaces. `legacy/ein` retains the original SIMD and
-profiler sources under their original names, outside the build and installation.
-New implementation code uses the standard library, including `std::forward_like`.
+and `.ccm` for module interfaces.
+
+## Modules and targets
+
+`native::minimal` owns the shared ISA provider, capability modules, scalar
+instruction utilities and common types. `native::common` is an alias.
+`native::native` owns `native.simd`, `native.math`, vector instruction modules
+and the architecture hubs. The main `native` module re-exports `native.simd`,
+`native.features` and the host's `native.x86` or `native.arm` hub.
+Numerical consumers import `native.math` explicitly.
+
+`native.isa` is the sole module export provider of declarations from
+`native/isa.h`. Other modules re-export it when exposing that vocabulary.
+`native.features` adds `observe_cpu()` and the host observer;
+`native.x86.features` and `native.arm.features` retain their architecture-specific
+interfaces. X86-only observation and wait modules are omitted from ARM builds.
+
+`native.wasm.features` is independent of the native host architecture.
+Its public `native/wasm/features.h` header owns the pure decoder and validation
+probes; `native/wasm/features.mjs` supplies the optional JavaScript adapter.
+It does not add a Wasm vector backend or application loader.
+
+## Native definitions
+
+The SIMD provider compiles at the configured project minimum and contains
+supported host implementations under Clang target attributes. Structural ISA
+values select constrained definitions; an importer's feature macros do not
+change the module's definitions. System headers and intrinsic helpers stay in
+the global module fragment.
+
+Vector instruction modules import `native.simd` before defining their public
+bindings. Vector parameters and results use `simd<T,N,Arch>`; scalar operations
+use ordinary C++ values. Masked x86 instruction forms use `predicate<N,Arch>`.
+Each operation constrains its required features and retains the appropriate
+compiler target. Raw intrinsic helpers remain private.
+
+Internal requirement lists describe operations, memory and storage. Their
+compiler-prerequisite closure must agree with the literal target attributes.
+Public `target<A, Choices...>` selection compares exact feature sets, whereas
+`abi_lookup` retains closure for internal lists. See the
+[ISA guide](../docs/abi-lookup.md) for that distinction.
+
+## Element semantics and batching
+
+`simd_traits<T>` selects a custom element's raw storage type;
+`simd_customization<T,Raw,Self>` supplies its value semantics. Built-in values
+select their native storage and operations through internal traits. The complete
+caller ISA remains part of the value's type even when an operation does not use
+all its features. Base NEON half storage is separate from FP16 arithmetic and
+BF16 dot-product requirements; transferring bits does not enable either extension.
+
+Generic `wide` preserves ADL, array-kernel priority, result types and exception
+behavior. Arrays and nested packs contribute their elements' requirements to
+mixed-input operations. Arbitrary callbacks and ADL functions remain responsible
+for their own instruction requirements. Common containers do not depend on a
+specific numerical library.
+
+The separate FTZ package supplies reproducible floating-point semantics through
+this extension. It is a downstream consumer, not part of the native archive.
+The [validation record](../docs/validation.md) distinguishes tested contracts
+from compiler and runtime limitations.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

@@ -24,16 +24,16 @@
   X(10,avx2,4)
 
 namespace refinement_test {
-  using exp_policies=native::detail::x86_kernel_policies;
+  using exp_policies=native::isa_list<native::avx512,native::detail::kernel_bw,native::detail::kernel_vl,native::detail::kernel_base,native::avx2>;
   using native::detail::exp_target;
   // Only the test entry points are repeated for each caller tag.
-#define CALLER_TARGET(i,name,raw) + native::isa_list<NATIVE_TARGET_ISA(name)>{}
+#define CALLER_TARGET(i,name,raw) + native::isa_list<native::target_features<native::x86>(NATIVE_TARGET_STRING(name))>{}
   using caller_targets=decltype(native::isa_list<>{} EXP_CALLER_CASES(CALLER_TARGET));
 #undef CALLER_TARGET
 }
 
 #define CHECK_EXP_CALLER(i,name,raw) \
-  static_assert((native::abi_lookup<NATIVE_TARGET_ISA(name),refinement_test::caller_targets>::index == i)); \
-  static_assert((native::detail::exp_target<NATIVE_TARGET_ISA(name)> == raw));
+  static_assert((native::abi_lookup<native::target_features<native::x86>(NATIVE_TARGET_STRING(name)),refinement_test::caller_targets>::index == i)); \
+  static_assert((native::detail::exp_target<native::target_features<native::x86>(NATIVE_TARGET_STRING(name))> == raw));
 EXP_CALLER_CASES(CHECK_EXP_CALLER)
 #undef CHECK_EXP_CALLER

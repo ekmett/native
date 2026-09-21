@@ -64,7 +64,7 @@ namespace {
     native::arm_capabilities::raw_observations all{true,true,true,true,true,true};
     if(!native::classify_isa(all,native::neon).admitted() ||
         !native::classify_isa(all,native::neon_fp16).admitted()) return false;
-    if(!native::classify_isa(all,native::isa(static_cast<native::x86_feature>(-1))).invalid_features) return false;
+    if(!native::classify_isa(all,native::isa<native::arm>(static_cast<native::arm_feature>(-1))).invalid_features) return false;
     auto baseline=all; baseline.fp16_observed=baseline.scalar_fp16=baseline.vector_fp16=false;
     if(!native::classify_isa(baseline,native::neon).admitted() ||
         native::classify_isa(baseline,native::neon_fp16).admitted()) return false;

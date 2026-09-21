@@ -1,4 +1,5 @@
 module;
+#include "native/isa_import.h"
 #define NATIVE_PROFILE 0
 #include <native/vec.h>
 #include <native/integer.h>

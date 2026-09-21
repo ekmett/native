@@ -11,8 +11,11 @@ static_assert(sizeof(next)==16 && sizeof(native::simd<float,3,native::neon_fp16>
 template<class A,class B> concept addable=requires(A a,B b) { a+b; };
 static_assert(!addable<old,next>);
 template<class T> concept complete=requires { sizeof(T); };
-static_assert(!complete<native::simd<native::fp16,8,native::neon>>);
-static_assert(!complete<native::simd<native::fp16,4,native::neon_fp16>>);
-static_assert(!complete<native::simd<native::bf16,8,native::neon_fp16>>);
+static_assert(complete<native::simd<native::fp16,8,native::neon>>);
+static_assert(!addable<native::simd<native::fp16,8,native::neon>,native::simd<native::fp16,8,native::neon>>);
+static_assert(complete<native::simd<native::fp16,4,native::neon_fp16>>);
+static_assert(!addable<native::simd<native::fp16,4,native::neon_fp16>,native::simd<native::fp16,4,native::neon_fp16>>);
+static_assert(complete<native::simd<native::bf16,8,native::neon_fp16>>);
+static_assert(!addable<native::simd<native::bf16,8,native::neon_fp16>,native::simd<native::bf16,8,native::neon_fp16>>);
 template<class T> concept divisible=requires(T a) { a/a; };
 static_assert(divisible<native::simd<native::fp16,8,native::neon_fp16>>);

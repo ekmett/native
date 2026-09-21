@@ -15,27 +15,27 @@ constexpr auto countvl = count512 & native::x86_feature::avx512vl;
 #define NATIVE_COUNT_FIXTURES(width, reg, dmask, requirement, features) \
   extern "C" native_noinline native_target(features) \
   reg native_vpopcntd_##width##_plain(reg value) noexcept { \
-    return native::vpopcntd<requirement>(value); \
+    return native::detail::x86_vpopcntdq::vpopcntd<requirement>(value); \
   } \
   extern "C" native_noinline native_target(features) \
   reg native_vpopcntd_##width##_merge(reg source, dmask mask, reg value) noexcept { \
-    return native::mask_vpopcntd<requirement>(source, mask, value); \
+    return native::detail::x86_vpopcntdq::mask_vpopcntd<requirement>(source, mask, value); \
   } \
   extern "C" native_noinline native_target(features) \
   reg native_vpopcntd_##width##_zero(dmask mask, reg value) noexcept { \
-    return native::maskz_vpopcntd<requirement>(mask, value); \
+    return native::detail::x86_vpopcntdq::maskz_vpopcntd<requirement>(mask, value); \
   } \
   extern "C" native_noinline native_target(features) \
   reg native_vpopcntq_##width##_plain(reg value) noexcept { \
-    return native::vpopcntq<requirement>(value); \
+    return native::detail::x86_vpopcntdq::vpopcntq<requirement>(value); \
   } \
   extern "C" native_noinline native_target(features) \
   reg native_vpopcntq_##width##_merge(reg source, __mmask8 mask, reg value) noexcept { \
-    return native::mask_vpopcntq<requirement>(source, mask, value); \
+    return native::detail::x86_vpopcntdq::mask_vpopcntq<requirement>(source, mask, value); \
   } \
   extern "C" native_noinline native_target(features) \
   reg native_vpopcntq_##width##_zero(__mmask8 mask, reg value) noexcept { \
-    return native::maskz_vpopcntq<requirement>(mask, value); \
+    return native::detail::x86_vpopcntdq::maskz_vpopcntq<requirement>(mask, value); \
   }
 
 NATIVE_COUNT_FIXTURES(128, __m128i, __mmask8, countvl,

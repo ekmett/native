@@ -2,9 +2,9 @@
 #pragma clang attribute push(__attribute__((target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16"))), apply_to=function)
 export namespace native {
   namespace detail {
-    template<::native::isa A> requires NATIVE_ARCH_REQUIRES(A)
+    template<::native::isa<> A> requires NATIVE_ARCH_REQUIRES(A)
     struct value_traits<simd<fp16,32,A>> {
-      static constexpr isa value=avx512_fp16;
+      static constexpr isa<> value=avx512_fp16;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
@@ -21,11 +21,11 @@ export namespace native {
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<fp16,32,Arch> {
+  template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) struct simd<fp16,32,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = fp16;
     /// The distinct compile-time AVX512_FP16 instruction profile.
-    static constexpr isa architecture=Arch;
+    static constexpr isa<> architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = simd;
     /// Native 512-bit FP16 register representation; native bridges copy bits.
@@ -187,7 +187,7 @@ export namespace native {
   /// Compute a*b+c in each lane with one final half-precision rounding (VFMADD*PH).
   /// MXCSR rounding and exception controls apply, status flags may change, and
   /// DAZ/FTZ are ignored. Control bits are preserved; NaNs follow the instruction.
-  template<::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
+  template<::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
   native_nodiscard native_inline simd<fp16,32,Arch> fma(
       simd<fp16,32,Arch> a,simd<fp16,32,Arch> b,simd<fp16,32,Arch> c) noexcept {
     return simd<fp16,32,Arch>::from_native(

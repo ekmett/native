@@ -14,7 +14,7 @@ namespace CASE_NAMESPACE {
   // Derived custom domains retain their full architecture requirements.
   template<class V> struct opaque : V {};
   template<class V> struct value {
-    static constexpr native::isa architecture=V::architecture;
+    static constexpr native::isa<> architecture=V::architecture;
     V raw;
     value() noexcept :raw(0.f) {}
     explicit value(V v) noexcept :raw(v) {}

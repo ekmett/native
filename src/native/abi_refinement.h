@@ -5,22 +5,39 @@
 #include <array>
 #include <cstddef>
 #include <utility>
+#include <type_traits>
 
 // Internal ordered common refinement. Preserve each callee's first-match policy;
 // no public policy-composition API or compiler retargeting is introduced.
 namespace native::detail {
   template<class List> struct abi_entries;
-  template<auto... E> struct abi_entries<::native::isa_list<E...>> {
-    static constexpr std::array<::native::isa,sizeof...(E)> requirements{
+  template<> struct abi_entries<::native::isa_list<>> {
+    using isa_type=::native::isa<>;
+    static constexpr std::array<isa_type,0> requirements{};
+  };
+  template<auto First,auto... E> struct abi_entries<::native::isa_list<First,E...>> {
+    using isa_type=std::remove_cv_t<decltype(::native::detail::abi_match<First,0>::required_features)>;
+    static constexpr std::array<isa_type,1+sizeof...(E)> requirements{
+      ::native::detail::abi_match<First,0>::required_features,
       ::native::detail::abi_match<E,0>::required_features...};
+  };
+
+  template<class... Lists> struct refinement_isa { using type=::native::isa<>; };
+  template<class First,class... Rest> struct refinement_isa<First,Rest...> {
+    using type=std::conditional_t<abi_entries<First>::requirements.empty(),
+      typename refinement_isa<Rest...>::type,typename abi_entries<First>::isa_type>;
   };
 
   template<class... Lists> struct abi_refinement {
     static_assert(sizeof...(Lists)>0);
+    using isa_type=typename refinement_isa<Lists...>::type;
+    static_assert(((abi_entries<Lists>::requirements.empty() ||
+      std::same_as<isa_type,typename abi_entries<Lists>::isa_type>) && ...),
+      "ABI refinement requires one architecture family");
     static constexpr std::size_t dimensions=sizeof...(Lists);
     static constexpr std::size_t capacity=(std::size_t{1} * ... * abi_entries<Lists>::requirements.size());
     struct cell {
-      ::native::isa requirements{};
+      isa_type requirements{};
       std::array<int,dimensions> choices{};
       bool possible=false;
     };
@@ -44,16 +61,11 @@ namespace native::detail {
     static consteval cell candidate(std::index_sequence<I...>) {
       constexpr auto selected=choices<K>();
       constexpr auto requirements=::native::feature_closure(
-        (::native::isa{} & ... & abi_entries<Lists>::requirements[selected[I]]));
-      // A refinement cell must be executable on one host architecture.
-      if constexpr(!(requirements<=::native::detail::x86_features) &&
-                   !(requirements<=::native::detail::arm_features)) return {};
-      else {
-        constexpr auto A=requirements;
-        constexpr bool possible=((::native::abi_lookup<A,Lists>::matched &&
-          ::native::abi_lookup<A,Lists>::index==selected[I]) && ...);
-        return {requirements,selected,possible};
-      }
+        (isa_type{} & ... & abi_entries<Lists>::requirements[selected[I]]));
+      constexpr auto A=requirements;
+      constexpr bool possible=((::native::abi_lookup<A,Lists>::matched &&
+        ::native::abi_lookup<A,Lists>::index==selected[I]) && ...);
+      return {requirements,selected,possible};
     }
     template<std::size_t... K> static consteval table enumerate(std::index_sequence<K...>) {
       table result;
@@ -70,7 +82,7 @@ namespace native::detail {
 
     // Verify the realized cell against each original callee, rather than only
     // checking membership in the generated positive-requirement list.
-    template<::native::isa A> static consteval bool agrees() {
+    template<isa_type A> static consteval bool agrees() {
       using choice=::native::abi_lookup<A,policies>;
       constexpr bool all=(::native::abi_lookup<A,Lists>::matched && ...);
       if constexpr(!all) return !choice::matched;

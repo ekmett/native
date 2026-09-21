@@ -9,6 +9,19 @@ Import `native.x86.lzcnt`, `native.x86`, or `native` to use them. Source-tree
 header consumers can include `<native/x86/lzcnt.h>`; the installed public API
 uses the named modules.
 
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. A function target attribute on the caller
+does not change that captured value.
+Explicit `Arch` arguments are supported, and standalone headers require them.
+
+`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
+All operand widths support constant evaluation. If `Arch` lacks the feature,
+the selected overload is `consteval`: a constant call is accepted, while a call
+with runtime inputs is ill-formed. With the feature present, the overload is
+`constexpr` and uses the instruction implementation at runtime. Runtime calls
+still require a matching compiler target and admitted CPU support; there is
+no runtime software fallback.
+
 Intel defines all three operand widths. The required feature is LZCNT,
 reported by extended CPUID leaf 0x80000001 ECX bit 5; it requires no BMI or
 vector OS state. On a CPU without LZCNT, the same instruction encoding executes
@@ -16,7 +29,7 @@ BSR with different semantics. See the LZCNT entry in
 [Intel's instruction reference, Volume 2A](https://cdrdv2-public.intel.com/922480/253666-092-sdm-vol-2a.pdf#page=696)
 and the [current Intel manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html).
 
-Each overload is `noexcept` and always inline, with target `"lzcnt"` and the
+Each runtime overload is `noexcept` and always inline, with target `"lzcnt"` and the
 constraint `Arch.has(native::x86_feature::lzcnt)`. The caller needs both a
 matching compiler target and a runtime capability check:
 

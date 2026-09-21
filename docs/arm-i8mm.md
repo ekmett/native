@@ -2,19 +2,18 @@
 
 I8MM multiplies small byte matrices and computes mixed-sign byte dot products,
 accumulating the results into 32-bit integers. Import `native.arm.i8mm`, `native.arm`, or `native` for these
-AArch64 operations. Source-tree header consumers can include
-`<native/arm/i8mm.h>`. Operands and results use the raw vector types from
-`<arm_neon.h>`, and every call takes an explicit `isa Arch` template argument
-containing `arm_feature::i8mm`.
+AArch64 operations. Operands and results use `native::simd<T, N, Arch>`, with
+semantic byte or integer lanes and a shared `Arch` containing `arm_feature::i8mm`.
+Raw NEON registers are private implementation details.
 
 | Operation | Accumulator and result | Input signedness |
 | --- | --- | --- |
-| `smmla<Arch>(acc, a, b)` | `int32x4_t` | Both `int8x16_t` |
-| `ummla<Arch>(acc, a, b)` | `uint32x4_t` | Both `uint8x16_t` |
-| `usmmla<Arch>(acc, a, b)` | `int32x4_t` | Unsigned `a`, signed `b` |
-| `usdot<Arch>(acc, a, b)` | `int32x2_t` or `int32x4_t` | Unsigned `a`, signed `b` |
-| `usdot_lane<Arch, Lane>(acc, a, b)` | `int32x2_t` or `int32x4_t` | Unsigned `a`, signed `b` |
-| `sudot_lane<Arch, Lane>(acc, a, b)` | `int32x2_t` or `int32x4_t` | Signed `a`, unsigned `b` |
+| `smmla<Arch>(acc, a, b)` | `simd<std::int32_t, 4, Arch>` | Both `simd<std::int8_t, 16, Arch>` |
+| `ummla<Arch>(acc, a, b)` | `simd<std::uint32_t, 4, Arch>` | Both `simd<std::uint8_t, 16, Arch>` |
+| `usmmla<Arch>(acc, a, b)` | `simd<std::int32_t, 4, Arch>` | Unsigned `a`, signed `b` |
+| `usdot<Arch>(acc, a, b)` | `simd<std::int32_t, 2, Arch>` or `simd<std::int32_t, 4, Arch>` | Unsigned `a`, signed `b` |
+| `usdot_lane<Arch, Lane>(acc, a, b)` | `simd<std::int32_t, 2, Arch>` or `simd<std::int32_t, 4, Arch>` | Unsigned `a`, signed `b` |
+| `sudot_lane<Arch, Lane>(acc, a, b)` | `simd<std::int32_t, 2, Arch>` or `simd<std::int32_t, 4, Arch>` | Signed `a`, unsigned `b` |
 
 The matrix operations multiply a 2-by-8 matrix by an 8-by-2 matrix. The first
 operand stores its rows consecutively; the second stores its columns
@@ -45,25 +44,30 @@ entering it. Importing the API does not enable I8MM instructions or dispatch
 at runtime. For example:
 
 ```cpp
-#include <arm_neon.h>
+#include <cstdint>
+#include <native/targets.h>
 import native.arm.i8mm;
 
-constexpr native::isa matrix_isa = native::arm_feature::i8mm;
+constexpr auto matrix_isa = native::feature_closure(native::arm_feature::i8mm);
 
 __attribute__((target("i8mm")))
-int32x4_t multiply(int32x4_t acc, int8x16_t a, int8x16_t b) noexcept {
+native::simd<std::int32_t, 4, matrix_isa> multiply(
+    native::simd<std::int32_t, 4, matrix_isa> acc,
+    native::simd<std::int8_t, 16, matrix_isa> a,
+    native::simd<std::int8_t, 16, matrix_isa> b) noexcept {
   return native::smmla<matrix_isa>(acc, a, b);
 }
 
 bool can_multiply() {
-  return native::classify_isa(native::observe_arm_capabilities(), matrix_isa).admitted();
+  return native::classify_isa(native::observe_arm_capabilities(),
+    matrix_isa, NATIVE_TARGET_MINIMUM).admitted();
 }
 ```
 
 I8MM requires NEON but can be requested independently of DotProd, FP16 and
 BF16, matching [LLVM's AArch64 feature definition](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/AArch64/AArch64Features.td).
-The `isa::arm_i8mm` property accesses the `arm_feature::i8mm` bit.
-`target_features("i8mm")` adds the NEON prerequisite, and `NATIVE_TARGET_MINIMUM`
+The `isa<arm>::i8mm` property accesses the `arm_feature::i8mm` bit.
+`target_features<native::arm>("i8mm")` adds the NEON prerequisite, and `NATIVE_TARGET_MINIMUM`
 records I8MM when the compiler defines `__ARM_FEATURE_MATMUL_INT8`.
 
 The macOS detector queries `hw.optional.arm.FEAT_I8MM`. The Linux detector
@@ -74,7 +78,7 @@ The Windows detector leaves Advanced SIMD I8MM unobserved, so admission fails
 there: an SVE I8MM query does not establish this instruction family's
 availability.
 
-`tests/arm_i8mm` checks the header, granular module and main hub against
+`tests/arm_i8mm` checks the granular module and main hub against
 independent scalar references with unsigned modular accumulation. It covers
 matrix row/column sentinels, all 256 single-product positions, integer extremes,
 10,000 deterministic random cases, both register widths, and all 24 indexed
@@ -83,5 +87,11 @@ an incompatible caller target and an invalid lane. A separately targeted
 object is disassembled to verify matrix and mixed-dot instructions, indexed
 immediates, and a baseline control. Runtime tests return the CTest skip code 77
 when capability admission fails; compilation alone is not an execution claim.
+
+Paired assembly checks compare the public `simd` call with its private native
+helper under identical target attributes and register signatures. The complete
+instruction sequences must match, including moves, loads, stores and calls.
+This checks abstraction overhead in the tested leaf contexts; it is not a
+benchmark or a guarantee about surrounding application code.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

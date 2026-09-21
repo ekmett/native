@@ -12,12 +12,13 @@ import native.x86.features;
 #endif
 
 namespace {
-  unsigned supported() {
+  int supported() {
     auto cpu = native::observe_x86_capabilities();
     auto avx2 = native::classify_isa(cpu, native::avx2);
     auto avx512 = native::classify_isa(cpu, native::avx512);
     std::printf("AVX2: %s; AVX512: %s\n", avx2.reason(), avx512.reason());
-    return unsigned(avx2.admitted()) | (unsigned(avx512.admitted()) << 1);
+    if(avx2.invalid_features || avx512.invalid_features) return -1;
+    return int(avx2.admitted()) | (int(avx512.admitted()) << 1);
   }
   using capture = std::array<std::uint32_t, profile_test::words>;
   bool compare(capture const & a, capture const & b, char const * description) {
@@ -43,7 +44,9 @@ int main(int argc, char ** argv) {
   unsigned request = std::strcmp(mode, "all") == 0 ? 3u :
     std::strcmp(mode, "avx2") == 0 ? 1u : std::strcmp(mode, "avx512") == 0 ? 2u : 0u;
   if (!request) return 2;
-  unsigned admitted = supported();
+  auto available = supported();
+  if(available<0) return 16;
+  unsigned admitted = unsigned(available);
   if ((request & admitted) == 0 || (request != 3 && (request & admitted) != request)) {
     std::puts("Requested profile is unavailable on this CPU/OS.");
     return 77;

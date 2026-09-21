@@ -2,20 +2,13 @@
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.trimFinalNewlines": true,
-  "ctest-lab.buildDirectory": "gen",
+  "ctest-lab.buildDirectory": "build/core",
   "files.exclude": {
-    "!.ccache/ccache.conf": true,
-    ".ccache/?/": true,
-    ".ccache/lock": true,
-    ".ccache/tmp": true,
-    "gen/**": true,
-    "lib/cache/**": true,
-    "old/**": true,
+    "build/**": true,
     "Testing/**": true
   },
   "files.watcherExclude": {
-    "gen/**": true,
-    "lib/cache/**": true
+    "build/**": true
   },
   "explorer.excludeGitIgnore": true
 }

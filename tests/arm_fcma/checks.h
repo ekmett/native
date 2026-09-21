@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include "simd_adapter.h"
+#include "simd_contract.h"
 namespace fcma_fixture {
-  constexpr native::isa arch{native::arm_feature::complxnum};
-  constexpr native::isa half_arch = [] {
+  constexpr native::isa<native::arm> arch{native::arm_feature::complxnum};
+  constexpr native::isa<native::arm> half_arch = [] {
     auto a = arch; a.set(native::arm_feature::neon_fp16, true); return a;
   }();
-  template<native::isa A, unsigned R, class V> concept add_available = requires(V v) {
-    { native::fcadd<A, R>(v, v) } noexcept -> std::same_as<V>;
+  template<native::isa<native::arm> A, unsigned R, class V> concept add_available = requires(V v) {
+    { fcma_api::fcadd<A, R>(v, v) } noexcept -> std::same_as<V>;
   };
-  template<native::isa A, unsigned R, class V> concept mla_available = requires(V v) {
-    { native::fcmla<A, R>(v, v, v) } noexcept -> std::same_as<V>;
+  template<native::isa<native::arm> A, unsigned R, class V> concept mla_available = requires(V v) {
+    { fcma_api::fcmla<A, R>(v, v, v) } noexcept -> std::same_as<V>;
   };
-  template<native::isa A, unsigned R, unsigned L, class V, class B>
-  concept lane_available = requires(V v, B b) { native::fcmla_lane<A, R, L>(v, v, b); };
+  template<native::isa<native::arm> A, unsigned R, unsigned L, class V, class B>
+  concept lane_available = requires(V v, B b) { fcma_api::fcmla_lane<A, R, L>(v, v, b); };
   static_assert(add_available<arch, 90, float32x2_t>);
   static_assert(add_available<arch, 270, float32x2_t>);
   static_assert(mla_available<arch, 0, float32x2_t>);
@@ -27,7 +29,7 @@ namespace fcma_fixture {
   static_assert(!add_available<native::scalar, 90, float32x2_t> && !mla_available<native::scalar, 0, float32x2_t>);
   static_assert(!add_available<native::neon, 90, float32x2_t> && !mla_available<native::neon, 0, float32x2_t>);
   static_assert(!add_available<native::neon_fp16, 90, float32x2_t> && !mla_available<native::neon_fp16, 0, float32x2_t>);
-  static_assert(!add_available<native::isa{native::arm_feature::fp16fml}, 90, float32x2_t> && !mla_available<native::isa{native::arm_feature::fp16fml}, 0, float32x2_t>);
+  static_assert(!add_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 90, float32x2_t> && !mla_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, float32x2_t>);
   static_assert(lane_available<arch, 270, 0, float32x2_t, float32x2_t>);
   static_assert(lane_available<arch, 270, 0, float32x2_t, float32x2_t>);
   static_assert(!lane_available<arch, 0, 1, float32x2_t, float32x2_t>);
@@ -48,7 +50,7 @@ namespace fcma_fixture {
   static_assert(!add_available<native::scalar, 90, float32x4_t> && !mla_available<native::scalar, 0, float32x4_t>);
   static_assert(!add_available<native::neon, 90, float32x4_t> && !mla_available<native::neon, 0, float32x4_t>);
   static_assert(!add_available<native::neon_fp16, 90, float32x4_t> && !mla_available<native::neon_fp16, 0, float32x4_t>);
-  static_assert(!add_available<native::isa{native::arm_feature::fp16fml}, 90, float32x4_t> && !mla_available<native::isa{native::arm_feature::fp16fml}, 0, float32x4_t>);
+  static_assert(!add_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 90, float32x4_t> && !mla_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, float32x4_t>);
   static_assert(lane_available<arch, 270, 0, float32x4_t, float32x2_t>);
   static_assert(lane_available<arch, 270, 0, float32x4_t, float32x2_t>);
   static_assert(!lane_available<arch, 0, 1, float32x4_t, float32x2_t>);
@@ -69,7 +71,7 @@ namespace fcma_fixture {
   static_assert(!add_available<native::scalar, 90, float64x2_t> && !mla_available<native::scalar, 0, float64x2_t>);
   static_assert(!add_available<native::neon, 90, float64x2_t> && !mla_available<native::neon, 0, float64x2_t>);
   static_assert(!add_available<native::neon_fp16, 90, float64x2_t> && !mla_available<native::neon_fp16, 0, float64x2_t>);
-  static_assert(!add_available<native::isa{native::arm_feature::fp16fml}, 90, float64x2_t> && !mla_available<native::isa{native::arm_feature::fp16fml}, 0, float64x2_t>);
+  static_assert(!add_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 90, float64x2_t> && !mla_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, float64x2_t>);
   static_assert(add_available<half_arch, 90, float16x4_t>);
   static_assert(add_available<half_arch, 270, float16x4_t>);
   static_assert(mla_available<half_arch, 0, float16x4_t>);
@@ -84,7 +86,7 @@ namespace fcma_fixture {
   static_assert(!add_available<native::scalar, 90, float16x4_t> && !mla_available<native::scalar, 0, float16x4_t>);
   static_assert(!add_available<native::neon, 90, float16x4_t> && !mla_available<native::neon, 0, float16x4_t>);
   static_assert(!add_available<native::neon_fp16, 90, float16x4_t> && !mla_available<native::neon_fp16, 0, float16x4_t>);
-  static_assert(!add_available<native::isa{native::arm_feature::fp16fml}, 90, float16x4_t> && !mla_available<native::isa{native::arm_feature::fp16fml}, 0, float16x4_t>);
+  static_assert(!add_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 90, float16x4_t> && !mla_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, float16x4_t>);
   static_assert(!add_available<arch, 90, float16x4_t> && !mla_available<arch, 0, float16x4_t>);
   static_assert(lane_available<half_arch, 270, 0, float16x4_t, float16x4_t>);
   static_assert(lane_available<half_arch, 270, 1, float16x4_t, float16x4_t>);
@@ -106,7 +108,7 @@ namespace fcma_fixture {
   static_assert(!add_available<native::scalar, 90, float16x8_t> && !mla_available<native::scalar, 0, float16x8_t>);
   static_assert(!add_available<native::neon, 90, float16x8_t> && !mla_available<native::neon, 0, float16x8_t>);
   static_assert(!add_available<native::neon_fp16, 90, float16x8_t> && !mla_available<native::neon_fp16, 0, float16x8_t>);
-  static_assert(!add_available<native::isa{native::arm_feature::fp16fml}, 90, float16x8_t> && !mla_available<native::isa{native::arm_feature::fp16fml}, 0, float16x8_t>);
+  static_assert(!add_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 90, float16x8_t> && !mla_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, float16x8_t>);
   static_assert(!add_available<arch, 90, float16x8_t> && !mla_available<arch, 0, float16x8_t>);
   static_assert(lane_available<half_arch, 270, 0, float16x8_t, float16x4_t>);
   static_assert(lane_available<half_arch, 270, 1, float16x8_t, float16x4_t>);
@@ -118,45 +120,45 @@ namespace fcma_fixture {
   static_assert(!lane_available<native::scalar, 0, 0, float32x2_t, float32x2_t>);
   static_assert(!lane_available<native::neon, 0, 0, float32x2_t, float32x2_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float32x2_t, float32x2_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float32x2_t, float32x2_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float32x2_t, float32x2_t>);
   static_assert(!lane_available<arch, 45, 0, float32x2_t, float32x2_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float32x2_t, float32x4_t>);
   static_assert(!lane_available<native::neon, 0, 0, float32x2_t, float32x4_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float32x2_t, float32x4_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float32x2_t, float32x4_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float32x2_t, float32x4_t>);
   static_assert(!lane_available<arch, 45, 0, float32x2_t, float32x4_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float32x4_t, float32x2_t>);
   static_assert(!lane_available<native::neon, 0, 0, float32x4_t, float32x2_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float32x4_t, float32x2_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float32x4_t, float32x2_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float32x4_t, float32x2_t>);
   static_assert(!lane_available<arch, 45, 0, float32x4_t, float32x2_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float32x4_t, float32x4_t>);
   static_assert(!lane_available<native::neon, 0, 0, float32x4_t, float32x4_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float32x4_t, float32x4_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float32x4_t, float32x4_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float32x4_t, float32x4_t>);
   static_assert(!lane_available<arch, 45, 0, float32x4_t, float32x4_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float16x4_t, float16x4_t>);
   static_assert(!lane_available<native::neon, 0, 0, float16x4_t, float16x4_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float16x4_t, float16x4_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float16x4_t, float16x4_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float16x4_t, float16x4_t>);
   static_assert(!lane_available<arch, 0, 0, float16x4_t, float16x4_t>);
   static_assert(!lane_available<half_arch, 45, 0, float16x4_t, float16x4_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float16x4_t, float16x8_t>);
   static_assert(!lane_available<native::neon, 0, 0, float16x4_t, float16x8_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float16x4_t, float16x8_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float16x4_t, float16x8_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float16x4_t, float16x8_t>);
   static_assert(!lane_available<arch, 0, 0, float16x4_t, float16x8_t>);
   static_assert(!lane_available<half_arch, 45, 0, float16x4_t, float16x8_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float16x8_t, float16x4_t>);
   static_assert(!lane_available<native::neon, 0, 0, float16x8_t, float16x4_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float16x8_t, float16x4_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float16x8_t, float16x4_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float16x8_t, float16x4_t>);
   static_assert(!lane_available<arch, 0, 0, float16x8_t, float16x4_t>);
   static_assert(!lane_available<half_arch, 45, 0, float16x8_t, float16x4_t>);
   static_assert(!lane_available<native::scalar, 0, 0, float16x8_t, float16x8_t>);
   static_assert(!lane_available<native::neon, 0, 0, float16x8_t, float16x8_t>);
   static_assert(!lane_available<native::neon_fp16, 0, 0, float16x8_t, float16x8_t>);
-  static_assert(!lane_available<native::isa{native::arm_feature::fp16fml}, 0, 0, float16x8_t, float16x8_t>);
+  static_assert(!lane_available<native::isa<native::arm>{native::arm_feature::fp16fml}, 0, 0, float16x8_t, float16x8_t>);
   static_assert(!lane_available<arch, 0, 0, float16x8_t, float16x8_t>);
   static_assert(!lane_available<half_arch, 45, 0, float16x8_t, float16x8_t>);
 
@@ -226,18 +228,18 @@ namespace fcma_fixture {
   __attribute__((target("complxnum,fullfp16"), noinline))
   bool check(V acc, V a, V b) {
     constexpr auto required = sizeof(a[0]) == 2 ? half_arch : arch;
-    auto r90 = native::fcadd<required, 90>(a, b);
-    auto r270 = native::fcadd<required, 270>(a, b);
+    auto r90 = fcma_api::fcadd<required, 90>(a, b);
+    auto r270 = fcma_api::fcadd<required, 270>(a, b);
     V ref90{}, ref270{};
     for(unsigned i = 0; i != sizeof(V) / sizeof(a[0]); i += 2) {
       ref90[i] = a[i] - b[i+1]; ref90[i+1] = a[i+1] + b[i];
       ref270[i] = a[i] + b[i+1]; ref270[i+1] = a[i+1] - b[i];
     }
     return equal(r90, ref90) && equal(r270, ref270) &&
-      equal(native::fcmla<required, 0>(acc, a, b), reference<0>(acc, a, b)) &&
-      equal(native::fcmla<required, 90>(acc, a, b), reference<90>(acc, a, b)) &&
-      equal(native::fcmla<required, 180>(acc, a, b), reference<180>(acc, a, b)) &&
-      equal(native::fcmla<required, 270>(acc, a, b), reference<270>(acc, a, b));
+      equal(fcma_api::fcmla<required, 0>(acc, a, b), reference<0>(acc, a, b)) &&
+      equal(fcma_api::fcmla<required, 90>(acc, a, b), reference<90>(acc, a, b)) &&
+      equal(fcma_api::fcmla<required, 180>(acc, a, b), reference<180>(acc, a, b)) &&
+      equal(fcma_api::fcmla<required, 270>(acc, a, b), reference<270>(acc, a, b));
   }
   template<unsigned Lane, class V, class B>
   __attribute__((target("complxnum,fullfp16"), noinline))
@@ -247,10 +249,10 @@ namespace fcma_fixture {
     for(unsigned i = 0; i != sizeof(V) / sizeof(a[0]); i += 2) {
       pair[i] = b[2*Lane]; pair[i+1] = b[2*Lane+1];
     }
-    return equal(native::fcmla_lane<required, 0, Lane>(acc, a, b), reference<0>(acc, a, pair)) &&
-      equal(native::fcmla_lane<required, 90, Lane>(acc, a, b), reference<90>(acc, a, pair)) &&
-      equal(native::fcmla_lane<required, 180, Lane>(acc, a, b), reference<180>(acc, a, pair)) &&
-      equal(native::fcmla_lane<required, 270, Lane>(acc, a, b), reference<270>(acc, a, pair));
+    return equal(fcma_api::fcmla_lane<required, 0, Lane>(acc, a, b), reference<0>(acc, a, pair)) &&
+      equal(fcma_api::fcmla_lane<required, 90, Lane>(acc, a, b), reference<90>(acc, a, pair)) &&
+      equal(fcma_api::fcmla_lane<required, 180, Lane>(acc, a, b), reference<180>(acc, a, pair)) &&
+      equal(fcma_api::fcmla_lane<required, 270, Lane>(acc, a, b), reference<270>(acc, a, pair));
   }
   __attribute__((target("complxnum,fullfp16"), noinline))
   bool exercise(unsigned seed) {
@@ -298,15 +300,15 @@ namespace fcma_fixture {
     if(!check(acc, a, b)) return false;
     b[0] = std::numeric_limits<float>::infinity();
     std::feclearexcept(FE_ALL_EXCEPT);
-    volatile auto invalid = native::fcmla<arch, 0>(acc, a, b);
+    volatile auto invalid = fcma_api::fcmla<arch, 0>(acc, a, b);
     (void)invalid;
     if(!(std::fetestexcept(FE_INVALID) & FE_INVALID)) return false;
     std::feclearexcept(FE_ALL_EXCEPT);
-    (void)native::fcmla<arch, 0>(acc, a, b);
+    (void)fcma_api::fcmla<arch, 0>(acc, a, b);
     if(!(std::fetestexcept(FE_INVALID) & FE_INVALID)) return false;
     if(std::feraiseexcept(FE_DIVBYZERO) != 0) return false;
     b[0] = 1;
-    (void)native::fcmla<arch, 0>(acc, a, b);
+    (void)fcma_api::fcmla<arch, 0>(acc, a, b);
     if(!(std::fetestexcept(FE_DIVBYZERO) & FE_DIVBYZERO)) return false;
     return fpcr() == control;
   }

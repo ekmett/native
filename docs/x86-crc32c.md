@@ -5,6 +5,19 @@ integer operand. Import `native.x86.crc32c`, `native.x86`, or `native` to use it
 Source-tree header consumers can include `<native/x86/crc32c.h>`; installed
 consumers use the named modules. The granular module belongs to `native::minimal`.
 
+Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
+their owning module is compiled. A function target attribute on the caller
+does not change that captured value.
+Explicit `Arch` arguments are supported, and standalone headers require them.
+
+`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
+All operand widths support constant evaluation. If `Arch` lacks the feature,
+the selected overload is `consteval`: a constant call is accepted, while a call
+with runtime inputs is ill-formed. With the feature present, the overload is
+`constexpr` and uses the instruction implementation at runtime. Runtime calls
+still require a matching compiler target and admitted CPU support; there is
+no runtime software fallback.
+
 The accumulator and result are always `std::uint32_t`:
 
 | Operand type | Bits consumed | Execution mode |
@@ -30,10 +43,10 @@ accepts a 32-bit seed and returns the 32-bit remainder. These semantics and the
 CPUID requirement follow the CRC32 entry in
 [Intel's instruction reference](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
 
-Every overload is side-effect-free, `noexcept`, always inline, constrained by
+The runtime overloads are side-effect-free, `noexcept`, always inline, constrained by
 `Arch.has(native::x86_feature::crc32)`, and targeted to `"crc32"`.
 The feature maps to CPUID leaf 1 ECX bit 20, with no POPCNT, SIMD or OS vector
-state prerequisite. The existing `sse42` feature represents a broader compiler
+state prerequisite. The `sse42` feature represents a broader compiler
 bundle; its closure includes `crc32`. The independent feature matches
 [Clang's CRC intrinsic target](https://clang.llvm.org/doxygen/crc32intrin_8h.html)
 and [LLVM's separate CRC32 feature](https://reviews.llvm.org/D105462).
@@ -48,7 +61,7 @@ supplies the conventional initial seed and final complement explicitly:
 import native.x86.crc32c;
 
 #define NATIVE_TARGET_checksum "crc32"
-constexpr native::isa checksum_isa{native::x86_feature::crc32};
+constexpr native::isa<native::x86> checksum_isa{native::x86_feature::crc32};
 
 NATIVE_TARGET_PUSH(checksum)
 std::uint32_t checksum_example() noexcept {

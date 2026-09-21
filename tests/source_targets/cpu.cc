@@ -3,16 +3,20 @@
 #include <cstdio>
 import native.features;
 
+// The family values are exported without including the configuration header.
+static_assert((native::target_arch == native::arm) != (native::target_arch == native::x86));
+static_assert(!(native::target_arch == native::wasm));
+
 // Both feature families are available through the CPU-only umbrella.
-template<native::isa A> struct requirement {};
+template<auto A> struct requirement {};
 static_assert(!__is_same(requirement<native::avx2>, requirement<native::neon>));
 static_assert(!__is_same(requirement<native::x86_feature::aes>, requirement<native::arm_feature::aes>));
 static_assert(native::isa(native::x86_feature::aes).has(native::x86_feature::aes));
 static_assert(native::isa(native::arm_feature::aes).has(native::arm_feature::aes));
 static_assert(native::x86_feature_count>0 && native::arm_feature_count>0);
 
-template<native::feature_set<native::x86_feature> A> struct x86_features {};
-template<native::feature_set<native::arm_feature> A> struct arm_features {};
+template<native::isa<native::x86> A> struct x86_features {};
+template<native::isa<native::arm> A> struct arm_features {};
 static_assert(!__is_same(x86_features<native::x86_feature::aes>,x86_features<native::x86_feature::avx>));
 static_assert(!__is_same(arm_features<native::arm_feature::aes>,arm_features<native::arm_feature::neon>));
 static_assert([] {
@@ -49,9 +53,13 @@ int main() {
   return 0;
 #endif
 #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+  if(!cpu.present.valid() || !cpu.observed.valid()) {
+    std::fputs("Live capability observation contains invalid feature bits\n",stderr);
+    return 2;
+  }
   int calls=0;
   auto selected=native::with_isa(native::isa_list<native::scalar>{},cpu,
-    [&]<native::isa A> { static_assert(A==native::scalar); ++calls; });
+    [&]<native::isa<> A> { static_assert(A==native::scalar); ++calls; });
   if(!selected || calls!=1) {
     auto admission=native::classify_isa(cpu,native::scalar);
     std::fprintf(stderr,"Scalar selection failed: selected=%d calls=%d present_valid=%d observed_valid=%d reason=%s\n",

@@ -2,9 +2,9 @@
 #pragma clang attribute push(__attribute__((target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
 export namespace native {
   namespace detail {
-    template<std::size_t N,::native::isa A> requires NATIVE_ARCH_REQUIRES(A) &&(N==8 || N==16 || N==32)
+    template<std::size_t N,::native::isa<> A> requires NATIVE_ARCH_REQUIRES(A) &&(N==8 || N==16 || N==32)
     struct value_traits<simd<bf16,N,A>> {
-      static constexpr isa value=avx512_bf16;
+      static constexpr isa<> value=avx512_bf16;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
@@ -16,12 +16,12 @@ export namespace native {
   /// The application must admit that CPU/OS profile before entering compiled code.
   /// Every storage operation preserves subnormal, signed-zero and NaN encodings;
   /// none performs a floating-point conversion or quiets a signaling NaN.
-  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
+  template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
   struct simd<bf16,N,Arch> {
     /// Scalar storage element; each lane retains all 16 representation bits.
     using value_type = bf16;
     /// The distinct compile-time AVX512_BF16 instruction profile.
-    static constexpr isa architecture=Arch;
+    static constexpr isa<> architecture=Arch;
     /// This one-register vector type, for generic register-based algorithms.
     using register_type = simd;
     /// Native register-width BF16 register representation; native bridges copy bits.
@@ -137,7 +137,7 @@ export namespace native {
   /// MXCSR is neither consulted nor updated, including exception status.
   /// This is not a single-rounding three-term sum. NaN propagation follows
   /// the instruction, with low input lanes taking priority over high lanes.
-  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
+  template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N == 8 || N == 16 || N == 32)
   native_nodiscard native_inline simd<float,N/2,Arch> dot2(
       simd<bf16,N,Arch> a, simd<bf16,N,Arch> b,
       simd<float,N/2,Arch> accumulator) noexcept {

@@ -25,6 +25,8 @@ jobs:
           persist-credentials: false
       - name: Install documentation tools
         run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y graphviz
           python3 -m venv "$RUNNER_TEMP/docs-tools"
           "$RUNNER_TEMP/docs-tools/bin/python" -m pip install cmake==4.4.3 ninja==1.13.0
           echo "$RUNNER_TEMP/docs-tools/bin" >> "$GITHUB_PATH"

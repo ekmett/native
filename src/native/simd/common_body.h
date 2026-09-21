@@ -1,7 +1,7 @@
 namespace native {
 namespace detail {
 #ifdef NATIVE_ARCH_REQUIRES
-  template<class T, std::size_t N, ::native::isa Arch, std::size_t L> requires NATIVE_ARCH_REQUIRES(Arch)
+  template<class T, std::size_t N, ::native::isa<> Arch, std::size_t L> requires NATIVE_ARCH_REQUIRES(Arch)
   struct register_memory<simd<T,N,Arch>,L> {
     using V=simd<T,N,Arch>;
     static constexpr std::size_t lanes = L;
@@ -18,14 +18,14 @@ namespace detail {
 #endif
 
 }
-  template<simd_custom_element T, std::size_t N, isa Arch> requires NATIVE_COMMON_ARCH(Arch)
+  template<simd_custom_element T, std::size_t N, isa<> Arch> requires NATIVE_COMMON_ARCH(Arch)
   struct native_empty_bases simd<T,N,Arch> : simd_customization<T,
       simd<typename simd_traits<T>::storage_type,N,Arch>,simd<T,N,Arch>>, detail::swizzle_access<T,N,Arch> {
     using base = simd_customization<T,simd<typename simd_traits<T>::storage_type,N,Arch>,simd<T,N,Arch>>;
     using base::base;
     /// Default-construct the element customization; its initialization contract is retained.
     native_inline constexpr simd() = default;
-    static constexpr isa architecture=Arch;
+    static constexpr isa<> architecture=Arch;
     using mask = typename simd<typename simd_traits<T>::storage_type,N,Arch>::mask;
     using mask_type = mask;
     using predicate_type = predicate<N,Arch>;

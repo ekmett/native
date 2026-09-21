@@ -3,13 +3,19 @@
 #pragma once
 // Include after a named-module declaration; isa.h definitions belong to the GMF.
 export namespace native {
+  using ::native::architecture;
+  using ::native::x86;
+  using ::native::arm;
+  using ::native::wasm;
+  using ::native::target_arch;
   using ::native::x86_feature;
   using ::native::arm_feature;
+  using ::native::wasm_feature;
   using ::native::x86_feature_count;
   using ::native::arm_feature_count;
+  using ::native::wasm_feature_count;
   using ::native::feature_closure;
   using ::native::isa;
-  using ::native::feature_set;
   using ::native::scalar;
   using ::native::avx2;
   using ::native::avx512;

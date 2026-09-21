@@ -14,7 +14,7 @@ int main() {
   if (static_string_check()) return 5;
   auto admission = native::classify_isa(
     native::observe_x86_capabilities(), native::avx512);
-  if (!admission.admitted()) { std::puts(admission.reason()); return 77; }
+  if (!admission.admitted()) { std::puts(admission.reason()); return admission.invalid_features ? 1 : 77; }
   native::test::fp_scope region(native::test::fp_mode::gradual);
   if(!region.controls_match()) return 3;
   float in[16],a[16],z[16];for(int i=0;i<16;++i)in[i]=float(i);

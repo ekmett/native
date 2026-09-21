@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <native/arm/fp16fml.h>
-constexpr native::isa arch{native::arm_feature::fp16fml};
-float32x4_t invalid(float32x4_t c, float16x8_t a, float16x8_t b) {
+#include <cstdint>
+import native.arm.fp16fml;
+
+constexpr auto arch = native::feature_closure(native::arm_feature::fp16fml);
+native::simd<float, 4, arch> invalid(native::simd<float, 4, arch> c, native::simd<native::fp16, 8, arch> a, native::simd<native::fp16, 8, arch> b) {
   return native::fmlal<arch>(c, a, b);
 }
