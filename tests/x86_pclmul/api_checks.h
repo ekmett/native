@@ -26,3 +26,8 @@ static_assert(!has_legacy<sse2_storage,vector<sse2_storage,2>>);
 static_assert(!has_vector<legacy,vector<legacy,2>>);
 static_assert(!has_vector<avx_storage,vector<avx_storage,4>>);
 static_assert(!has_vector<avx512_storage,vector<avx512_storage,8>>);
+
+template<auto A> concept accepts_family = requires(vector<legacy,2> x) { native::pclmulqdq<A,0>(x,x); };
+static_assert(accepts_family<legacy>);
+static_assert(!accepts_family<native::isa<native::arm>{}>);
+static_assert(!accepts_family<native::isa<native::wasm>{}>);

@@ -13,3 +13,8 @@ static_assert(!can_narrow<__m128> && !can_narrow<__m256>);
 static_assert(!can_widen<__m128i,4> && !can_widen<__m128i,8>);
 static_assert(!can_narrow<native::simd<std::uint32_t,4,arch>>);
 static_assert(!can_widen<halves<8>,4> && !can_widen<halves<4>,8>);
+
+template<auto A> concept accepts_family = requires(floats<4> x) { native::cvtps_ph<A,0>(x); };
+static_assert(accepts_family<arch>);
+static_assert(!accepts_family<native::isa<native::arm>{}>);
+static_assert(!accepts_family<native::isa<native::wasm>{}>);

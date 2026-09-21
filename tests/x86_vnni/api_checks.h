@@ -178,3 +178,8 @@ static_assert(!raw_core<__m128i> && !raw_core<__m256i>);
 template<class V> concept signed_a = requires(native::simd<std::int32_t,4,core> s, V a, native::simd<std::int8_t,16,core> b) { native::dpbusd<core>(s,a,b); };
 static_assert(!signed_a<native::simd<std::int8_t,16,core>>);
 static_assert(!signed_a<native::simd<std::uint8_t,16,evexvl>>);
+
+template<auto A> concept accepts_family = requires(native::simd<std::int32_t,4,core> sum, native::simd<std::uint8_t,16,core> a, native::simd<std::int8_t,16,core> b) { native::dpbusd<A>(sum,a,b); };
+static_assert(accepts_family<core>);
+static_assert(!accepts_family<native::isa<native::arm>{}>);
+static_assert(!accepts_family<native::isa<native::wasm>{}>);

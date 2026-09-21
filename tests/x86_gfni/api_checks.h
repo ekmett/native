@@ -45,3 +45,8 @@ static_assert(!byte_operand<native::simd<std::int8_t,16,arch128>>);
 static_assert(!byte_operand<byte_vector<arch256,16>>);
 template<class M> concept matrix_operand = requires(byte_vector<arch128,16> x, M m) { native::gf2p8affineqb<arch128,0>(x,m); };
 static_assert(!matrix_operand<byte_vector<arch128,16>>);
+
+template<auto A> concept accepts_family = requires(byte_vector<arch128,16> x) { native::gf2p8mulb<A>(x,x); };
+static_assert(accepts_family<arch128>);
+static_assert(!accepts_family<native::isa<native::arm>{}>);
+static_assert(!accepts_family<native::isa<native::wasm>{}>);
