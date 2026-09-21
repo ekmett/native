@@ -125,7 +125,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
       native.arm.pmull.ccm native.arm.sha.ccm native.arm.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")
   target_sources(native PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES native.wasm.ccm)
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES native.wasm.relaxed.ccm native.wasm.ccm)
 endif()
 
 # Older build files may link these names. They all refer to the same hub and

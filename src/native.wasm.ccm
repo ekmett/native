@@ -2,3 +2,4 @@
 export module native.wasm;
 export import native.wasm.features;
 export import native.simd;
+export import native.wasm.relaxed;
