@@ -2,7 +2,57 @@
 #pragma once
 // Included by native.arm.fcma after native.simd.
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
-namespace native {
+namespace native::detail {
+  template<class T> using fcma_format=std::conditional_t<std::same_as<T,fp16>,
+    constexpr_float::binary16,std::conditional_t<std::same_as<T,float>,
+    constexpr_float::binary32,constexpr_float::binary64>>;
+
+  template<class T,std::size_t N,isa<arm> Arch>
+  consteval auto fcma_bits(simd<T,N,Arch> value) noexcept {
+    using word=typename fcma_format<T>::bits_type;
+    std::array<word,N> result{};
+    if constexpr(std::same_as<T,double>) {
+      std::array<double,N> values{};value.store(values.data());
+      result=std::bit_cast<std::array<word,N>>(values);
+    } else value.store_bits(result.data());
+    return result;
+  }
+  template<class T,std::size_t N,isa<arm> Arch>
+  consteval simd<T,N,Arch> fcma_from_bits(std::array<typename fcma_format<T>::bits_type,N> bits) noexcept {
+    if constexpr(std::same_as<T,double>) {
+      auto values=std::bit_cast<std::array<double,N>>(bits);
+      return simd<T,N,Arch>::load(values.data());
+    } else return simd<T,N,Arch>::load_bits(bits.data());
+  }
+  template<unsigned Rotation,class T,std::size_t N,isa<arm> Arch>
+  consteval simd<T,N,Arch> fcadd_value(simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept {
+    using F=fcma_format<T>;
+    auto av=fcma_bits(a),bv=fcma_bits(b);
+    for(std::size_t i=0;i<N;i+=2) {
+      av[i]=constexpr_float::add_bits<F>(av[i],bv[i+1]^(Rotation==90?F::sign_mask:0));
+      av[i+1]=constexpr_float::add_bits<F>(av[i+1],bv[i]^(Rotation==270?F::sign_mask:0));
+    }
+    return fcma_from_bits<T,N,Arch>(av);
+  }
+  template<unsigned Rotation,int Lane,class T,std::size_t N,std::size_t M,isa<arm> Arch>
+  consteval simd<T,N,Arch> fcmla_value(simd<T,N,Arch> acc,
+      simd<T,N,Arch> a,simd<T,M,Arch> b) noexcept {
+    using F=fcma_format<T>;
+    auto cv=fcma_bits(acc);auto av=fcma_bits(a);auto bv=fcma_bits(b);
+    for(std::size_t i=0;i<N;i+=2) {
+      auto index=Lane<0?i:2*Lane;
+      auto factor=av[i+(Rotation==90 || Rotation==270)];
+      auto real=bv[index+(Rotation==90 || Rotation==270)];
+      auto imag=bv[index+(Rotation==0 || Rotation==180)];
+      if constexpr(Rotation==90 || Rotation==180) real^=F::sign_mask;
+      if constexpr(Rotation==180 || Rotation==270) imag^=F::sign_mask;
+      cv[i]=constexpr_float::fma_bits<F>(factor,real,cv[i]);
+      cv[i+1]=constexpr_float::fma_bits<F>(factor,imag,cv[i+1]);
+    }
+    return fcma_from_bits<T,N,Arch>(cv);
+  }
+}
+export namespace native {
   /// \defgroup arm_fcma Complex arithmetic
   /// Interleaved real/imaginary pairs; requires arm_feature::complxnum (FEAT_FCMA).
   /// Half arithmetic additionally requires arm_feature::neon_fp16.
@@ -10,6 +60,9 @@ namespace native {
   /// FPCR/FPSR are observed/affected as specified by the instruction, never reset.
   /// Volatile assembly preserves status effects even when the result is unused;
   /// the compiler barrier keeps surrounding floating-environment accesses ordered.
+  /// Constant evaluation uses RNE, gradual inputs/results, DN=AH=AHP=FZ=FZ16=FIZ=EBF=0,
+  /// with masked exceptions and no status effects; fixed instruction rules still apply.
+  /// Missing-feature overloads are consteval-only and require complete storage types.
   /// \{
 
   // All vector operands share Arch; native registers remain implementation details.
@@ -17,26 +70,49 @@ namespace native {
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 2, Arch> fcadd(simd<float, 2, Arch> a, simd<float, 2, Arch> b) noexcept {
+    if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
+      auto result = detail::fcadd<Arch, Rotation>(
+        vget_low_f32(a.to_native()),
+        vget_low_f32(b.to_native()));
+      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<float, 2, Arch>); } && !(Arch.has(arm_feature::complxnum))
+    && (Rotation == 90 || Rotation == 270))
+  native_nodiscard consteval
   simd<float, 2, Arch> fcadd(simd<float, 2, Arch> a, simd<float, 2, Arch> b) noexcept {
-    auto result = detail::fcadd<Arch, Rotation>(
-      vget_low_f32(a.to_native()),
-      vget_low_f32(b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    return detail::fcadd_value<Rotation>(a,b);
   }
 
   /// FCMLA on 1 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 2, Arch> fcmla(
+      simd<float, 2, Arch> acc,
+      simd<float, 2, Arch> a,
+      simd<float, 2, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
+      auto result = detail::fcmla<Arch, Rotation>(
+        vget_low_f32(acc.to_native()),
+        vget_low_f32(a.to_native()),
+        vget_low_f32(b.to_native()));
+      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<float, 2, Arch>); } && !(Arch.has(arm_feature::complxnum))
+    && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
+  native_nodiscard consteval
   simd<float, 2, Arch> fcmla(
       simd<float, 2, Arch> acc,
       simd<float, 2, Arch> a,
       simd<float, 2, Arch> b) noexcept {
-    auto result = detail::fcmla<Arch, Rotation>(
-      vget_low_f32(acc.to_native()),
-      vget_low_f32(a.to_native()),
-      vget_low_f32(b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    return detail::fcmla_value<Rotation,-1>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -45,15 +121,30 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 2, Arch> fcmla_lane(
+      simd<float, 2, Arch> acc,
+      simd<float, 2, Arch> a,
+      simd<float, 2, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        vget_low_f32(acc.to_native()),
+        vget_low_f32(a.to_native()),
+        vget_low_f32(b.to_native()));
+      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<float, 2, Arch>); } && !(Arch.has(arm_feature::complxnum))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 1)
+  native_nodiscard consteval
   simd<float, 2, Arch> fcmla_lane(
       simd<float, 2, Arch> acc,
       simd<float, 2, Arch> a,
       simd<float, 2, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      vget_low_f32(acc.to_native()),
-      vget_low_f32(a.to_native()),
-      vget_low_f32(b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -62,41 +153,79 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 2, Arch> fcmla_lane(
+      simd<float, 2, Arch> acc,
+      simd<float, 2, Arch> a,
+      simd<float, 4, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        vget_low_f32(acc.to_native()),
+        vget_low_f32(a.to_native()),
+        __builtin_bit_cast(float32x4_t, b.to_native()));
+      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<float, 4, Arch>); } && !(Arch.has(arm_feature::complxnum))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 2)
+  native_nodiscard consteval
   simd<float, 2, Arch> fcmla_lane(
       simd<float, 2, Arch> acc,
       simd<float, 2, Arch> a,
       simd<float, 4, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      vget_low_f32(acc.to_native()),
-      vget_low_f32(a.to_native()),
-      __builtin_bit_cast(float32x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCADD on 2 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 4, Arch> fcadd(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
+    if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
+      auto result = detail::fcadd<Arch, Rotation>(
+        __builtin_bit_cast(float32x4_t, a.to_native()),
+        __builtin_bit_cast(float32x4_t, b.to_native()));
+      return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<float, 4, Arch>); } && !(Arch.has(arm_feature::complxnum))
+    && (Rotation == 90 || Rotation == 270))
+  native_nodiscard consteval
   simd<float, 4, Arch> fcadd(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
-    auto result = detail::fcadd<Arch, Rotation>(
-      __builtin_bit_cast(float32x4_t, a.to_native()),
-      __builtin_bit_cast(float32x4_t, b.to_native()));
-    return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    return detail::fcadd_value<Rotation>(a,b);
   }
 
   /// FCMLA on 2 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 4, Arch> fcmla(
+      simd<float, 4, Arch> acc,
+      simd<float, 4, Arch> a,
+      simd<float, 4, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
+      auto result = detail::fcmla<Arch, Rotation>(
+        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        __builtin_bit_cast(float32x4_t, a.to_native()),
+        __builtin_bit_cast(float32x4_t, b.to_native()));
+      return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<float, 4, Arch>); } && !(Arch.has(arm_feature::complxnum))
+    && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
+  native_nodiscard consteval
   simd<float, 4, Arch> fcmla(
       simd<float, 4, Arch> acc,
       simd<float, 4, Arch> a,
       simd<float, 4, Arch> b) noexcept {
-    auto result = detail::fcmla<Arch, Rotation>(
-      __builtin_bit_cast(float32x4_t, acc.to_native()),
-      __builtin_bit_cast(float32x4_t, a.to_native()),
-      __builtin_bit_cast(float32x4_t, b.to_native()));
-    return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,-1>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -105,15 +234,30 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 4, Arch> fcmla_lane(
+      simd<float, 4, Arch> acc,
+      simd<float, 4, Arch> a,
+      simd<float, 2, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        __builtin_bit_cast(float32x4_t, a.to_native()),
+        vget_low_f32(b.to_native()));
+      return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<float, 2, Arch>); } && !(Arch.has(arm_feature::complxnum))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 1)
+  native_nodiscard consteval
   simd<float, 4, Arch> fcmla_lane(
       simd<float, 4, Arch> acc,
       simd<float, 4, Arch> a,
       simd<float, 2, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      __builtin_bit_cast(float32x4_t, acc.to_native()),
-      __builtin_bit_cast(float32x4_t, a.to_native()),
-      vget_low_f32(b.to_native()));
-    return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -122,67 +266,128 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<float, 4, Arch> fcmla_lane(
+      simd<float, 4, Arch> acc,
+      simd<float, 4, Arch> a,
+      simd<float, 4, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        __builtin_bit_cast(float32x4_t, a.to_native()),
+        __builtin_bit_cast(float32x4_t, b.to_native()));
+      return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<float, 4, Arch>); } && !(Arch.has(arm_feature::complxnum))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 2)
+  native_nodiscard consteval
   simd<float, 4, Arch> fcmla_lane(
       simd<float, 4, Arch> acc,
       simd<float, 4, Arch> a,
       simd<float, 4, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      __builtin_bit_cast(float32x4_t, acc.to_native()),
-      __builtin_bit_cast(float32x4_t, a.to_native()),
-      __builtin_bit_cast(float32x4_t, b.to_native()));
-    return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCADD on 1 binary64 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<double, 2, Arch> fcadd(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
+    if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
+      auto result = detail::fcadd<Arch, Rotation>(
+        __builtin_bit_cast(float64x2_t, a.to_native()),
+        __builtin_bit_cast(float64x2_t, b.to_native()));
+      return simd<double, 2, Arch>::from_native(__builtin_bit_cast(typename simd<double, 2, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<double, 2, Arch>); } && !(Arch.has(arm_feature::complxnum))
+    && (Rotation == 90 || Rotation == 270))
+  native_nodiscard consteval
   simd<double, 2, Arch> fcadd(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
-    auto result = detail::fcadd<Arch, Rotation>(
-      __builtin_bit_cast(float64x2_t, a.to_native()),
-      __builtin_bit_cast(float64x2_t, b.to_native()));
-    return simd<double, 2, Arch>::from_native(__builtin_bit_cast(typename simd<double, 2, Arch>::native_type, result));
+    return detail::fcadd_value<Rotation>(a,b);
   }
 
   /// FCMLA on 1 binary64 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
+  constexpr simd<double, 2, Arch> fcmla(
+      simd<double, 2, Arch> acc,
+      simd<double, 2, Arch> a,
+      simd<double, 2, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
+      auto result = detail::fcmla<Arch, Rotation>(
+        __builtin_bit_cast(float64x2_t, acc.to_native()),
+        __builtin_bit_cast(float64x2_t, a.to_native()),
+        __builtin_bit_cast(float64x2_t, b.to_native()));
+      return simd<double, 2, Arch>::from_native(__builtin_bit_cast(typename simd<double, 2, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<double, 2, Arch>); } && !(Arch.has(arm_feature::complxnum))
+    && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
+  native_nodiscard consteval
   simd<double, 2, Arch> fcmla(
       simd<double, 2, Arch> acc,
       simd<double, 2, Arch> a,
       simd<double, 2, Arch> b) noexcept {
-    auto result = detail::fcmla<Arch, Rotation>(
-      __builtin_bit_cast(float64x2_t, acc.to_native()),
-      __builtin_bit_cast(float64x2_t, a.to_native()),
-      __builtin_bit_cast(float64x2_t, b.to_native()));
-    return simd<double, 2, Arch>::from_native(__builtin_bit_cast(typename simd<double, 2, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,-1>(acc,a,b);
   }
 
   /// FCADD on 2 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 4, Arch> fcadd(simd<fp16, 4, Arch> a, simd<fp16, 4, Arch> b) noexcept {
+    if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
+      auto result = detail::fcadd<Arch, Rotation>(
+        __builtin_bit_cast(float16x4_t, a.to_native()),
+        __builtin_bit_cast(float16x4_t, b.to_native()));
+      return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+    && (Rotation == 90 || Rotation == 270))
+  native_nodiscard consteval
   simd<fp16, 4, Arch> fcadd(simd<fp16, 4, Arch> a, simd<fp16, 4, Arch> b) noexcept {
-    auto result = detail::fcadd<Arch, Rotation>(
-      __builtin_bit_cast(float16x4_t, a.to_native()),
-      __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    return detail::fcadd_value<Rotation>(a,b);
   }
 
   /// FCMLA on 2 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 4, Arch> fcmla(
+      simd<fp16, 4, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
+      auto result = detail::fcmla<Arch, Rotation>(
+        __builtin_bit_cast(float16x4_t, acc.to_native()),
+        __builtin_bit_cast(float16x4_t, a.to_native()),
+        __builtin_bit_cast(float16x4_t, b.to_native()));
+      return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+    && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
+  native_nodiscard consteval
   simd<fp16, 4, Arch> fcmla(
       simd<fp16, 4, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
-    auto result = detail::fcmla<Arch, Rotation>(
-      __builtin_bit_cast(float16x4_t, acc.to_native()),
-      __builtin_bit_cast(float16x4_t, a.to_native()),
-      __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,-1>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -191,15 +396,30 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 4, Arch> fcmla_lane(
+      simd<fp16, 4, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        __builtin_bit_cast(float16x4_t, acc.to_native()),
+        __builtin_bit_cast(float16x4_t, a.to_native()),
+        __builtin_bit_cast(float16x4_t, b.to_native()));
+      return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 2)
+  native_nodiscard consteval
   simd<fp16, 4, Arch> fcmla_lane(
       simd<fp16, 4, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      __builtin_bit_cast(float16x4_t, acc.to_native()),
-      __builtin_bit_cast(float16x4_t, a.to_native()),
-      __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -208,41 +428,79 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 4, Arch> fcmla_lane(
+      simd<fp16, 4, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        __builtin_bit_cast(float16x4_t, acc.to_native()),
+        __builtin_bit_cast(float16x4_t, a.to_native()),
+        __builtin_bit_cast(float16x8_t, b.to_native()));
+      return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 4)
+  native_nodiscard consteval
   simd<fp16, 4, Arch> fcmla_lane(
       simd<fp16, 4, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      __builtin_bit_cast(float16x4_t, acc.to_native()),
-      __builtin_bit_cast(float16x4_t, a.to_native()),
-      __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<fp16, 4, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 4, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCADD on 4 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 8, Arch> fcadd(simd<fp16, 8, Arch> a, simd<fp16, 8, Arch> b) noexcept {
+    if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
+      auto result = detail::fcadd<Arch, Rotation>(
+        __builtin_bit_cast(float16x8_t, a.to_native()),
+        __builtin_bit_cast(float16x8_t, b.to_native()));
+      return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+    && (Rotation == 90 || Rotation == 270))
+  native_nodiscard consteval
   simd<fp16, 8, Arch> fcadd(simd<fp16, 8, Arch> a, simd<fp16, 8, Arch> b) noexcept {
-    auto result = detail::fcadd<Arch, Rotation>(
-      __builtin_bit_cast(float16x8_t, a.to_native()),
-      __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    return detail::fcadd_value<Rotation>(a,b);
   }
 
   /// FCMLA on 4 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 8, Arch> fcmla(
+      simd<fp16, 8, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
+      auto result = detail::fcmla<Arch, Rotation>(
+        __builtin_bit_cast(float16x8_t, acc.to_native()),
+        __builtin_bit_cast(float16x8_t, a.to_native()),
+        __builtin_bit_cast(float16x8_t, b.to_native()));
+      return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation> requires(requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+    && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
+  native_nodiscard consteval
   simd<fp16, 8, Arch> fcmla(
       simd<fp16, 8, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
-    auto result = detail::fcmla<Arch, Rotation>(
-      __builtin_bit_cast(float16x8_t, acc.to_native()),
-      __builtin_bit_cast(float16x8_t, a.to_native()),
-      __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,-1>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -251,15 +509,30 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 8, Arch> fcmla_lane(
+      simd<fp16, 8, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        __builtin_bit_cast(float16x8_t, acc.to_native()),
+        __builtin_bit_cast(float16x8_t, a.to_native()),
+        __builtin_bit_cast(float16x4_t, b.to_native()));
+      return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 2)
+  native_nodiscard consteval
   simd<fp16, 8, Arch> fcmla_lane(
       simd<fp16, 8, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      __builtin_bit_cast(float16x8_t, acc.to_native()),
-      __builtin_bit_cast(float16x8_t, a.to_native()),
-      __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -268,15 +541,30 @@ namespace native {
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
+  constexpr simd<fp16, 8, Arch> fcmla_lane(
+      simd<fp16, 8, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
+      auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
+        __builtin_bit_cast(float16x8_t, acc.to_native()),
+        __builtin_bit_cast(float16x8_t, a.to_native()),
+        __builtin_bit_cast(float16x8_t, b.to_native()));
+      return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    }
+  }
+
+  /// Constant-evaluation-only form when the instruction feature is absent.
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
+    requires(requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16))
+      && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
+      && Lane < 4)
+  native_nodiscard consteval
   simd<fp16, 8, Arch> fcmla_lane(
       simd<fp16, 8, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
-    auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-      __builtin_bit_cast(float16x8_t, acc.to_native()),
-      __builtin_bit_cast(float16x8_t, a.to_native()),
-      __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<fp16, 8, Arch>::from_native(__builtin_bit_cast(typename simd<fp16, 8, Arch>::native_type, result));
+    return detail::fcmla_value<Rotation,Lane>(acc,a,b);
   }
 
   /// \cond

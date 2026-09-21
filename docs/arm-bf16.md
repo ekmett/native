@@ -29,6 +29,23 @@ the pair of products at inner indices 0 and 1, then accumulates the pair at
 indices 2 and 3. Each step has the same arithmetic contract as `bfdot`.
 A row-major 4×2 right matrix needs rearrangement before this call.
 
+Constant evaluation uses a fixed floating-point environment: nearest-even
+rounding, gradual inputs and results, payload-preserving NaNs, standard IEEE
+half precision, and masked exceptions. FPCR controls DN, AH, AHP, FZ, FZ16, FIZ,
+and EBF are zero. No status flags, traps, or control-register accesses occur.
+An architecture tag lacking the instruction feature admits a `consteval`-only
+overload when every operand/result storage type is complete; runtime inputs
+remain compile-time errors. Lane, rotation, element-type and architecture
+requirements still apply. With the feature present, the same function is
+`constexpr` and its runtime branch executes the native instruction.
+
+For BFDOT and BFMMLA, the instruction's fixed rules override that environment:
+EBF remains zero, products and intermediate sums round to odd, subnormal inputs
+and tiny results flush to signed zero, overflow produces infinity, and NaNs
+become the positive default NaN. BFMLALB/T use the ordinary AH=0 fused result,
+with one binary32 rounding and payload/sign-preserving NaN selection. Merely
+including EBF16 or AFP in `Arch` does not turn on their FPCR control bits.
+
 ## Arithmetic and floating-point controls
 
 With FEAT_EBF16 absent or FPCR.EBF clear, `bfdot` and `bfmmla` round each product,

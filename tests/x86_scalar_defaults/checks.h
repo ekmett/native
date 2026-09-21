@@ -169,11 +169,11 @@ namespace scalar_defaults_fixture {
   template<class T> concept call_41 = requires(T a) {
     { native::cvtss_sh<7>(a) } noexcept -> std::same_as<std::uint16_t>;
   };
-  static_assert(call_41<float> == (expected.has(native::x86_feature::f16c)));
+  static_assert(call_41<float>);
   template<class T> concept call_42 = requires(T a) {
     { native::cvtsh_ss(a) } noexcept -> std::same_as<float>;
   };
-  static_assert(call_42<std::uint16_t> == (expected.has(native::x86_feature::f16c)));
+  static_assert(call_42<std::uint16_t>);
 
   // Below-feature defaults participate for immediate calls only. The negative
   // build fixtures reject calls with runtime inputs rather than probing syntax.

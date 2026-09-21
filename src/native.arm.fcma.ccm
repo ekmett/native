@@ -2,9 +2,8 @@
 module;
 #include "native/isa_import.h"
 #include "native/arm/fcma.h"
+#include "native/detail/constexpr_float.h"
 export module native.arm.fcma;
 export import native.arm.features;
 export import native.simd;
-export {
 #include "native/arm/fcma_simd.h"
-}

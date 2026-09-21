@@ -147,12 +147,16 @@ foreach(kind IN LISTS f16c_negative_names)
       native_f16c_textual_probe(${target})
     endif()
     target_compile_definitions(${target} PRIVATE NATIVE_F16C_REJECT=${f16c_negative_index})
+    set(case_diagnostic "${diagnostic}")
+    if(interface STREQUAL "module" AND kind MATCHES "^feature")
+      set(case_diagnostic "call to consteval function.*not a constant expression")
+    endif()
     add_test(NAME native.x86.f16c.reject_${suffix}
       COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_negative.py"
         --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target ${target}
         --config "$<CONFIG>"
         --log "${CMAKE_CURRENT_BINARY_DIR}/f16c-reject-${suffix}-$<CONFIG>.log"
-        --diagnostic "${diagnostic}")
+        --diagnostic "${case_diagnostic}")
     set_tests_properties(native.x86.f16c.reject_${suffix} PROPERTIES
       RUN_SERIAL TRUE LABELS "host;compile;negative;baseline;x86;f16c" TIMEOUT 180)
   endforeach()

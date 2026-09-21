@@ -13,7 +13,7 @@ namespace bf16_fixture {
   concept fma_lane_valid = requires(native::simd<float, 4, arch> r, native::simd<native::bf16, 8, arch> v, V w) { native::bfmlalb_lane<A,Lane>(r,v,w); native::bfmlalt_lane<A,Lane>(r,v,w); };
   static_assert(dot_valid<arch,native::simd<float, 2, arch>,native::simd<native::bf16, 4, arch>,native::simd<native::bf16, 4, arch>>);
   static_assert(dot_valid<arch,native::simd<float, 4, arch>,native::simd<native::bf16, 8, arch>,native::simd<native::bf16, 8, arch>>);
-  static_assert(!dot_valid<native::neon,native::simd<float, 4, native::neon>,native::simd<native::bf16, 8, native::neon>,native::simd<native::bf16, 8, native::neon>>);
+  static_assert(dot_valid<native::neon,native::simd<float, 4, native::neon>,native::simd<native::bf16, 8, native::neon>,native::simd<native::bf16, 8, native::neon>>);
   static_assert(!dot_valid<arch,native::simd<float, 4, arch>,native::simd<native::fp16, 8, arch>,native::simd<native::fp16, 8, arch>>);
   static_assert(!dot_valid<arch,native::simd<std::int32_t, 4, arch>,native::simd<native::bf16, 8, arch>,native::simd<native::bf16, 8, arch>>);
   static_assert(!dot_lane_valid<arch,2,native::simd<float, 2, arch>,native::simd<native::bf16, 4, arch>,native::simd<native::bf16, 4, arch>>);

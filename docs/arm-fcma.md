@@ -16,9 +16,19 @@ type and `Arch`. Raw NEON registers are private implementation details.
 
 The feature is FEAT_FCMA. Runtime admission adds the compiler prerequisites,
 including baseline NEON. FP32/FP64 calls target `"complxnum"`; FP16 calls target
-`"complxnum,fullfp16"`. FHM, BF16 and FP16 alone do not supply FCMA. Missing
-features, incompatible element types or architectures, raw register arguments,
+`"complxnum,fullfp16"`. FHM, BF16 and FP16 alone do not supply FCMA. Runtime calls with missing features, incompatible element types or architectures, raw register arguments,
 and invalid immediates are rejected at compile time.
+
+
+Constant evaluation uses a fixed floating-point environment: nearest-even
+rounding, gradual inputs and results, payload-preserving NaNs, standard IEEE
+half precision, and masked exceptions. FPCR controls DN, AH, AHP, FZ, FZ16, FIZ,
+and EBF are zero. No status flags, traps, or control-register accesses occur.
+An architecture tag lacking the instruction feature admits a `consteval`-only
+overload when every operand/result storage type is complete; runtime inputs
+remain compile-time errors. Lane, rotation, element-type and architecture
+requirements still apply. With the feature present, the same function is
+`constexpr` and its runtime branch executes the native instruction.
 
 For one pair `a=(ar,ai)` and `b=(br,bi)`, `fcadd` permits rotations 90 and 270:
 
