@@ -3,6 +3,10 @@
 """Prove BE register/lane mappings against ACLE for every NEON helper shape.
 
 Compile exact production instruction and storage-bridge bodies freestanding.
+The ACLE leaf retains its result through side-effecting asm, so its call cannot
+be deleted when discarded; the tested noinline leaf still executes its QC update.
+Report instruction costs separately; public64x2 restrictions do not hide the
+private lowering under investigation.
 Only standard type/sequence declarations and attributes are supplied locally;
 no target sysroot or differently configured named-module provider is needed.
 Interpret emitted register permutations symbolically. Arithmetic results retain
@@ -65,7 +69,7 @@ for ret, op, params in re.findall(pattern, original):
     records.append(record)
     raw_args = ', '.join(name for typ, name in arguments)
     source += f'extern "C" {ret} native_{name}({params}) {{ return native::detail::arm_neon::{op}({raw_args}); }}\n'
-    source += f'extern "C" {ret} reference_{name}({params}) {{ return {intrinsic}({raw_args}); }}\n'
+    source += f'extern "C" {ret} reference_{name}({params}) {{ auto result = {intrinsic}({raw_args}); asm volatile("" : : "w"(result)); return result; }}\n'
     def storage(typ):
         return {'int32x2_t':'int32x4_t', 'uint32x2_t':'uint32x4_t',
                 'int64x1_t':'int64_t', 'uint64x1_t':'uint64_t'}.get(typ, typ)
@@ -166,12 +170,22 @@ def execute(instructions, record):
     # QC is sticky OR: the lane order of saturation observations is immaterial.
     return registers[0][:bits * lanes], frozenset(status)
 
+costs = []
 for record in records:
+    reference_body = functions['reference_' + record['name']]
+    native_body = functions['native_' + record['name']]
+    affected = record['return'] in ('int64x2_t', 'uint64x2_t')
+    if not affected:
+        assert len(native_body) <= len(reference_body), ('extra instructions', record['name'])
+    costs.append({'name': record['name'], 'runtime_eligible': not affected,
+                  'native': native_body, 'raw_qc': reference_body,
+                  'extra_instructions': len(native_body) - len(reference_body)})
     expected = execute(functions['reference_' + record['name']], record)
     for prefix in ('native_', 'bridge_'):
         body = functions[prefix + record['name']]
         actual = execute(body, record)
         assert actual == expected, prefix + record['name']
+(out / 'cost.json').write_text(json.dumps(costs, indent=2) + '\n')
 receipt = {'header_sha256': hashlib.sha256(original.encode()).hexdigest(), 'shapes': len(records),
            'comparisons': len(records) * 2, 'result': 'pass',
            'scope': 'Symbolic interpretation of BE compiler register mappings and sticky QC against ACLE; no BE hardware execution.'}
