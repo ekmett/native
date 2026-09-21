@@ -53,6 +53,11 @@ are not exposed.
 
 ## Conversions, fixed-point and complex arithmetic
 
+[Base NEON integer instructions](arm-neon.md) provide saturating add/subtract,
+saturating narrowing, signed multiply-high and per-lane variable shifts with
+rounding and saturation variants. They require `arm_feature::neon`; operations
+that saturate preserve their sticky FPSR.QC effects, including discarded results.
+
 [F16C](x86-f16c.md) converts between binary32 and IEEE binary16 on x86. It does
 not supply half-precision arithmetic. Its immediate controls rounding, and
 conversion may update MXCSR or trap according to the caller's exception masks.
@@ -110,6 +115,11 @@ schedule steps on four-dword states. [Vector AES](x86-vaes.md) processes one, tw
 or four independent 128-bit AES states per operation, with width-specific
 feature requirements. These operations expose round primitives; callers own
 message padding, schedules and complete algorithms.
+
+[ARM SM3 and SM4](arm-sm-crypto.md) supply hash-round, message-schedule,
+data-round and key-schedule instructions on four-word vectors. Their hardware
+bits are independent; Clang's `sm4` target enables both and admission covers
+that complete pair together with NEON.
 
 ## Shapes, masks and execution
 

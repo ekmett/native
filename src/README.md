@@ -54,7 +54,10 @@ Vector instruction modules import `native.simd` before defining their public
 bindings. Vector parameters and results use `simd<T,N,Arch>`; scalar operations
 use ordinary C++ values. Masked x86 instruction forms use `predicate<N,Arch>`.
 Each operation constrains its required features and retains the appropriate
-compiler target. Raw intrinsic helpers remain private.
+compiler target. Raw intrinsic helpers remain private. The `native.arm.sm3` and
+`native.arm.sm4` modules follow this split with four-word public vectors and
+separate constant-evaluation semantics; their [family guide](../docs/arm-sm-crypto.md)
+describes independent hardware feature bits and the coupled compiler target.
 
 Internal requirement lists describe operations, memory and storage. Their
 compiler-prerequisite closure must agree with the literal target attributes.

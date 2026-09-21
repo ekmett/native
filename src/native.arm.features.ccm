@@ -113,6 +113,8 @@ namespace native {
     extra(arm_feature::sha2,"hw.optional.arm.FEAT_SHA256");
     extra(arm_feature::sha3,"hw.optional.arm.FEAT_SHA3");
     extra(arm_feature::sha512,"hw.optional.arm.FEAT_SHA512");
+    extra(arm_feature::sm3,"hw.optional.arm.FEAT_SM3");
+    extra(arm_feature::sm4,"hw.optional.arm.FEAT_SM4");
     extra(arm_feature::crc,"hw.optional.armv8_crc32");
     extra(arm_feature::lse,"hw.optional.arm.FEAT_LSE");
     extra(arm_feature::rdm,"hw.optional.arm.FEAT_RDM");
@@ -165,6 +167,12 @@ namespace native {
 #endif
 #ifdef HWCAP_SHA512
     extra(arm_feature::sha512,HWCAP_SHA512);
+#endif
+#ifdef HWCAP_SM3
+    extra(arm_feature::sm3,HWCAP_SM3);
+#endif
+#ifdef HWCAP_SM4
+    extra(arm_feature::sm4,HWCAP_SM4);
 #endif
 #if defined(HWCAP_PACA) && defined(HWCAP_PACG)
     extra(arm_feature::pauth,HWCAP_PACA|HWCAP_PACG);

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 export module native.arm;
 export import native.arm.features;
+export import native.arm.neon;
 export import native.arm.dotprod;
 export import native.arm.rdm;
 export import native.arm.fp16fml;
@@ -11,3 +12,5 @@ export import native.arm.crc;
 export import native.arm.aes;
 export import native.arm.pmull;
 export import native.arm.sha;
+export import native.arm.sm3;
+export import native.arm.sm4;

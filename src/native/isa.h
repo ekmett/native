@@ -24,7 +24,7 @@ namespace native {
   enum class arm_feature : std::uint64_t {
     neon, neon_fp16, neon_bf16, aes, sha2, sha3,
     crc, lse, rdm, fp16fml, dotprod, complxnum,
-    jsconv, rcpc, pauth, i8mm, pmull, sha1, sha512, ebf16
+    jsconv, rcpc, pauth, i8mm, pmull, sha1, sha512, ebf16, sm3, sm4
   };
   /// WebAssembly validation capabilities, using local bit indices.
   enum class wasm_feature : std::uint64_t { simd128, relaxed_simd };
@@ -33,7 +33,7 @@ namespace native {
   /// Number of named x86 feature values.
   inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::adx)+1;
   /// Number of named ARM feature values.
-  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::ebf16)+1;
+  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::sm4)+1;
 
   /// A structural set of one family's features, without prerequisite closure.
   template<architecture Family=target_arch> struct isa;
@@ -355,6 +355,16 @@ namespace native {
     constexpr bool get_ebf16() const noexcept { return get(arm_feature::ebf16); }
     constexpr void set_ebf16(bool value) noexcept { set(arm_feature::ebf16,value); }
     __declspec(property(get=get_ebf16,put=set_ebf16)) bool ebf16;
+    /// True when the SM3 instruction feature is present.
+    constexpr bool get_sm3() const noexcept { return get(arm_feature::sm3); }
+    /// Set or clear the independent SM3 requirement.
+    constexpr void set_sm3(bool value) noexcept { set(arm_feature::sm3,value); }
+    __declspec(property(get=get_sm3,put=set_sm3)) bool sm3;
+    /// True when the SM4 instruction feature is present.
+    constexpr bool get_sm4() const noexcept { return get(arm_feature::sm4); }
+    /// Set or clear the independent SM4 requirement.
+    constexpr void set_sm4(bool value) noexcept { set(arm_feature::sm4,value); }
+    __declspec(property(get=get_sm4,put=set_sm4)) bool sm4;
     constexpr bool get_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_aes,put=set_aes)) bool aes;
@@ -623,7 +633,9 @@ namespace native {
       {arm_feature::pmull,"pmull",isa(arm_feature::neon),feature_register::arm,16,{},false},
       {arm_feature::sha1,"sha1",isa(arm_feature::neon),feature_register::arm,17,{},false},
       {arm_feature::sha512,"sha512",isa(arm_feature::neon),feature_register::arm,18,{},false},
-      {arm_feature::ebf16,"ebf16",isa(arm_feature::neon_bf16),feature_register::arm,19,{},false}
+      {arm_feature::ebf16,"ebf16",isa(arm_feature::neon_bf16),feature_register::arm,19,{},false},
+      {arm_feature::sm3,"sm3",isa(arm_feature::neon),feature_register::arm,20,{},false},
+      {arm_feature::sm4,"sm4",isa(arm_feature::neon),feature_register::arm,21,isa(arm_feature::sm3)}
     });
     template<> inline constexpr auto feature_registry<wasm> = std::to_array<feature_record<wasm>>({
       {wasm_feature::simd128,"simd128",{},feature_register::wasm,0},
