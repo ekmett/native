@@ -40,12 +40,15 @@ not a skip. The fixture runs these checks:
   saturating interpretation on two full-bit dot inputs. It is a conformance gate,
   with no expected-failure or skip annotation.
 - `engine.laneselect` independently checks raw lane-selection instructions against
-  the bit-selection or whole-lane result sets, for all four widths. Its partial
-  mask checks remain strict even when a wrapper matches the raw instruction.
+  one fixed bit-selection or whole-lane interpretation shared by all four widths,
+  lanes and calls. Its partial mask checks remain strict even when a wrapper
+  matches the raw instruction.
 
 When `NATIVE_WASM_WASMTIME` names a Wasmtime executable, CTest also runs the
-wrapper/property executable and both raw engine gates there, plus the dot gate with
-Wasmtime's deterministic relaxed-SIMD option.
+wrapper/property executable and both raw engine gates there, then both raw gates
+with Wasmtime's deterministic relaxed-SIMD option. The raw executables accept
+`--deterministic` to require parameter zero: signed, saturated dot pairs and bit
+selection. This argument changes the oracle; it does not configure the engine.
 
 ## Raw-engine conformance discrepancies
 

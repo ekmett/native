@@ -94,7 +94,7 @@ if(NATIVE_WASM_WASMTIME)
   endforeach()
   add_test(NAME native.wasm.relaxed.wasmtime.dot_deterministic COMMAND "${NATIVE_WASM_WASMTIME}"
     run -Ccache=n -Wsimd=y -Wrelaxed-simd=y -Wrelaxed-simd-deterministic=y
-    $<TARGET_FILE:native_test_wasm_relaxed_dot_engine>)
+    $<TARGET_FILE:native_test_wasm_relaxed_dot_engine> --deterministic)
   set_tests_properties(native.wasm.relaxed.wasmtime.dot_engine
     native.wasm.relaxed.wasmtime.dot_deterministic PROPERTIES LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
 endif()
@@ -108,6 +108,10 @@ set_tests_properties(native.wasm.relaxed.engine.laneselect PROPERTIES
 if(NATIVE_WASM_WASMTIME)
   add_test(NAME native.wasm.relaxed.wasmtime.laneselect_engine COMMAND "${NATIVE_WASM_WASMTIME}"
     run -Ccache=n -Wsimd=y -Wrelaxed-simd=y $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>)
-  set_tests_properties(native.wasm.relaxed.wasmtime.laneselect_engine PROPERTIES
-    LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
+  add_test(NAME native.wasm.relaxed.wasmtime.laneselect_deterministic COMMAND "${NATIVE_WASM_WASMTIME}"
+    run -Ccache=n -Wsimd=y -Wrelaxed-simd=y -Wrelaxed-simd-deterministic=y
+    $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine> --deterministic)
+  set_tests_properties(native.wasm.relaxed.wasmtime.laneselect_engine
+    native.wasm.relaxed.wasmtime.laneselect_deterministic
+    PROPERTIES LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
 endif()

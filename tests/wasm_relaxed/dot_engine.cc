@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <wasm_simd128.h>
 
 // This engine conformance probe deliberately has no library/module dependency.
@@ -21,8 +22,10 @@ volatile std::int8_t first[2]{-128, 1};
 volatile std::uint8_t second[2]{128, 255};
 
 __attribute__((target("relaxed-simd")))
-bool engine_check() {
-  unsigned modes = 3;
+bool engine_check(bool deterministic) {
+  // R_idot is shared by both operations and fixed for the entire program.
+  // The deterministic profile requires R_idot = 0: signed, saturated pairs.
+  unsigned modes = deterministic ? 1 : 3;
   for (unsigned trial = 0; trial < 2; ++trial) {
     auto a = first[trial];
     auto b = second[trial];
@@ -60,11 +63,18 @@ bool engine_check() {
     modes &= possible;
   }
   if (modes == 0) {
-    std::puts("Raw engine result violates the pinned core specification's fixed saturated dot interpretation.");
+    std::puts(deterministic
+      ? "Raw engine result violates the pinned core deterministic signed, saturated dot interpretation."
+      : "Raw engine result violates the pinned core specification's fixed saturated dot interpretation.");
   }
   return modes != 0;
 }
 
-int main() {
-  return engine_check() ? 0 : 1;
+int main(int argc, char ** argv) {
+  bool deterministic = argc == 2 && std::strcmp(argv[1], "--deterministic") == 0;
+  if (argc != 1 && !deterministic) {
+    std::puts("Usage: dot_engine [--deterministic]");
+    return 2;
+  }
+  return engine_check(deterministic) ? 0 : 1;
 }
