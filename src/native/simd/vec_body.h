@@ -2176,8 +2176,17 @@ namespace native {
         value = ::NATIVE_BACKEND_NAMESPACE::integer_broadcast_64(x);
 #endif
     }
+#if NATIVE_HOST_X86
+    /// Adopt native lane storage under its minimal register ABI.
+    native_inline native_target("sse2") simd(native_type x) noexcept requires(sizeof(native_type)==16) : value(x) {}
+    /// Adopt native lane storage under its minimal register ABI.
+    native_inline native_target("avx") simd(native_type x) noexcept requires(sizeof(native_type)==32) : value(x) {}
+    /// Adopt native lane storage under its minimal register ABI.
+    native_inline native_target("avx512f") simd(native_type x) noexcept requires(sizeof(native_type)==64) : value(x) {}
+#else
     /// Adopt native lane storage without numerical conversion.
     native_inline simd(native_type x) noexcept : value(x) {}
+#endif
     /// Construct logical lanes in argument order. Integral conversion retains the low lane-width bits.
     template <class... U>
       requires(sizeof...(U) == N && (simd_integer_element<U> && ...))
@@ -2189,12 +2198,42 @@ namespace native {
     native_inline simd(std::array<T, N> const &data) noexcept {
       std::memcpy(&value, data.data(), sizeof(value));
     }
+#if NATIVE_HOST_X86
+    /// Return the native storage value under its minimal register ABI.
+    native_nodiscard native_inline native_const native_target("sse2")
+    operator native_type() const noexcept requires(sizeof(native_type)==16) { return value; }
+    /// Adopt native storage without numerical conversion.
+    native_nodiscard static native_inline native_const native_target("sse2")
+    simd from_native(native_type x) noexcept requires(sizeof(native_type)==16) { return simd(x); }
+    /// Return the native storage representation under its minimal register ABI.
+    native_nodiscard native_inline native_const native_target("sse2")
+    native_type to_native() const noexcept requires(sizeof(native_type)==16) { return value; }
+    /// Return the native storage value under its minimal register ABI.
+    native_nodiscard native_inline native_const native_target("avx")
+    operator native_type() const noexcept requires(sizeof(native_type)==32) { return value; }
+    /// Adopt native storage without numerical conversion.
+    native_nodiscard static native_inline native_const native_target("avx")
+    simd from_native(native_type x) noexcept requires(sizeof(native_type)==32) { return simd(x); }
+    /// Return the native storage representation under its minimal register ABI.
+    native_nodiscard native_inline native_const native_target("avx")
+    native_type to_native() const noexcept requires(sizeof(native_type)==32) { return value; }
+    /// Return the native storage value under its minimal register ABI.
+    native_nodiscard native_inline native_const native_target("avx512f")
+    operator native_type() const noexcept requires(sizeof(native_type)==64) { return value; }
+    /// Adopt native storage without numerical conversion.
+    native_nodiscard static native_inline native_const native_target("avx512f")
+    simd from_native(native_type x) noexcept requires(sizeof(native_type)==64) { return simd(x); }
+    /// Return the native storage representation under its minimal register ABI.
+    native_nodiscard native_inline native_const native_target("avx512f")
+    native_type to_native() const noexcept requires(sizeof(native_type)==64) { return value; }
+#else
     /// Return the native storage value without a numerical conversion.
     native_nodiscard native_inline native_const operator native_type() const noexcept { return value; }
     /// Adopt native storage without numerical conversion.
     native_nodiscard native_inline static native_const simd from_native(native_type x) noexcept { return simd(x); }
     /// Return the native storage representation.
     native_nodiscard native_inline native_const native_type to_native() const noexcept { return value; }
+#endif
     /// Add corresponding lanes modulo 2^(sizeof(T)*8).
     native_nodiscard friend native_inline native_const simd operator+(simd a, simd b) noexcept {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_add<T>(a.value, b.value));
@@ -3021,7 +3060,7 @@ namespace native {
     /// Broadcast the supplied value to each logical lane.
     native_inline simd(float x) : value(_mm512_set1_ps(x)) {}
     /// Adopt native lane storage without numerical conversion.
-    native_inline constexpr simd(__m512 x) : value(x) {}
+    native_inline native_target("avx512f") constexpr simd(__m512 x) : value(x) {}
     /// Read all logical lanes from an unaligned element pointer.
     native_nodiscard static native_inline native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes to an unaligned element pointer.
@@ -3072,9 +3111,9 @@ namespace native {
     using native_type = __m512;
     using bits_type = simd<uint32_t,16,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline native_pure operator native_type() const noexcept { return value; }
+    native_nodiscard native_inline native_pure native_target("avx512f") operator native_type() const noexcept { return value; }
     /// Return the native storage representation.
-    native_nodiscard native_inline native_pure native_type to_native() const noexcept { return value; }
+    native_nodiscard native_inline native_pure native_target("avx512f") native_type to_native() const noexcept { return value; }
     /// Project the exact lane representation into the corresponding unsigned vector.
     native_artificial native_nodiscard native_inline native_pure bits_type bits() const noexcept { return bits_type::from_native(_mm512_castps_si512(value)); }
     /// Return the exact binary32 lane representations in the unsigned vector.
@@ -3086,9 +3125,9 @@ namespace native {
     /// Broadcast the float value without adding an FTZ or other normalization policy.
     native_nodiscard static native_inline native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline native_const simd from_native(native_type x) noexcept { return simd(x); }
+    native_nodiscard static native_inline native_const native_target("avx512f") simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt raw float storage without numerical conversion or normalization.
-    native_nodiscard static native_inline native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    native_nodiscard static native_inline native_const native_target("avx512f") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Read all logical lanes without an extra alignment promise.
     native_nodiscard static native_inline native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes without an extra alignment promise.
