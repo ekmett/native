@@ -186,6 +186,11 @@ export namespace native {
       else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
       return result;
     }
+    /// Adopt a register whose unused physical bytes are already zero.
+    native_nodiscard static native_inline native_target("sse2")
+    simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==16) {
+      simd result; result.value_=value; return result;
+    }
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_target("avx")
     native_type to_native() const noexcept requires(sizeof(native_type)==32) { return value_; }
@@ -197,6 +202,11 @@ export namespace native {
       else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
       return result;
     }
+    /// Adopt a register whose unused physical bytes are already zero.
+    native_nodiscard static native_inline native_target("avx")
+    simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==32) {
+      simd result; result.value_=value; return result;
+    }
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_target("avx512f")
     native_type to_native() const noexcept requires(sizeof(native_type)==64) { return value_; }
@@ -207,6 +217,11 @@ export namespace native {
       if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
       else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
       return result;
+    }
+    /// Adopt a register whose unused physical bytes are already zero.
+    native_nodiscard static native_inline native_target("avx512f")
+    simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==64) {
+      simd result; result.value_=value; return result;
     }
 #else
     /// Bridge to the implementation register without numerical conversion.
