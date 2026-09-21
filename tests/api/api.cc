@@ -27,7 +27,11 @@ import native.memory;
 import native.types;
 import native.static_string;
 import native.numerics;
+#if API_NEON
+static_assert((selected_arch & native::arm_feature::aes).has(selected_arch));
+#else
 static_assert((selected_arch & native::x86_feature::aes).has(selected_arch));
+#endif
 static_assert(native::x86_feature::avx2 < (native::x86_feature::avx2 & native::x86_feature::fma));
 #if !API_NEON
 import native.x86.features;
