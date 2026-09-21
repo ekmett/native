@@ -62,7 +62,7 @@ regenerates one compatible baseline hub BMI and shares each common module.
 Clang's module validation stays enabled. Function targets do not change the
 compiler/STL/exception compatibility rules.
 
-Vector architecture arguments are structural `isa` values and form part of the
+Vector architecture arguments are structural `isa<>` values and form part of the
 type identity. Producer and consumer code that exchanges vectors must use the
 same declarations and compiler settings.
 
@@ -70,8 +70,8 @@ The [source target-list helper](../docs/omnibus.md) generates selected kernel
 overloads under Clang target pragmas in one source file. CPU/OS admission uses
 the same feature descriptions. No per-variant CMake target is required.
 The body macro receives an ISA value and declares a constrained
-`template<native::isa A>` function. `with_isa` selects its value argument through
-a `[]<native::isa A> { ... }` callback; that callback retains the compiler target
+`template<native::isa<> A>` function. `with_isa` selects its value argument through
+a `[]<native::isa<> A> { ... }` callback; that callback retains the compiler target
 of its definition.
 `native_target_profile(target profile)` selects compiler options for applications
 that compile kernels in separate translation units.

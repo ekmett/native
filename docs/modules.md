@@ -8,7 +8,7 @@ snippets below belong inside a function compiled for their chosen ISA.
 
 ## Values and generic algorithms
 
-`native::simd<T,N,A>` takes an element type, a lane count and an `isa` value as a
+`native::simd<T,N,A>` takes an element type, a lane count and an `isa<>` value as a
 non-type template argument. Vectors with different ISA values remain distinct
 even when their register widths match. Imports control visibility; template
 arguments control overload resolution and ABI. Using an AVX2 vector in an
@@ -36,7 +36,7 @@ ordering and feature constraints apply equally to defaulted and explicit tags.
 Generic algorithms take the ISA as a value parameter:
 
 ```cpp
-template<native::isa A, std::size_t N>
+template<native::isa<> A, std::size_t N>
 struct kernel {
   using V = native::simd<float,N,A>;
   static void run(float const * a, float const * b, float * out) {
@@ -48,19 +48,23 @@ struct kernel {
 // kernel<native::avx2,8>::run(a,b,out);
 ```
 
-Presets such as `native::avx2` and `native::avx512` are `constexpr isa` values.
+Presets such as `native::avx2` and `native::avx512` are `isa<native::x86>` values.
 Use `.has(...)`, feature properties or subset comparisons to inspect them.
 Single-feature construction is exact; `feature_closure` adds prerequisites
 explicitly. The [ISA guide](abi-lookup.md) covers feature conjunction and
 compile-time target selection.
 
-`native::is_arm`, `native::is_x86` and `native::is_wasm` are `inline constexpr
-bool` values identifying the compilation target's architecture family. Use
-them with `if constexpr` in generic code. They are available from `native.isa`,
+`native::target_arch` is an `inline constexpr architecture` value identifying
+the compiler target's family. Compare it with `native::arm`, `native::x86` or
+`native::wasm` in generic code. It is available from `native.isa`,
 `native.features`, `native` and the dependency-free `<native/config.h>` header.
-They describe neither runtime CPU detection nor optional instruction support;
+It describes neither runtime CPU detection nor optional instruction support;
 both 32-bit and 64-bit targets belong to their respective family. Platform
-headers and declarations with unavailable names still need preprocessing guards.
+headers and unavailable native declarations still need preprocessing guards.
+
+`isa<>` uses this family. Explicit `isa<arm>`, `isa<x86>` and `isa<wasm>` values
+can describe foreign metadata, but cannot be mixed or supplied to a host vector
+type from another family.
 
 The element type supplies the arithmetic contract; the ISA determines storage
 and available operations. Some instruction-specific shapes provide storage and

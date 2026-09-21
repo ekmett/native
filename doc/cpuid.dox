@@ -12,7 +12,7 @@ profile.
 state. It checks basic leaf ranges and executes XGETBV only after CPUID reports
 both XSAVE and OSXSAVE. `native::classify_isa` is a separate constexpr
 operation for real or synthetic snapshots. Native results expose `present` and
-`observed` as `native::feature_set<native::x86_feature>`; both must contain a required
+`observed` as `native::isa<native::x86>`; both must contain a required
 feature. XCR0 validity remains separate. Raw CPUID inputs are retained under
 `raw` for diagnostics and are not re-decoded during native-record admission:
 
@@ -30,8 +30,8 @@ AVX2 admission covers AVX, AVX2, FMA, the compiler-implied SSE/POPCNT
 features, and enabled XMM/YMM state. AVX512 additionally requires F16C,
 AVX512F/DQ/BW/VL and enabled opmask and ZMM state. These requirements match
 `native_target_profile`; application-supplied instruction flags may require
-additional checks. Unavailable leaves, unread XCR0, and unknown or foreign-architecture features
-cannot admit a profile.
+additional checks. Unavailable leaves, unread XCR0 and unknown feature values cannot admit a
+profile. Foreign-family requirements are rejected at compile time.
 
 An installed consumer links `native::common` for both module metadata and runtime
 definitions. It does not import an ISA module or select a profile

@@ -7,7 +7,7 @@ start with the [value guide](../docs/modules.md) or
 
 | Source | Responsibility |
 | --- | --- |
-| `native.isa.ccm`, `native/isa.h` | Shared feature sets, ISA values, target metadata and admission declarations |
+| `native.isa.ccm`, `native/isa.h` | Family-typed ISA values, target metadata and admission declarations |
 | `native/targets.h` | Textual macros for source targets and compiler-baseline snapshots |
 | `native.scalar.ccm` | Scalar register operations and common element extension declarations |
 | `native.wide.ccm`, `native/wide.h` | Register packs, tuple protocol and generic operation forwarding |

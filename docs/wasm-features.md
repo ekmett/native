@@ -23,6 +23,9 @@ A `wasm_capabilities` record contains:
 - `raw`: the original `simd128_observed`, `simd128`, `relaxed_simd_observed` and
   `relaxed_simd` booleans, retained for diagnostics.
 
+Both feature sets have type `isa<wasm>`, even when the embedding application
+is compiled for x86 or ARM.
+
 Supply answers from the intended runtime and normalize them explicitly:
 
 ```cpp
@@ -97,13 +100,20 @@ define the probe encodings.
 
 ## Compiler permissions
 
-The textual `NATIVE_BASELINE` expression includes `wasm_feature::simd128` and
+On a WebAssembly compiler target, the textual `NATIVE_BASELINE` expression has
+type `isa<wasm>` and includes `wasm_feature::simd128` and
 `wasm_feature::relaxed_simd` when Clang's resolved `__wasm_simd128__` and
 `__wasm_relaxed_simd__` predefines enable them. Explicit negative compiler flags
 remain effective; the snapshot does not apply prerequisite closure. It describes
 known compiler permissions, independently of the engine observations above.
 A module provider's flags do not describe its importers: obtain the expression
 in each consumer translation unit, as explained in the [ISA guide](abi-lookup.md).
+
+For metadata on any host, `isa(wasm_feature::simd128)` deduces `isa<wasm>` and
+`target_features<wasm>("relaxed-simd")` parses the corresponding compiler target.
+The default `isa<>` and `target_features(...)` use the compiler target's family.
+ARM and x86 requirements cannot be passed to Wasm admission or combined with a
+Wasm requirement.
 
 ## What admission establishes
 

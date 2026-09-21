@@ -101,8 +101,10 @@ lanes: its load touches twelve bytes even if its register has room for four.
 `native::mask<V>` names the mask associated with `V`.
 
 [ISA values](docs/abi-lookup.md) describe requirements, from an individual feature
-to presets such as `avx2`, `avx512` and `neon`. `NATIVE_BASELINE` records the current
-translation unit's enabled compiler features; runtime CPU observation is a
+to presets such as `avx2`, `avx512` and `neon`. Each `isa<Family>` belongs to one
+architecture: `isa<>` uses `target_arch`, while `isa<x86>`, `isa<arm>` and
+`isa<wasm>` name it explicitly. `NATIVE_BASELINE` records the current translation
+unit's enabled compiler features; runtime CPU observation is a
 separate operation. [Target lists and dispatch](docs/omnibus.md) connect those
 requirements to compiled kernels and runtime selection.
 

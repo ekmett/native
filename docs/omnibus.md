@@ -24,7 +24,7 @@ import native;
 
 #define MY_TARGETS(X, ...) X(avx512, __VA_ARGS__) X(avx2, __VA_ARGS__)
 #define DOUBLE_BODY(name, ISA)                                         \
-  template<native::isa A> requires(A == ISA)                              \
+  template<native::isa<> A> requires(A == ISA)                              \
   void name(float const * input, float * output) {                     \
     using V = native::simd<float, 4, A>;                                   \
     auto x = native::load_simd<V>(input);                                 \
@@ -35,7 +35,7 @@ NATIVE_TARGET_VARIANTS(double_four, MY_TARGETS, DOUBLE_BODY)
 
 bool run(float const * input, float * output) {
   auto cpu = native::observe_cpu();
-  return native::with_isa(NATIVE_TARGET_LIST(MY_TARGETS), cpu, [&]<native::isa A> {
+  return native::with_isa(NATIVE_TARGET_LIST(MY_TARGETS), cpu, [&]<native::isa<> A> {
     double_four<A>(input, output);
   });
 }
@@ -80,12 +80,12 @@ import native;
 
 using namespace native;
 
-template<isa A>
+template<isa<> A>
 void double16(float * out, float const * in) = delete;
 
 #if NATIVE_HOST_X86
 NATIVE_TARGET_PUSH(avx512)
-template<isa A> requires(target<A, avx512, avx2> == 0)
+template<isa<> A> requires(target<A, avx512, avx2> == 0)
 void double16(float * out, float const * in) {
   using V = simd<float, 16, avx512>;
   auto x = V::load(in);
@@ -94,7 +94,7 @@ void double16(float * out, float const * in) {
 NATIVE_TARGET_POP()
 
 NATIVE_TARGET_PUSH(avx2)
-template<isa A> requires(target<A, avx512, avx2> == 1)
+template<isa<> A> requires(target<A, avx512, avx2> == 1)
 void double16(float * out, float const * in) {
   using V = simd<float, 8, avx2>;
   for (unsigned i = 0; i < 16; i += 8) {
@@ -106,7 +106,7 @@ NATIVE_TARGET_POP()
 
 #elif NATIVE_HOST_NEON
 NATIVE_TARGET_PUSH(neon)
-template<isa A> requires(A.has(arm_feature::neon))
+template<isa<> A> requires(A.has(arm_feature::neon))
 void double16(float * out, float const * in) {
   using V = simd<float, 4, neon>;
   for (unsigned i = 0; i < 16; i += 4) {
@@ -126,16 +126,16 @@ its compiler flags.
 
 `<native/config.h>` supplies the host macros; module imports do not export
 preprocessor macros. These guards cover the native target scopes and concrete
-vector types used above. Dependent bodies can remain shared; see the
-[dependent NEON example](abi-lookup.md). Constraints do not make foreign
-instruction families available.
+vector types used above. ISA metadata is available across families, but
+constraints do not make foreign instruction families available. See the
+[ISA guide](abi-lookup.md) for the boundary between metadata and native types.
 
 The overload set remains open within each build. See [overload extension and
 declaration order](abi-lookup.md).
 
 ## Choose feature sets
 
-Presets are `constexpr isa` values with compiler prerequisites included. To
+Presets are family-typed `isa` values with compiler prerequisites included. To
 register another source name, give it one target feature literal:
 
 ```cpp
