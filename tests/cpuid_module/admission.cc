@@ -22,7 +22,7 @@ namespace {
       (1u<<26)|(1u<<27)|(1u<<28)|(1u<<29),
     (1u<<23)|(1u<<25)|(1u<<26),
     (1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31), 0xe6, true, 1, 1u<<5, 1u<<23};
-  constexpr bool synthetic(native::isa profile) {
+  constexpr bool synthetic_cpuid(native::isa profile) {
     using native::avx2, native::avx512, native::avx512_bf16, native::avx512_fp16;
     if (!native::classify_isa(full, profile).admitted()) return false;
     // Independent contract oracle: CPUID.1 ECX SSE3, SSSE3, FMA, SSE4.1,
@@ -68,6 +68,11 @@ namespace {
       auto expected = profile == avx512_fp16 ? (1u << 23) : 0u;
       if (result.admitted() == bool(expected & mask)) return false;
     }
+    return true;
+  }
+  constexpr bool synthetic_os_state(native::isa profile) {
+    using native::avx2, native::avx512_bf16, native::avx512_fp16;
+    auto expected_xcr0 = profile != avx2 ? 0xe6ull : 0x6ull;
     for (unsigned bit = 0; bit != 64; ++bit) {
       auto cpu = full; auto mask = std::uint64_t(1) << bit;
       cpu.xcr0 &= ~mask;
@@ -90,10 +95,20 @@ namespace {
     auto result = native::classify_isa(full, native::isa(static_cast<native::x86_feature>(-1)));
     return result.invalid_features && !result.admitted();
   }
-  static_assert(synthetic(native::avx2));
-  static_assert(synthetic(native::avx512));
-  static_assert(synthetic(native::avx512_bf16));
-  static_assert(synthetic(native::avx512_fp16));
+  constexpr bool synthetic(native::isa profile) {
+    return synthetic_cpuid(profile) && synthetic_os_state(profile);
+  }
+  // Keep the complete CPUID and OS-state checks in separate constant
+  // evaluations as the feature catalog grows; use the default compiler budget.
+  template<native::isa Profile> struct synthetic_checks {
+    static_assert(synthetic_cpuid(Profile));
+    static_assert(synthetic_os_state(Profile));
+    static constexpr bool checked = true;
+  };
+  static_assert(synthetic_checks<native::avx2>::checked);
+  static_assert(synthetic_checks<native::avx512>::checked);
+  static_assert(synthetic_checks<native::avx512_bf16>::checked);
+  static_assert(synthetic_checks<native::avx512_fp16>::checked);
 
   // The SIMD preset does not require BMI2; BMI2 instructions remain independent.
   static_assert([] {

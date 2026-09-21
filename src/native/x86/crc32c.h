@@ -39,7 +39,7 @@ namespace native {
     return _mm_crc32_u32(accumulator, value);
   }
 
-#if defined(__x86_64__) || defined(_M_X64)
+#if defined(__x86_64__) || defined(_M_X64) || defined(NATIVE_DOXYGEN)
   /// Update with sixty-four bits in x86-64 mode; the CRC remains 32 bits.
   /// The instruction zeroes the high half of its 64-bit destination register.
   template<isa Arch> requires(Arch.has(x86_feature::crc32))
