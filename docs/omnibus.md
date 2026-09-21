@@ -1,15 +1,15 @@
 # One hub, source-level target selection
 
-`import simd;` exposes every implemented ISA family for the host architecture.
+`import native;` exposes every implemented ISA family for the host architecture.
 It compiles at the configured project minimum. AVX-512, FP16 and BF16 operations
 carry Clang function target attributes inside that same module, so importing it
 does not strengthen an unrelated caller. `static_string`, scalar numerics and
 the other common modules each retain one provider.
 
 ```cmake
-find_package(simd CONFIG REQUIRED COMPONENTS simd)
+find_package(native CONFIG REQUIRED COMPONENTS native)
 add_executable(example example.cc)
-target_link_libraries(example PRIVATE simd::simd)
+target_link_libraries(example PRIVATE native::native)
 ```
 
 ## Generate only the variants you need
@@ -19,23 +19,23 @@ unit. The reusable body receives the function name and the exact ISA value.
 Each expansion is inside a matching Clang target scope.
 
 ```cpp
-#include <simd/targets.h>
-import simd;
+#include <native/targets.h>
+import native;
 
 #define MY_TARGETS(X, ...) X(avx512, __VA_ARGS__) X(avx2, __VA_ARGS__)
 #define DOUBLE_BODY(name, ISA)                                         \
-  template<simd::isa A> requires(A == ISA)                              \
+  template<native::isa A> requires(A == ISA)                              \
   void name(float const * input, float * output) {                     \
-    using V = simd::vec<float, 4, A>;                                   \
-    auto x = simd::load_simd<V>(input);                                 \
-    simd::store_simd(output, x + x);                                    \
+    using V = native::simd<float, 4, A>;                                   \
+    auto x = native::load_simd<V>(input);                                 \
+    native::store_simd(output, x + x);                                    \
   }
 
-SIMD_TARGET_VARIANTS(double_four, MY_TARGETS, DOUBLE_BODY)
+NATIVE_TARGET_VARIANTS(double_four, MY_TARGETS, DOUBLE_BODY)
 
 bool run(float const * input, float * output) {
-  auto cpu = simd::observe_x86_capabilities();
-  return simd::with_isa(SIMD_TARGET_LIST(MY_TARGETS), cpu, [&]<simd::isa A> {
+  auto cpu = native::observe_cpu();
+  return native::with_isa(NATIVE_TARGET_LIST(MY_TARGETS), cpu, [&]<native::isa A> {
     double_four<A>(input, output);
   });
 }
@@ -46,7 +46,8 @@ bool run(float const * input, float * output) {
 
 List order is selection order. `with_isa` invokes `callback.operator()<A>()`
 once for the first admitted entry, or returns `false` without calling it if none
-qualifies. On AArch64 use the NEON presets and `observe_arm_capabilities()`.
+qualifies. On AArch64 use the NEON presets; `observe_cpu()` uses the platform's
+capability observer.
 
 For an existing ISA value, [compile-time target selection](abi-lookup.md)
 selects an implementation entry and its ordinal without querying the CPU.
@@ -56,7 +57,7 @@ one, or a duplicate choice, makes that direct target pack ill-formed.
 
 The callback is ordinary code compiled where it was defined. Selecting its ISA
 template argument does not change its compiler target. Keep the native body in
-the generated overload, or use `SIMD_TARGET_PUSH(name)` / `SIMD_TARGET_POP()` around functions
+the generated overload, or use `NATIVE_TARGET_PUSH(name)` / `NATIVE_TARGET_POP()` around functions
 you define yourself. Pointer/scalar entry parameters avoid transferring native
 register values across different calling conventions.
 
@@ -65,7 +66,7 @@ combines nested target requirements: an AVX2 body inside an outer AVX-512 scope
 can still use AVX-512, even though predefined feature macros do not reveal it.
 The named pragma stack preserves the surrounding scope; it does not remove its
 requirements. If nesting is intentional, include the outer scope's features in
-`SIMD_TARGET_EXTRA_MINIMUM` so the generated admission list checks them too.
+`NATIVE_TARGET_EXTRA_MINIMUM` so the generated admission list checks them too.
 
 ## Write variants directly
 
@@ -73,26 +74,26 @@ You can write the overloads yourself. This kernel doubles sixteen floats,
 compiling the native bodies for the current host:
 
 ```cpp
-#include <simd/config.h>
-#include <simd/targets.h>
-import simd;
+#include <native/config.h>
+#include <native/targets.h>
+import native;
 
-using namespace simd;
+using namespace native;
 
 template<isa A>
 void double16(float * out, float const * in) = delete;
 
-#if SIMD_HOST_X86
-SIMD_TARGET_PUSH(avx512)
+#if NATIVE_HOST_X86
+NATIVE_TARGET_PUSH(avx512)
 template<isa A> requires(target<A, avx512, avx2> == 0)
 void double16(float * out, float const * in) {
   using V = vec<float, 16, avx512>;
   auto x = V::load(in);
   (x + x).store(out);
 }
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 
-SIMD_TARGET_PUSH(avx2)
+NATIVE_TARGET_PUSH(avx2)
 template<isa A> requires(target<A, avx512, avx2> == 1)
 void double16(float * out, float const * in) {
   using V = vec<float, 8, avx2>;
@@ -101,10 +102,10 @@ void double16(float * out, float const * in) {
     (x + x).store(out + i);
   }
 }
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 
-#elif SIMD_HOST_NEON
-SIMD_TARGET_PUSH(neon)
+#elif NATIVE_HOST_NEON
+NATIVE_TARGET_PUSH(neon)
 template<isa A> requires(A.has(arm_feature::neon))
 void double16(float * out, float const * in) {
   using V = vec<float, 4, neon>;
@@ -113,7 +114,7 @@ void double16(float * out, float const * in) {
     (x + x).store(out + i);
   }
 }
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #endif
 ```
 
@@ -123,7 +124,7 @@ ISA for local vectors, so additional caller features cannot strengthen the
 body's compiler requirements. `target` selects the overload; push/pop supplies
 its compiler flags.
 
-`<simd/config.h>` supplies the host macros; module imports do not export
+`<native/config.h>` supplies the host macros; module imports do not export
 preprocessor macros. These guards cover the native target scopes and concrete
 vector types used above. Dependent bodies can remain shared; see the
 [dependent NEON example](abi-lookup.md). Constraints do not make foreign
@@ -138,12 +139,12 @@ Presets are `constexpr isa` values with compiler prerequisites included. To
 register another source name, give it one target feature literal:
 
 ```cpp
-#define SIMD_TARGET_avx2_half "avx2,fma,bmi2,f16c"
+#define NATIVE_TARGET_avx2_half "avx2,fma,f16c"
 #define MY_TARGETS(X, ...) X(avx2_half, __VA_ARGS__) X(avx2, __VA_ARGS__)
-static_assert(SIMD_TARGET_ISA(avx2_half).f16c);
+static_assert(NATIVE_TARGET_ISA(avx2_half).f16c);
 ```
 
-That same literal supplies the Clang attribute and `SIMD_TARGET_ISA(name)` value
+That same literal supplies the Clang attribute and `NATIVE_TARGET_ISA(name)` value
 used for admission. The registry accounts for compiler-implied prerequisites, and the generated
 list includes inherited translation-unit requirements. Reordering feature
 names or repeating an implied feature does not make another ISA value. Do not put
@@ -152,13 +153,13 @@ two spellings of the same canonical feature set in one list.
 Supported positive feature names may be combined freely within one host
 architecture. Unknown features, CPU-name shortcuts and negative feature strings
 are rejected: silently guessing their admission requirements would make the
-dispatch unsafe. The registry in `simd/isa.h` defines the supported vocabulary.
+dispatch unsafe. The registry in `native/isa.h` defines the supported vocabulary.
 Clang target pragmas do not change predefined macros such as `__AVX512F__`;
-write variant choices using `A.has(simd::x86_feature::avx512f)`, `A.avx512f`, or
-subset comparisons such as `simd::avx512 <= A`.
+write variant choices using `A.has(native::x86_feature::avx512f)`, `A.avx512f`, or
+subset comparisons such as `native::avx512 <= A`.
 
 Ordinary feature construction and conjunction do not add prerequisites:
-`simd::isa(simd::x86_feature::avx2)` has exactly the AVX2 bit. Use
+`native::isa(native::x86_feature::avx2)` has exactly the AVX2 bit. Use
 `feature_closure` when constructing compiler requirements yourself. The named
 presets are feature bundles; CPU-model bundles remain future work.
 
@@ -173,13 +174,13 @@ The hub already guards its intrinsic headers by CPU family. Use the same
 boundary when including them yourself:
 
 ```cpp
-#include <simd/config.h>
-#if SIMD_HOST_X86
+#include <native/config.h>
+#if NATIVE_HOST_X86
 #include <immintrin.h>
-#elif SIMD_HOST_NEON
+#elif NATIVE_HOST_NEON
 #include <arm_neon.h>
 #endif
-import simd;
+import native;
 ```
 
 These guards describe the compilation target, not a runtime CPU check. Keep
@@ -196,41 +197,42 @@ changes template identity and symbol names in compiled interfaces. Rebuild BMIs
 and code that exchanges these vector types across a library boundary when updating;
 ordinary pointer/scalar entry interfaces keep their declared ABI.
 
-The CMake targets named `simd::avx2`, `simd::avx512` and the native-half profiles
-are compatibility aliases for `simd::simd`. The old ISA-specific module names are replaced by the
-hub import. `simd_target_omnibus` is retained as a compatibility no-op.
-`simd_target_profile` remains available for applications that explicitly want
+The CMake targets named `native::avx2`, `native::avx512` and the native-half profiles
+are compatibility aliases for `native::native`. The old ISA-specific module names are replaced by the
+hub import. `native_target_omnibus` is retained as a compatibility no-op.
+`native_target_profile` remains available for applications that explicitly want
 whole-translation-unit targeting; it is not needed for source target lists.
 
-Project setup chooses `SIMD_MINIMAL_COMPILE_OPTIONS`. Its default is AVX2/FMA/BMI2
-on x86 and NEON on ARM. The process must satisfy that minimum before executing
+Project setup chooses `NATIVE_MINIMAL_COMPILE_OPTIONS`. Its empty default retains
+the toolchain's baseline. The process must satisfy that minimum before executing
 any code, including the dispatcher.
 
 The source helper records registered features advertised by Clang's predefined
 macros. CPU-model options can enable additional instructions without a matching
 macro, so it cannot infer every requirement of an arbitrary `-mcpu` or `-march`
-name. When needed, define `SIMD_TARGET_EXTRA_MINIMUM` before including
-`<simd/targets.h>` as an additional ISA value, for example
-`simd::target_features("avx2,f16c")`. This adds to admission requirements;
+name. When needed, define `NATIVE_TARGET_EXTRA_MINIMUM` before including
+`<native/targets.h>` as an additional ISA value, for example
+`native::target_features("avx2,f16c")`. This adds to admission requirements;
 it does not change compiler flags or make startup safe below the project minimum.
 
 ## Capability module migration
 
-Import `simd.cpu` for the shared feature/ISA vocabulary and the native platform's
-CPU utilities without the vector hub. It re-exports `simd.cpu.x86` and `simd.wait`
-on x86, or `simd.cpu.arm` on AArch64. Both architectures' feature names remain
+Import `native.isa` for the shared feature/ISA vocabulary and admission interfaces
+alone. It is the sole module provider of those declarations. Import `native.features`
+to add the native platform's CPU utilities without the vector hub. It re-exports `native.x86.features`
+on x86, or `native.arm.features` on AArch64. Both architectures' feature names remain
 available on either host.
 
-The platform modules are `simd.cpu.x86` and `simd.cpu.arm`. Each exports the shared
-`isa`, `classify_isa` and `with_isa` interface alongside its native capability
-snapshot and observer. Native snapshots expose architecture-typed `present`
+The platform modules are `native.x86.features` and `native.arm.features`. Each re-exports
+`native.isa` and adds its native capability snapshot and observer. Native snapshots expose architecture-typed `present`
 and `observed` sets; both must contain a required feature. Their nested `raw`
-query results are diagnostics, not a second admission source. Standalone capability consumers link `simd::common`;
+query results are diagnostics, not a second admission source. Standalone capability consumers link `native::common`;
 they do not need the vector hub. The raw `cpuid` function and vendor query remain
-in `simd.cpu.x86`, and waiting instructions remain in `simd.wait`.
+in `native.x86.features`, and waiting instructions remain in `native.x86.wait`.
 
-Replace the former `simd.cpuid` import with `simd.cpu.x86`, and `simd.arm` with
-`simd.cpu.arm`; use `simd.cpu` for portable imports. The fixed `x86_profile`
+Replace `simd.cpu.x86` (or the older `simd.cpuid`) with `native.x86.features`, and
+`simd.cpu.arm` (or the older `simd.arm`) with `native.arm.features`.
+Use `native.features` for portable imports. The fixed `x86_profile`
 and `arm_profile` enums, their classifiers and per-platform admission records
 have been removed. Pass the existing ISA values to `classify_isa(cpu, avx2)` or
 `classify_isa(cpu, neon_fp16)`, or use a finite list with `with_isa` when selecting

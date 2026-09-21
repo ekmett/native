@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-import simd.wide;
+import native.wide;
 
 constexpr bool import_only() {
-  simd::wide one{7};
+  native::wide one{7};
   auto [a] = one;
-  simd::wide values{1,2,3};
+  native::wide values{1,2,3};
   auto [x,y,z] = values;
   auto const sum = values + values;
   auto [p,q,r] = sum;

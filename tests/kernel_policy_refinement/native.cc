@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <simd/targets.h>
+#include <native/targets.h>
 #include <array>
 #include <bit>
 #include <cstdint>
 #include <cstdio>
 #include <type_traits>
 #include <utility>
-#if SIMD_TEST_IMPORT
-import simd;
+#if NATIVE_TEST_IMPORT
+import native;
+import native.math;
 #else
-#include <simd/vec.h>
-#include <simd/wide.h>
+#include <native/vec.h>
+#include <native/wide.h>
 #if defined(__x86_64__) || defined(_M_X64)
-import simd.cpu.x86;
+import native.x86.features;
 #elif defined(__aarch64__) || defined(_M_ARM64)
-import simd.cpu.arm;
+import native.arm.features;
 #endif
 #endif
 #include "generic.h"
@@ -24,45 +25,45 @@ import simd.cpu.arm;
 #define CASE_NAMESPACE case_avx2
 #define CASE_WIDTH 8
 #define CASE_SCOPE avx2
-SIMD_TARGET_PUSH(avx2)
+NATIVE_TARGET_PUSH(avx2)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_base "avx2,fma,bmi2,avx512f,avx512dq"
+#define NATIVE_TARGET_kernel_base "avx2,fma,avx512f,avx512dq"
 #define CASE_TARGET kernel_base
 #define CASE_NAMESPACE case_kernel_base
 #define CASE_WIDTH 16
 #define CASE_SCOPE kernel_base
-SIMD_TARGET_PUSH(kernel_base)
+NATIVE_TARGET_PUSH(kernel_base)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_bw "avx2,fma,bmi2,avx512f,avx512dq,avx512bw"
+#define NATIVE_TARGET_kernel_bw "avx2,fma,avx512f,avx512dq,avx512bw"
 #define CASE_TARGET kernel_bw
 #define CASE_NAMESPACE case_kernel_bw
 #define CASE_WIDTH 16
 #define CASE_SCOPE kernel_bw
-SIMD_TARGET_PUSH(kernel_bw)
+NATIVE_TARGET_PUSH(kernel_bw)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_vl "avx2,fma,bmi2,avx512f,avx512dq,avx512vl"
+#define NATIVE_TARGET_kernel_vl "avx2,fma,avx512f,avx512dq,avx512vl"
 #define CASE_TARGET kernel_vl
 #define CASE_NAMESPACE case_kernel_vl
 #define CASE_WIDTH 16
 #define CASE_SCOPE kernel_vl
-SIMD_TARGET_PUSH(kernel_vl)
+NATIVE_TARGET_PUSH(kernel_vl)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -71,21 +72,21 @@ SIMD_TARGET_POP()
 #define CASE_NAMESPACE case_avx512
 #define CASE_WIDTH 16
 #define CASE_SCOPE avx512
-SIMD_TARGET_PUSH(avx512)
+NATIVE_TARGET_PUSH(avx512)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_bw_bf16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16"
+#define NATIVE_TARGET_kernel_bw_bf16 "avx2,fma,avx512f,avx512dq,avx512bw,avx512bf16"
 #define CASE_TARGET kernel_bw_bf16
 #define CASE_NAMESPACE case_kernel_bw_bf16
 #define CASE_WIDTH 16
 #define CASE_SCOPE kernel_bw
-SIMD_TARGET_PUSH(kernel_bw)
+NATIVE_TARGET_PUSH(kernel_bw)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -94,21 +95,21 @@ SIMD_TARGET_POP()
 #define CASE_NAMESPACE case_avx512_bf16
 #define CASE_WIDTH 16
 #define CASE_SCOPE avx512
-SIMD_TARGET_PUSH(avx512)
+NATIVE_TARGET_PUSH(avx512)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_bw_fp16 "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512fp16"
+#define NATIVE_TARGET_kernel_bw_fp16 "avx2,fma,avx512f,avx512dq,avx512bw,avx512fp16"
 #define CASE_TARGET kernel_bw_fp16
 #define CASE_NAMESPACE case_kernel_bw_fp16
 #define CASE_WIDTH 16
 #define CASE_SCOPE kernel_bw
-SIMD_TARGET_PUSH(kernel_bw)
+NATIVE_TARGET_PUSH(kernel_bw)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -117,33 +118,33 @@ SIMD_TARGET_POP()
 #define CASE_NAMESPACE case_avx512_fp16
 #define CASE_WIDTH 16
 #define CASE_SCOPE avx512
-SIMD_TARGET_PUSH(avx512)
+NATIVE_TARGET_PUSH(avx512)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_bw_half "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16"
+#define NATIVE_TARGET_kernel_bw_half "avx2,fma,avx512f,avx512dq,avx512bw,avx512bf16,avx512fp16"
 #define CASE_TARGET kernel_bw_half
 #define CASE_NAMESPACE case_kernel_bw_half
 #define CASE_WIDTH 16
 #define CASE_SCOPE kernel_bw
-SIMD_TARGET_PUSH(kernel_bw)
+NATIVE_TARGET_PUSH(kernel_bw)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_half "avx2,fma,bmi2,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"
+#define NATIVE_TARGET_kernel_half "avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16,avx512fp16"
 #define CASE_TARGET kernel_half
 #define CASE_NAMESPACE case_kernel_half
 #define CASE_WIDTH 16
 #define CASE_SCOPE avx512
-SIMD_TARGET_PUSH(avx512)
+NATIVE_TARGET_PUSH(avx512)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -155,9 +156,9 @@ SIMD_TARGET_POP()
 #define CASE_NAMESPACE case_neon
 #define CASE_WIDTH 4
 #define CASE_SCOPE neon
-SIMD_TARGET_PUSH(neon)
+NATIVE_TARGET_PUSH(neon)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -166,9 +167,9 @@ SIMD_TARGET_POP()
 #define CASE_NAMESPACE case_neon_bf16
 #define CASE_WIDTH 4
 #define CASE_SCOPE neon
-SIMD_TARGET_PUSH(neon)
+NATIVE_TARGET_PUSH(neon)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -177,21 +178,21 @@ SIMD_TARGET_POP()
 #define CASE_NAMESPACE case_neon_fp16
 #define CASE_WIDTH 4
 #define CASE_SCOPE neon
-SIMD_TARGET_PUSH(neon)
+NATIVE_TARGET_PUSH(neon)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
 #undef CASE_SCOPE
-#define SIMD_TARGET_kernel_arm_half "neon,fullfp16,bf16"
+#define NATIVE_TARGET_kernel_arm_half "neon,fullfp16,bf16"
 #define CASE_TARGET kernel_arm_half
 #define CASE_NAMESPACE case_kernel_arm_half
 #define CASE_WIDTH 4
 #define CASE_SCOPE neon
-SIMD_TARGET_PUSH(neon)
+NATIVE_TARGET_PUSH(neon)
 #include "case_body.h"
-SIMD_TARGET_POP()
+NATIVE_TARGET_POP()
 #undef CASE_TARGET
 #undef CASE_NAMESPACE
 #undef CASE_WIDTH
@@ -202,11 +203,11 @@ int main() {
   if(!generic_test::check()) return 1;
   unsigned passed=0,skipped=0;
 #if defined(__x86_64__) || defined(_M_X64)
-  auto cpu=simd::observe_x86_capabilities();
+  auto cpu=native::observe_x86_capabilities();
 #elif defined(__aarch64__) || defined(_M_ARM64)
-  auto cpu=simd::observe_arm_capabilities();
+  auto cpu=native::observe_arm_capabilities();
 #endif
-#define RUN(name,scope) if(simd::classify_isa(cpu,SIMD_TARGET_ISA(scope),SIMD_TARGET_MINIMUM).admitted()) { \
+#define RUN(name,scope) if(native::classify_isa(cpu,NATIVE_TARGET_ISA(scope),NATIVE_TARGET_MINIMUM).admitted()) { \
   if(!case_##name::check()) {std::printf("FAIL %s\n",#name);return 2;} \
   ++passed;std::printf("PASS %s\n",#name); \
 } else {++skipped;std::printf("SKIP %s: CPU/OS admission\n",#name);}

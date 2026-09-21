@@ -1,7 +1,7 @@
 # Type utilities module tests
 
-`simd.types` exports `type<T>`, `type_of`, `one_of_t` and `not_one_of_t` from the
-baseline common provider. `simd.numerics` re-exports it. Type names are backed by
+`native.types` exports `type<T>`, `type_of`, `one_of_t` and `not_one_of_t` from the
+baseline common provider. `native.numerics` re-exports it. Type names are backed by
 an owning static string shared across importers. Windows uses the MSVC-ABI
 `typeid` name; platforms with `cxxabi.h` try demangling and fall back on failure.
 Exact spelling is implementation-defined. Allocating initialization has no

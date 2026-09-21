@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Focused metadata-only provider for the stand-alone developer check. The
-// installed and producer CMake fixtures below import the real simd hub instead.
-module;
-#include <simd/isa.h>
-export module simd_target_metadata;
-#include <simd/isa_exports.h>
+// installed and producer CMake fixtures below import the real native hub instead.
+export module native_target_metadata;
+export import native.isa;

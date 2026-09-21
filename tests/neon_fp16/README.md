@@ -1,10 +1,10 @@
 # Native NEON FP16 profile
 
-The AArch64 hub exposes the `neon_fp16` API through `import simd;` at the
+The AArch64 hub exposes the `neon_fp16` API through `import native;` at the
 configured project minimum. Native operations carry Clang's `fullfp16`
 requirement. Use the [source target helper](../../docs/omnibus.md) for variants
 in one translation unit, or compile a separate kernel with
-`simd_target_profile(kernel NEON_FP16)` as this fixture does. Common modules
+`native_target_profile(kernel NEON_FP16)` as this fixture does. Common modules
 keep one provider. Importing the hub does not admit optional instructions.
 
 `vec<fp16,8,neon_fp16>` provides exact representation storage, addition,
@@ -21,7 +21,7 @@ is implemented; native numeric conversions remain future work. Native ARM BF16 s
 products have a separate [NEON_BF16 profile](../neon_bf16/README.md).
 
 Before entering a translation unit compiled for NEON_FP16, a minimum-profile
-caller imports `simd.cpu.arm`, calls `observe_arm_capabilities()`, and requires
+caller imports `native.arm.features`, calls `observe_arm_capabilities()`, and requires
 `classify_isa(cpu, neon_fp16).admitted()`. The classifier
 requires baseline FP/Advanced SIMD and scalar/vector half arithmetic. Any stronger
 application-configured minimum remains the application's startup requirement.
@@ -56,7 +56,7 @@ runs exhaustive exact format and midpoint checks. It does not use host floating
 point to determine arithmetic results.
 
 After installation, physically move the install prefix and configure this
-directory as a standalone project with `simd_DIR` pointing into the moved package.
+directory as a standalone project with `native_DIR` pointing into the moved package.
 The consumer compiles hub imports with and without a PCH, runs the same admitted
 native tests, and verifies one BMI for the hub and each common module.
 `tests/omnibus` also exercises an admitted ARM kernel; `tests/half_storage`
@@ -74,7 +74,7 @@ ASan, the explicit FP16-disabled minimum, relocated consumers, PCH and shared-BM
 checks passed with actual execution. This supplements hosted LLVM 23 qualification.
 Windows LLVM 23.1.1 clang-cl also compiled the ARM64 profile, admission, kernels,
 PCH and test driver at the ARMv8-A minimum and passed code-generation and
-effective-minimum checks with `SIMD_MINIMAL_HAS_NEON_FP16=0`; that local x64 host
+effective-minimum checks with `NATIVE_MINIMAL_HAS_NEON_FP16=0`; that local x64 host
 did not execute ARM64 code. Its default x86 suite passed 49 tests.
 The optional slice leaves issue 15 open for the remaining native-half backends
 and operations.

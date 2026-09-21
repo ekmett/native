@@ -1,13 +1,13 @@
 # Apple ARM64 NEON checks
 
-`SIMD_TEST_ISA=NEON` selects the primary test profile. The AArch64 hub includes
+`NATIVE_TEST_ISA=NEON` selects the primary test profile. The AArch64 hub includes
 NEON and native half families. Architecture tags distinguish their types.
 No runtime SIMD dispatch or x86 flags are needed.
 
 Run `run.py` through the host's CPU resource gate, using a fresh output directory:
 
 ```sh
-python3 tests/neon/run.py --source /path/to/simd --source-commit <revision> --tools /path/to/tool-root --out /path/to/new-output --lease-env HOST_CPU_LEASE
+python3 tests/neon/run.py --source /path/to/native --source-commit <revision> --tools /path/to/tool-root --out /path/to/new-output --lease-env HOST_CPU_LEASE
 ```
 
 `--lease-env` is optional and checks that the named environment variable is

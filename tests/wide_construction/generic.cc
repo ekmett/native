@@ -6,10 +6,10 @@
 #include <cstring>
 #include <exception>
 #include <type_traits>
-#if SIMD_TEST_IMPORT
-import simd.wide;
+#if NATIVE_TEST_IMPORT
+import native.wide;
 #else
-#include <simd/wide.h>
+#include <native/wide.h>
 #endif
 #include "traits.h"
 
@@ -51,11 +51,11 @@ static_assert(check_traits<int>() && check_traits<const int>() &&
   check_traits<immobile>() && check_traits<tracked>());
 
 constexpr bool constants() {
-  simd::wide<int,0> empty;
-  simd::wide<int,3> zero{};
-  simd::wide<initialized,3> member_default;
-  simd::wide<no_default,0> deleted_element;
-  simd::wide<move_only,0> movable;
+  native::wide<int,0> empty;
+  native::wide<int,3> zero{};
+  native::wide<initialized,3> member_default;
+  native::wide<no_default,0> deleted_element;
+  native::wide<move_only,0> movable;
   auto moved=static_cast<decltype(movable) &&>(movable);
   return empty.registers.empty() && deleted_element.registers.empty() &&
     moved.registers.empty() && zero.get<0>()==0 && zero.get<2>()==0 &&
@@ -77,7 +77,7 @@ template<class W,bool Value> events construction() {
 }
 template<std::size_t N,bool Value> bool effects() {
   auto before=construction<old_wide<tracked,N>,Value>();
-  auto after=construction<simd::wide<tracked,N>,Value>();
+  auto after=construction<native::wide<tracked,N>,Value>();
   return before==after;
 }
 bool effects() {
@@ -97,9 +97,9 @@ int main(int argc,char ** argv) {
     fail_construction=true;
     events result;
     if(std::strcmp(argv[1],"old-default")==0) result=construction<old_wide<tracked,0>,false>();
-    else if(std::strcmp(argv[1],"new-default")==0) result=construction<simd::wide<tracked,0>,false>();
+    else if(std::strcmp(argv[1],"new-default")==0) result=construction<native::wide<tracked,0>,false>();
     else if(std::strcmp(argv[1],"old-value")==0) result=construction<old_wide<tracked,0>,true>();
-    else if(std::strcmp(argv[1],"new-value")==0) result=construction<simd::wide<tracked,0>,true>();
+    else if(std::strcmp(argv[1],"new-value")==0) result=construction<native::wide<tracked,0>,true>();
     else return 4;
     std::printf("returned %d %d %d\n",result.constructed,result.destroyed,result.caught);
     return 0;

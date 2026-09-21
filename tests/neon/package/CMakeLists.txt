@@ -1,25 +1,25 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 cmake_minimum_required(VERSION 4.4)
-project(simd_neon_package LANGUAGES CXX)
-find_package(simd CONFIG REQUIRED COMPONENTS simd)
+project(native_neon_package LANGUAGES CXX)
+find_package(native CONFIG REQUIRED COMPONENTS native)
 enable_testing()
 foreach(kind IN ITEMS header import)
   add_library(neon_${kind} OBJECT bridge.cc)
-  target_link_libraries(neon_${kind} PRIVATE simd::common simd::neon)
-  simd_target_profile(neon_${kind} NEON)
+  target_link_libraries(neon_${kind} PRIVATE native::common native::neon)
+  native_target_profile(neon_${kind} NEON)
   target_include_directories(neon_${kind} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
   if(kind STREQUAL "header")
     set(interface 0)
   else()
     set(interface 1)
   endif()
-  target_compile_definitions(neon_${kind} PRIVATE SIMD_TEST_PROFILE=128
-    SIMD_TEST_INTERFACE=${interface} SIMD_TEST_ENTRY=profile_neon_${kind})
+  target_compile_definitions(neon_${kind} PRIVATE NATIVE_TEST_PROFILE=128
+    NATIVE_TEST_INTERFACE=${interface} NATIVE_TEST_ENTRY=profile_neon_${kind})
 endforeach()
 add_executable(neon_package neon.cc $<TARGET_OBJECTS:neon_header> $<TARGET_OBJECTS:neon_import>)
-target_link_libraries(neon_package PRIVATE simd::simd simd::common simd::neon)
-simd_target_profile(neon_package NEON)
+target_link_libraries(neon_package PRIVATE native::native native::common native::neon)
+native_target_profile(neon_package NEON)
 add_test(NAME package.neon COMMAND neon_package "${CMAKE_CURRENT_BINARY_DIR}/neon.bin")
 
 target_include_directories(neon_package PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")

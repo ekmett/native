@@ -9,7 +9,7 @@
 #endif
 
 // Test-only FP environment fixture. No dependency on a production setup API.
-namespace simd::test {
+namespace native::test {
   enum class fp_mode { gradual, flush };
   struct fp_state {
     std::uint64_t control, status;

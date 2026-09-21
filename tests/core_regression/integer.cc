@@ -33,7 +33,7 @@ template <class T, unsigned K> T right(T a) {
 template <class T, std::size_t N, class F>
 void result(test_vec<T, N> x, std::array<T, N> const &a, std::array<T, N> const &b, F f) {
   std::array<T, N> actual{};
-  simd::store_simd(actual.data(), x);
+  native::store_simd(actual.data(), x);
   for (std::size_t i = 0; i < N; ++i)
     check(actual[i] == f(a[i], b[i]));
 }
@@ -80,7 +80,7 @@ template <class T, std::size_t N> void test() {
       if (round < 8)
         a[i] = word<T>((round & 1) ? ~std::uint64_t(0) : std::uint64_t(1) << (round * 8));
     }
-    auto va = simd::load_simd<test_vec<T,N>>(a.data()), vb = simd::load_simd<test_vec<T,N>>(b.data());
+    auto va = native::load_simd<test_vec<T,N>>(a.data()), vb = native::load_simd<test_vec<T,N>>(b.data());
     result(va + vb, a, b, add<T>);
     result(va - vb, a, b, sub<T>);
     result(va * vb, a, b, mul<T>);
@@ -114,37 +114,37 @@ template <class T, std::size_t N> void test() {
     result(masked_mul(va > vb, vb, va, vb), a, b, [](T x, T y) { return x > y ? mul(x, y) : y; });
     auto projected = mask_bits<T>(va > vb);
     std::array<U<T>, N> pm{};
-    simd::store_simd(pm.data(), projected);
+    native::store_simd(pm.data(), projected);
     for (std::size_t i = 0; i < N; ++i)
       check(pm[i] == (a[i] > b[i] ? U<T>(~U<T>(0)) : U<T>(0)));
   }
-  shifts(simd::load_simd<test_vec<T,N>>(a.data()), a, std::make_index_sequence<sizeof(T) * 8>{});
+  shifts(native::load_simd<test_vec<T,N>>(a.data()), a, std::make_index_sequence<sizeof(T) * 8>{});
   auto full = test_vec<test_backend::mask_lane_for<T>, N>::from_bitset(0xaaaaaaaaaaaaaaaaull);
-  auto fa = simd::load_simd<test_vec<T,N>>(a.data()), fb = simd::load_simd<test_vec<T,N>>(b.data());
+  auto fa = native::load_simd<test_vec<T,N>>(a.data()), fb = native::load_simd<test_vec<T,N>>(b.data());
   std::array<T, N> selected{};
-  simd::store_simd(selected.data(), masked_add(full, fb, fa, fb));
+  native::store_simd(selected.data(), masked_add(full, fb, fa, fb));
   for (std::size_t i = 0; i < N; ++i)
     check(selected[i] == ((i & 1) ? add(a[i], b[i]) : b[i]));
-  simd::test::guarded_pages page;
+  native::test::guarded_pages page;
   for (std::size_t n = 0; n <= N; ++n) {
     auto p = reinterpret_cast<T *>(page.end() - n * sizeof(T));
     if (n)
       std::memcpy(p, a.data(), n * sizeof(T));
-    auto v = simd::load_simd_partial<test_vec<T,N>>(p, n);
+    auto v = native::load_simd_partial<test_vec<T,N>>(p, n);
     std::array<T, N> actual{};
-    simd::store_simd(actual.data(), v);
+    native::store_simd(actual.data(), v);
     for (std::size_t i = 0; i < N; ++i)
       check(actual[i] == (i < n ? a[i] : T(0)));
-    simd::store_simd_partial(p, simd::load_simd<test_vec<T,N>>(b.data()), n);
+    native::store_simd_partial(p, native::load_simd<test_vec<T,N>>(b.data()), n);
     for (std::size_t i = 0; i < n; ++i)
       check(p[i] == b[i]);
     auto q = reinterpret_cast<T *>(page.begin());
-    simd::store_simd_partial(q, v, n);
+    native::store_simd_partial(q, v, n);
     for (std::size_t i = 0; i < n; ++i)
       check(q[i] == a[i]);
   }
-  auto zero = simd::load_simd_partial<test_vec<T,N>>(static_cast<T const *>(nullptr), 0);
-  simd::store_simd_partial(static_cast<T *>(nullptr), zero, 0);
+  auto zero = native::load_simd_partial<test_vec<T,N>>(static_cast<T const *>(nullptr), 0);
+  native::store_simd_partial(static_cast<T *>(nullptr), zero, 0);
   check(none(zero != V(T(0))));
 }
 template <class T> void widths() {
@@ -173,7 +173,7 @@ int main() {
   test_vec<int32_t,4> mixed{int16_t(1), uint16_t(2), int32_t(3), int32_t(4)};
   static_assert(std::same_as<decltype(mixed), test_vec<int32_t, 4>>);
   std::array<int32_t, 4> lanes{};
-  simd::store_simd(lanes.data(), mixed);
+  native::store_simd(lanes.data(), mixed);
   check((lanes == std::array<int32_t, 4>{1, 2, 3, 4}));
 #endif
   widths<int8_t>();

@@ -1,10 +1,10 @@
 #if PROFILE_AVX2
-import simd;
-using V=simd::vec<float,8,simd::avx2>;
+import native;
+using V=native::vec<float,8,native::avx2>;
 #define ENTRY kernel_avx2
 #else
-import simd;
-using V=simd::vec<float,16,simd::avx512>;
+import native;
+using V=native::vec<float,16,native::avx512>;
 #define ENTRY kernel_avx512
 #endif
 extern "C" int ENTRY(float const *input,float *out) {

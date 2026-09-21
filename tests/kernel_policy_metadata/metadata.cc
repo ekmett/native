@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include "simd/value_traits.h"
+#include "native/value_traits.h"
 
 namespace {
-  using namespace simd;
-  using namespace simd::detail;
+  using namespace native;
+  using namespace native::detail;
   struct custom_element {};
   struct custom_value { static constexpr isa architecture=kernel_full_half; };
   struct malformed_value { using architecture=int; };

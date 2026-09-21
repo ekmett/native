@@ -1,0 +1,19 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa.h"
+export module native.features;
+export import native.isa;
+#if defined(__x86_64__) || defined(_M_X64)
+export import native.x86.features;
+export namespace native {
+  using cpu_capabilities = x86_capabilities;
+  inline cpu_capabilities observe_cpu() noexcept { return observe_x86_capabilities(); }
+}
+#elif defined(__aarch64__) || defined(_M_ARM64)
+export import native.arm.features;
+export namespace native {
+  using cpu_capabilities = arm_capabilities;
+  inline cpu_capabilities observe_cpu() noexcept { return observe_arm_capabilities(); }
+}
+#endif

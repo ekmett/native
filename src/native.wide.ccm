@@ -1,0 +1,34 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/attributes.h"
+#include "native/isa.h"
+#include "native/value_traits.h"
+#include "native/wide_pack.h"
+
+#include <array>
+#include <concepts>
+#include <cmath>
+#include <cstddef>
+#include <functional>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+
+
+export module native.wide;
+export import native.isa;
+
+export namespace wide {
+  using ::wide::pack;
+  using ::wide::promotable;
+  using ::wide::traits;
+  using ::wide::canonical_t;
+  using ::wide::promote;
+  using ::wide::demote;
+  using ::wide::map;
+}
+
+export {
+#include "native/wide.h"
+}

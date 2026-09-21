@@ -8,33 +8,33 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-#include <simd/attributes.h>
+#include <native/attributes.h>
 #include "../core_regression/support/fp_environment.h"
-#if SIMD_ROUNDING_HEADER
-#define SIMD_PROFILE SIMD_ROUNDING_PROFILE
-#include <simd/vec.h>
-import simd.wide;
+#if NATIVE_ROUNDING_HEADER
+#define NATIVE_PROFILE NATIVE_ROUNDING_PROFILE
+#include <native/vec.h>
+import native.wide;
 #else
-import simd.scalar;
-#if SIMD_ROUNDING_PROFILE == 256
-import simd;
-#elif SIMD_ROUNDING_PROFILE == 512
-import simd;
-#elif SIMD_ROUNDING_PROFILE == 128
-import simd;
+import native.scalar;
+#if NATIVE_ROUNDING_PROFILE == 256
+import native;
+#elif NATIVE_ROUNDING_PROFILE == 512
+import native;
+#elif NATIVE_ROUNDING_PROFILE == 128
+import native;
 #endif
 #endif
 
-#if SIMD_ROUNDING_PROFILE == 256
-constexpr auto arch = simd::avx2;
-#elif SIMD_ROUNDING_PROFILE == 512
-constexpr auto arch = simd::avx512;
-#elif SIMD_ROUNDING_PROFILE == 128
-constexpr auto arch = simd::neon;
+#if NATIVE_ROUNDING_PROFILE == 256
+constexpr auto arch = native::avx2;
+#elif NATIVE_ROUNDING_PROFILE == 512
+constexpr auto arch = native::avx512;
+#elif NATIVE_ROUNDING_PROFILE == 128
+constexpr auto arch = native::neon;
 #else
-constexpr auto arch = simd::scalar;
+constexpr auto arch = native::scalar;
 #endif
-template<std::size_t N> using V = simd::vec<float,N,arch>;
+template<std::size_t N> using V = native::vec<float,N,arch>;
 enum class direction { down, up, zero };
 static std::size_t checks;
 
@@ -58,70 +58,70 @@ static void check(std::uint32_t input,float value,direction d) {
   auto const actual = std::bit_cast<std::uint32_t>(value), expected = oracle(input,d);
   if (actual != expected && !(nan_word(actual) && nan_word(expected))) {
     std::fprintf(stderr,"profile=%d op=%u input=%08x got=%08x expected=%08x rounding=%d\n",
-      SIMD_ROUNDING_PROFILE,unsigned(d),input,actual,expected,std::fegetround());
+      NATIVE_ROUNDING_PROFILE,unsigned(d),input,actual,expected,std::fegetround());
     std::abort();
   }
   ++checks;
 }
 template<std::size_t N> static void check_vector(std::array<std::uint32_t,N> const & words,V<N> value,direction d) {
   std::array<float,N> result{};
-  simd::store_simd(result.data(),value);
+  native::store_simd(result.data(),value);
   for (std::size_t i=0;i<N;++i) check(words[i],result[i],d);
   if constexpr (N == 2 || N == 3) {
     auto const storage = value.to_storage();
     std::array<float,4> padding{};
-    simd::store_simd(padding.data(),storage);
+    native::store_simd(padding.data(),storage);
     for (std::size_t i=N;i<4;++i) if (std::bit_cast<std::uint32_t>(padding[i]) != 0) std::abort();
   }
 }
 template<std::size_t N> static void shape(std::vector<std::uint32_t> const & words) {
-  static_assert(std::same_as<decltype(simd::floor(V<N>{})),V<N>>);
-  static_assert(std::same_as<decltype(simd::ceil(V<N>{})),V<N>>);
-  static_assert(std::same_as<decltype(simd::trunc(V<N>{})),V<N>>);
-  static_assert(noexcept(simd::floor(V<N>{})) && noexcept(simd::ceil(V<N>{})) && noexcept(simd::trunc(V<N>{})));
+  static_assert(std::same_as<decltype(native::floor(V<N>{})),V<N>>);
+  static_assert(std::same_as<decltype(native::ceil(V<N>{})),V<N>>);
+  static_assert(std::same_as<decltype(native::trunc(V<N>{})),V<N>>);
+  static_assert(noexcept(native::floor(V<N>{})) && noexcept(native::ceil(V<N>{})) && noexcept(native::trunc(V<N>{})));
   std::array<V<N>,0> empty{};
-  (void)simd::floor(empty); (void)simd::ceil(empty); (void)simd::trunc(empty);
-  simd::wide<V<N>,0> empty_wide{};
-  (void)simd::floor(empty_wide); (void)simd::ceil(empty_wide); (void)simd::trunc(empty_wide);
+  (void)native::floor(empty); (void)native::ceil(empty); (void)native::trunc(empty);
+  native::wide<V<N>,0> empty_wide{};
+  (void)native::floor(empty_wide); (void)native::ceil(empty_wide); (void)native::trunc(empty_wide);
   for (std::size_t offset=0;offset<words.size();offset+=N) {
     std::array<std::uint32_t,N> u{};
     std::array<float,N> input{};
     for (std::size_t i=0;i<N;++i) input[i]=std::bit_cast<float>(u[i]=words[(offset+i)%words.size()]);
-    auto const x = simd::load_simd<V<N>>(input.data());
-    check_vector(u,simd::floor(x),direction::down);
-    check_vector(u,simd::ceil(x),direction::up);
-    check_vector(u,simd::trunc(x),direction::zero);
+    auto const x = native::load_simd<V<N>>(input.data());
+    check_vector(u,native::floor(x),direction::down);
+    check_vector(u,native::ceil(x),direction::up);
+    check_vector(u,native::trunc(x),direction::zero);
     // One and several registers exercise the direct array packs and generic
     // module-owned lift, including a scalar element wide separately below.
     std::array<V<N>,1> one{x};
-    check_vector(u,simd::floor(one)[0],direction::down);
-    check_vector(u,simd::ceil(one)[0],direction::up);
-    check_vector(u,simd::trunc(one)[0],direction::zero);
+    check_vector(u,native::floor(one)[0],direction::down);
+    check_vector(u,native::ceil(one)[0],direction::up);
+    check_vector(u,native::trunc(one)[0],direction::zero);
     std::array<V<N>,3> batch{x,x,x};
-    auto const a=simd::floor(batch), b=simd::ceil(batch), c=simd::trunc(batch);
-    auto const wide=simd::wide<V<N>,3>{batch};
-    auto const d=simd::floor(wide), e=simd::ceil(wide), f=simd::trunc(wide);
+    auto const a=native::floor(batch), b=native::ceil(batch), c=native::trunc(batch);
+    auto const wide=native::wide<V<N>,3>{batch};
+    auto const d=native::floor(wide), e=native::ceil(wide), f=native::trunc(wide);
     for (std::size_t i=0;i<3;++i) {
       check_vector(u,a[i],direction::down); check_vector(u,b[i],direction::up); check_vector(u,c[i],direction::zero);
       check_vector(u,d.registers[i],direction::down); check_vector(u,e.registers[i],direction::up); check_vector(u,f.registers[i],direction::zero);
     }
   }
 }
-template<class T> concept has_rounding = requires(T x) { simd::floor(x); simd::ceil(x); simd::trunc(x); };
-static_assert(!has_rounding<simd::vec<std::int32_t,1,arch>>);
-static_assert(!has_rounding<simd::wide<int,2>>);
+template<class T> concept has_rounding = requires(T x) { native::floor(x); native::ceil(x); native::trunc(x); };
+static_assert(!has_rounding<native::vec<std::int32_t,1,arch>>);
+static_assert(!has_rounding<native::wide<int,2>>);
 
 // Ordinary native object witnesses: input/output memory avoids scalar-wrapper
 // ABI attribution. The emitted leaves must contain rounding instructions, not
 // calls to a scalar lane loop. The scalar profile remains baseline-compatible.
 #define ROUND_LEAF(name, op, lanes) \
-extern "C" simd_noinline void name(float * output,float const * input) { \
-  simd::store_simd(output,simd::op(simd::load_simd<V<lanes>>(input))); \
+extern "C" native_noinline void name(float * output,float const * input) { \
+  native::store_simd(output,native::op(native::load_simd<V<lanes>>(input))); \
 }
 ROUND_LEAF(round_floor_1,floor,1)
 ROUND_LEAF(round_ceil_1,ceil,1)
 ROUND_LEAF(round_trunc_1,trunc,1)
-#if SIMD_ROUNDING_PROFILE != 0
+#if NATIVE_ROUNDING_PROFILE != 0
 ROUND_LEAF(round_floor_3,floor,3)
 ROUND_LEAF(round_ceil_3,ceil,3)
 ROUND_LEAF(round_trunc_3,trunc,3)
@@ -129,12 +129,12 @@ ROUND_LEAF(round_floor_4,floor,4)
 ROUND_LEAF(round_ceil_4,ceil,4)
 ROUND_LEAF(round_trunc_4,trunc,4)
 #endif
-#if SIMD_ROUNDING_PROFILE == 256 || SIMD_ROUNDING_PROFILE == 512
+#if NATIVE_ROUNDING_PROFILE == 256 || NATIVE_ROUNDING_PROFILE == 512
 ROUND_LEAF(round_floor_8,floor,8)
 ROUND_LEAF(round_ceil_8,ceil,8)
 ROUND_LEAF(round_trunc_8,trunc,8)
 #endif
-#if SIMD_ROUNDING_PROFILE == 512
+#if NATIVE_ROUNDING_PROFILE == 512
 ROUND_LEAF(round_floor_16,floor,16)
 ROUND_LEAF(round_ceil_16,ceil,16)
 ROUND_LEAF(round_trunc_16,trunc,16)
@@ -154,31 +154,31 @@ int main() {
   for (unsigned i=0;i<4096;++i) {
     state^=state<<13;state^=state>>17;state^=state<<5;words.push_back(state);
   }
-  auto const before=simd::test::read_fp_state();
+  auto const before=native::test::read_fp_state();
   {
-    simd::test::fp_scope scope(simd::test::fp_mode::gradual);
+    native::test::fp_scope scope(native::test::fp_mode::gradual);
     for (int rounding : {FE_TONEAREST,FE_DOWNWARD,FE_UPWARD,FE_TOWARDZERO}) {
       if(std::fesetround(rounding)) std::abort();
-      auto const control=simd::test::read_fp_state().control;
+      auto const control=native::test::read_fp_state().control;
       shape<1>(words);
-#if SIMD_ROUNDING_PROFILE != 0
+#if NATIVE_ROUNDING_PROFILE != 0
       shape<2>(words); shape<3>(words); shape<4>(words);
 #endif
-#if SIMD_ROUNDING_PROFILE == 256 || SIMD_ROUNDING_PROFILE == 512
+#if NATIVE_ROUNDING_PROFILE == 256 || NATIVE_ROUNDING_PROFILE == 512
       shape<8>(words);
 #endif
-#if SIMD_ROUNDING_PROFILE == 512
+#if NATIVE_ROUNDING_PROFILE == 512
       shape<16>(words);
 #endif
       for (auto u : words) {
-        simd::wide<float,1> x{std::array{std::bit_cast<float>(u)}};
-        check(u,simd::floor(x).registers[0],direction::down);
-        check(u,simd::ceil(x).registers[0],direction::up);
-        check(u,simd::trunc(x).registers[0],direction::zero);
+        native::wide<float,1> x{std::array{std::bit_cast<float>(u)}};
+        check(u,native::floor(x).registers[0],direction::down);
+        check(u,native::ceil(x).registers[0],direction::up);
+        check(u,native::trunc(x).registers[0],direction::zero);
       }
-      if(simd::test::read_fp_state().control != control) std::abort();
+      if(native::test::read_fp_state().control != control) std::abort();
     }
   }
-  if(simd::test::read_fp_state()!=before) std::abort();
-  std::printf("profile=%d checks=%zu rounding_modes=4\n",SIMD_ROUNDING_PROFILE,checks);
+  if(native::test::read_fp_state()!=before) std::abort();
+  std::printf("profile=%d checks=%zu rounding_modes=4\n",NATIVE_ROUNDING_PROFILE,checks);
 }

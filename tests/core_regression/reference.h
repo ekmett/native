@@ -1,20 +1,20 @@
 #pragma once
 // Independent staged split-scale exponential reference. Separate names allow
 // this graph to coexist with the pack/native-scale implementation.
-import simd.wide;
+import native.wide;
 #include "support/profile.h"
 #include <limits>
 
 namespace exp_before {
   using namespace test_backend::native;
-  using simd::wide;
+  using native::wide;
   namespace detail {
     template<float_register V> struct exp_state {
       V x, n, r, y;
-      simd_inline explicit exp_state(V input) : x(input) {}
+      native_inline explicit exp_state(V input) : x(input) {}
     };
     template<float_register V> struct exp_stages {
-      template<class ... S> simd_inline wide<V, sizeof...(S)> operator()(S ... a) const noexcept {
+      template<class ... S> native_inline wide<V, sizeof...(S)> operator()(S ... a) const noexcept {
         ((a.r = min(max(a.x, V(-104)), V(88.72283935546875f))), ...);
         ((a.n = round_even(a.r * V(1.4426950408889634f))), ...);
         ((a.r = fma(a.n, V(-0x1.62e400p-1f), a.r)), ...);
@@ -40,7 +40,7 @@ namespace exp_before {
   }
   namespace detail {
     template<float_register V> struct exp_registers {
-      template<class ... X> simd_inline auto operator()(X ... x) const noexcept {
+      template<class ... X> native_inline auto operator()(X ... x) const noexcept {
         return exp_stages<V>{}(exp_state<V>(x)...);
       }
     };
@@ -49,14 +49,14 @@ namespace exp_before {
   // Gradual underflow follows the caller's FP environment; no FTZ/DAZ changes.
   // Each dependency stage expands across independent register chains.
   template<float_register V, std::size_t N>
-  simd_nodiscard simd_inline simd_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
+  native_nodiscard native_inline native_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
     return input.apply(detail::exp_registers<V>{});
   }
-  template<float_register V> simd_nodiscard simd_inline simd_pure V exp(V x) noexcept { return exp_before::exp(wide<V, 1>{{x}}).registers[0]; }
+  template<float_register V> native_nodiscard native_inline native_pure V exp(V x) noexcept { return exp_before::exp(wide<V, 1>{{x}}).registers[0]; }
 #if defined(__ARM_NEON)
   // Compatibility for existing channel-packed callers.
-  simd_nodiscard simd_inline simd_pure float32x4_t exp(float32x4_t x) noexcept { return exp_before::exp(fp32x4(x)).value; }
-  template<std::size_t N> simd_nodiscard simd_inline simd_pure wide<float32x4_t, N> exp(wide<float32x4_t, N> x) noexcept {
+  native_nodiscard native_inline native_pure float32x4_t exp(float32x4_t x) noexcept { return exp_before::exp(fp32x4(x)).value; }
+  template<std::size_t N> native_nodiscard native_inline native_pure wide<float32x4_t, N> exp(wide<float32x4_t, N> x) noexcept {
     wide<fp32x4, N> input;
     for (std::size_t i = 0; i < N; ++i) input.registers[i] = fp32x4(x.registers[i]);
     auto output = exp(input);

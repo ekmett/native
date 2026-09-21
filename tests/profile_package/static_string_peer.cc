@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-import simd.static_string;
-using namespace simd;
+import native.static_string;
+using namespace native;
 void const * static_string_peer(unsigned width) {
   switch (width) {
     case 0: return "installed"_ss.data();

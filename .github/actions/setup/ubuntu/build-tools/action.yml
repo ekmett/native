@@ -8,8 +8,8 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-venv
-        python3 -m venv "${RUNNER_TEMP}/simd-build-tools"
-        "${RUNNER_TEMP}/simd-build-tools/bin/python" -m pip install 'cmake>=4.4,<4.5' 'ninja>=1.12'
-        echo "${RUNNER_TEMP}/simd-build-tools/bin" >> "${GITHUB_PATH}"
-        "${RUNNER_TEMP}/simd-build-tools/bin/cmake" --version
-        "${RUNNER_TEMP}/simd-build-tools/bin/ninja" --version
+        python3 -m venv "${RUNNER_TEMP}/native-build-tools"
+        "${RUNNER_TEMP}/native-build-tools/bin/python" -m pip install 'cmake>=4.4,<4.5' 'ninja>=1.12'
+        echo "${RUNNER_TEMP}/native-build-tools/bin" >> "${GITHUB_PATH}"
+        "${RUNNER_TEMP}/native-build-tools/bin/cmake" --version
+        "${RUNNER_TEMP}/native-build-tools/bin/ninja" --version

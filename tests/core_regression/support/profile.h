@@ -3,59 +3,59 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Select a test architecture without changing the public vec primary.
-#if !defined(SIMD_TEST_PROFILE)
+#if !defined(NATIVE_TEST_PROFILE)
 #if defined(__AVX512F__)
-#define SIMD_TEST_PROFILE 512
+#define NATIVE_TEST_PROFILE 512
 #elif defined(__AVX2__)
-#define SIMD_TEST_PROFILE 256
+#define NATIVE_TEST_PROFILE 256
 #elif defined(__ARM_NEON)
-#define SIMD_TEST_PROFILE 128
+#define NATIVE_TEST_PROFILE 128
 #else
-#define SIMD_TEST_PROFILE 0
+#define NATIVE_TEST_PROFILE 0
 #endif
 #endif
-#if SIMD_TEST_IMPORT
-#if SIMD_TEST_PROFILE == 0
-import simd.scalar;
+#if NATIVE_TEST_IMPORT
+#if NATIVE_TEST_PROFILE == 0
+import native.scalar;
 #else
-import simd;
+import native;
 #endif
 #else
-#if SIMD_TEST_PROFILE == 0
-#define SIMD_PROFILE 0
+#if NATIVE_TEST_PROFILE == 0
+#define NATIVE_PROFILE 0
 #endif
-#include <simd/vec.h>
-#include <simd/simd/math/exp.h>
-#include <simd/simd/math/bits.h>
+#include <native/vec.h>
+#include <native/simd/math/exp.h>
+#include <native/simd/math/bits.h>
 #endif
-#if SIMD_TEST_PROFILE == 512 && SIMD_TEST_AVX512_FP16
-constexpr auto test_arch = simd::avx512_fp16;
-#elif SIMD_TEST_PROFILE == 512 && SIMD_TEST_BF16
-constexpr auto test_arch = simd::avx512_bf16;
-#elif SIMD_TEST_PROFILE == 512
-constexpr auto test_arch = simd::avx512;
-#elif SIMD_TEST_PROFILE == 256
-constexpr auto test_arch = simd::avx2;
-#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_BF16
-constexpr auto test_arch = simd::neon_bf16;
-#elif SIMD_TEST_PROFILE == 128 && SIMD_TEST_FP16
-constexpr auto test_arch = simd::neon_fp16;
-#elif SIMD_TEST_PROFILE == 128
-constexpr auto test_arch = simd::neon;
+#if NATIVE_TEST_PROFILE == 512 && NATIVE_TEST_AVX512_FP16
+constexpr auto test_arch = native::avx512_fp16;
+#elif NATIVE_TEST_PROFILE == 512 && NATIVE_TEST_BF16
+constexpr auto test_arch = native::avx512_bf16;
+#elif NATIVE_TEST_PROFILE == 512
+constexpr auto test_arch = native::avx512;
+#elif NATIVE_TEST_PROFILE == 256
+constexpr auto test_arch = native::avx2;
+#elif NATIVE_TEST_PROFILE == 128 && NATIVE_TEST_BF16
+constexpr auto test_arch = native::neon_bf16;
+#elif NATIVE_TEST_PROFILE == 128 && NATIVE_TEST_FP16
+constexpr auto test_arch = native::neon_fp16;
+#elif NATIVE_TEST_PROFILE == 128
+constexpr auto test_arch = native::neon;
 #else
-constexpr auto test_arch = simd::scalar;
+constexpr auto test_arch = native::scalar;
 #endif
-namespace test_simd = simd;
-#if !SIMD_TEST_IMPORT
-#if SIMD_TEST_PROFILE == 512
-namespace test_backend = simd::detail::avx512_backend;
-#elif SIMD_TEST_PROFILE == 256
-namespace test_backend = simd::detail::avx2_backend;
-#elif SIMD_TEST_PROFILE == 128
-namespace test_backend = simd::detail::neon_backend;
+namespace test_simd = native;
+#if !NATIVE_TEST_IMPORT
+#if NATIVE_TEST_PROFILE == 512
+namespace test_backend = native::detail::avx512_backend;
+#elif NATIVE_TEST_PROFILE == 256
+namespace test_backend = native::detail::avx2_backend;
+#elif NATIVE_TEST_PROFILE == 128
+namespace test_backend = native::detail::neon_backend;
 #else
-namespace test_backend = simd::detail::scalar_backend;
+namespace test_backend = native::detail::scalar_backend;
 #endif
 #endif
 
-template<class T,std::size_t N> using test_vec = simd::vec<T,N,test_arch>;
+template<class T,std::size_t N> using test_vec = native::vec<T,N,test_arch>;

@@ -28,7 +28,7 @@ namespace {
     ~pages() { munmap(base, page * 3); }
   };
   template<class T, std::size_t N> void check(pages &memory) {
-    using V = simd::vec<T,N,test_arch>;
+    using V = native::vec<T,N,test_arch>;
     std::array<T,N> input{}, output{};
     for (std::size_t i=0;i<N;++i) input[i]=T(~std::uint64_t(0) - i * 0x12345678u);
     for (T fill : {T(0), T(1), T(~T(0))}) {
@@ -53,15 +53,15 @@ int main() {
   pages memory;
   check<std::uint32_t,1>(memory);check<std::int32_t,1>(memory);
   check<std::uint64_t,1>(memory);check<std::int64_t,1>(memory);
-#if SIMD_TEST_PROFILE != 0
+#if NATIVE_TEST_PROFILE != 0
   check<std::uint32_t,4>(memory);check<std::int32_t,4>(memory);
   check<std::uint64_t,2>(memory);check<std::int64_t,2>(memory);
 #endif
-#if SIMD_TEST_PROFILE >= 256
+#if NATIVE_TEST_PROFILE >= 256
   check<std::uint32_t,8>(memory);check<std::int32_t,8>(memory);
   check<std::uint64_t,4>(memory);check<std::int64_t,4>(memory);
 #endif
-#if SIMD_TEST_PROFILE == 512
+#if NATIVE_TEST_PROFILE == 512
   check<std::uint32_t,16>(memory);check<std::int32_t,16>(memory);
   check<std::uint64_t,8>(memory);check<std::int64_t,8>(memory);
 #endif

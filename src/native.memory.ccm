@@ -1,0 +1,105 @@
+module;
+// SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <type_traits>
+#include <cstdlib>
+#include <cstring>
+#include <memory>
+#include "native/attributes.h"
+
+#if defined(__unix__) || defined(__APPLE__)
+#include <sys/mman.h>
+#endif
+
+export module native.memory;
+
+/** \defgroup memory_ownership C allocation and mapping ownership
+ * Small unique_ptr deleters for allocations made outside C++ new/delete.
+ * They do not construct or destroy objects in the allocation.
+ * \snippet api.cc common_utilities
+ */
+export namespace native {
+
+  /// \ingroup memory_ownership
+  /// Require trivial destruction of the element type, including array elements.
+  template<typename T>
+  concept trivially_destructible = std::is_trivially_destructible_v<std::remove_extent_t<T>>;
+
+  /// \ingroup memory_ownership
+  /// Release C-allocated storage with std::free; never use it for new-allocated storage.
+  struct c_free {
+    /// Release p without running destructors. A null pointer is allowed.
+    /// \pre A non-null p comes from an allocation compatible with std::free.
+    /// \hideinlinesource
+    template <trivially_destructible T>
+    native_inline native_artificial
+    static void operator()(T * p) noexcept {
+      std::free(const_cast<std::remove_const_t<T>*>(p));
+    }
+  };
+
+  /// \ingroup memory_ownership
+  /// Exclusive ownership of C storage; move or reset it as with std::unique_ptr.
+  template<trivially_destructible T>
+  using unique_c_ptr = std::unique_ptr<T, c_free>;
+
+  static_assert(sizeof(char *)== sizeof(unique_c_ptr<char>),"");
+
+  /// \ingroup memory_ownership
+  /// A read-only C string whose allocation is released by std::free.
+  using unique_str = unique_c_ptr<char const>;
+
+  /// \ingroup memory_ownership
+  /// Duplicate a C string into independent owned storage. Check for allocation failure.
+  /// \snippet api.cc common_utilities
+  /// \pre \p str is non-null
+  /// \post result owns an independent null-terminated copy, or is null if allocation fails
+  /// \hideinlinesource
+  native_nodiscard native_inline native_artificial
+  native_nonnull(1) native_null_terminated_string_arg(1)
+  unique_str dup(
+    native_noescape char const * str
+  ) noexcept {
+    auto const size = std::strlen(str) + 1;
+    auto * copy = static_cast<char *>(std::malloc(size));
+    if (copy == nullptr) return {};
+    std::memcpy(copy, str, size);
+    return unique_str{copy};
+  }
+
+} // native
+
+#if defined(__unix__) || defined(__APPLE__)
+export namespace native {
+
+  /// \ingroup memory_ownership
+  /// POSIX-only mapping deleter. The stored byte length is passed to munmap.
+  struct c_munmap {
+    std::size_t size;
+    /// Unmap a non-null region of size bytes, ignoring the munmap return status.
+    /// A null pointer is a no-op.
+    /// \pre A non-null p is a successful mmap result with this recorded byte length.
+    /// \hideinlinesource
+    native_inline native_artificial
+    void operator()(void * p) const noexcept {
+      if (p != nullptr)
+        munmap(p, size);
+    }
+  };
+
+  /// \ingroup memory_ownership
+  /// Own a successful POSIX mapping; destruction unmaps it without destroying objects.
+  using mmap_ptr = std::unique_ptr<void,c_munmap>;
+
+  /// \ingroup memory_ownership
+  /// Adopt a successful POSIX mapping and the exact byte length to unmap.
+  /// This does not call mmap or turn MAP_FAILED into an empty owner.
+  /// \pre \p p is a non-null successful mmap result, not MAP_FAILED
+  /// \hideinlinesource
+  native_inline native_artificial native_nonnull(1)
+  mmap_ptr make_mmap_ptr(void * p, std::size_t size) noexcept {
+    return mmap_ptr(p,c_munmap(size));
+  }
+
+} // native
+#endif

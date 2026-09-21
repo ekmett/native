@@ -1,40 +1,54 @@
-# simd
+# native
 
 <!-- SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-C++26 SIMD with explicit element types, lane counts and architectures. A
-`vec<T,N,Arch>` describes one register; `wide<V,M>` describes a pack of registers.
-Keeping those choices separate lets an algorithm use short vectors, native
-widths and independent instruction chains without changing its arithmetic.
+C++26 native operations and CPU capability detection for x86-64 and AArch64.
+`import native;` exposes the platform's supported operations and the detector
+used to check their instruction and OS-state requirements. Importing an API
+does not enable its instructions in the caller.
+
+`native::simd<T,N,Arch>` describes one register; `native::wide<V,M>` describes a
+pack of registers. Element type, lane count and ISA remain explicit, so an
+algorithm can use short vectors, native widths and independent instruction
+chains without changing its arithmetic. `native::vec` is the underlying class
+template and remains available for extension specializations.
 
 ```cpp
-import simd;
+#include <native/targets.h>
+import native;
 
-using V = simd::vec<float, 8, simd::avx2>;
-using M = V::mask;
+NATIVE_TARGET_PUSH(avx2)
+void arithmetic(float * output) {
+  using V = native::simd<float, 8, native::avx2>;
+  using M = V::mask;
 
-V x(2.f), y(3.f);
-M active = x < y;
-auto z = select(active, fma(x, y, V(1.f)), x);
+  V x(2.f), y(3.f);
+  M active = x < y;
+  auto z = select(active, fma(x, y, V(1.f)), x);
+  z.store(output);
 
-simd::wide<V, 12> batch(x);  // 96 values in twelve registers
+  native::wide<V, 12> batch(x);  // 96 values in twelve registers
+}
+NATIVE_TARGET_POP()
 ```
 
-The ISA value is part of the type. `simd::avx2`, `simd::avx512`, `simd::neon` and
-`simd::scalar` are `constexpr isa` presets; operations have no runtime dispatch.
+Call the function after checking that the CPU admits `native::avx2`.
+
+The ISA value is part of the type. `native::avx2`, `native::avx512`, `native::neon` and
+`native::scalar` are `constexpr isa` presets; operations have no runtime dispatch.
 An AVX-512 profile can also use 128-bit and 256-bit registers. Comparisons return
 `V::mask`, retaining the profile's vector-mask or compact-predicate representation.
 
 Feature requirements compose with `&` and compare by inclusion:
 
 ```cpp
-constexpr simd::isa needs = simd::x86_feature::avx2 & simd::x86_feature::fma;
-static_assert(needs.has(simd::x86_feature::fma));
-static_assert(needs <= simd::avx2);
-static_assert(simd::target<simd::avx2, simd::avx512, simd::avx2> == 1);
+constexpr native::isa needs = native::x86_feature::avx2 & native::x86_feature::fma;
+static_assert(needs.has(native::x86_feature::fma));
+static_assert(needs <= native::avx2);
+static_assert(native::target<native::avx2, native::avx512, native::avx2> == 1);
 
-auto requirements = simd::avx2;
+auto requirements = native::avx2;
 requirements.f16c = true;
 ```
 
@@ -47,7 +61,8 @@ Short vectors have a logical lane count: a three-float load touches twelve bytes
 Named swizzles return owning values and support overlapping assignment:
 
 ```cpp
-using V3 = simd::vec<float, 3, simd::avx2>;
+// Inside an AVX2-targeted function, as above:
+using V3 = native::simd<float, 3, native::avx2>;
 V3 position{1.f, 2.f, 3.f};
 auto saved = position.xy;
 position.xyz = position.zyx;
@@ -62,16 +77,27 @@ custom element types and application dispatch.
 
 | Module | Public interface |
 | --- | --- |
-| `simd` | All native ISA variants for the host architecture and common utilities |
-| `simd.cpu` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `simd.cpu.arm` | AArch64 OS capability observation and shared ISA admission |
-| `simd.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
-| `simd.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
-| `simd.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
-| `simd.types`, `simd.memory`, `simd.static_string` | Type, memory and string utilities |
-| `simd.cpu.x86`, `simd.wait` | x86 CPU/OS capability observation, shared ISA admission and wait utilities |
+| `native` | All native ISA variants for the host architecture and common utilities |
+| `native.simd` | SIMD registers, masks, primitive operations and common utilities |
+| `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
+| `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
+| `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
+| `native.x86` | x86 feature detection, bit operations and wait utilities |
+| `native.arm` | AArch64 feature detection and admission |
+| `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
+| `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
+| `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
+| `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
+| `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
+| `native.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
+| `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
+| `native.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
+| `native.types`, `native.memory`, `native.static_string` | Type, memory and string utilities |
+| `native.x86.features`, `native.x86.wait` | x86 CPU/OS capability observation, shared ISA admission and wait utilities |
 
-The hub exposes the common vector template, ISA values and `wide`. Generic math
+The hub exposes the common vector template, ISA values and `wide`. Import
+`native.math` explicitly for `math::exp`, `math::sin`, `math::cos`, `math::sincos`
+and their batch forms. Generic math
 uses argument-dependent lookup, so an element library can supply its own
 arithmetic and batched kernels. The downstream FTZ library
 uses that extension for reproducible binary32 arithmetic. SIMD itself leaves
@@ -85,34 +111,40 @@ and swizzles.
 
 ```sh
 cmake -S . -B build/core -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
-  -DCMAKE_BUILD_TYPE=Release -DSIMD_ENABLE_IPO=ON
+  -DCMAKE_BUILD_TYPE=Release -DNATIVE_ENABLE_IPO=ON
 cmake --build build/core --parallel 2
 ctest --test-dir build/core --output-on-failure
-cmake --install build/core --prefix /path/to/simd
+cmake --install build/core --prefix /path/to/native
 ```
 
 Use `clang-cl` on Windows. Exceptions default to disabled; set
-`SIMD_ENABLE_EXCEPTIONS=ON` when building for an exception-enabled application.
+`NATIVE_ENABLE_EXCEPTIONS=ON` when building for an exception-enabled application.
 Producer and consumer compiler, standard-library and runtime modes must agree.
 
 ```cmake
-find_package(simd CONFIG REQUIRED COMPONENTS simd)
+find_package(native CONFIG REQUIRED COMPONENTS native)
 add_executable(example example.cc)
-target_link_libraries(example PRIVATE simd::simd)
+target_link_libraries(example PRIVATE native::native)
 ```
 
-The hub compiles once at the project minimum: AVX2/FMA/BMI2 on x86 and NEON on
-AArch64 by default. Set `SIMD_MINIMAL_COMPILE_OPTIONS` in project setup to choose
-a different minimum. Importing `simd` exposes stronger APIs without enabling
+The hub compiles once at the toolchain's default baseline. Set
+`NATIVE_MINIMAL_COMPILE_OPTIONS` in project setup to choose a stronger minimum.
+Importing `native` exposes stronger APIs without enabling
 their instructions in ordinary caller code. Each native implementation carries
 its own Clang target requirements; common utilities have one provider.
 
 Use [source target lists](docs/omnibus.md) to compile a body for the feature sets
 you choose, then pass the matching list to `with_isa`. It checks CPU and OS
 support and invokes `callback.operator()<A>()` with the first supported ISA
-value. Write the callback as `[]<simd::isa A> { ... }`; selection does not
+value. Write the callback as `[]<native::isa A> { ... }`; selection does not
 retarget it. Generated variants have distinct constrained overloads and matching
 function attributes, with no per-variant CMake targets or BMIs.
+
+`native::observe_cpu()` returns the current platform's capability record.
+`classify_isa` and `with_isa` use that record to check hardware and required OS
+state. `<native/targets.h>` retains `NATIVE_TARGET_PUSH(name)` and
+`NATIVE_TARGET_POP()`: target scopes control compiler code generation, while
+capability checks decide whether the resulting code may run.
 
 Presets include AVX2, AVX-512, AVX-512 BF16/FP16, NEON and NEON BF16/FP16. They
 are ISA values; supported feature combinations can have their own source names.
@@ -124,23 +156,24 @@ Importing those APIs does not require that the CPU can execute them. Admission
 belongs at the call boundary, and the process must already meet its configured
 minimum.
 
-`simd::simd` owns the hub and links `simd::minimal`, which owns the common
+`native::native` owns the hub and links `native::minimal`, which owns the common
 utilities. Old profile target names are aliases to the hub. The former
-`simd.avx2`, `simd.avx512` and native-half modules are replaced by `import simd;`.
-`SIMD_PROFILES` selects regression coverage, not the public API or BMI set.
+`simd.avx2`, `simd.avx512` and native-half modules are replaced by `import native;`.
+`NATIVE_PROFILES` selects regression coverage, not the public API or BMI set.
 Applications that prefer separately compiled kernels may still use
-`simd_target_profile`; the source target-list helper needs no such setup.
+`native_target_profile`; the source target-list helper needs no such setup.
 
-`simd::headers` exposes configuration, attributes, ISA metadata and
-`<simd/targets.h>` for source generation. It also supports a `LANGUAGES NONE` consumer and a headers-only
-installation with `SIMD_BUILD_HOST=OFF`. Include the attribute header when using
-macros such as `simd_inline`; imports do not carry macros.
+`native::headers` exposes configuration, attributes, ISA metadata and
+`<native/targets.h>` for source generation. It also supports a `LANGUAGES NONE` consumer and a headers-only
+installation with `NATIVE_BUILD_HOST=OFF`. Include the attribute header when using
+macros such as `native_inline`; imports do not carry macros.
 Using `isa.h` without modules requires C++20; the host modules require C++26.
 The configuration and attribute headers impose no new C++ language mode.
 
-The switch from architecture tag types to ISA value template arguments changes
-template identity and symbol names. Rebuild BMIs and all code that exchanges
-SIMD vector types across library boundaries when updating.
+The cutover changes module names, the C++ namespace, public header prefixes,
+target macros and CMake package names from `simd` to `native`. Rebuild BMIs and
+all code that exchanges vector types across library boundaries. The GitHub
+repository remains `ekmett/simd`.
 
 [Compiled API examples](tests/api/README.md) exercise vector construction, masks,
 memory, swizzles, wide values and the common utilities. [Build details](doc/building.md)
@@ -161,9 +194,9 @@ Edward Kmett can also be reached as `ekmett` on Libera Chat and `@kmett` on Twit
 
 ## Package baseline
 
-`simd::minimal` owns the common ABI. Project setup chooses
-`SIMD_MINIMAL_COMPILE_OPTIONS`; defaults are AVX2/FMA/BMI2 on x86 and NEON on
-ARM. `simd::common` remains an alias. Linking minimal carries its configured
+`native::minimal` owns the common ABI. Project setup chooses
+`NATIVE_MINIMAL_COMPILE_OPTIONS`; the default leaves the toolchain baseline
+unchanged. `native::common` remains an alias. Linking minimal carries its configured
 requirements to consumers; stronger functions carry their own target attributes.
 Admission checks may select a stronger implementation, but the process must
 already satisfy its configured minimum.

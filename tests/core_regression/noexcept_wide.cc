@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <utility>
 #include "support/profile.h"
-import simd.wide;
+import native.wide;
 
 namespace {
   enum class failure { none, operation, construction, assignment, move };
@@ -82,8 +82,8 @@ namespace {
   template<failure Failure, bool BoolMask, std::size_t N>
   void specifications() {
     using V = value<Failure,BoolMask>;
-    using W = simd::wide<V,N>;
-    using M = simd::wide<decltype(V{} == V{}),N>;
+    using W = native::wide<V,N>;
+    using M = native::wide<decltype(V{} == V{}),N>;
     // The standard-library empty-array representation can still affect object
     // construction/move traits; do not assume those from the lane count alone.
     constexpr bool storage = std::is_nothrow_default_constructible_v<W> &&
@@ -93,13 +93,13 @@ namespace {
     constexpr bool selection = storage &&
       (N == 0 || (Failure != failure::assignment &&
         (BoolMask || Failure != failure::operation)));
-    static_assert(noexcept(simd::abs(std::declval<W const &>())) == ordinary);
-    static_assert(noexcept(simd::sqrt(std::declval<W const &>())) == ordinary);
-    static_assert(noexcept(simd::atan2(std::declval<W const &>(),
+    static_assert(noexcept(native::abs(std::declval<W const &>())) == ordinary);
+    static_assert(noexcept(native::sqrt(std::declval<W const &>())) == ordinary);
+    static_assert(noexcept(native::atan2(std::declval<W const &>(),
       std::declval<W const &>())) == ordinary);
-    static_assert(noexcept(simd::fma(std::declval<W const &>(),
+    static_assert(noexcept(native::fma(std::declval<W const &>(),
       std::declval<W const &>(),std::declval<W const &>())) == ordinary);
-    static_assert(noexcept(simd::select(std::declval<M const &>(),
+    static_assert(noexcept(native::select(std::declval<M const &>(),
       std::declval<W const &>(),std::declval<W const &>())) == selection);
   }
 
@@ -137,28 +137,28 @@ namespace {
     specifications<Failure,BoolMask,1>();
     specifications<Failure,BoolMask,2>();
     using V = value<Failure,BoolMask>;
-    using W = simd::wide<V,2>;
+    using W = native::wide<V,2>;
     using M = decltype(V{} == V{});
     W a{V(4),V(9)}, b{V(1),V(2)}, c{V(3),V(4)};
-    simd::wide<M,2> masks{M{true},M{false}};
+    native::wide<M,2> masks{M{true},M{false}};
     if constexpr (Failure == failure::none) {
-      side_effects([&] { (void)simd::abs(a); },2,2,2);
-      side_effects([&] { (void)simd::sqrt(a); },2,2,2);
-      side_effects([&] { (void)simd::fma(a,b,c); },2,2,2);
-      side_effects([&] { (void)simd::atan2(a,b); },2,2,2);
-      side_effects([&] { (void)simd::select(masks,a,b); },BoolMask ? 0 : 2,2,2);
+      side_effects([&] { (void)native::abs(a); },2,2,2);
+      side_effects([&] { (void)native::sqrt(a); },2,2,2);
+      side_effects([&] { (void)native::fma(a,b,c); },2,2,2);
+      side_effects([&] { (void)native::atan2(a,b); },2,2,2);
+      side_effects([&] { (void)native::select(masks,a,b); },BoolMask ? 0 : 2,2,2);
     }
     if constexpr (BoolMask && Failure == failure::operation)
-      side_effects([&] { (void)simd::select(masks,a,b); },0,2,2);
+      side_effects([&] { (void)native::select(masks,a,b); },0,2,2);
 #if defined(__cpp_exceptions) || defined(_CPPUNWIND)
     if constexpr (Failure == failure::operation ||
         Failure == failure::construction || Failure == failure::assignment) {
-      catches([&] { (void)simd::abs(a); });
-      catches([&] { (void)simd::sqrt(a); });
-      catches([&] { (void)simd::fma(a,b,c); });
-      catches([&] { (void)simd::atan2(a,b); });
+      catches([&] { (void)native::abs(a); });
+      catches([&] { (void)native::sqrt(a); });
+      catches([&] { (void)native::fma(a,b,c); });
+      catches([&] { (void)native::atan2(a,b); });
       if constexpr (!(BoolMask && Failure == failure::operation))
-        catches([&] { (void)simd::select(masks,a,b); });
+        catches([&] { (void)native::select(masks,a,b); });
     }
 #endif
   }
@@ -166,22 +166,22 @@ namespace {
   template<std::size_t L>
   void fixed_raw_specifications() {
     using V = test_vec<float,L>;
-    using W = simd::wide<V,2>;
-    using M = simd::wide<typename V::mask,2>;
-    static_assert(noexcept(simd::abs(std::declval<W const &>())));
-    static_assert(noexcept(simd::sqrt(std::declval<W const &>())) == noexcept(sqrt(std::declval<V>())));
-    static_assert(noexcept(simd::fma(std::declval<W const &>(),
+    using W = native::wide<V,2>;
+    using M = native::wide<typename V::mask,2>;
+    static_assert(noexcept(native::abs(std::declval<W const &>())));
+    static_assert(noexcept(native::sqrt(std::declval<W const &>())) == noexcept(sqrt(std::declval<V>())));
+    static_assert(noexcept(native::fma(std::declval<W const &>(),
       std::declval<W const &>(),std::declval<W const &>())) ==
       noexcept(fma(std::declval<V>(),std::declval<V>(),std::declval<V>())));
-    static_assert(noexcept(simd::select(std::declval<M const &>(),
+    static_assert(noexcept(native::select(std::declval<M const &>(),
       std::declval<W const &>(),std::declval<W const &>())) ==
       noexcept(select(std::declval<typename V::mask>(),std::declval<V>(),std::declval<V>())));
-    simd::wide<V,0> empty;
-    simd::wide<typename V::mask,0> no_masks;
-    (void)simd::abs(empty);
-    (void)simd::sqrt(empty);
-    (void)simd::fma(empty,empty,empty);
-    (void)simd::select(no_masks,empty,empty);
+    native::wide<V,0> empty;
+    native::wide<typename V::mask,0> no_masks;
+    (void)native::abs(empty);
+    (void)native::sqrt(empty);
+    (void)native::fma(empty,empty,empty);
+    (void)native::select(no_masks,empty,empty);
   }
 }
 

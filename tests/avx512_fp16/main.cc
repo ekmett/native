@@ -8,12 +8,12 @@
 // Shared independent rational oracle: use only its gradual-underflow rows.
 #include "../neon_fp16/reference_cases.h"
 #include "../neon_fp16/sqrt_reference.h"
-import simd.cpu.x86;
-import simd.scalar;
-#if !SIMD_MINIMAL_HAS_AVX512_FP16 && defined(__AVX512FP16__)
+import native.x86.features;
+import native.scalar;
+#if !NATIVE_MINIMAL_HAS_AVX512_FP16 && defined(__AVX512FP16__)
 #error Optional FP16 flags leaked into the minimum dispatcher
 #endif
-#if !SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))
+#if !NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))
 #error Optional AVX512 flags leaked into the minimum dispatcher
 #endif
 extern "C" bool fp16_storage();
@@ -131,9 +131,9 @@ int main(int argc,char **argv) {
   if(argc!=2)return 2;
   if(!std::strcmp(argv[1],"none")) {std::puts("No optional FP16 profile entered.");return 0;}
   if(std::strcmp(argv[1],"native"))return 2;
-  auto cpu=simd::observe_x86_capabilities();
+  auto cpu=native::observe_x86_capabilities();
   std::printf("CPUID.7.0.EDX=%08x XCR0=%llx\n",cpu.raw.leaf7_edx,static_cast<unsigned long long>(cpu.xcr0));
-  auto admission=simd::classify_isa(cpu,simd::avx512_fp16);
+  auto admission=native::classify_isa(cpu,native::avx512_fp16);
   if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;

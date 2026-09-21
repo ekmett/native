@@ -3,7 +3,7 @@
 
 # Integer intermediate shapes
 
-The same source runs from headers and `import simd`, with scalar, AVX2,
+The same source runs from headers and `import native`, with scalar, AVX2,
 AVX-512 F/DQ, F/DQ/VL, F/DQ/BW and full F/DQ/BW/VL tags. Native calls are
 admitted by CPU and OS state; their arguments cross only pointer/scalar
 boundaries. ARM builds exercise scalar and NEON, without claiming x86 execution.
@@ -17,9 +17,10 @@ ignore it, and check that returned populations clear it. There is no zero-lane
 integer vector; its absence is checked at compile time.
 
 Packing checks each available unsigned 64→32, 32→16 and 16→8 shape against
-scalar truncation, with lane-order and high-bit inputs. Deposit checks include
-empty/full masks and a deterministic mixed bank. Result types retain the
-original architecture value and public `noexcept` guarantees.
+scalar truncation, with lane-order and high-bit inputs. Result types retain the
+original architecture value and public `noexcept` guarantees. The core packing
+fixture separately checks the 32-bit and 64-bit `pdep` and `pext` overloads with
+a BMI2-only target, empty/full masks and a deterministic mixed bank.
 
 The shape audit is:
 
@@ -30,7 +31,6 @@ The shape audit is:
 | `popcount` | Short uint32 lanes use their full storage then restore logical shape. F/DQ 512-bit uint32/uint64 lanes use lane-local SWAR, avoiding unavailable BW-only byte/word intermediates. Existing byte-table/CNT paths remain for other shapes. |
 | `reduce_add_widened` | Full registers widen before reducing. Short uint32 reductions sum only live lanes. |
 | `narrow_concat` | Both input and output shapes are required. F/DQ supports 512-bit 64→32 packing; 32→16 and 16→8 require the existing BW output/input shapes. |
-| `deposit_bits` | Scalar uint64 input/output; no vector intermediate. |
 
 The ordinary x86 object checker asks LLVM to isolate each of twelve named
 pointer boundaries. It requires the expected function marker, a complete body,

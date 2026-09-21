@@ -1,0 +1,31 @@
+# SPDX-FileType: Source
+# SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+
+@PACKAGE_INIT@
+include("${CMAKE_CURRENT_LIST_DIR}/nativeHeaderTargets.cmake")
+set(native_headers_FOUND TRUE)
+if(NOT native_FIND_COMPONENTS OR "native" IN_LIST native_FIND_COMPONENTS)
+  if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/nativeHostTargets.cmake")
+    include("${CMAKE_CURRENT_LIST_DIR}/nativeHostTargets.cmake")
+    if(NOT TARGET native::common)
+      add_library(native::common ALIAS native::minimal)
+    endif()
+    include("${CMAKE_CURRENT_LIST_DIR}/nativeProfile.cmake")
+    get_target_property(profiles native::native NATIVE_HUB_PROFILES)
+    foreach(profile IN LISTS profiles)
+      string(TOLOWER "${profile}" lower)
+      if(NOT TARGET native::${lower})
+        add_library(native::${lower} ALIAS native::native)
+      endif()
+    endforeach()
+    set(native_native_FOUND TRUE)
+  else()
+    set(native_native_FOUND FALSE)
+    if(NOT native_FIND_COMPONENTS)
+      set(native_FOUND FALSE)
+      set(native_NOT_FOUND_MESSAGE "This native package contains headers only; request COMPONENTS headers.")
+    endif()
+  endif()
+endif()
+check_required_components(native)

@@ -1,0 +1,28 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/x86/bmi2.h"
+export module native.x86.bmi2;
+export import native.x86.features;
+export namespace native {
+  /// \addtogroup x86_bmi2
+  /// \{
+
+  /// Re-export BZHI; see the \ref x86_bmi2 group for both operand widths.
+  using ::native::bzhi;
+  /// Re-export MULX; see the \ref x86_bmi2 group for both product widths.
+  using ::native::mulx;
+  /// Re-export PDEP; see the \ref x86_bmi2 group for both operand widths.
+  using ::native::pdep;
+  /// Re-export PEXT; see the \ref x86_bmi2 group for both operand widths.
+  using ::native::pext;
+  /// Re-export SHLX; see the \ref x86_bmi2 group for both operand widths.
+  using ::native::shlx;
+  /// Re-export SHRX; see the \ref x86_bmi2 group for both operand widths.
+  using ::native::shrx;
+  /// Re-export SARX; see the \ref x86_bmi2 group for both signed operand widths.
+  using ::native::sarx;
+  /// Re-export RORX; see the \ref x86_bmi2 group for immediate rotation counts.
+  using ::native::rorx;
+
+  /// \}
+}

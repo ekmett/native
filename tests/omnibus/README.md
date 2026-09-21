@@ -13,9 +13,9 @@ that kernel's profile. Unsupported hardware returns CTest skip code 77.
 
 ```sh
 cmake -S . -B build/producer -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
-  -DSIMD_BUILD_TESTS=OFF -DSIMD_ENABLE_EXCEPTIONS=ON \
-  -DSIMD_ENABLE_IPO=ON \
-  '-DSIMD_PROFILES=AVX2;AVX512' -DCMAKE_BUILD_TYPE=Release
+  -DNATIVE_BUILD_TESTS=OFF -DNATIVE_ENABLE_EXCEPTIONS=ON \
+  -DNATIVE_ENABLE_IPO=ON \
+  '-DNATIVE_PROFILES=AVX2;AVX512' -DCMAKE_BUILD_TYPE=Release
 cmake --build build/producer --parallel 2
 cmake --install build/producer --prefix '/tmp/simd original'
 mv '/tmp/simd original' '/tmp/simd relocated'
@@ -28,7 +28,7 @@ ctest --test-dir build/consumer --output-on-failure
 ```
 
 Use distinct unused prefix paths, and `clang-cl` in a Windows MSVC SDK environment.
-`SIMD_PROFILES` changes regression coverage, not the installed hub's API.
+`NATIVE_PROFILES` changes regression coverage, not the installed hub's API.
 On AArch64, the hub contains NEON and native half families; x86 CPUID/wait are
 absent. `OMNIBUS_CONSUMER_PROFILE` is an optional whole-kernel flag override for
 compiler diagnostics. Normal execution uses each kernel's own profile.

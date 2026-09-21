@@ -14,7 +14,7 @@ namespace {
   using namespace test_simd;
   using word = std::uint32_t;
   constexpr word sign_bit=0x80000000u, infinity=0x7f800000u, quiet_nan=0x7fc00000u;
-  void require(bool ok,char const * message) { if (!ok) simd::test::fail(std::runtime_error(message)); }
+  void require(bool ok,char const * message) { if (!ok) native::test::fail(std::runtime_error(message)); }
   constexpr word magnitude(word x) { return x&0x7fffffffu; }
   constexpr bool is_nan(word x) { return magnitude(x)>infinity; }
   constexpr word flush(word x) { return magnitude(x)<0x00800000u ? x&sign_bit : x; }
@@ -141,8 +141,8 @@ namespace {
         for (std::size_t lane=0;lane<N;++lane) {
           bool active=(bits&(std::uint64_t(1)<<lane))!=0;
           word want=active?reference(x[lane],y[lane],daz,output_flush,raw_before_rounding):(zero?0:prior[lane]);
-          bool equal=active?simd::math_test::equivalent_fp32(actual[lane],want):actual[lane]==want;
-          if (!equal) simd::test::fail(std::runtime_error(std::string("raw")+" scaleb N="+std::to_string(N)+
+          bool equal=active?native::math_test::equivalent_fp32(actual[lane],want):actual[lane]==want;
+          if (!equal) native::test::fail(std::runtime_error(std::string("raw")+" scaleb N="+std::to_string(N)+
             " row="+std::to_string(start+lane)+" active="+std::to_string(active)+" actual="+
             std::to_string(actual[lane])+" expected="+std::to_string(want)));
           ++checked;
@@ -181,10 +181,10 @@ int main(int argc,char ** argv) {
     bool daz=mode=="daz"||mode=="flush",output_flush=mode=="ftz"||mode=="flush";
     bool raw_before=profile=="before-rounding";
     check_reference();auto rows=bank();std::size_t checked=0;
-    auto before=simd::test::read_fp_state();
+    auto before=native::test::read_fp_state();
 
     {
-      simd::test::fp_scope scope(mode=="flush"?simd::test::fp_mode::flush:simd::test::fp_mode::gradual);
+      native::test::fp_scope scope(mode=="flush"?native::test::fp_mode::flush:native::test::fp_mode::gradual);
 #if defined(_M_X64) || defined(__x86_64__)
       // The owner scope still restores the complete original state. The two
       // intermediate MXCSR modes exercise raw arithmetic only.
@@ -192,7 +192,7 @@ int main(int argc,char ** argv) {
 #else
       require(mode=="gradual"||mode=="flush","Separate DAZ/FTZ modes require x86 MXCSR");
 #endif
-      auto requested=simd::test::read_fp_state().control;
+      auto requested=native::test::read_fp_state().control;
       checked+=check_width<1>(rows,daz,output_flush,raw_before);
 #if defined(__AVX2__) || defined(__ARM_NEON)
       checked+=check_width<4>(rows,daz,output_flush,raw_before);
@@ -203,9 +203,9 @@ int main(int argc,char ** argv) {
 #if defined(__AVX512F__) && defined(__AVX512DQ__)
       checked+=check_width<16>(rows,daz,output_flush,raw_before);
 #endif
-      require(simd::test::read_fp_state().control==requested,"FP controls changed");
+      require(native::test::read_fp_state().control==requested,"FP controls changed");
     }
-    require(before==simd::test::read_fp_state(),"FP environment not restored");
+    require(before==native::test::read_fp_state(),"FP environment not restored");
     std::cout<<"{\"passed\":true,\"mode\":\""<<mode<<"\",\"raw_profile\":\""<<profile
       <<"\",\"rows\":"<<rows.size()<<",\"checked_words\":"<<checked
       <<",\"raw_daz\":"<<(daz?"true":"false")<<",\"raw_ftz\":"<<(output_flush?"true":"false")

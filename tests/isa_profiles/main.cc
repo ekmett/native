@@ -5,17 +5,17 @@
 #include <array>
 #include <cstdio>
 #include <cstring>
-import simd.cpu.x86;
+import native.x86.features;
 
-#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
 
 namespace {
   unsigned supported() {
-    auto cpu = simd::observe_x86_capabilities();
-    auto avx2 = simd::classify_isa(cpu, simd::avx2);
-    auto avx512 = simd::classify_isa(cpu, simd::avx512);
+    auto cpu = native::observe_x86_capabilities();
+    auto avx2 = native::classify_isa(cpu, native::avx2);
+    auto avx512 = native::classify_isa(cpu, native::avx512);
     std::printf("AVX2: %s; AVX512: %s\n", avx2.reason(), avx512.reason());
     return unsigned(avx2.admitted()) | (unsigned(avx512.admitted()) << 1);
   }
@@ -49,9 +49,9 @@ int main(int argc, char ** argv) {
     return 77;
   }
   capture avx2{}, avx512{}, header{};
-  auto before = simd::test::read_fp_state();
+  auto before = native::test::read_fp_state();
   {
-    simd::test::fp_scope environment(simd::test::fp_mode::flush);
+    native::test::fp_scope environment(native::test::fp_mode::flush);
     if (!environment.controls_match()) return 3;
     unsigned active = request & admitted;
     if (active & 1u) {
@@ -66,7 +66,7 @@ int main(int argc, char ** argv) {
     if (active == 3 && !compare(avx2, avx512, "AVX2/AVX512")) return 8;
     if (!environment.controls_match()) return 9;
   }
-  if (before != simd::test::read_fp_state()) return 10;
+  if (before != native::test::read_fp_state()) return 10;
   if (argc > 2) {
     auto * file = std::fopen(argv[2], "wb");
     if (!file) return 11;

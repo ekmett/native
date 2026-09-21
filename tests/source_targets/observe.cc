@@ -1,12 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdio>
-import simd_target_metadata;
-import simd.cpu.x86;
+import native_target_metadata;
+import native.x86.features;
 int main() {
-  auto cpu=simd::observe_x86_capabilities();
-  bool avx2=simd::classify_isa(cpu,simd::avx2).admitted();
-  bool avx512=simd::classify_isa(cpu,simd::avx512).admitted();
+  auto cpu=native::observe_x86_capabilities();
+  bool avx2=native::classify_isa(cpu,native::avx2).admitted();
+  bool avx512=native::classify_isa(cpu,native::avx512).admitted();
   // Independent native check of the published presets, including readable OS state.
   bool state=cpu.raw.max_basic_leaf>=1 && (cpu.raw.leaf1_ecx&0x0c000000u)==0x0c000000u && cpu.xcr0_observed;
   bool expected_avx2=cpu.raw.max_basic_leaf>=7 &&

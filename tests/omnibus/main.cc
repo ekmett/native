@@ -3,11 +3,11 @@
 #include <cstdio>
 #include <cstdint>
 #if !TEST_NEON && !TEST_NEON_FP16 && !TEST_NEON_BF16
-import simd.cpu.x86;
+import native.x86.features;
 #elif TEST_REQUIRED_NEON_FP16 || TEST_REQUIRED_NEON_BF16
-import simd.cpu.arm;
+import native.arm.features;
 #endif
-#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+#if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
 extern "C" int omnibus_kernel(float const *,float *);
@@ -16,28 +16,28 @@ int main() {
 #if !TEST_NEON && !TEST_NEON_FP16 && !TEST_NEON_BF16
   constexpr auto profile =
 #if TEST_REQUIRED_AVX512_BF16
-    simd::avx512_bf16;
+    native::avx512_bf16;
 #elif TEST_REQUIRED_AVX512
-    simd::avx512;
+    native::avx512;
 #else
-    simd::avx2;
+    native::avx2;
 #endif
-  auto admission = simd::classify_isa(simd::observe_x86_capabilities(), profile);
+  auto admission = native::classify_isa(native::observe_x86_capabilities(), profile);
   if (!admission.admitted()) { std::puts(admission.reason()); return 77; }
 #if TEST_REQUIRED_AVX512_FP16
-  auto half_admission=simd::classify_isa(simd::observe_x86_capabilities(),simd::avx512_fp16);
+  auto half_admission=native::classify_isa(native::observe_x86_capabilities(),native::avx512_fp16);
   if(!half_admission.admitted()) {std::puts(half_admission.reason());return 77;}
 #endif
 #endif
 #if TEST_REQUIRED_NEON_FP16
   {
-    auto admission=simd::classify_isa(simd::observe_arm_capabilities(),simd::neon_fp16);
+    auto admission=native::classify_isa(native::observe_arm_capabilities(),native::neon_fp16);
     if(!admission.admitted()) { std::puts(admission.reason());return 77; }
   }
 #endif
 #if TEST_REQUIRED_NEON_BF16
   {
-    auto admission=simd::classify_isa(simd::observe_arm_capabilities(),simd::neon_bf16);
+    auto admission=native::classify_isa(native::observe_arm_capabilities(),native::neon_bf16);
     if(!admission.admitted()) {std::puts(admission.reason());return 77;}
   }
 #endif

@@ -4,7 +4,7 @@
 #include <concepts>
 #include <type_traits>
 
-namespace simd::test {
+namespace native::test {
   template<class V>
   concept native_bridge = std::is_trivially_copyable_v<V>
     && std::convertible_to<V,typename V::native_type>

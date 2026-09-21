@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-namespace simd::math_test {
+namespace native::math_test {
   constexpr bool equivalent_fp32(std::uint32_t a, std::uint32_t b) noexcept {
     return a == b || ((a & 0x7fffffffu) > 0x7f800000u && (b & 0x7fffffffu) > 0x7f800000u);
   }

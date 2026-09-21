@@ -9,7 +9,8 @@
 #include <type_traits>
 #include <utility>
 #include "support/profile.h"
-import simd.wide;
+import native.wide;
+import native.math;
 
 static_assert(std::same_as<decltype(test_vec<float,1>{1.0f}), test_vec<float, 1>>);
 static_assert(sizeof(test_vec<float,1>) == sizeof(float));
@@ -24,7 +25,7 @@ void emit(std::ostream & out, std::uint32_t bits) {
 template<std::size_t N> void capture(std::ostream & out) {
   using V = test_vec<float, N>;
   using F = test_vec<float, N>;
-  using I = test_vec<simd::uint32_t, N>;
+  using I = test_vec<native::uint32_t, N>;
   std::uint32_t seed = 0x893bfd12u;
   for (std::size_t step = 0; step < 512; ++step) {
     std::array<float, N> input{};
@@ -33,13 +34,13 @@ template<std::size_t N> void capture(std::ostream & out) {
       x = float(int(seed & 0xffffu) - 32768) * 0x1p-10f;
     }
     auto a = V::loadu(input.data());
-    simd::wide<V, 3> values{a, a * V(.5f), a * V(.25f)};
+    native::wide<V, 3> values{a, a * V(.5f), a * V(.25f)};
     auto [...lanes] = values;
-    auto reconstructed = simd::wide{lanes...};
-    auto result = simd::exp(reconstructed);
+    auto reconstructed = native::wide{lanes...};
+    auto result = native::exp(reconstructed);
     auto sum = reconstructed + reconstructed;
     auto product = reconstructed * reconstructed;
-    auto fused = simd::fma(reconstructed, reconstructed, reconstructed);
+    auto fused = native::fma(reconstructed, reconstructed, reconstructed);
     for (std::size_t i = 0; i < 3; ++i) {
       for (auto v : {result.registers[i], sum.registers[i], product.registers[i], fused.registers[i]}) {
         std::array<std::uint32_t, N> words{};
@@ -47,7 +48,7 @@ template<std::size_t N> void capture(std::ostream & out) {
         for (auto word : words) emit(out, word);
       }
     }
-    auto raw = simd::exp(simd::wide<F, 2>{F::loadu(input.data())});
+    auto raw = native::exp(native::wide<F, 2>{F::loadu(input.data())});
     for (auto v : raw.registers) {
       std::array<std::uint32_t, N> words{};
       v.store_bits(words.data());
@@ -69,9 +70,9 @@ int main(int argc, char ** argv) {
   if (argc != 2) return 2;
   std::ofstream out(argv[1], std::ios::binary);
   if (!out) return 3;
-  auto before = simd::test::read_fp_state();
+  auto before = native::test::read_fp_state();
   {
-    simd::test::fp_scope controls(simd::test::fp_mode::flush);
+    native::test::fp_scope controls(native::test::fp_mode::flush);
     capture<1>(out);
 #if defined(__AVX2__) || defined(__ARM_NEON)
     capture<4>(out);
@@ -84,7 +85,7 @@ int main(int argc, char ** argv) {
 #endif
     if (!controls.controls_match()) return 5;
   }
-  if (before != simd::test::read_fp_state()) return 6;
+  if (before != native::test::read_fp_state()) return 6;
   out.close();
   return out ? 0 : 7;
 }

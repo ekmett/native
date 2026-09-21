@@ -31,11 +31,11 @@ def main():
   if not all((cmake, ninja, compiler)):
     parser.error('CMake, Ninja, and clang-cl must be available in the configured compiler environment')
   sha = lambda data: hashlib.sha256(data).hexdigest()
-  paths = ['../../src/simd.cpu.x86.ccm', '../../src/simd/attributes.h', '../../etc/cmake/simdProfile.cmake', 'CMakeLists.txt', 'backend.inc', 'consumer.cc', 'dispatcher.cc', 'engine.h', 'fixture.engine.ccm']
+  paths = ['../../src/native.isa.ccm', '../../src/native.x86.features.ccm', '../../src/native/attributes.h', '../../etc/cmake/nativeProfile.cmake', 'CMakeLists.txt', 'backend.inc', 'consumer.cc', 'dispatcher.cc', 'engine.h', 'fixture.engine.ccm']
   for backend in ('avx2', 'avx512'):
     paths += [backend + '-header.h', backend + '.cc', 'bridge_' + backend + '.cc', 'simd.' + backend + '.ccm']
   pins = {name: sha((source / name).read_bytes()) for name in paths}
-  report = {'schema': 'simd.isa-modules.run.v1', 'source_pins_before': pins,
+  report = {'schema': 'native.isa-modules.run.v1', 'source_pins_before': pins,
             'compiler_sha256': sha(Path(compiler).read_bytes()), 'thin_lto': args.thin_lto,
             'commands': [], 'skipped': [], 'passed': False}
 

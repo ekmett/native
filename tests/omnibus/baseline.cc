@@ -4,18 +4,18 @@
 #include <concepts>
 #include <cstdio>
 #include <type_traits>
-import simd;
-#if (!SIMD_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
+import native;
+#if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
-static_assert(sizeof(simd::vec<float,1,simd::scalar>)==sizeof(float));
-static_assert(std::same_as<decltype(simd::wide{1,2}),simd::wide<int,2>>);
+static_assert(sizeof(native::vec<float,1,native::scalar>)==sizeof(float));
+static_assert(std::same_as<decltype(native::wide{1,2}),native::wide<int,2>>);
 int main() {
-  simd::vec<float,1,simd::scalar> x(2.f);
+  native::vec<float,1,native::scalar> x(2.f);
   float value=0.f;
-  simd::store_simd(&value,x+x);
+  native::store_simd(&value,x+x);
   if(value!=4.f) return 1;
-  simd::fp16 half(1.5f);
+  native::fp16 half(1.5f);
   if(float(half)!=1.5f) return 2;
   std::puts("Baseline hub consumer: optional APIs do not raise the caller ISA.");
 }

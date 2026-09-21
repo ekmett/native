@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "support/profile.h"
-#if !SIMD_TEST_IMPORT
-#include <simd/integer.h>
+#if !NATIVE_TEST_IMPORT
+#include <native/integer.h>
 #endif
 #include <array>
 #include <bit>
@@ -16,7 +16,7 @@ namespace {
   void check(bool value) { if (!value) std::abort(); }
 
   template <class T, std::size_t N> void test() {
-    using V = simd::vec<T,N,test_arch>;
+    using V = native::vec<T,N,test_arch>;
     std::array<T,N> source{}, actual{};
     for (unsigned round = 0; round < 259; ++round) {
       for (unsigned i = 0; i < N; ++i)
@@ -70,13 +70,13 @@ int main() {
   test<std::uint16_t,1>();
   test<std::uint32_t,1>();
   test<std::uint64_t,1>();
-#if SIMD_TEST_PROFILE != 0
+#if NATIVE_TEST_PROFILE != 0
   register_test<16>();
 #endif
-#if SIMD_TEST_PROFILE >= 256
+#if NATIVE_TEST_PROFILE >= 256
   register_test<32>();
 #endif
-#if SIMD_TEST_PROFILE == 512
+#if NATIVE_TEST_PROFILE == 512
   register_test<64>();
 #endif
   std::puts("Integer bit order, lane populations, pair sums and widened reductions passed");

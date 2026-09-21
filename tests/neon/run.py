@@ -70,12 +70,12 @@ def main():
         for tag in ('raw',):
             build = out/tag
             run(tag+'-configure', [cmake, '-S', root, '-B', build, *common,
-                '-DSIMD_TEST_ISA=NEON', '-DSIMD_PROFILES=NEON',
-                '-DSIMD_BUILD_TESTS=ON', '-DSIMD_ENABLE_PCH=ON', '-DSIMD_ENABLE_IPO=ON'])
+                '-DNATIVE_TEST_ISA=NEON', '-DNATIVE_PROFILES=NEON',
+                '-DNATIVE_BUILD_TESTS=ON', '-DNATIVE_ENABLE_PCH=ON', '-DNATIVE_ENABLE_IPO=ON'])
             cache = (build/'CMakeCache.txt').read_text()
-            required_cache = ('SIMD_TEST_ISA:STRING=NEON', 'SIMD_PROFILES:STRING=NEON',
-                              'SIMD_BUILD_TESTS:BOOL=ON', 'SIMD_ENABLE_PCH:BOOL=ON',
-                              'SIMD_ENABLE_IPO:BOOL=ON')
+            required_cache = ('NATIVE_TEST_ISA:STRING=NEON', 'NATIVE_PROFILES:STRING=NEON',
+                              'NATIVE_BUILD_TESTS:BOOL=ON', 'NATIVE_ENABLE_PCH:BOOL=ON',
+                              'NATIVE_ENABLE_IPO:BOOL=ON')
             if not all(line in cache.splitlines() for line in required_cache):
                 raise RuntimeError('configured package did not consume the requested NEON/PCH/IPO options')
             report[tag+'_configured_options'] = list(required_cache)
@@ -111,19 +111,19 @@ def main():
         for mode in ('ordinary', 'asan'):
             build=out/('memory-'+mode)
             run('memory-'+mode+'-configure', [cmake, '-S', root/'tests/memory_portability',
-                '-B', build, *common, '-DSIMD_MEMORY_ASAN='+('ON' if mode=='asan' else 'OFF')])
+                '-B', build, *common, '-DNATIVE_MEMORY_ASAN='+('ON' if mode=='asan' else 'OFF')])
             run('memory-'+mode+'-build', [cmake, '--build', build, '--parallel', '2'])
             run('memory-'+mode+'-ctest', [ctest, '--test-dir', build, '-j1', '--output-on-failure',
                                        '--output-junit', out/('memory-'+mode+'.xml')])
         build = out/'swizzle-asan'
         run('swizzle-asan-configure', [cmake, '-S', root, '-B', build, *common,
-            '-DSIMD_TEST_ISA=NEON', '-DSIMD_PROFILES=NEON',
-            '-DSIMD_BUILD_TESTS=ON', '-DSIMD_ENABLE_PCH=ON',
-            '-DSIMD_ENABLE_IPO=OFF', '-DSIMD_ENABLE_ASAN=ON'])
+            '-DNATIVE_TEST_ISA=NEON', '-DNATIVE_PROFILES=NEON',
+            '-DNATIVE_BUILD_TESTS=ON', '-DNATIVE_ENABLE_PCH=ON',
+            '-DNATIVE_ENABLE_IPO=OFF', '-DNATIVE_ENABLE_ASAN=ON'])
         run('swizzle-asan-build', [cmake, '--build', build, '--parallel', '2',
-            '--target', 'simd_test_swizzle_header', 'simd_test_swizzle_import'])
+            '--target', 'native_test_swizzle_header', 'native_test_swizzle_import'])
         run('swizzle-asan-ctest', [ctest, '--test-dir', build, '-j1',
-            '-R', '^simd[.]swizzle[.]', '--output-on-failure',
+            '-R', '^native[.]swizzle[.]', '--output-on-failure',
             '--output-junit', out/'swizzle-asan.xml'])
         report['source_after'] = pins()
         if report['source_before'] != report['source_after']:

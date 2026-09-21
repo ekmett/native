@@ -4,7 +4,7 @@
 #include <concepts>
 #include <cstdlib>
 #include <type_traits>
-import simd.wide;
+import native.wide;
 namespace custom {
   inline int calls=0, live=0;
   struct value {
@@ -26,28 +26,28 @@ namespace custom {
   struct different {};
   int floor(different const &) noexcept { return 0; }
 }
-template<class T> concept has_floor = requires(T const & x) { simd::floor(x); };
-static_assert(!has_floor<simd::wide<custom::different,1>>);
-using W=simd::wide<custom::value,3>;
-static_assert(std::same_as<decltype(simd::floor(std::declval<W const &>())),W>);
-static_assert(!noexcept(simd::floor(std::declval<W const &>())));
-static_assert(noexcept(simd::ceil(std::declval<W const &>())));
-static_assert(noexcept(simd::trunc(std::declval<W const &>())));
-static_assert(noexcept(simd::floor(std::declval<simd::wide<custom::value,0> const &>())));
+template<class T> concept has_floor = requires(T const & x) { native::floor(x); };
+static_assert(!has_floor<native::wide<custom::different,1>>);
+using W=native::wide<custom::value,3>;
+static_assert(std::same_as<decltype(native::floor(std::declval<W const &>())),W>);
+static_assert(!noexcept(native::floor(std::declval<W const &>())));
+static_assert(noexcept(native::ceil(std::declval<W const &>())));
+static_assert(noexcept(native::trunc(std::declval<W const &>())));
+static_assert(noexcept(native::floor(std::declval<native::wide<custom::value,0> const &>())));
 int main() {
   {
-    simd::wide<custom::value,0> empty{};
-    (void)simd::floor(empty);(void)simd::ceil(empty);(void)simd::trunc(empty);
+    native::wide<custom::value,0> empty{};
+    (void)native::floor(empty);(void)native::ceil(empty);(void)native::trunc(empty);
     if(custom::calls || custom::live) std::abort();
     W x{std::array{custom::value(1),custom::value(2),custom::value(3)}};
-    (void)simd::ceil(x);(void)simd::trunc(x);
+    (void)native::ceil(x);(void)native::trunc(x);
     if(custom::calls!=6 || custom::live!=3) std::abort();
 #if defined(__cpp_exceptions)
     bool caught=false;
-    try { (void)simd::floor(x); } catch(int e) { caught=e==31; }
+    try { (void)native::floor(x); } catch(int e) { caught=e==31; }
     if(!caught || custom::live!=3 || custom::calls!=9) std::abort();
 #else
-    (void)simd::floor(x);
+    (void)native::floor(x);
     if(custom::live!=3 || custom::calls!=9) std::abort();
 #endif
   }

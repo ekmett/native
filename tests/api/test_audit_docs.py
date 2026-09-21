@@ -17,7 +17,7 @@ def member(identifier, name, description='', kind='function', prot='public', arg
     return f'''<memberdef id="{identifier}" kind="{kind}" prot="{prot}">
       <name>{name.split('::')[-1]}</name><qualifiedname>{name}</qualifiedname>
       {arguments}<briefdescription><para>{description}</para></briefdescription>
-      <location file="src/simd/example.h" line="10"/>
+      <location file="src/native/example.h" line="10"/>
     </memberdef>'''
 
 
@@ -37,23 +37,23 @@ class AuditTests(unittest.TestCase):
         (self.xml / 'index.xml').write_text('<doxygenindex>' + ''.join(index) + '</doxygenindex>')
 
     def test_group_only_definition_cannot_disappear_from_coverage(self):
-        self.write([('utilities', 'group', 'utilities', [member('missing', 'simd::floor')])])
+        self.write([('utilities', 'group', 'utilities', [member('missing', 'native::floor')])])
         # A stale prior render must not provide documentation for the current ID.
-        (self.xml / 'stale.xml').write_text('<doxygen>' + member('missing', 'simd::floor', 'Old docs') + '</doxygen>')
+        (self.xml / 'stale.xml').write_text('<doxygen>' + member('missing', 'native::floor', 'Old docs') + '</doxygen>')
         result = audit(self.xml, ['src/'])
         self.assertEqual(result['public_callable_ids'], 1)
         self.assertEqual(result['documented_callable_ids'], 0)
-        self.assertEqual([m['name'] for m in result['missing']], ['simd::floor'])
+        self.assertEqual([m['name'] for m in result['missing']], ['native::floor'])
 
     def test_duplicate_ids_merge_descriptions_but_not_helpers_or_friend_types(self):
         self.write([
-            ('namespace', 'namespace', 'simd', [member('one', 'simd::floor')]),
+            ('namespace', 'namespace', 'native', [member('one', 'native::floor')]),
             ('utilities', 'group', 'utilities', [
-                member('one', 'simd::floor', 'Round down.'),
-                member('hidden', 'simd::detail::implementation'),
-                member('private', 'simd::vec::helper', prot='private'),
-                member('friend_type', 'simd::static_c_string', kind='friend', arguments=''),
-                member('friend_call', 'simd::static_c_string::operator==', 'Compare identities.', kind='friend'),
+                member('one', 'native::floor', 'Round down.'),
+                member('hidden', 'native::detail::implementation'),
+                member('private', 'native::vec::helper', prot='private'),
+                member('friend_type', 'native::static_c_string', kind='friend', arguments=''),
+                member('friend_call', 'native::static_c_string::operator==', 'Compare identities.', kind='friend'),
             ]),
         ])
         result = audit(self.xml, ['src/'])

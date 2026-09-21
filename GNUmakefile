@@ -21,8 +21,8 @@ install: build
 	cmake --install "$(BUILD_DIR)" --prefix "$(PREFIX)"
 
 docs:
-	cmake --preset $(PRESET) -B "$(BUILD_DIR)" $(CMAKE_ARGS) -DSIMD_BUILD_DOCS=ON
-	cmake --build "$(BUILD_DIR)" --target simd_docs --parallel $(JOBS)
+	cmake --preset $(PRESET) -B "$(BUILD_DIR)" $(CMAKE_ARGS) -DNATIVE_BUILD_DOCS=ON
+	cmake --build "$(BUILD_DIR)" --target native_docs --parallel $(JOBS)
 
 lint:
 	git diff --check

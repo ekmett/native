@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 #include "engine.h"
-namespace simd {
+namespace native {
 #define PROBE_LANES 16
 #define PROBE_ARCH avx512
 #define PROBE_ENTRY avx512_lanes

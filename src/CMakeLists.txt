@@ -4,38 +4,31 @@
 
 # Modules compile at the project minimum. Native operations carry their own
 # Clang target attributes inside the shared hub.
-function(simd_module_target target export_name)
+function(native_module_target target export_name)
   add_library(${target} STATIC)
-  add_library(simd::${export_name} ALIAS ${target})
-  simd_host_settings(${target})
+  add_library(native::${export_name} ALIAS ${target})
+  native_host_settings(${target})
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${export_name}
     POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_MODULES ON)
-  target_link_libraries(${target} PUBLIC simd_headers)
+  target_link_libraries(${target} PUBLIC native_headers)
   # Installed consumers rebuild BMIs with these private implementation inputs.
   # CMake records private include directories in imported module metadata.
   target_include_directories(${target} PRIVATE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
-    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/simd/include>")
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_LIBDIR}/native/include>")
 endfunction()
 
-simd_module_target(simd_minimal minimal)
-# Project setup selects the common ABI. Defaults are modern platform baselines;
-# the native compiler option list can be set before adding/configuring simd.
-set(minimal_default_options)
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
-  set(minimal_default_options -mavx2 -mfma -mbmi2)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    list(TRANSFORM minimal_default_options PREPEND "/clang:")
-  endif()
-endif()
-set(SIMD_MINIMAL_COMPILE_OPTIONS "${minimal_default_options}" CACHE STRING
+native_module_target(native_minimal minimal)
+# Importing native and observing CPU features must remain safe at the toolchain's
+# baseline. Applications may explicitly select a stronger common ABI.
+set(NATIVE_MINIMAL_COMPILE_OPTIONS "" CACHE STRING
   "Compiler options defining the minimal project ABI (native compiler spelling)")
-target_compile_options(simd_minimal PUBLIC ${SIMD_MINIMAL_COMPILE_OPTIONS})
+target_compile_options(native_minimal PUBLIC ${NATIVE_MINIMAL_COMPILE_OPTIONS})
 # Export the selected minimum for admission/codegen checks in downstream tests.
 # Include global toolchain flags in the probe key, so changing the minimum does
 # not reuse a cached result from another configuration.
 block()
-  string(JOIN " " minimal_flags ${SIMD_MINIMAL_COMPILE_OPTIONS})
+  string(JOIN " " minimal_flags ${NATIVE_MINIMAL_COMPILE_OPTIONS})
   string(APPEND CMAKE_REQUIRED_FLAGS " ${minimal_flags}")
   set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
   if(CMAKE_BUILD_TYPE)
@@ -58,7 +51,7 @@ block()
     else()
       set(condition "defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)")
     endif()
-    set(probe "SIMD_MINIMAL_${feature}_${minimal_key}")
+    set(probe "NATIVE_MINIMAL_${feature}_${minimal_key}")
     if(feature STREQUAL "NEON_FP16")
       # Some AArch64 targets retain the FP16 macros via FP16FML after an explicit
       # -fullfp16. Test usable arithmetic, not just the advertised macros.
@@ -75,69 +68,72 @@ block()
 #endif
 int probe() { return 0; }" ${probe})
     endif()
-    target_compile_definitions(simd_minimal PUBLIC SIMD_MINIMAL_HAS_${feature}=$<BOOL:${${probe}}>)
+    target_compile_definitions(native_minimal PUBLIC NATIVE_MINIMAL_HAS_${feature}=$<BOOL:${${probe}}>)
   endforeach()
 endblock()
 
 # Preserve the existing common target without creating a second provider.
-add_library(simd_common ALIAS simd_minimal)
-add_library(simd::common ALIAS simd_minimal)
+add_library(native_common ALIAS native_minimal)
+add_library(native::common ALIAS native_minimal)
 # CMake exports these producer definitions for installed BMI regeneration.
 # Header-only packages do not configure or depend on native-half capabilities.
-target_compile_definitions(simd_minimal PRIVATE
-  SIMD_HAS_NATIVE_FP16=$<BOOL:${SIMD_HAS_NATIVE_FP16}>
-  SIMD_HAS_NATIVE_BF16=$<BOOL:${SIMD_HAS_NATIVE_BF16}>)
-target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+target_compile_definitions(native_minimal PRIVATE
+  NATIVE_HAS_NATIVE_FP16=$<BOOL:${NATIVE_HAS_NATIVE_FP16}>
+  NATIVE_HAS_NATIVE_BF16=$<BOOL:${NATIVE_HAS_NATIVE_BF16}>)
+target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
   BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
-  FILES simd.scalar.ccm simd.wide.ccm simd.static_string.ccm
-    simd.memory.ccm simd.types.ccm simd.numerics.ccm simd.cpu.ccm)
+  FILES native.isa.ccm native.scalar.ccm native.wide.ccm native.static_string.ccm
+    native.memory.ccm native.types.ccm native.numerics.ccm native.features.ccm)
 
 # Baseline x86 utilities are independent of every SIMD profile.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
-  target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+  target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
-    FILES simd.cpu.x86.ccm simd.wait.ccm)
+    FILES native.x86.features.ccm native.x86.wait.ccm native.x86.bmi1.ccm native.x86.bmi2.ccm
+      native.x86.popcnt.ccm native.x86.lzcnt.ccm native.x86.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-  target_sources(simd_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.cpu.arm.ccm)
+  target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES native.arm.features.ccm native.arm.ccm)
 endif()
 
-simd_module_target(simd simd)
-target_link_libraries(simd PUBLIC simd_minimal)
-target_sources(simd PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
-  BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}" FILES simd.ccm)
+native_module_target(native native)
+target_link_libraries(native PUBLIC native_minimal)
+target_sources(native PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
+  BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+  FILES native.simd.ccm native.math.ccm native.ccm)
 
 # Older build files may link these names. They all refer to the same hub and
 # add neither another archive/BMI nor stronger compile options.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
-  set(simd_hub_profiles AVX2 AVX512 AVX512_BF16 AVX512_FP16)
+  set(native_hub_profiles AVX2 AVX512 AVX512_BF16 AVX512_FP16)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
-  set(simd_hub_profiles NEON NEON_FP16 NEON_BF16)
+  set(native_hub_profiles NEON NEON_FP16 NEON_BF16)
 else()
-  set(simd_hub_profiles)
+  set(native_hub_profiles)
 endif()
-foreach(profile IN LISTS simd_hub_profiles)
+foreach(profile IN LISTS native_hub_profiles)
   string(TOLOWER "${profile}" name)
-  add_library(simd_${name} ALIAS simd)
-  add_library(simd::${name} ALIAS simd)
+  add_library(native_${name} ALIAS native)
+  add_library(native::${name} ALIAS native)
 endforeach()
-set_property(TARGET simd PROPERTY SIMD_HUB_PROFILES "${simd_hub_profiles}")
+set_property(TARGET native PROPERTY NATIVE_HUB_PROFILES "${native_hub_profiles}")
 # Retain the old metadata key for build-file compatibility; it no longer means
 # that importing the hub requires the union of these instruction sets.
-set_property(TARGET simd PROPERTY SIMD_OMNIBUS_PROFILES "${simd_hub_profiles}")
-set_property(TARGET simd APPEND PROPERTY EXPORT_PROPERTIES
-  SIMD_HUB_PROFILES SIMD_OMNIBUS_PROFILES)
-install(TARGETS simd simd_minimal EXPORT simdHostTargets
+set_property(TARGET native PROPERTY NATIVE_OMNIBUS_PROFILES "${native_hub_profiles}")
+set_property(TARGET native APPEND PROPERTY EXPORT_PROPERTIES
+  NATIVE_HUB_PROFILES NATIVE_OMNIBUS_PROFILES)
+install(TARGETS native native_minimal EXPORT nativeHostTargets
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-  FILE_SET cxx_modules DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/modules")
-install(EXPORT simdHostTargets NAMESPACE simd:: CXX_MODULES_DIRECTORY cxx-modules
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/simd")
-export(EXPORT simdHostTargets NAMESPACE simd:: CXX_MODULES_DIRECTORY cxx-modules
-  FILE "${PROJECT_BINARY_DIR}/simdHostTargets.cmake")
+  FILE_SET cxx_modules DESTINATION "${CMAKE_INSTALL_LIBDIR}/native/modules")
+install(EXPORT nativeHostTargets NAMESPACE native:: CXX_MODULES_DIRECTORY cxx-modules
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
+export(EXPORT nativeHostTargets NAMESPACE native:: CXX_MODULES_DIRECTORY cxx-modules
+  FILE "${PROJECT_BINARY_DIR}/nativeHostTargets.cmake")
 
 # Preserve implementation inputs for consumer BMI regeneration without making
-# them public headers or exposing their directory through simd::headers.
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/simd/"
-  DESTINATION "${CMAKE_INSTALL_LIBDIR}/simd/include/simd"
+# them public headers or exposing their directory through native::headers.
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/native/"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/native/include/native"
   FILES_MATCHING PATTERN "*.h" PATTERN "attributes.h" EXCLUDE PATTERN "config.h" EXCLUDE
-    PATTERN "isa.h" EXCLUDE PATTERN "targets.h" EXCLUDE)
+    PATTERN "isa.h" EXCLUDE PATTERN "targets.h" EXCLUDE PATTERN "mask_traits.h" EXCLUDE)

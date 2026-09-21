@@ -4,35 +4,35 @@
 #include <array>
 #include <cstdio>
 #include <type_traits>
-import simd.wide;
-import simd.scalar;
+import native.wide;
+import native.scalar;
 #include "support/fp_environment.h"
-import simd;
+import native;
 
-static_assert(!std::is_same_v<simd::vec<float,1,simd::scalar>,simd::vec<float,1,simd::neon>>);
-static_assert(sizeof(simd::vec<float,4,simd::neon>) == 16);
-static_assert(sizeof(simd::vec<std::uint8_t,16,simd::neon>) == 16);
-static_assert(std::is_same_v<decltype(simd::vec<float,4,simd::neon>{1.f,2.f,3.f,4.f}),simd::vec<float,4,simd::neon>>);
-static_assert(std::is_same_v<decltype(simd::vec<float,4,simd::neon>{} < simd::vec<float,4,simd::neon>{}),simd::vec<float,4,simd::neon>::mask>);
-static_assert(!simd::vec<float,4,simd::neon>::mask::compact);
-template<simd::isa Arch> struct family { using value = simd::vec<float,4,Arch>; };
-static_assert(std::is_same_v<family<simd::neon>::value,simd::vec<float,4,simd::neon>>);
+static_assert(!std::is_same_v<native::vec<float,1,native::scalar>,native::vec<float,1,native::neon>>);
+static_assert(sizeof(native::vec<float,4,native::neon>) == 16);
+static_assert(sizeof(native::vec<std::uint8_t,16,native::neon>) == 16);
+static_assert(std::is_same_v<decltype(native::vec<float,4,native::neon>{1.f,2.f,3.f,4.f}),native::vec<float,4,native::neon>>);
+static_assert(std::is_same_v<decltype(native::vec<float,4,native::neon>{} < native::vec<float,4,native::neon>{}),native::vec<float,4,native::neon>::mask>);
+static_assert(!native::vec<float,4,native::neon>::mask::compact);
+template<native::isa Arch> struct family { using value = native::vec<float,4,Arch>; };
+static_assert(std::is_same_v<family<native::neon>::value,native::vec<float,4,native::neon>>);
 extern "C" std::size_t profile_neon_header(std::uint32_t *, std::size_t);
 extern "C" std::size_t profile_neon_import(std::uint32_t *, std::size_t);
 
 int main(int argc, char ** argv) {
   using capture = std::array<std::uint32_t, profile_test::words>;
   capture header{}, imported{}, baseline{};
-  auto before = simd::test::read_fp_state();
+  auto before = native::test::read_fp_state();
   {
-    simd::test::fp_scope scope(simd::test::fp_mode::flush);
+    native::test::fp_scope scope(native::test::fp_mode::flush);
     if (!scope.controls_match()) return 1;
     if (profile_neon_header(header.data(), header.size()) != header.size() ||
         profile_neon_import(imported.data(), imported.size()) != imported.size()) return 2;
     if (header != imported) return 3;
     if (!scope.controls_match()) return 4;
   }
-  if (before != simd::test::read_fp_state()) return 5;
+  if (before != native::test::read_fp_state()) return 5;
   if (argc != 2 && argc != 3) return 6;
   auto * out = std::fopen(argv[1], "wb");
   if (!out) return 7;

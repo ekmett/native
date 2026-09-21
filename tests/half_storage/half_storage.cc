@@ -10,7 +10,7 @@
 #include <initializer_list>
 #include <limits>
 #include <type_traits>
-import simd.numerics;
+import native.numerics;
 std::uint32_t omnibus_half_bits();
 
 // This bank exercises the target's actual nearest-even, gradual environment.
@@ -44,19 +44,19 @@ template<class T> constexpr bool traits() {
     static_assert(T(std::uint16_t(1)).to_bits() == T(1.0f).to_bits());
   return true;
 }
-static_assert(traits<simd::fp16>() && traits<simd::bf16>());
-static_assert(simd::fp16(0x1.002p0f).to_bits() == 0x3c00);
-static_assert(simd::fp16(0x1.006p0f).to_bits() == 0x3c02);
-static_assert(simd::bf16(0x1.01p0f).to_bits() == 0x3f80);
-static_assert(simd::bf16(0x1.03p0f).to_bits() == 0x3f82);
-static_assert(std::numeric_limits<simd::fp16>::min().to_bits() == 0x0400);
-static_assert(std::numeric_limits<simd::bf16>::min().to_bits() == 0x0080);
+static_assert(traits<native::fp16>() && traits<native::bf16>());
+static_assert(native::fp16(0x1.002p0f).to_bits() == 0x3c00);
+static_assert(native::fp16(0x1.006p0f).to_bits() == 0x3c02);
+static_assert(native::bf16(0x1.01p0f).to_bits() == 0x3f80);
+static_assert(native::bf16(0x1.03p0f).to_bits() == 0x3f82);
+static_assert(std::numeric_limits<native::fp16>::min().to_bits() == 0x0400);
+static_assert(std::numeric_limits<native::bf16>::min().to_bits() == 0x0080);
 #if defined(__wasm__)
-static_assert(std::same_as<simd::fp16::underlying_type, std::uint16_t>);
-static_assert(std::same_as<simd::bf16::underlying_type, std::uint16_t>);
+static_assert(std::same_as<native::fp16::underlying_type, std::uint16_t>);
+static_assert(std::same_as<native::bf16::underlying_type, std::uint16_t>);
 #elif defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
-static_assert(std::same_as<simd::fp16::underlying_type, _Float16>);
-static_assert(std::same_as<simd::bf16::underlying_type, __bf16>);
+static_assert(std::same_as<native::fp16::underlying_type, _Float16>);
+static_assert(std::same_as<native::bf16::underlying_type, __bf16>);
 #endif
 
 template<class T, unsigned Fraction, int Bias> bool check() {
@@ -114,7 +114,7 @@ template<class T, unsigned Fraction, int Bias> bool check() {
 }
 int half_storage_entry() {
   if (!environment()) { std::fputs("requires nearest-even gradual binary32\n", stderr); return 1; }
-  if (!check<simd::fp16,10,15>()) return 2;
-  if (!check<simd::bf16,7,127>()) return 3;
+  if (!check<native::fp16,10,15>()) return 2;
+  if (!check<native::bf16,7,127>()) return 3;
   return omnibus_half_bits() == 0x3c003f80u ? 0 : 4;
 }

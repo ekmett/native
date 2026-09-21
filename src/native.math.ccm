@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <native/simd/math/exp.h>
+#include <native/simd/math/bits.h>
+#if NATIVE_HOST_X86
+#include "native/exp_policies.h"
+#endif
+export module native.math;
+export import native.simd;
+#include "native/wide_exp.h"
+#include "native/math_exports.h"

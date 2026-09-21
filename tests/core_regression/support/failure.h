@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace simd::test {
+namespace native::test {
   template<class E> [[noreturn]] inline void fail(E const & error) noexcept {
     std::fprintf(stderr, "%s\n", error.what());
     std::abort();

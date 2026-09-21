@@ -3,37 +3,37 @@
 /**
 \defgroup cpuid CPU Detection
 
-Import `simd.cpu.x86` for baseline x86 capability queries. The raw `simd::cpuid`
+Import `native.x86.features` for baseline x86 capability queries. The raw `native::cpuid`
 function preserves hardware register results, including unsupported-leaf
 behavior. Vendor identity is informational and never admits an instruction
 profile.
 
-`simd::observe_x86_capabilities()` observes the current logical CPU and OS vector
+`native::observe_x86_capabilities()` observes the current logical CPU and OS vector
 state. It checks basic leaf ranges and executes XGETBV only after CPUID reports
-both XSAVE and OSXSAVE. `simd::classify_isa` is a separate constexpr
+both XSAVE and OSXSAVE. `native::classify_isa` is a separate constexpr
 operation for real or synthetic snapshots. Native results expose `present` and
-`observed` as `simd::feature_set<simd::x86_feature>`; both must contain a required
+`observed` as `native::feature_set<native::x86_feature>`; both must contain a required
 feature. XCR0 validity remains separate. Raw CPUID inputs are retained under
 `raw` for diagnostics and are not re-decoded during native-record admission:
 
 \code{.cpp}
-import simd.cpu.x86;
-auto cpu = simd::observe_x86_capabilities();
-auto admission = simd::classify_isa(cpu, simd::avx2);
+import native.x86.features;
+auto cpu = native::observe_x86_capabilities();
+auto admission = native::classify_isa(cpu, native::avx2);
 if (!admission.admitted()) {
   // reason() names the first missing feature or OS-state requirement.
   // missing_features and missing_xcr0 retain every missing requirement.
 }
 \endcode
 
-AVX2 admission covers AVX, AVX2, FMA, BMI2, the compiler-implied SSE/POPCNT
+AVX2 admission covers AVX, AVX2, FMA, the compiler-implied SSE/POPCNT
 features, and enabled XMM/YMM state. AVX512 additionally requires F16C,
 AVX512F/DQ/BW/VL and enabled opmask and ZMM state. These requirements match
-`simd_target_profile`; application-supplied instruction flags may require
+`native_target_profile`; application-supplied instruction flags may require
 additional checks. Unavailable leaves, unread XCR0, and unknown or foreign-architecture features
 cannot admit a profile.
 
-An installed consumer links `simd::common` for both module metadata and runtime
+An installed consumer links `native::common` for both module metadata and runtime
 definitions. It does not import an ISA module or select a profile
 just to call these queries. Linking the archive does not import the omnibus
 module or inherit its instruction flags. Classification alone is constexpr.

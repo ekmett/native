@@ -12,8 +12,8 @@
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
-import simd.static_string;
-using namespace simd;
+import native.static_string;
+using namespace native;
 static_string peer_string();
 static_wstring peer_wstring();
 static_u8string peer_u8string();

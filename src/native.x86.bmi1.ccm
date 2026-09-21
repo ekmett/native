@@ -1,0 +1,24 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/x86/bmi1.h"
+export module native.x86.bmi1;
+export import native.x86.features;
+export namespace native {
+  /// \addtogroup x86_bmi1
+  /// \{
+
+  /// Re-export ANDN; see the \ref x86_bmi1 group for both operand widths.
+  using ::native::andn;
+  /// Re-export BEXTR; see the \ref x86_bmi1 group for packed and separate controls.
+  using ::native::bextr;
+  /// Re-export BLSI; see the \ref x86_bmi1 group for both operand widths.
+  using ::native::blsi;
+  /// Re-export BLSMSK; see the \ref x86_bmi1 group for both operand widths.
+  using ::native::blsmsk;
+  /// Re-export BLSR; see the \ref x86_bmi1 group for both operand widths.
+  using ::native::blsr;
+  /// Re-export TZCNT; see the \ref x86_bmi1 group for all three operand widths.
+  using ::native::tzcnt;
+  /// \}
+}

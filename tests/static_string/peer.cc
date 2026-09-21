@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-import simd.static_string;
-using namespace simd;
+import native.static_string;
+using namespace native;
 static_string peer_string() { return "interned"_ss; }
 static_wstring peer_wstring() { return L"interned"_ss; }
 static_u8string peer_u8string() { return u8"interned"_ss; }

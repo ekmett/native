@@ -14,7 +14,7 @@ namespace CASE_NAMESPACE {
   // Derived custom domains retain their full architecture requirements.
   template<class V> struct opaque : V {};
   template<class V> struct value {
-    static constexpr simd::isa architecture=V::architecture;
+    static constexpr native::isa architecture=V::architecture;
     V raw;
     value() noexcept :raw(0.f) {}
     explicit value(V v) noexcept :raw(v) {}
@@ -36,23 +36,23 @@ namespace CASE_NAMESPACE {
     return a;
   }
   template<std::size_t L,std::size_t N> bool run() {
-    constexpr auto A = SIMD_TARGET_ISA(CASE_TARGET);
-    using V=simd::vec<float,L,A>;
-    using W=simd::wide<V,N>;
-    static_assert(!addable<W,simd::wide<V,N+1>>);
-    using OtherWidth=simd::vec<float,L==1?2:1,A>;
-    static_assert(!addable<W,simd::wide<OtherWidth,N>>);
+    constexpr auto A = NATIVE_TARGET_ISA(CASE_TARGET);
+    using V=native::vec<float,L,A>;
+    using W=native::wide<V,N>;
+    static_assert(!addable<W,native::wide<V,N+1>>);
+    using OtherWidth=native::vec<float,L==1?2:1,A>;
+    static_assert(!addable<W,native::wide<OtherWidth,N>>);
 #if defined(__x86_64__) || defined(_M_X64)
-    constexpr auto OtherArch=A==simd::avx2?simd::avx512:simd::avx2;
-    if constexpr (L<=8) static_assert(!addable<W,simd::wide<simd::vec<float,L,OtherArch>,N>>);
+    constexpr auto OtherArch=A==native::avx2?native::avx512:native::avx2;
+    if constexpr (L<=8) static_assert(!addable<W,native::wide<native::vec<float,L,OtherArch>,N>>);
 #endif
-#if !SIMD_TEST_IMPORT
-    static_assert(simd::detail::wide_features<std::pair<V &,int>>::value==SIMD_TARGET_ISA(CASE_SCOPE));
-    static_assert(simd::detail::wide_features<opaque<V>>::value==A);
-    static_assert(simd::detail::wide_features<value<V>>::value==A);
-    static_assert(simd::detail::wide_equivalent_default<V> == (L==1));
-    static_assert(!simd::detail::wide_equivalent_default<opaque<V>>);
-    static_assert(!simd::detail::wide_equivalent_default<value<V>>);
+#if !NATIVE_TEST_IMPORT
+    static_assert(native::detail::wide_features<std::pair<V &,int>>::value==NATIVE_TARGET_ISA(CASE_SCOPE));
+    static_assert(native::detail::wide_features<opaque<V>>::value==A);
+    static_assert(native::detail::wide_features<value<V>>::value==A);
+    static_assert(native::detail::wide_equivalent_default<V> == (L==1));
+    static_assert(!native::detail::wide_equivalent_default<opaque<V>>);
+    static_assert(!native::detail::wide_equivalent_default<value<V>>);
 #endif
     // Use wide's attributed empty construction: MSVC array<T,0> itself can own
     // a dummy T and an unattributed implicit constructor.
@@ -98,10 +98,10 @@ namespace CASE_NAMESPACE {
       if(!same(chosen.registers[k],select(m,aa[k],bb[k]))) return false;
       if(!same(select((~masks).registers[k],aa[k],bb[k]),select(~m,aa[k],bb[k]))) return false;
     }
-    auto copied=simd::broadcast<V,N>(V(2.f));
+    auto copied=native::broadcast<V,N>(V(2.f));
     if(copied.apply([](auto const &... x){return sizeof...(x);})!=N) return false;
     for(auto x:copied.registers) if(!same(x,V(2.f))) return false;
-    simd::wide<W,2> nested{a,b};
+    native::wide<W,2> nested{a,b};
     auto doubled=nested+nested;
     for(std::size_t k=0;k<N;++k) {
       if(!same(doubled.registers[0].registers[k],aa[k]+aa[k])) return false;
@@ -110,8 +110,8 @@ namespace CASE_NAMESPACE {
     // A custom domain supplies its own behavior and conservatively keeps A.
     // Exercise it in every raw scope; extra half-tag cases above prove built-in
     // narrowing without claiming requirements of an arbitrary custom wrapper.
-    if constexpr (A==SIMD_TARGET_ISA(CASE_SCOPE)) {
-      using C=value<V>; using CW=simd::wide<C,N>;
+    if constexpr (A==NATIVE_TARGET_ISA(CASE_SCOPE)) {
+      using C=value<V>; using CW=native::wide<C,N>;
       CW custom{a}; // explicit element conversion, retaining full architecture
       static_assert(std::same_as<typename decltype(custom.registers)::value_type,C>);
       batch_calls=0;
@@ -119,7 +119,7 @@ namespace CASE_NAMESPACE {
       auto positive=abs(custom);
       if(batch_calls!=2) return false;
       auto finite=isfinite(custom);
-      static_assert(std::same_as<decltype(finite),simd::wide<typename V::mask,N>>);
+      static_assert(std::same_as<decltype(finite),native::wide<typename V::mask,N>>);
       for(std::size_t k=0;k<N;++k)
         if(!same(plus.registers[k].raw,aa[k]+aa[k]) ||
            !same(positive.registers[k].raw,abs(aa[k])) ||

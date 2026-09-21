@@ -1,5 +1,5 @@
 #include "support/profile.h"
-import simd.wide;
+import native.wide;
 #include <array>
 #include <cstdio>
 #include <cstdlib>

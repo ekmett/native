@@ -13,8 +13,8 @@
       "cacheVariables": {
         "CMAKE_CXX_COMPILER": "clang++",
         "CMAKE_BUILD_TYPE": "Release",
-        "SIMD_BUILD_TESTS": true,
-        "SIMD_ENABLE_PCH": true
+        "NATIVE_BUILD_TESTS": true,
+        "NATIVE_ENABLE_PCH": true
       }
     },
     {
@@ -29,8 +29,8 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "SIMD_BUILD_HOST": false,
-        "SIMD_BUILD_TESTS": false
+        "NATIVE_BUILD_HOST": false,
+        "NATIVE_BUILD_TESTS": false
       }
     }
   ],

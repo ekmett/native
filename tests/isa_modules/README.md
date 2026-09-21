@@ -1,7 +1,7 @@
 # Historical per-ISA compiler fixture
 
 This standalone compiler probe retains the layout used before the single-hub
-migration. Its local `simd.avx2` and `simd.avx512` modules are synthetic test
+migration. Its local `native.avx2` and `native.avx512` modules are synthetic test
 definitions, not modules provided by the installed package. It is outside the
 root build and native package CI. For the current package contract, use the
 [installed hub consumer](../omnibus/README.md) and the
@@ -11,7 +11,7 @@ This standalone fixture uses small SIMD and wide implementations to exercise
 native operations, CTAD, ADL, module imports and archive linkage. It does not
 replace or claim complete coverage of the production API.
 
-The `simd::vec<T,N,Arch>` fixture specializations have
+The `native::vec<T,N,Arch>` fixture specializations have
 private ISA flags.
 One generic `fixture::engine<Arch,Lanes>` supplies the architecture value
 and finds arithmetic through ADL. The dispatcher has no ISA imports or IPO;
