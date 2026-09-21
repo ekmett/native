@@ -5,7 +5,8 @@
 
 C++26 SIMD values and native instructions for x86-64 and AArch64.
 `simd<T,N,Arch>` keeps the element type, lane count and instruction requirements
-in the type. Comparisons produce masks; `wide<V,M>` groups registers into
+in the type. Omitting `Arch` uses the `native.simd` module's compiler baseline.
+Comparisons produce masks; `wide<V,M>` groups registers into
 independent instruction chains. Operations have no runtime dispatch inside them.
 
 Compile a kernel for the instructions it uses, then check that the CPU and OS

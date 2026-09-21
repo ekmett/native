@@ -17,6 +17,16 @@ set_target_properties(native_test_instruction_storage_adapters PROPERTIES INTERP
 add_test(NAME native.instruction_storage.adapters COMMAND native_test_instruction_storage_adapters)
 set_tests_properties(native.instruction_storage.adapters PROPERTIES LABELS "host;modules;storage")
 
+foreach(order RANGE 1 2)
+  set(target native_test_simd_defaults_${order})
+  add_executable(${target} defaults.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  target_compile_definitions(${target} PRIVATE NATIVE_DEFAULT_IMPORT_ORDER=${order})
+  set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.simd.defaults_${order} COMMAND ${target})
+  set_tests_properties(native.simd.defaults_${order} PROPERTIES LABELS "host;modules;storage")
+endforeach()
+
 # The package consumer exercises logical storage; private code-generation checks
 # additionally prevent physical-padding normalization in register bit bridges.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)

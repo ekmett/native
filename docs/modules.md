@@ -17,11 +17,21 @@ AVX-512 function keeps its original mask representation and type identity.
 `native::simd` is the class template itself. Extension specializations and
 template-template arguments name `native::simd` directly.
 
-Choose the ISA explicitly when constructing a vector:
+The architecture argument defaults to the compiler baseline used to build
+`native.simd`, so `simd<float,4>` names the same type as an explicit vector with
+that ISA. This records compiler permissions, not runtime CPU detection. A
+stronger function target or importer does not change a previously built
+module's default.
+
+Choose an explicit ISA for kernels with different requirements:
 
 ```cpp
 native::simd<float,4,native::avx2> lanes{1.f, 2.f, 3.f, 4.f};
 ```
+
+The default is supplied by `native.simd` (also imported by `native`). Standalone
+headers and `native.scalar` alone keep the architecture explicit. Target-list
+ordering and feature constraints apply equally to defaulted and explicit tags.
 
 Generic algorithms take the ISA as a value parameter:
 
