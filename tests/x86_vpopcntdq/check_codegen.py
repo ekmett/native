@@ -10,6 +10,8 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("--objdump", required=True)
 parser.add_argument("--output", required=True, type=Path)
 parser.add_argument("--baseline-only", action="store_true")
+parser.add_argument("--broad-arch", action="store_true",
+                    help="allow mask moves enabled by the caller's BW/DQ features")
 parser.add_argument("objects", nargs="+")
 args = parser.parse_args()
 result = subprocess.run([args.objdump, "--syms", "--disassemble",
@@ -72,8 +74,9 @@ if args.baseline_only:
 
 # Permit only the count itself, baseline ABI instructions and vector/mask moves
 # supplied by AVX512F. Other instruction families must not implement a fallback.
+mask_move = r"kmov[bdqw]" if args.broad_arch else r"kmovw"
 allowed = re.compile(
-    r"(?:vpopcnt[dq]|kmovw|vzeroupper|vmov(?:dqa(?:32|64)?|dqu(?:32|64)?|aps|ups)|"
+    rf"(?:vpopcnt[dq]|{mask_move}|vzeroupper|vmov(?:dqa(?:32|64)?|dqu(?:32|64)?|aps|ups)|"
     r"mov(?:[bwlq]|absq)?|movz[bw][wlq]|lea[wlq]?|ret[ql]?|nop[wlq]?|"
     r"pushq?|popq?|and[wlq]?|sub[wlq]?|add[wlq]?|int3|data16)"
 )
