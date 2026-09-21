@@ -30,18 +30,18 @@ namespace native::detail::wasm_relaxed_constant {
   // infinities and out-of-range finite values never invoke a C++ invalid cast.
   template<class To, class From>
   constexpr To truncate(From value) noexcept {
-    using F = format<From>;
-    auto bits = std::bit_cast<typename F::bits_type>(value);
-    if (constexpr_float::is_nan<F>(bits)) {
+    using format_type = format<From>;
+    auto bits = std::bit_cast<typename format_type::bits_type>(value);
+    if (constexpr_float::is_nan<format_type>(bits)) {
       return 0;
     }
     constexpr bool signed_result = std::is_signed_v<To>;
     constexpr std::uint64_t positive_limit = std::numeric_limits<To>::max();
     constexpr std::uint64_t negative_limit = signed_result ? std::uint64_t{1} << 31 : 0;
-    auto parts = constexpr_float::unpack<F>(bits);
+    auto parts = constexpr_float::unpack<format_type>(bits);
     auto limit = parts.sign ? negative_limit : positive_limit;
     std::uint64_t magnitude = 0;
-    if (constexpr_float::is_infinite<F>(bits) || parts.exponent > 32) {
+    if (constexpr_float::is_infinite<format_type>(bits) || parts.exponent > 32) {
       magnitude = limit;
     } else if (parts.exponent >= 0) {
       magnitude = parts.significand > (limit >> parts.exponent)
@@ -73,19 +73,19 @@ namespace native::detail::wasm_relaxed_constant {
   // The constant policy is fused, round-to-nearest-even with gradual underflow.
   template<bool Negative, class V>
   constexpr V multiply_add(V a, V b, V c) noexcept {
-    using T = typename V::value_type;
-    using F = format<T>;
-    using U = typename F::bits_type;
+    using lane_type = typename V::value_type;
+    using format_type = format<lane_type>;
+    using word_type = typename format_type::bits_type;
     auto av = lanes(a);
     auto bv = lanes(b);
     auto cv = lanes(c);
     for (std::size_t i = 0; i < V::lanes; ++i) {
-      auto x = std::bit_cast<U>(av[i]);
+      auto x = std::bit_cast<word_type>(av[i]);
       if constexpr (Negative) {
-        x ^= F::sign_mask;
+        x ^= format_type::sign_mask;
       }
-      cv[i] = std::bit_cast<T>(constexpr_float::fma_bits<F>(
-        x, std::bit_cast<U>(bv[i]), std::bit_cast<U>(cv[i])));
+      cv[i] = std::bit_cast<lane_type>(constexpr_float::fma_bits<format_type>(
+        x, std::bit_cast<word_type>(bv[i]), std::bit_cast<word_type>(cv[i])));
     }
     return V::load(cv.data());
   }
@@ -105,23 +105,23 @@ namespace native::detail::wasm_relaxed_constant {
   // for max. Runtime relaxed operations may select different permitted values.
   template<bool Maximum, class V>
   constexpr V minimum_maximum(V a, V b) noexcept {
-    using T = typename V::value_type;
-    using F = format<T>;
-    using U = typename F::bits_type;
+    using lane_type = typename V::value_type;
+    using format_type = format<lane_type>;
+    using word_type = typename format_type::bits_type;
     auto av = lanes(a);
     auto bv = lanes(b);
     for (std::size_t i = 0; i < V::lanes; ++i) {
-      auto x = std::bit_cast<U>(av[i]);
-      auto y = std::bit_cast<U>(bv[i]);
-      U result;
-      if (constexpr_float::is_nan<F>(x) || constexpr_float::is_nan<F>(y)) {
-        result = constexpr_float::default_nan<F>();
-      } else if (constexpr_float::is_zero<F>(x) && constexpr_float::is_zero<F>(y)) {
+      auto x = std::bit_cast<word_type>(av[i]);
+      auto y = std::bit_cast<word_type>(bv[i]);
+      word_type result;
+      if (constexpr_float::is_nan<format_type>(x) || constexpr_float::is_nan<format_type>(y)) {
+        result = constexpr_float::default_nan<format_type>();
+      } else if (constexpr_float::is_zero<format_type>(x) && constexpr_float::is_zero<format_type>(y)) {
         result = Maximum ? x & y : x | y;
       } else {
-        result = constexpr_float::less_bits<F>(x, y) != Maximum ? x : y;
+        result = constexpr_float::less_bits<format_type>(x, y) != Maximum ? x : y;
       }
-      av[i] = std::bit_cast<T>(result);
+      av[i] = std::bit_cast<lane_type>(result);
     }
     return V::load(av.data());
   }
