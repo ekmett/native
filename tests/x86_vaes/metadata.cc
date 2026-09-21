@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <initializer_list>
 #include <native/isa.h>
 #include <native/targets.h>
 
@@ -49,26 +48,30 @@ namespace {
     bool xcr0_observed = true;
   };
 
-  constexpr bool admission() {
-    for (auto requirements : {hardware, vex128, vex256, evex512}) {
-      if (!native::classify_isa(snapshot{}, requirements).admitted()) {
-        return false;
-      }
-      auto state = requirements.has(x86_feature::avx512f) ? 0xe6u : 6u;
-      for (unsigned bit = 0; bit < 64; ++bit) {
-        snapshot cpu;
-        cpu.xcr0 &= ~(std::uint64_t{1} << bit);
-        auto result = native::classify_isa(cpu, requirements);
-        if (result.admitted() != ((state & (std::uint64_t{1} << bit)) == 0)) {
-          return false;
-        }
-      }
+  constexpr bool state_admission(native::isa<native::x86> requirements) {
+    if (!native::classify_isa(snapshot{}, requirements).admitted()) {
+      return false;
+    }
+    auto state = requirements.has(x86_feature::avx512f) ? 0xe6u : 6u;
+    for (unsigned bit = 0; bit < 64; ++bit) {
       snapshot cpu;
-      cpu.xcr0_observed = false;
-      if (native::classify_isa(cpu, requirements).admitted()) {
+      cpu.xcr0 &= ~(std::uint64_t{1} << bit);
+      auto result = native::classify_isa(cpu, requirements);
+      if (result.admitted() != ((state & (std::uint64_t{1} << bit)) == 0)) {
         return false;
       }
     }
+    snapshot cpu;
+    cpu.xcr0_observed = false;
+    return !native::classify_isa(cpu, requirements).admitted();
+  }
+  // Keep each scenario within Clang's default constant-evaluation budget.
+  static_assert(state_admission(hardware));
+  static_assert(state_admission(vex128));
+  static_assert(state_admission(vex256));
+  static_assert(state_admission(evex512));
+
+  constexpr bool feature_admission() {
     for (unsigned bit = 0; bit < 32; ++bit) {
       snapshot cpu;
       cpu.leaf7_ecx = 1u << bit;
@@ -90,7 +93,7 @@ namespace {
     return !native::detail::decode_x86_features(cpu).observed.has(x86_feature::vaes) &&
       !native::classify_isa(cpu, vex256).admitted();
   }
-  static_assert(admission());
+  static_assert(feature_admission());
 }
 
 extern "C" bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t state) noexcept {
@@ -101,5 +104,6 @@ extern "C" bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t 
 }
 
 int main() {
-  return admission() ? 0 : 1;
+  return state_admission(hardware) && state_admission(vex128) &&
+    state_admission(vex256) && state_admission(evex512) && feature_admission() ? 0 : 1;
 }

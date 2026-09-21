@@ -29,7 +29,7 @@ import the granular modules and verify caller target requirements for all four
 overloads and deleted floating-register fallbacks for both families. The
 granular-module executable supplies the corresponding positive controls.
 Four metadata compilations check
-the baseline, PCLMUL, VPCLMULQDQ and an unregistered VAES feature. Synthetic
+the baseline, PCLMUL, VPCLMULQDQ and the unregistered AMX-TILE feature. Synthetic
 snapshots check CPUID leaf bounds, bit 10 and its neighbors, present versus
 observed, compiler closure, XSAVE/OSXSAVE, AVX and AVX-512 XCR0 masks.
 
