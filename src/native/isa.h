@@ -22,12 +22,12 @@ namespace native {
   enum class arm_feature : std::uint64_t {
     neon, neon_fp16, neon_bf16, aes, sha2, sha3,
     crc, lse, rdm, fp16fml, dotprod, complxnum,
-    jsconv, rcpc, pauth
+    jsconv, rcpc, pauth, i8mm
   };
   /// Number of named x86 feature values.
   inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::waitpkg)+1;
   /// Number of named ARM feature values.
-  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::pauth)+1;
+  inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::i8mm)+1;
 
   namespace detail {
     template<class T> concept instruction_feature=
@@ -271,6 +271,9 @@ namespace native {
     constexpr bool get_arm_pauth() const noexcept { return get(arm_feature::pauth); }
     constexpr void set_arm_pauth(bool value) noexcept { set(arm_feature::pauth,value); }
     __declspec(property(get=get_arm_pauth,put=set_arm_pauth)) bool arm_pauth;
+    constexpr bool get_arm_i8mm() const noexcept { return get(arm_feature::i8mm); }
+    constexpr void set_arm_i8mm(bool value) noexcept { set(arm_feature::i8mm,value); }
+    __declspec(property(get=get_arm_i8mm,put=set_arm_i8mm)) bool arm_i8mm;
   };
 
   template<class T> concept arch=detail::instruction_feature<T> || std::same_as<T,isa> ||
@@ -388,7 +391,8 @@ namespace native {
       {arm_feature::complxnum,"complxnum",isa(arm_feature::neon),feature_register::arm,11},
       {arm_feature::jsconv,"jsconv",isa(arm_feature::neon),feature_register::arm,12},
       {arm_feature::rcpc,"rcpc",isa(arm_feature::neon),feature_register::arm,13},
-      {arm_feature::pauth,"pauth",isa(arm_feature::neon),feature_register::arm,14}
+      {arm_feature::pauth,"pauth",isa(arm_feature::neon),feature_register::arm,14},
+      {arm_feature::i8mm,"i8mm",isa(arm_feature::neon),feature_register::arm,15}
     };
     inline constexpr isa arm_features=[] {
       isa result;

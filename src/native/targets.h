@@ -289,6 +289,11 @@
 #else
 #define NATIVE_DETAIL_MIN_ARM_RCPC (::native::isa{})
 #endif
+#ifdef __ARM_FEATURE_MATMUL_INT8
+#define NATIVE_DETAIL_MIN_ARM_I8MM (::native::isa(::native::arm_feature::i8mm))
+#else
+#define NATIVE_DETAIL_MIN_ARM_I8MM (::native::isa{})
+#endif
 #ifdef __ARM_FEATURE_PAUTH
 #define NATIVE_DETAIL_MIN_ARM_PAUTH (::native::isa(::native::arm_feature::pauth))
 #else
@@ -301,7 +306,7 @@
     defined(__GFNI__) || defined(__VAES__) || defined(__VPCLMULQDQ__) || defined(__AVXVNNI__) || \
     defined(__AVXIFMA__) || defined(__AVXNECONVERT__) || defined(__AVXVNNIINT8__) || \
     defined(__AVXVNNIINT16__) || defined(__AMX_TILE__) || defined(__AMX_INT8__) || defined(__AMX_BF16__) || \
-    defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_MATMUL_INT8) || defined(__ARM_FEATURE_SME)
+    defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SME)
 #define NATIVE_DETAIL_MIN_UNREGISTERED (::native::target_features("unregistered"))
 #else
 #define NATIVE_DETAIL_MIN_UNREGISTERED (::native::isa{})
@@ -328,7 +333,7 @@
   NATIVE_DETAIL_MIN_ARM_AES&NATIVE_DETAIL_MIN_ARM_SHA2&NATIVE_DETAIL_MIN_ARM_SHA3&NATIVE_DETAIL_MIN_ARM_CRC& \
   NATIVE_DETAIL_MIN_ARM_LSE&NATIVE_DETAIL_MIN_ARM_RDM&NATIVE_DETAIL_MIN_ARM_FP16FML&NATIVE_DETAIL_MIN_ARM_DOTPROD& \
   NATIVE_DETAIL_MIN_ARM_COMPLEX&NATIVE_DETAIL_MIN_ARM_JSCVT&NATIVE_DETAIL_MIN_ARM_RCPC&NATIVE_DETAIL_MIN_ARM_PAUTH& \
-  NATIVE_DETAIL_MIN_UNREGISTERED))
+  NATIVE_DETAIL_MIN_ARM_I8MM&NATIVE_DETAIL_MIN_UNREGISTERED))
 
 #define NATIVE_DETAIL_TARGET_LIST(tag,...) \
   +::native::isa_list<::native::target_entry{NATIVE_TARGET_ISA(tag),NATIVE_TARGET_MINIMUM}>{}

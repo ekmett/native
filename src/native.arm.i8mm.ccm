@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/i8mm.h"
+export module native.arm.i8mm;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_i8mm
+  /// \{
+  using ::native::smmla;
+  using ::native::ummla;
+  using ::native::usmmla;
+  using ::native::usdot;
+  using ::native::usdot_lane;
+  using ::native::sudot_lane;
+  /// \}
+}

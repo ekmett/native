@@ -213,6 +213,7 @@ namespace abi_lookup_test {
   }
   static_assert(normalized_missing<x86_feature,normalized_x86>(x86_feature_count,avx512_fp16));
   static_assert(normalized_missing<arm_feature,normalized_arm>(arm_feature_count,neon_fp16&neon_bf16));
+  static_assert(normalized_missing<arm_feature,normalized_arm>(arm_feature_count,neon&arm_feature::i8mm));
   static_assert([] {
     normalized_x86 cpu;
     if(!classify_isa(cpu,scalar).admitted() || classify_isa(cpu,avx2).admitted()) return false;
