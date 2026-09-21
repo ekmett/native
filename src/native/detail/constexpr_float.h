@@ -304,4 +304,102 @@ namespace native::detail::constexpr_float {
     cv.insert(c.significand,unsigned(c.exponent-exponent));
     return sum_magnitudes<F>(pv,sign,cv,c.sign,exponent,mode,p);
   }
+
+  template<class F>
+  constexpr typename F::bits_type sub_bits(typename F::bits_type x,typename F::bits_type y,
+      rounding mode=rounding::nearest_even,policy p={}) noexcept {
+    // Subtraction does not negate a propagated NaN's sign or payload.
+    if(is_nan<F>(x) || is_nan<F>(y)) return select_nan<F>(std::array{x,y},p);
+    return add_bits<F>(x,typename F::bits_type(y^F::sign_mask),mode,p);
+  }
+
+  template<class F>
+  constexpr typename F::bits_type div_bits(typename F::bits_type x,typename F::bits_type y,
+      rounding mode=rounding::nearest_even,policy p={}) noexcept {
+    x=flush_input<F>(x,p);y=flush_input<F>(y,p);
+    if(is_nan<F>(x) || is_nan<F>(y)) return select_nan<F>(std::array{x,y},p);
+    bool sign=((x^y)&F::sign_mask)!=0;
+    auto sign_bits=sign?F::sign_mask:0;
+    bool ix=is_infinite<F>(x),iy=is_infinite<F>(y),zx=is_zero<F>(x),zy=is_zero<F>(y);
+    if((ix && iy) || (zx && zy)) return default_nan<F>(p);
+    if(ix || zy) return typename F::bits_type(sign_bits|F::exponent_mask);
+    if(iy || zx) return typename F::bits_type(sign_bits);
+    auto a=unpack<F>(x),b=unpack<F>(y);
+    auto sa=F::fraction_bits+1-unsigned(std::bit_width(a.significand));
+    auto sb=F::fraction_bits+1-unsigned(std::bit_width(b.significand));
+    auto remainder=a.significand<<sa,divisor=b.significand<<sb;
+    std::uint64_t quotient=0;
+    // Normalized operands give a quotient in [1/2,2). Retain at least two
+    // discarded bits, then jam the exact remainder into the low sticky bit.
+    constexpr unsigned digits=F::fraction_bits+4;
+    for(unsigned bit=0;bit<digits;++bit) {
+      quotient<<=1;
+      if(remainder>=divisor) {remainder-=divisor;quotient|=1;}
+      remainder<<=1;
+    }
+    if(remainder) quotient|=1;
+    magnitude<1> value{{quotient}};
+    return round_pack<F>(sign,value,a.exponent-int(sa)-b.exponent+int(sb)-int(digits-1),mode,p);
+  }
+
+  template<class F>
+  constexpr typename F::bits_type sqrt_bits(typename F::bits_type x,
+      rounding mode=rounding::nearest_even,policy p={}) noexcept {
+    x=flush_input<F>(x,p);
+    if(is_nan<F>(x)) return select_nan<F>(std::array{x},p);
+    if(is_zero<F>(x)) return x;
+    if(x&F::sign_mask) return default_nan<F>(p);
+    if(is_infinite<F>(x)) return x;
+    auto a=unpack<F>(x);
+    auto highest=a.exponent+int(std::bit_width(a.significand))-1;
+    // Floor division also handles negative odd exponents.
+    auto root_exponent=(highest-(highest<0 && highest%2!=0))/2;
+    auto quantum=root_exponent-int(F::fraction_bits)-2;
+    magnitude<2> radicand{};
+    radicand.insert(a.significand,unsigned(a.exponent-2*quantum));
+    std::uint64_t root=0,remainder=0;
+    // Restoring square root, consuming two radicand bits per step. With at
+    // most 55 root bits even binary64's remainder fits comfortably in uint64_t.
+    for(unsigned pair=(radicand.bit_width()+1)/2;pair>0;--pair) {
+      remainder=(remainder<<2)|(radicand.extract(2*(pair-1))&3);
+      root<<=1;
+      auto trial=(root<<1)|1;
+      if(remainder>=trial) {remainder-=trial;root|=1;}
+    }
+    if(remainder) root|=1;
+    return round_pack<F>(false,magnitude<1>{{root}},quantum,mode,p);
+  }
+
+  template<class F>
+  constexpr typename F::bits_type round_integral_bits(typename F::bits_type x,
+      rounding mode=rounding::nearest_even,policy p={}) noexcept {
+    x=flush_input<F>(x,p);
+    if(is_nan<F>(x)) return select_nan<F>(std::array{x},p);
+    if(is_infinite<F>(x)) return x;
+    auto a=unpack<F>(x);
+    if(a.exponent>=0 || !a.significand) return x;
+    auto shift=unsigned(-a.exponent);
+    auto integer=shift<64?a.significand>>shift:0;
+    bool guard=shift<=64 && ((a.significand>>(shift-1))&1);
+    bool sticky=shift>64 ? a.significand!=0 :
+      (shift>1 && (a.significand&((std::uint64_t{1}<<(shift-1))-1))!=0);
+    bool inexact=guard || sticky;
+    if(mode==rounding::to_odd && inexact) integer|=1;
+    else if((mode==rounding::nearest_even && guard && (sticky || (integer&1))) ||
+        (mode==rounding::downward && a.sign && inexact) ||
+        (mode==rounding::upward && !a.sign && inexact)) ++integer;
+    return round_pack<F>(a.sign,magnitude<1>{{integer}},0,mode,p);
+  }
+
+  template<class F>
+  constexpr bool equal_bits(typename F::bits_type x,typename F::bits_type y) noexcept {
+    return !is_nan<F>(x) && !is_nan<F>(y) && (x==y || (is_zero<F>(x) && is_zero<F>(y)));
+  }
+
+  template<class F>
+  constexpr bool less_bits(typename F::bits_type x,typename F::bits_type y) noexcept {
+    if(is_nan<F>(x) || is_nan<F>(y) || (is_zero<F>(x) && is_zero<F>(y))) return false;
+    bool sx=(x&F::sign_mask)!=0,sy=(y&F::sign_mask)!=0;
+    return sx!=sy?sx:sx?x>y:x<y;
+  }
 }

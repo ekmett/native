@@ -2,7 +2,8 @@
 
 This fixture checks the internal bit-encoding arithmetic used during constant
 evaluation. It covers binary16 and bfloat16 conversions, binary32 and binary64
-addition, multiplication, and fused multiply-add, including signed zero,
+addition, subtraction, multiplication, division, fused multiply-add, square root,
+rounding to an integer, and ordered comparisons, including signed zero,
 subnormals, exact cancellation, overflow, directed rounding, and explicit NaN
 selection policies. No helper operation reads or writes the floating-point
 control or status registers.
