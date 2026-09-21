@@ -1,6 +1,6 @@
 # SIMD128 qualification
 
-The C++26 named-module fixture has three CTest entries:
+The C++26 named-module fixture has four CTest entries:
 
 - `native.wasm.simd`: constant assertions plus seeded runtime scalar comparisons
   across all ten numeric shapes, mask comparisons, bounded memory, conversions,
@@ -12,6 +12,10 @@ The C++26 named-module fixture has three CTest entries:
 - `native.wasm.simd.clients`: constant and runtime `wide<simd<float,4,A>,2>`
   arithmetic, empty packs, and compile-time checks that the unimplemented SIMD128
   exponential does not participate.
+- `native.wasm.simd.api`: integer construction and scalar operator participation
+  across every integer lane and scalar width, rejection of floating, Boolean,
+  enum and user-converted inputs, constant/runtime wrapping checks, and retained
+  floating-vector construction behavior.
 
 All sources import the public modules. Provider and consumer baseline flags do
 not enable SIMD128 globally; each vector leaf declares its target. Node validates
