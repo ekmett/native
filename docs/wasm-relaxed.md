@@ -58,9 +58,10 @@ engine's relaxed instructions. They also do not implement the optional Wasm
 *deterministic profile*, which chooses unfused multiply-add.
 
 The [focused checks](../tests/wasm_relaxed/README.md) distinguish public-wrapper
-validation from a currently failing raw-engine dot conformance probe. In
-particular, full-bit second operands expose an engine/specification disagreement;
-seven-bit second operands avoid that dot ambiguity.
+validation from raw-engine conformance probes. Full-bit dot operands and
+partial 16-bit lane-selection masks expose engine/specification disagreements
+in tested runtimes. Seven-bit second operands avoid the dot ambiguity, and
+canonical zero/all-one masks have exact lane-selection semantics.
 
 The semantic reference is the [WebAssembly core numerics specification](https://webassembly.github.io/spec/core/exec/numerics.html#relaxed-ops),
 pinned for these checks at [revision ba9fd9f5](https://github.com/WebAssembly/spec/blob/ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0/document/core/exec/numerics.rst).

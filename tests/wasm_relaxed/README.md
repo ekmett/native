@@ -22,7 +22,8 @@ not a skip. The fixture runs these checks:
 - `main` executes every operation on edge cases and deterministic random inputs.
   Its scalar floating oracle uses libc `fma` and separately rounded arithmetic,
   independently of the library's constant evaluator. It checks all swizzle
-  indices, partial masks of every width, Q15 rounding, valid truncations and zero
+  indices, raw/public agreement for partial masks of every width, exact canonical
+  mask selection, Q15 rounding, valid truncations and zero
   upper lanes, seven-bit dot arithmetic and full-bit raw/public dot agreement.
   Invalid relaxed truncations have no value assertion under the current core
   specification; their constant saturating policy is checked separately.
@@ -38,12 +39,15 @@ not a skip. The fixture runs these checks:
   module dependency. It checks the current specification's globally fixed,
   saturating interpretation on two full-bit dot inputs. It is a conformance gate,
   with no expected-failure or skip annotation.
+- `engine.laneselect` independently checks raw lane-selection instructions against
+  the bit-selection or whole-lane result sets, for all four widths. Its partial
+  mask checks remain strict even when a wrapper matches the raw instruction.
 
 When `NATIVE_WASM_WASMTIME` names a Wasmtime executable, CTest also runs the
-wrapper/property executable and raw dot gate there, plus the raw dot gate with
+wrapper/property executable and both raw engine gates there, plus the dot gate with
 Wasmtime's deterministic relaxed-SIMD option.
 
-## Raw-engine conformance discrepancy
+## Raw-engine conformance discrepancies
 
 The pinned semantic source is
 [WebAssembly/spec ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0](https://github.com/WebAssembly/spec/blob/ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0/document/core/exec/numerics.rst).
@@ -62,10 +66,16 @@ The raw test currently fails on ARM64 in Node 23.11.0: its first pair is
 `(-32768,-65536)` and its second pair is `(-2,-4)`, so no fixed interpretation
 matches both. Wasmtime 49.0.0 (`17830bd3c`), both default and deterministic mode,
 produces `(-32768,65536)` for the first case and `(-2,-4)` for the second. Its
-first case matches neither specified choice. The older proposal overview allowed
-wrapping alternatives; these tests retain the current normative requirement.
-This failure is reproducible without the public wrappers. It remains unresolved
-engine/specification qualification work.
+first case matches neither specified choice. This failure is reproducible
+without the public wrappers. These tests retain the pinned core requirement.
+
+The x86 Node 24 runtime also fails partial-mask lane-selection checks. For a
+16-bit lane with `a = 0x1234`, `b = 0xabcd` and `mask = 0x8000`, the
+[core definition](https://webassembly.github.io/spec/core/exec/numerics.html#op-irelaxed-laneselect)
+permits `0x2bcd` from bit selection or `0x1234` from whole-lane selection.
+Selecting each byte by its own mask sign bit would produce `0x12cd`, which
+is outside that set. The independent raw-engine fixture includes this witness
+and randomized cases; canonical zero/all-one masks have one exact result.
 
 The tested toolchain is WASI SDK 34 / Clang 23.1.0. Passing wrapper, constant and
 opcode checks does not establish full engine conformance or agreement across

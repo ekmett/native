@@ -98,3 +98,16 @@ if(NATIVE_WASM_WASMTIME)
   set_tests_properties(native.wasm.relaxed.wasmtime.dot_engine
     native.wasm.relaxed.wasmtime.dot_deterministic PROPERTIES LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
 endif()
+
+add_executable(native_test_wasm_relaxed_laneselect_engine laneselect_engine.cc)
+target_compile_features(native_test_wasm_relaxed_laneselect_engine PRIVATE cxx_std_26)
+add_test(NAME native.wasm.relaxed.engine.laneselect COMMAND "${NATIVE_WASM_NODE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>)
+set_tests_properties(native.wasm.relaxed.engine.laneselect PROPERTIES
+  LABELS "wasm;engine-conformance;relaxed_simd")
+if(NATIVE_WASM_WASMTIME)
+  add_test(NAME native.wasm.relaxed.wasmtime.laneselect_engine COMMAND "${NATIVE_WASM_WASMTIME}"
+    run -Ccache=n -Wsimd=y -Wrelaxed-simd=y $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>)
+  set_tests_properties(native.wasm.relaxed.wasmtime.laneselect_engine PROPERTIES
+    LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
+endif()

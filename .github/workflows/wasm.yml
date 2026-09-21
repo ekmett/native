@@ -138,7 +138,7 @@ jobs:
             ctest --test-dir "$consumer" --no-tests=error --output-on-failure \
               --output-junit "$GITHUB_WORKSPACE/build/wasm-minimum-$level-tests.xml"
           done
-      - name: Check raw engine dot conformance against the core specification
+      - name: Check raw engine conformance against the core specification
         run: |
           ctest --test-dir build/wasm -L engine-conformance --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/wasm-engine-tests.xml"
