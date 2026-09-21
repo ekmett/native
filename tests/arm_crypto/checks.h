@@ -99,7 +99,10 @@ namespace crypto_fixture {
       if(native::pmull<pmull>(poly64_t(a),poly64_t(b)) != polynomial(a,b) ||
          native::pmull2<pmull>(poly64x2_t{poly64_t(random_word(seed)),poly64_t(a)},
                               poly64x2_t{poly64_t(random_word(seed)),poly64_t(b)}) != polynomial(a,b)) return false;
-      auto x=random_vector<poly8x16_t>(seed), y=random_vector<poly8x16_t>(seed);
+      // Clang's MSVC ABI gives uint8x16_t and poly8x16_t the same template
+      // mangling. Reinterpret unsigned bytes to preserve the polynomial lane bits.
+      auto x=vreinterpretq_p8_u8(random_vector<uint8x16_t>(seed));
+      auto y=vreinterpretq_p8_u8(random_vector<uint8x16_t>(seed));
       std::array<poly16_t,8> lo{},hi{};
       for(unsigned i=0; i!=8; ++i) {
         lo[i]=poly16_t(polynomial(x[i],y[i])); hi[i]=poly16_t(polynomial(x[i+8],y[i+8]));
