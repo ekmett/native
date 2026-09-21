@@ -8,7 +8,17 @@ namespace native {
   /// This preserves lane order and low bits; it does not saturate.
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
-      sizeof(From) == 2 * sizeof(To) && N * sizeof(From) >= 16 &&
+      sizeof(From) == 2 * sizeof(To) &&
+      // The selected backend must implement this width. Complete storage alone
+      // does not establish the arithmetic instructions used by this operation.
+      (N * sizeof(From) == 16
+#if NATIVE_HAS_AVX2
+        || N * sizeof(From) == 32
+#endif
+#if NATIVE_HAS_AVX512F
+        || (N * sizeof(From) == 64 && (sizeof(From) >= 4 || NATIVE_HAS_AVX512BW != 0))
+#endif
+      ) &&
       requires { sizeof(simd<From, N, Arch>); sizeof(simd<To, 2 * N, Arch>); })
   native_nodiscard native_inline native_const simd<To, 2 * N, Arch> narrow_concat(
       simd<From, N, Arch> a, simd<From, N, Arch> b) noexcept {

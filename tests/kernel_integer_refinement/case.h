@@ -20,6 +20,11 @@ namespace integer_test::INTEGER_CASE_NAME {
       auto signed_value=native::reinterpret_bits<std::make_signed_t<T>>(value);
       native::reinterpret_bits<T>(signed_value).storeu(actual.data());
       if(actual!=input) return false;
+      if constexpr(sizeof(T)>1 && integer_test::can_reinterpret<std::uint8_t,T,N,arch>) {
+        auto bytes=native::reinterpret_bits<std::uint8_t>(value);
+        native::reinterpret_bits<T>(bytes).storeu(actual.data());
+        if(actual!=input) return false;
+      }
       if constexpr(sizeof(T)==4 && (N==2 || N==3)) {
         auto poisoned=value;
         for(std::size_t lane=N;lane<4;++lane) poisoned.value[lane]=std::numeric_limits<T>::max();
@@ -76,13 +81,13 @@ namespace integer_test::INTEGER_CASE_NAME {
   }
   template<std::size_t Bytes> bool register_shape() {
     bool good=true;
-    if constexpr(integer_test::has_shape<std::uint8_t,Bytes,arch>)
+    if constexpr(integer_test::can_popcount<std::uint8_t,Bytes,arch>)
       good=good && integer_shape<std::uint8_t,Bytes>();
-    if constexpr(integer_test::has_shape<std::uint16_t,Bytes/2,arch>)
+    if constexpr(integer_test::can_popcount<std::uint16_t,Bytes/2,arch>)
       good=good && integer_shape<std::uint16_t,Bytes/2>();
-    if constexpr(integer_test::has_shape<std::uint32_t,Bytes/4,arch>)
+    if constexpr(integer_test::can_popcount<std::uint32_t,Bytes/4,arch>)
       good=good && integer_shape<std::uint32_t,Bytes/4>();
-    if constexpr(integer_test::has_shape<std::uint64_t,Bytes/8,arch>)
+    if constexpr(integer_test::can_popcount<std::uint64_t,Bytes/8,arch>)
       good=good && integer_shape<std::uint64_t,Bytes/8>();
     if constexpr(integer_test::can_pack<std::uint8_t,std::uint16_t,Bytes/2,arch>)
       good=good && packing_shape<std::uint8_t,std::uint16_t,Bytes/2>();
@@ -95,7 +100,7 @@ namespace integer_test::INTEGER_CASE_NAME {
   __attribute__((noinline)) bool run() {
     if(!integer_shape<std::uint8_t,1>() || !integer_shape<std::uint16_t,1>() ||
        !integer_shape<std::uint32_t,1>() || !integer_shape<std::uint64_t,1>()) return false;
-    if constexpr(integer_test::has_shape<std::uint32_t,2,arch>)
+    if constexpr(integer_test::can_popcount<std::uint32_t,2,arch>)
       if(!integer_shape<std::uint32_t,2>() || !integer_shape<std::uint32_t,3>()) return false;
     if(!register_shape<16>() || !register_shape<32>() || !register_shape<64>()) return false;
     return true;
