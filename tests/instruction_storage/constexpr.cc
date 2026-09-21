@@ -6,9 +6,26 @@
 #include <type_traits>
 #if NATIVE_CONSTEXPR_HEADERS
 #include <native/vec.h>
+#include <native/wide.h>
 #else
 import native.simd;
 #endif
+
+static_assert([] {
+  native::wide<int,2> a{{1,2}},b{{3,4}};
+  native::wide<bool,2> masks{{true,false}};
+  auto r=native::select(masks,a,b);
+  native::wide<int,0> empty{};
+  return r.registers[0]==1 && r.registers[1]==4 &&
+    native::select(native::wide<bool,0>{},empty,empty).registers.empty();
+}());
+static_assert([] {
+  using V=native::simd<std::int32_t,1,native::scalar>;
+  native::wide<V,2> a{{V(1),V(2)}},b{{V(3),V(4)}};
+  native::wide<typename V::mask_type,2> masks{{V::mask_type(true),V::mask_type(false)}};
+  auto r=native::select(masks,a,b);
+  return r.registers[0].to_native()==1 && r.registers[1].to_native()==4;
+}());
 
 template<class T> consteval bool scalar_integer() {
   using V=native::simd<T,1,native::scalar>;
