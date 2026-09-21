@@ -8,19 +8,19 @@ inline constexpr auto requirements_vl = NATIVE_TARGET_ISA(test_vpopcntdq_vl);
 inline constexpr auto exact_512 = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vpopcntdq);
 inline constexpr auto exact_vl = exact_512 & native::x86_feature::avx512vl;
 
-template<native::isa A, std::size_t N> concept has_dword = requires(
+template<native::isa<native::x86> A, std::size_t N> concept has_dword = requires(
     native::simd<std::uint32_t,N,A> v, native::predicate<N,A> m) {
   { native::vpopcntd<A>(v) } noexcept -> std::same_as<decltype(v)>;
   { native::mask_vpopcntd<A>(v,m,v) } noexcept -> std::same_as<decltype(v)>;
   { native::maskz_vpopcntd<A>(m,v) } noexcept -> std::same_as<decltype(v)>;
 };
-template<native::isa A, std::size_t N> concept has_qword = requires(
+template<native::isa<native::x86> A, std::size_t N> concept has_qword = requires(
     native::simd<std::uint64_t,N,A> v, native::predicate<N,A> m) {
   { native::vpopcntq<A>(v) } noexcept -> std::same_as<decltype(v)>;
   { native::mask_vpopcntq<A>(v,m,v) } noexcept -> std::same_as<decltype(v)>;
   { native::maskz_vpopcntq<A>(m,v) } noexcept -> std::same_as<decltype(v)>;
 };
-template<native::isa A, bool Zmm, bool Vl> consteval bool availability() {
+template<native::isa<native::x86> A, bool Zmm, bool Vl> consteval bool availability() {
   return has_dword<A,16> == Zmm && has_qword<A,8> == Zmm &&
     has_dword<A,8> == Vl && has_qword<A,4> == Vl &&
     has_dword<A,4> == Vl && has_qword<A,2> == Vl;
@@ -29,13 +29,19 @@ static_assert(availability<exact_512, true, false>());
 static_assert(availability<exact_vl, true, true>());
 static_assert(availability<requirements_512, true, false>());
 static_assert(availability<requirements_vl, true, true>());
-static_assert(availability<native::scalar, false, false>());
-static_assert(availability<native::isa(native::x86_feature::avx512vpopcntdq), false, false>());
+static_assert(availability<native::isa<native::x86>{}, false, false>());
+static_assert(availability<native::isa<native::x86>(native::x86_feature::avx512vpopcntdq), false, false>());
 static_assert(availability<native::x86_feature::avx512vpopcntdq & native::x86_feature::avx512vl, false, false>());
-static_assert(availability<native::isa(native::x86_feature::avx512f), false, false>());
+static_assert(availability<native::isa<native::x86>(native::x86_feature::avx512f), false, false>());
 static_assert(availability<native::x86_feature::avx512f & native::x86_feature::avx512vl, false, false>());
 static_assert(availability<native::avx512, false, false>());
 static_assert(availability<native::avx512 & native::x86_feature::popcnt, false, false>());
+
+
+template<auto A> concept accepts_family = requires(native::simd<std::uint32_t,4,exact_vl> x) { native::vpopcntd<A>(x); };
+static_assert(accepts_family<exact_vl>);
+static_assert(!accepts_family<native::isa<native::arm>{}>);
+static_assert(!accepts_family<native::isa<native::wasm>{}>);
 
 // Only scalar pointers and an integer mask cross the target boundary.
 // A separate instantiation handles each lane width; no vector ABI reaches main.

@@ -6,7 +6,7 @@
 #error BMI2 must be supplied by the function target, not translation-unit flags
 #endif
 
-constexpr native::isa bmi2_codegen_arch{native::x86_feature::bmi2};
+constexpr native::isa<native::x86> bmi2_codegen_arch{native::x86_feature::bmi2};
 #define BMI2_CODEGEN __attribute__((target("bmi2"), noinline))
 
 extern "C" {

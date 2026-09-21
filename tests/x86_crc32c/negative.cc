@@ -16,12 +16,12 @@ import native.x86;
 #if NATIVE_TEST_NEGATIVE_FEATURE
 #define NATIVE_TARGET_negative_crc32c "crc32"
 NATIVE_TARGET_PUSH(negative_crc32c)
-constexpr auto negative_requirements = native::isa(native::x86_feature::popcnt);
+constexpr auto negative_requirements = native::isa<native::x86>(native::x86_feature::popcnt);
 #else
 #ifdef __CRC32__
 #error NATIVE_TARGET_NEGATIVE_UNAVAILABLE
 #endif
-constexpr auto negative_requirements = native::isa(native::x86_feature::crc32);
+constexpr auto negative_requirements = native::isa<native::x86>(native::x86_feature::crc32);
 #endif
 
 #if NATIVE_TEST_WIDTH == 8

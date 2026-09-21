@@ -6,93 +6,93 @@
 // public header. Defaults belong to the provider, never to a textual consumer.
 #if NATIVE_HOST_X86
 namespace native {
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint32_t bzhi(std::uint32_t value, unsigned index) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint32_t bzhi(std::uint32_t value, unsigned index) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint64_t bzhi(std::uint64_t value, unsigned index) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint64_t bzhi(std::uint64_t value, unsigned index) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint32_t mulx(std::uint32_t a, std::uint32_t b, std::uint32_t* high) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint32_t mulx(std::uint32_t a, std::uint32_t b, std::uint32_t* high) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint64_t mulx(std::uint64_t a, std::uint64_t b, std::uint64_t* high) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint64_t mulx(std::uint64_t a, std::uint64_t b, std::uint64_t* high) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint32_t pdep(std::uint32_t value, std::uint32_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint32_t pdep(std::uint32_t value, std::uint32_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint64_t pdep(std::uint64_t value, std::uint64_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint64_t pdep(std::uint64_t value, std::uint64_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint32_t pext(std::uint32_t value, std::uint32_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint32_t pext(std::uint32_t value, std::uint32_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint64_t pext(std::uint64_t value, std::uint64_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint64_t pext(std::uint64_t value, std::uint64_t mask) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint32_t shlx(std::uint32_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint32_t shlx(std::uint32_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint64_t shlx(std::uint64_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint64_t shlx(std::uint64_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint32_t shrx(std::uint32_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint32_t shrx(std::uint32_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::uint64_t shrx(std::uint64_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::uint64_t shrx(std::uint64_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::int32_t sarx(std::int32_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::int32_t sarx(std::int32_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::bmi2))
   constexpr std::int64_t sarx(std::int64_t value, unsigned count) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::bmi2))
   consteval std::int64_t sarx(std::int64_t value, unsigned count) noexcept;
 
   /// Rotate using the module baseline, or an explicitly supplied ISA.
   /// rorx<Arch, Imm8> also selects an explicit architecture.
-  template<unsigned Imm8, isa Arch = NATIVE_BASELINE>
+  template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(Arch.has(x86_feature::bmi2) && Imm8 <= 255)
   native_nodiscard native_inline native_const __attribute__((target("bmi2")))
   constexpr std::uint32_t rorx(std::uint32_t value) noexcept {
@@ -101,7 +101,7 @@ namespace native {
 
   /// Rotate using the module baseline, or an explicitly supplied ISA.
   /// rorx<Arch, Imm8> also selects an explicit architecture.
-  template<unsigned Imm8, isa Arch = NATIVE_BASELINE>
+  template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(Arch.has(x86_feature::bmi2) && Imm8 <= 255)
   native_nodiscard native_inline native_const __attribute__((target("bmi2")))
   constexpr std::uint64_t rorx(std::uint64_t value) noexcept {
@@ -109,7 +109,7 @@ namespace native {
   }
 
   /// Rotate a constant expression when Arch lacks BMI2.
-  template<unsigned Imm8, isa Arch = NATIVE_BASELINE>
+  template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(!Arch.has(x86_feature::bmi2) && Imm8 <= 255)
   native_nodiscard
   consteval std::uint32_t rorx(std::uint32_t value) noexcept {
@@ -117,7 +117,7 @@ namespace native {
   }
 
   /// Rotate a constant expression when Arch lacks BMI2.
-  template<unsigned Imm8, isa Arch = NATIVE_BASELINE>
+  template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(!Arch.has(x86_feature::bmi2) && Imm8 <= 255)
   native_nodiscard
   consteval std::uint64_t rorx(std::uint64_t value) noexcept {

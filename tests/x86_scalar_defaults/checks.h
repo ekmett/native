@@ -201,8 +201,8 @@ namespace scalar_defaults_fixture {
   static_assert(rorx_immediate<0> && rorx_immediate<255> && !rorx_immediate<256>);
   static_assert(half_immediate<0> && half_immediate<255> && !half_immediate<256>);
   template<unsigned I> concept weak_rotate_immediate = requires(std::uint64_t a) {
-    native::rorx<native::scalar, I>(a);
-    native::rorx<I, native::scalar>(a);
+    native::rorx<native::isa<native::x86>{}, I>(a);
+    native::rorx<I, native::isa<native::x86>{}>(a);
   };
   static_assert(weak_rotate_immediate<0> && weak_rotate_immediate<255> &&
                 !weak_rotate_immediate<256>);

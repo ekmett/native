@@ -48,9 +48,9 @@ export namespace native {
   /// Admission reads present/observed and XCR0; raw registers are diagnostic only.
   struct x86_capabilities {
     /// Features whose queries succeeded and reported support; no compiler closure.
-    feature_set<x86_feature> present{};
+    isa<x86> present{};
     /// Features whose CPUID leaves were available, whether present or absent.
-    feature_set<x86_feature> observed{};
+    isa<x86> observed{};
     /// OS-enabled vector state. Used only when xcr0_observed is true.
     std::uint64_t xcr0 = 0;
     /// True after XSAVE/OSXSAVE permit XGETBV and its result was captured.

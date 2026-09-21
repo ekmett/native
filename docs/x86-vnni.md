@@ -4,7 +4,7 @@
 The module belongs to `native::native` and is reexported by `native.x86` and
 `native`. Importing it leaves the caller's instruction target unchanged.
 
-Every operation takes an explicit `isa` template argument and three vectors
+Every operation takes an explicit `isa<x86>` template argument and three vectors
 with equal register widths and matching architecture tags: `(accumulator, a, b)`. Each 32-bit result lane accumulates
 products from the corresponding group of four bytes or two 16-bit words.
 Non-saturating operations return the low 32 bits of the complete sum.

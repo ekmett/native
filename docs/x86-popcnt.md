@@ -13,6 +13,7 @@ their owning module is compiled. A function target attribute on the caller
 does not change that captured value.
 Explicit `Arch` arguments are supported, and standalone headers require them.
 
+`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
 All operand widths support constant evaluation. If `Arch` lacks the feature,
 the selected overload is `consteval`: a constant call is accepted, while a call
 with runtime inputs is ill-formed. With the feature present, the overload is

@@ -16,7 +16,7 @@ namespace native::detail::x86_f16c {
 
 
   /// Convert four binary32 lanes to the low four half words, clearing the high four.
-  template<isa Arch, unsigned Imm8, class V>
+  template<isa<x86> Arch, unsigned Imm8, class V>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255 && std::same_as<V, __m128>)
   native_nodiscard native_inline native_target("f16c")
   __m128i cvtps_ph(V a) noexcept {
@@ -30,7 +30,7 @@ namespace native::detail::x86_f16c {
   }
 
   /// Convert eight binary32 lanes to eight half words in a 128-bit register.
-  template<isa Arch, unsigned Imm8, class V>
+  template<isa<x86> Arch, unsigned Imm8, class V>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255 && std::same_as<V, __m256>)
   native_nodiscard native_inline native_target("f16c")
   __m128i cvtps_ph(V a) noexcept {
@@ -41,7 +41,7 @@ namespace native::detail::x86_f16c {
   }
 
   /// Widen the low four half words; Lanes=4 selects the __m128 result explicitly.
-  template<isa Arch, unsigned Lanes, class V>
+  template<isa<x86> Arch, unsigned Lanes, class V>
     requires(Arch.has(x86_feature::f16c) && Lanes == 4 && std::same_as<V, __m128i>)
   native_nodiscard native_inline native_target("f16c")
   __m128 cvtph_ps(V a) noexcept {
@@ -52,7 +52,7 @@ namespace native::detail::x86_f16c {
   }
 
   /// Widen all eight half words; Lanes=8 selects the __m256 result explicitly.
-  template<isa Arch, unsigned Lanes, class V>
+  template<isa<x86> Arch, unsigned Lanes, class V>
     requires(Arch.has(x86_feature::f16c) && Lanes == 8 && std::same_as<V, __m128i>)
   native_nodiscard native_inline native_target("f16c")
   __m256 cvtph_ps(V a) noexcept {
@@ -63,7 +63,7 @@ namespace native::detail::x86_f16c {
   }
 
   /// Convert one binary32 value to half bits, using zero for unused instruction lanes.
-  template<isa Arch, unsigned Imm8>
+  template<isa<x86> Arch, unsigned Imm8>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   native_nodiscard native_inline native_target("f16c")
   std::uint16_t cvtss_sh(float a) noexcept {
@@ -71,7 +71,7 @@ namespace native::detail::x86_f16c {
   }
 
   /// Widen one half bit pattern, using zero for unused instruction lanes.
-  template<isa Arch> requires(Arch.has(x86_feature::f16c))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::f16c))
   native_nodiscard native_inline native_target("f16c")
   float cvtsh_ss(std::uint16_t a) noexcept {
     return _mm_cvtss_f32(cvtph_ps<Arch, 4>(_mm_cvtsi32_si128(a)));

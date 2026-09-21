@@ -3,7 +3,7 @@
 #include "oracle.h"
 
 namespace f16c_fixture {
-  constexpr auto arch = native::feature_closure(native::isa{native::x86_feature::f16c});
+  constexpr auto arch = native::feature_closure(native::isa<native::x86>{native::x86_feature::f16c});
   static_assert(!arch.has(native::x86_feature::avx2));
   static_assert(!native::feature_closure(arch).has(native::x86_feature::avx512fp16));
   static_assert(std::same_as<decltype(native::cvtss_sh<arch, 255>(0.f)), std::uint16_t>);

@@ -16,7 +16,7 @@ import native.x86;
 
 #define NATIVE_TARGET_codegen_crc32c "crc32"
 constexpr auto codegen_requirements = NATIVE_TARGET_ISA(codegen_crc32c);
-static_assert(codegen_requirements == native::isa(native::x86_feature::crc32));
+static_assert(codegen_requirements == native::isa<native::x86>(native::x86_feature::crc32));
 NATIVE_TARGET_PUSH(codegen_crc32c)
 extern "C" native_noinline std::uint32_t native_crc32c_u8(
     std::uint32_t accumulator, std::uint8_t value) noexcept {

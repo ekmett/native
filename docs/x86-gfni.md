@@ -34,7 +34,7 @@ cleared, respectively. Register-only functions have no memory side effects.
 
 ## Feature and target requirements
 
-Use `target_features(...)` or `feature_closure(...)` to include the register
+Use `target_features<native::x86>(...)` or `feature_closure(...)` to include the register
 prerequisites in `Arch`, along with every feature listed below. Function target
 attributes establish the corresponding compiler requirements.
 
@@ -72,7 +72,7 @@ dispatch at runtime.
 #include <cstdint>
 import native.x86.gfni;
 
-constexpr auto requirements = native::target_features("avx,gfni");
+constexpr auto requirements = native::target_features<native::x86>("avx,gfni");
 using bytes = native::simd<std::uint8_t,32,requirements>;
 
 native_noinline native_target("avx,gfni")

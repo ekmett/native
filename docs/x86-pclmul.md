@@ -6,7 +6,7 @@
 `vpclmulqdq<Arch, Imm8>` for `simd<std::uint64_t,N,Arch>` with N = 2, 4 or 8.
 Both belong to `native::native`, import the SIMD provider, and are reexported
 by `native.x86` and `native`. Raw register helpers are implementation details.
-Use `target_features(...)` or `feature_closure(...)` for the architecture tag,
+Use `target_features<native::x86>(...)` or `feature_closure(...)` for the architecture tag,
 including the register prerequisites.
 
 Each input bit is a coefficient of a polynomial over GF(2). The operation
@@ -53,7 +53,7 @@ and leave floating-point status unchanged.
 #include <native/attributes.h>
 import native.x86.vpclmul;
 
-constexpr auto requirements = native::target_features("avx,vpclmulqdq");
+constexpr auto requirements = native::target_features<native::x86>("avx,vpclmulqdq");
 using polynomials = native::simd<std::uint64_t,4,requirements>;
 native_target("avx,vpclmulqdq")
 polynomials products(polynomials a, polynomials b) {

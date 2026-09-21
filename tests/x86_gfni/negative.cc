@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/x86/gfni.h>
 
-constexpr native::isa gfni128{native::x86_feature::gfni};
+constexpr native::isa<native::x86> gfni128{native::x86_feature::gfni};
 constexpr auto gfni256 = gfni128 & native::x86_feature::avx;
 constexpr auto gfni512 = gfni128 & native::x86_feature::avx512f;
 constexpr auto gfni_mask512 = gfni512 & native::x86_feature::avx512bw;
@@ -9,7 +9,7 @@ constexpr auto gfni_maskvl = gfni_mask512 & native::x86_feature::avx512vl;
 
 #if NATIVE_GFNI_REJECT == 1
 native_target("gfni") __m128i rejected(__m128i a, __m128i b) {
-  return native::detail::x86_gfni::gf2p8mulb<native::isa{}>(a, b);
+  return native::detail::x86_gfni::gf2p8mulb<native::isa<native::x86>{}>(a, b);
 }
 #elif NATIVE_GFNI_REJECT == 2
 native_target("avx,gfni") __m256i rejected(__m256i a, __m256i b) {

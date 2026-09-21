@@ -5,7 +5,7 @@
 #if defined(__BMI__) || defined(__BMI2__) || defined(__AVX__) || defined(__AVX2__) || defined(__FMA__)
 #error BMI1 must be supplied by the function target, not translation-unit flags
 #endif
-constexpr native::isa bmi1{native::x86_feature::bmi1};
+constexpr native::isa<native::x86> bmi1{native::x86_feature::bmi1};
 #define BMI1_PROBE __attribute__((target("bmi"), noinline))
 extern "C" {
   BMI1_PROBE std::uint32_t probe_andn32(std::uint32_t a, std::uint32_t b) { return native::andn<bmi1>(a, b); }

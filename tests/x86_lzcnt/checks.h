@@ -2,23 +2,23 @@
 #pragma once
 #define NATIVE_TARGET_test_lzcnt "lzcnt"
 inline constexpr auto requirements = NATIVE_TARGET_ISA(test_lzcnt);
-static_assert(requirements == native::isa(native::x86_feature::lzcnt));
+static_assert(requirements == native::isa<native::x86>(native::x86_feature::lzcnt));
 static_assert(native::feature_closure(requirements) == requirements);
 
 // Weak tags expose immediate-only calls; actual runtime rejection is tested separately.
-template<native::isa A, class T>
+template<native::isa<native::x86> A, class T>
 concept has_lzcnt = requires(T value) {
   { native::lzcnt<A>(value) } noexcept -> std::same_as<T>;
 };
 static_assert(has_lzcnt<requirements, std::uint16_t>);
 static_assert(has_lzcnt<requirements, std::uint32_t>);
 static_assert(has_lzcnt<requirements, std::uint64_t>);
-static_assert(has_lzcnt<native::scalar, std::uint16_t>);
-static_assert(has_lzcnt<native::scalar, std::uint32_t>);
-static_assert(has_lzcnt<native::scalar, std::uint64_t>);
-static_assert(has_lzcnt<native::isa(native::x86_feature::bmi1), std::uint32_t>);
-static_assert(has_lzcnt<native::isa(native::x86_feature::bmi2), std::uint64_t>);
-static_assert(has_lzcnt<native::isa(native::x86_feature::popcnt), std::uint32_t>);
+static_assert(has_lzcnt<native::isa<native::x86>{}, std::uint16_t>);
+static_assert(has_lzcnt<native::isa<native::x86>{}, std::uint32_t>);
+static_assert(has_lzcnt<native::isa<native::x86>{}, std::uint64_t>);
+static_assert(has_lzcnt<native::isa<native::x86>(native::x86_feature::bmi1), std::uint32_t>);
+static_assert(has_lzcnt<native::isa<native::x86>(native::x86_feature::bmi2), std::uint64_t>);
+static_assert(has_lzcnt<native::isa<native::x86>(native::x86_feature::popcnt), std::uint32_t>);
 
 consteval bool admission_contract() {
   native::x86_capabilities cpu{};

@@ -6,22 +6,22 @@
 // public header. Defaults belong to the provider, never to a textual consumer.
 #if NATIVE_HOST_X86
 namespace native {
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
   constexpr std::uint16_t popcnt(std::uint16_t value) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
   consteval std::uint16_t popcnt(std::uint16_t value) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
   constexpr std::uint32_t popcnt(std::uint32_t value) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
   consteval std::uint32_t popcnt(std::uint32_t value) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
   constexpr std::uint64_t popcnt(std::uint64_t value) noexcept;
 
-  template<isa Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
   consteval std::uint64_t popcnt(std::uint64_t value) noexcept;
 
 }

@@ -25,7 +25,7 @@ export namespace native {
  * \{ */
 
   /// Convert 4 binary32 lanes to 4 binary16 lanes.
-  template<isa Arch, unsigned Imm8>
+  template<isa<x86> Arch, unsigned Imm8>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   native_nodiscard native_inline native_target("f16c")
   simd<fp16, 4, Arch> cvtps_ph(simd<float, 4, Arch> a) noexcept {
@@ -35,7 +35,7 @@ export namespace native {
   }
 
   /// Convert 8 binary32 lanes to 8 binary16 lanes.
-  template<isa Arch, unsigned Imm8>
+  template<isa<x86> Arch, unsigned Imm8>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   native_nodiscard native_inline native_target("f16c")
   simd<fp16, 8, Arch> cvtps_ph(simd<float, 8, Arch> a) noexcept {
@@ -44,7 +44,7 @@ export namespace native {
   }
 
   /// Widen 4 binary16 lanes to 4 binary32 lanes.
-  template<isa Arch, unsigned Lanes>
+  template<isa<x86> Arch, unsigned Lanes>
     requires(Arch.has(x86_feature::f16c) && Lanes == 4)
   native_nodiscard native_inline native_target("f16c")
   simd<float, 4, Arch> cvtph_ps(simd<fp16, 4, Arch> a) noexcept {
@@ -53,7 +53,7 @@ export namespace native {
   }
 
   /// Widen 8 binary16 lanes to 8 binary32 lanes.
-  template<isa Arch, unsigned Lanes>
+  template<isa<x86> Arch, unsigned Lanes>
     requires(Arch.has(x86_feature::f16c) && Lanes == 8)
   native_nodiscard native_inline native_target("f16c")
   simd<float, 8, Arch> cvtph_ps(simd<fp16, 8, Arch> a) noexcept {
@@ -62,7 +62,7 @@ export namespace native {
   }
 
   /// Convert one binary32 value to binary16 representation bits.
-  template<isa Arch, unsigned Imm8>
+  template<isa<x86> Arch, unsigned Imm8>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   native_nodiscard native_inline native_target("f16c")
   std::uint16_t cvtss_sh(float a) noexcept {
@@ -71,7 +71,7 @@ export namespace native {
 
   /// Convert one binary32 value using the module baseline or an explicit ISA.
   /// The legacy cvtss_sh<Arch, Imm8> spelling remains available.
-  template<unsigned Imm8, isa Arch = NATIVE_BASELINE>
+  template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   native_nodiscard native_inline native_target("f16c")
   std::uint16_t cvtss_sh(float a) noexcept {
@@ -79,16 +79,16 @@ export namespace native {
   }
 
   /// Widen one binary16 representation to binary32.
-  template<isa Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::f16c))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::f16c))
   native_nodiscard native_inline native_target("f16c")
   float cvtsh_ss(std::uint16_t a) noexcept {
     return detail::x86_f16c::cvtsh_ss<Arch>(a);
   }
 
   /// Reject unsupported signatures, including implicit raw-register conversions.
-  template<isa Arch, unsigned Imm8, class V> void cvtps_ph(V) = delete;
+  template<isa<x86> Arch, unsigned Imm8, class V> void cvtps_ph(V) = delete;
   /// Reject unsupported signatures, including implicit raw-register conversions.
-  template<isa Arch, unsigned Lanes, class V> void cvtph_ps(V) = delete;
+  template<isa<x86> Arch, unsigned Lanes, class V> void cvtph_ps(V) = delete;
   /// \}
 }
 #endif

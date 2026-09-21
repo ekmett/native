@@ -8,7 +8,7 @@ import native.x86.gfni;
 #error GFNI codegen probes require a baseline translation unit
 #endif
 
-constexpr auto gfni128 = native::feature_closure(native::isa{native::x86_feature::gfni});
+constexpr auto gfni128 = native::feature_closure(native::isa<native::x86>{native::x86_feature::gfni});
 constexpr auto gfni256 = native::feature_closure(gfni128 & native::x86_feature::avx);
 constexpr auto gfni512 = native::feature_closure(gfni128 & native::x86_feature::avx512f);
 constexpr auto gfni_mask512 = native::feature_closure(gfni512 & native::x86_feature::avx512bw);

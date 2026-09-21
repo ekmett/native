@@ -4,22 +4,22 @@
 
 namespace {
 using native::x86_feature;
-constexpr native::isa vpclmulqdq{x86_feature::vpclmulqdq};
-constexpr native::isa pclmul{x86_feature::pclmul};
+constexpr native::isa<native::x86> vpclmulqdq{x86_feature::vpclmulqdq};
+constexpr native::isa<native::x86> pclmul{x86_feature::pclmul};
 constexpr auto legacy = native::feature_closure(pclmul);
-constexpr auto vex = native::target_features("avx,vpclmulqdq");
-constexpr auto evex = native::target_features("avx512f,vpclmulqdq");
+constexpr auto vex = native::target_features<native::x86>("avx,vpclmulqdq");
+constexpr auto evex = native::target_features<native::x86>("avx512f,vpclmulqdq");
 
 static_assert(static_cast<unsigned>(x86_feature::popcnt) == 7);
 static_assert(static_cast<unsigned>(x86_feature::lzcnt) == 25);
 static_assert(static_cast<unsigned>(x86_feature::waitpkg) == 29);
 static_assert(static_cast<unsigned>(x86_feature::vpclmulqdq) > static_cast<unsigned>(x86_feature::waitpkg));
 static_assert(native::x86_feature_count > static_cast<unsigned>(x86_feature::vpclmulqdq));
-static_assert(vpclmulqdq == native::isa(native::feature_set{x86_feature::vpclmulqdq}));
+static_assert(std::same_as<std::remove_cv_t<decltype(vpclmulqdq)>,native::isa<native::x86>>);
 static_assert(!vpclmulqdq.has(x86_feature::sse2));
 static_assert(legacy == (pclmul & x86_feature::sse2 & x86_feature::sse & x86_feature::mmx));
-static_assert(native::target_features("pclmul") == legacy);
-static_assert(native::target_features("vpclmulqdq") == vex);
+static_assert(native::target_features<native::x86>("pclmul") == legacy);
+static_assert(native::target_features<native::x86>("vpclmulqdq") == vex);
 static_assert(vex.has(x86_feature::pclmul));
 static_assert(vex.has(x86_feature::avx));
 static_assert(!vex.has(x86_feature::avx2));
@@ -27,9 +27,9 @@ static_assert(!vex.has(x86_feature::avx512f));
 static_assert(!native::avx2.has(x86_feature::vpclmulqdq));
 static_assert(!native::avx512.has(x86_feature::vpclmulqdq));
 #ifdef __VAES__
-static_assert(!(NATIVE_TARGET_MINIMUM <= native::detail::known_features));
+static_assert(!(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>));
 #else
-static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features);
+static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>);
 #endif
 static_assert(static_cast<unsigned>(x86_feature::crc32) == 30);
 static_assert(static_cast<unsigned>(x86_feature::gfni) == 31);
@@ -48,21 +48,21 @@ static_assert(!NATIVE_TARGET_MINIMUM.has(x86_feature::vpclmulqdq));
 #endif
 
 consteval bool property_contract() {
-  native::isa value;
+  native::isa<native::x86> value;
   value.vpclmulqdq = true;
   if (!value.vpclmulqdq || value != vpclmulqdq) return false;
   value.vpclmulqdq = false;
-  return value == native::scalar;
+  return value == native::isa<native::x86>{};
 }
 static_assert(property_contract());
 
 struct normalized_snapshot {
-  native::feature_set<x86_feature> present{}, observed{};
+  native::isa<native::x86> present{}, observed{};
   std::uint64_t xcr0 = 0;
   bool xcr0_observed = false;
 };
 
-constexpr normalized_snapshot available(native::isa requirements) {
+constexpr normalized_snapshot available(native::isa<native::x86> requirements) {
   normalized_snapshot result;
   for (unsigned i = 0; i != native::x86_feature_count; ++i) {
     auto feature = static_cast<x86_feature>(i);
@@ -88,7 +88,7 @@ consteval bool normalized_contract() {
   if (native::classify_isa(cpu, vex).admitted()) return false;
   cpu.xcr0_observed = true;
   if (!native::classify_isa(cpu, vex).admitted()) return false;
-  if (!native::classify_isa(cpu, native::isa(x86_feature::avx), vpclmulqdq).admitted()) return false;
+  if (!native::classify_isa(cpu, native::isa<native::x86>(x86_feature::avx), vpclmulqdq).admitted()) return false;
   for (auto bit : {1u, 2u}) {
     cpu.xcr0 = 0x6 & ~(std::uint64_t{1} << bit);
     auto status = native::classify_isa(cpu, vex);

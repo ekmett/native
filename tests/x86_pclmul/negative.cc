@@ -5,17 +5,17 @@ import native.x86.pclmul;
 import native.x86.vpclmul;
 
 using native::x86_feature;
-constexpr auto legacy = native::feature_closure(native::isa{x86_feature::pclmul});
+constexpr auto legacy = native::feature_closure(native::isa<native::x86>{x86_feature::pclmul});
 constexpr auto vex128=native::feature_closure(legacy & x86_feature::avx);
 constexpr auto vex256=native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx);
 constexpr auto evex512=native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f);
 #if NATIVE_PCLMUL_REJECT == 1
-native_target("pclmul") auto rejected(native::simd<std::uint64_t,2,native::feature_closure(native::isa(native::x86_feature::avx))> a, native::simd<std::uint64_t,2,native::feature_closure(native::isa(native::x86_feature::avx))> b, unsigned immediate) {
-  return native::pclmulqdq<native::feature_closure(native::isa(native::x86_feature::avx)),0>(a,b);
+native_target("pclmul") auto rejected(native::simd<std::uint64_t,2,native::feature_closure(native::isa<native::x86>(native::x86_feature::avx))> a, native::simd<std::uint64_t,2,native::feature_closure(native::isa<native::x86>(native::x86_feature::avx))> b, unsigned immediate) {
+  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(native::x86_feature::avx)),0>(a,b);
 }
 #elif NATIVE_PCLMUL_REJECT == 2
-native_target("avx,pclmul") auto rejected(native::simd<std::uint64_t,2,native::isa(x86_feature::avx)> a, native::simd<std::uint64_t,2,native::isa(x86_feature::avx)> b, unsigned immediate) {
-  return native::vpclmulqdq<native::isa(x86_feature::avx),0>(a,b);
+native_target("avx,pclmul") auto rejected(native::simd<std::uint64_t,2,native::isa<native::x86>(x86_feature::avx)> a, native::simd<std::uint64_t,2,native::isa<native::x86>(x86_feature::avx)> b, unsigned immediate) {
+  return native::vpclmulqdq<native::isa<native::x86>(x86_feature::avx),0>(a,b);
 }
 #elif NATIVE_PCLMUL_REJECT == 3
 native_target("avx,pclmul") auto rejected(native::simd<std::uint64_t,2,legacy> a, native::simd<std::uint64_t,2,legacy> b, unsigned immediate) {
@@ -26,12 +26,12 @@ native_target("vpclmulqdq") auto rejected(native::simd<std::uint64_t,4,vex128> a
   return native::vpclmulqdq<vex128,0>(a,b);
 }
 #elif NATIVE_PCLMUL_REJECT == 5
-native_target("vpclmulqdq") auto rejected(native::simd<std::uint64_t,4,native::isa(x86_feature::vpclmulqdq)> a, native::simd<std::uint64_t,4,native::isa(x86_feature::vpclmulqdq)> b, unsigned immediate) {
-  return native::vpclmulqdq<native::isa(x86_feature::vpclmulqdq),0>(a,b);
+native_target("vpclmulqdq") auto rejected(native::simd<std::uint64_t,4,native::isa<native::x86>(x86_feature::vpclmulqdq)> a, native::simd<std::uint64_t,4,native::isa<native::x86>(x86_feature::vpclmulqdq)> b, unsigned immediate) {
+  return native::vpclmulqdq<native::isa<native::x86>(x86_feature::vpclmulqdq),0>(a,b);
 }
 #elif NATIVE_PCLMUL_REJECT == 6
-native_target("avx512f,vpclmulqdq") auto rejected(native::simd<std::uint64_t,8,native::isa(x86_feature::avx512f)> a, native::simd<std::uint64_t,8,native::isa(x86_feature::avx512f)> b, unsigned immediate) {
-  return native::vpclmulqdq<native::isa(x86_feature::avx512f),0>(a,b);
+native_target("avx512f,vpclmulqdq") auto rejected(native::simd<std::uint64_t,8,native::isa<native::x86>(x86_feature::avx512f)> a, native::simd<std::uint64_t,8,native::isa<native::x86>(x86_feature::avx512f)> b, unsigned immediate) {
+  return native::vpclmulqdq<native::isa<native::x86>(x86_feature::avx512f),0>(a,b);
 }
 #elif NATIVE_PCLMUL_REJECT == 7
 native_target("avx512f,vpclmulqdq") auto rejected(native::simd<std::uint64_t,8,vex256> a, native::simd<std::uint64_t,8,vex256> b, unsigned immediate) {

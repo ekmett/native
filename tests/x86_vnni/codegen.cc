@@ -7,12 +7,12 @@
 #error VNNI codegen probes require a baseline translation unit
 #endif
 
-constexpr native::isa vex{native::x86_feature::avxvnni};
+constexpr native::isa<native::x86> vex{native::x86_feature::avxvnni};
 constexpr auto evex = native::x86_feature::avx512f & native::x86_feature::avx512vnni;
 constexpr auto evexvl = evex & native::x86_feature::avx512vl;
 constexpr auto both = vex & evexvl;
-constexpr native::isa int8{native::x86_feature::avxvnniint8};
-constexpr native::isa int16{native::x86_feature::avxvnniint16};
+constexpr native::isa<native::x86> int8{native::x86_feature::avxvnniint8};
+constexpr native::isa<native::x86> int16{native::x86_feature::avxvnniint16};
 
 #define NATIVE_VNNI_PLAIN(operation, width, reg, family, requirement, features) \
   extern "C" native_noinline native_target(features) \

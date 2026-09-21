@@ -15,6 +15,6 @@ import native.x86.popcnt;
 import native.x86.lzcnt;
 import native.x86.crc32c;
 import native.x86.f16c;
-constexpr native::isa expected = NATIVE_BASELINE;
+constexpr native::isa<native::x86> expected = NATIVE_BASELINE;
 #include "checks.h"
 int main() { return 0; }

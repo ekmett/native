@@ -10,6 +10,7 @@ their owning module is compiled. A function target attribute on the caller
 does not change that captured value.
 Explicit `Arch` arguments are supported, and standalone headers require them.
 
+`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
 All operand widths support constant evaluation. If `Arch` lacks the feature,
 the selected overload is `consteval`: a constant call is accepted, while a call
 with runtime inputs is ill-formed. With the feature present, the overload is
@@ -60,7 +61,7 @@ supplies the conventional initial seed and final complement explicitly:
 import native.x86.crc32c;
 
 #define NATIVE_TARGET_checksum "crc32"
-constexpr native::isa checksum_isa{native::x86_feature::crc32};
+constexpr native::isa<native::x86> checksum_isa{native::x86_feature::crc32};
 
 NATIVE_TARGET_PUSH(checksum)
 std::uint32_t checksum_example() noexcept {

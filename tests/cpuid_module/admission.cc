@@ -4,12 +4,23 @@
 #include <initializer_list>
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 #include <native/targets.h>
 import native.x86.features;
 #if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
 namespace {
+  static_assert(std::is_same_v<decltype(native::x86_capabilities{}.present),native::isa<native::x86>>);
+  static_assert(std::is_same_v<decltype(native::x86_capabilities{}.observed),native::isa<native::x86>>);
+  template<auto Required> concept classifiable = requires(native::x86_capabilities cpu) {
+    native::classify_isa(cpu,Required);
+  };
+  static_assert(classifiable<native::isa<native::x86>{}>);
+  static_assert(!classifiable<native::isa<native::arm>{}>);
+  static_assert(!classifiable<native::isa<native::wasm>{}>);
+  static_assert(!classifiable<native::arm_feature::neon>);
+  static_assert(!classifiable<native::wasm_feature::simd128>);
   // Independent raw fixture: removing a register bit exercises the decoder.
   struct raw_snapshot {
     std::uint32_t max_basic_leaf=0,leaf1_ecx=0,leaf1_edx=0,leaf7_ebx=0;
@@ -22,7 +33,7 @@ namespace {
       (1u<<26)|(1u<<27)|(1u<<28)|(1u<<29),
     (1u<<23)|(1u<<25)|(1u<<26),
     (1u<<5)|(1u<<8)|(1u<<16)|(1u<<17)|(1u<<30)|(1u<<31), 0xe6, true, 1, 1u<<5, 1u<<23};
-  constexpr bool synthetic_cpuid(native::isa profile) {
+  constexpr bool synthetic_cpuid(native::isa<native::x86> profile) {
     using native::avx2, native::avx512, native::avx512_bf16, native::avx512_fp16;
     if (!native::classify_isa(full, profile).admitted()) return false;
     // Independent contract oracle: CPUID.1 ECX SSE3, SSSE3, FMA, SSE4.1,
@@ -70,7 +81,7 @@ namespace {
     }
     return true;
   }
-  constexpr bool synthetic_os_state(native::isa profile) {
+  constexpr bool synthetic_os_state(native::isa<native::x86> profile) {
     using native::avx2, native::avx512_bf16, native::avx512_fp16;
     auto expected_xcr0 = profile != avx2 ? 0xe6ull : 0x6ull;
     for (unsigned bit = 0; bit != 64; ++bit) {
@@ -92,15 +103,15 @@ namespace {
     auto cpu = full; cpu.xcr0_observed = false;
     auto unread = native::classify_isa(cpu, profile);
     if (unread.admitted() || !unread.missing_xcr0_observation || unread.missing_xcr0 != expected_xcr0) return false;
-    auto result = native::classify_isa(full, native::isa(static_cast<native::x86_feature>(-1)));
+    auto result = native::classify_isa(full, native::isa<native::x86>(static_cast<native::x86_feature>(-1)));
     return result.invalid_features && !result.admitted();
   }
-  constexpr bool synthetic(native::isa profile) {
+  constexpr bool synthetic(native::isa<native::x86> profile) {
     return synthetic_cpuid(profile) && synthetic_os_state(profile);
   }
   // Keep the complete CPUID and OS-state checks in separate constant
   // evaluations as the feature catalog grows; use the default compiler budget.
-  template<native::isa Profile> struct synthetic_checks {
+  template<native::isa<native::x86> Profile> struct synthetic_checks {
     static_assert(synthetic_cpuid(Profile));
     static_assert(synthetic_os_state(Profile));
     static constexpr bool checked = true;
@@ -121,17 +132,17 @@ namespace {
 #define NATIVE_TARGET_wait_mwaitx "mwaitx"
 #define NATIVE_TARGET_wait_waitpkg "waitpkg"
   constexpr auto wait_features = native::x86_feature::mwaitx & native::x86_feature::waitpkg;
-  static_assert(NATIVE_TARGET_ISA(wait_mwaitx) == native::isa(native::x86_feature::mwaitx));
-  static_assert(NATIVE_TARGET_ISA(wait_waitpkg) == native::isa(native::x86_feature::waitpkg));
-  static_assert(native::target_features("mwaitx,waitpkg") == wait_features);
+  static_assert(NATIVE_TARGET_ISA(wait_mwaitx) == native::isa<native::x86>(native::x86_feature::mwaitx));
+  static_assert(NATIVE_TARGET_ISA(wait_waitpkg) == native::isa<native::x86>(native::x86_feature::waitpkg));
+  static_assert(native::target_features<native::x86>("mwaitx,waitpkg") == wait_features);
   static_assert(native::feature_closure(wait_features) == wait_features);
   static_assert([] {
-    native::isa value;
+    native::isa<native::x86> value;
     value.mwaitx = true;
     value.waitpkg = true;
     if (value != wait_features) return false;
     value.mwaitx = false;
-    return !value.mwaitx && value.waitpkg && value == native::isa(native::x86_feature::waitpkg);
+    return !value.mwaitx && value.waitpkg && value == native::isa<native::x86>(native::x86_feature::waitpkg);
   }());
 
   struct wait_snapshot : raw_snapshot {
@@ -150,11 +161,11 @@ namespace {
     auto cpu = full_wait;
     cpu.leaf7_ecx = 0;
     result = native::classify_isa(cpu, wait_features);
-    if (result.admitted() || result.missing_features != native::isa(native::x86_feature::waitpkg)) return false;
+    if (result.admitted() || result.missing_features != native::isa<native::x86>(native::x86_feature::waitpkg)) return false;
     cpu = full_wait;
     cpu.extended1_ecx = 0;
     result = native::classify_isa(cpu, wait_features);
-    if (result.admitted() || result.missing_features != native::isa(native::x86_feature::mwaitx)) return false;
+    if (result.admitted() || result.missing_features != native::isa<native::x86>(native::x86_feature::mwaitx)) return false;
     // Stale register bits do not authorize features from unavailable leaves.
     cpu = full_wait;
     cpu.max_basic_leaf = 6;

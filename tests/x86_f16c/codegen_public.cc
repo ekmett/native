@@ -3,7 +3,7 @@
 #include <immintrin.h>
 #include <native/attributes.h>
 import native.x86.f16c;
-constexpr auto arch = native::feature_closure(native::isa{native::x86_feature::f16c});
+constexpr auto arch = native::feature_closure(native::isa<native::x86>{native::x86_feature::f16c});
 // Four-lane widening probes read exactly eight bytes in both interfaces.
 #define ENTRY extern "C" native_target("f16c,no-avx2,no-avx512fp16") native_noinline
 ENTRY std::uint16_t native_f16c_narrow1(float x) { return native::cvtss_sh<arch, 0>(x); }

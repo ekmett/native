@@ -3,11 +3,11 @@
 
 namespace vnni_fixture {
   using native::x86_feature;
-  constexpr auto core = native::feature_closure(native::isa{x86_feature::avxvnni});
-  constexpr native::isa evex512 = native::feature_closure(x86_feature::avx512f & x86_feature::avx512vnni);
-  constexpr native::isa evexvl = native::feature_closure(evex512 & x86_feature::avx512vl);
-  constexpr auto int8 = native::feature_closure(native::isa{x86_feature::avxvnniint8});
-  constexpr auto int16 = native::feature_closure(native::isa{x86_feature::avxvnniint16});
+  constexpr auto core = native::feature_closure(native::isa<native::x86>{x86_feature::avxvnni});
+  constexpr native::isa<native::x86> evex512 = native::feature_closure(x86_feature::avx512f & x86_feature::avx512vnni);
+  constexpr native::isa<native::x86> evexvl = native::feature_closure(evex512 & x86_feature::avx512vl);
+  constexpr auto int8 = native::feature_closure(native::isa<native::x86>{x86_feature::avxvnniint8});
+  constexpr auto int16 = native::feature_closure(native::isa<native::x86>{x86_feature::avxvnniint16});
 
 
 #include "api_checks.h"
@@ -294,7 +294,7 @@ namespace vnni_fixture {
       unsigned(cpu.present.has(x86_feature::avxvnniint8)), unsigned(cpu.present.has(x86_feature::avxvnniint16)),
       unsigned(cpu.present.has(x86_feature::avx512f)), unsigned(cpu.present.has(x86_feature::avx512vl)),
       static_cast<unsigned long long>(cpu.xcr0), unsigned(cpu.xcr0_observed));
-    auto execute = [&](native::isa requirements, auto body) {
+    auto execute = [&](native::isa<native::x86> requirements, auto body) {
       auto admission = native::classify_isa(cpu, requirements, NATIVE_TARGET_MINIMUM);
       if (!admission.admitted()) {
         std::printf("SKIP %s: %s; scalar reference and compile-time constraints passed\n", selected, admission.reason());

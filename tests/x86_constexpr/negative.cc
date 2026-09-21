@@ -19,7 +19,7 @@ import native.x86.crc32c;
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a, std::uint32_t b) {
-  return native::andn<native::scalar>(a, b);
+  return native::andn<native::isa<native::x86>{}>(a, b);
 }
 #endif
 
@@ -27,7 +27,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint32_t b) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a, std::uint32_t control) {
-  return native::bextr<native::scalar>(a, control);
+  return native::bextr<native::isa<native::x86>{}>(a, control);
 }
 #endif
 
@@ -35,7 +35,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint32_t control) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a, unsigned start, unsigned length) {
-  return native::bextr<native::scalar>(a, start, length);
+  return native::bextr<native::isa<native::x86>{}>(a, start, length);
 }
 #endif
 
@@ -43,7 +43,7 @@ std::uint32_t rejected(std::uint32_t a, unsigned start, unsigned length) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::blsi<native::scalar>(a);
+  return native::blsi<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -51,7 +51,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::blsmsk<native::scalar>(a);
+  return native::blsmsk<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -59,7 +59,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::blsr<native::scalar>(a);
+  return native::blsr<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -67,7 +67,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a, unsigned count) {
-  return native::bzhi<native::scalar>(a, count);
+  return native::bzhi<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -75,7 +75,7 @@ std::uint32_t rejected(std::uint32_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a, std::uint32_t b, std::uint32_t* high) {
-  return native::mulx<native::scalar>(a, b, high);
+  return native::mulx<native::isa<native::x86>{}>(a, b, high);
 }
 #endif
 
@@ -83,7 +83,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint32_t b, std::uint32_t* high) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a, std::uint32_t mask) {
-  return native::pdep<native::scalar>(a, mask);
+  return native::pdep<native::isa<native::x86>{}>(a, mask);
 }
 #endif
 
@@ -91,7 +91,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint32_t mask) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a, std::uint32_t mask) {
-  return native::pext<native::scalar>(a, mask);
+  return native::pext<native::isa<native::x86>{}>(a, mask);
 }
 #endif
 
@@ -99,7 +99,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint32_t mask) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a, unsigned count) {
-  return native::shlx<native::scalar>(a, count);
+  return native::shlx<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -107,7 +107,7 @@ std::uint32_t rejected(std::uint32_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a, unsigned count) {
-  return native::shrx<native::scalar>(a, count);
+  return native::shrx<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -115,7 +115,7 @@ std::uint32_t rejected(std::uint32_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::rorx<native::scalar, 7>(a);
+  return native::rorx<native::isa<native::x86>{}, 7>(a);
 }
 #endif
 
@@ -123,7 +123,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a, std::uint64_t b) {
-  return native::andn<native::scalar>(a, b);
+  return native::andn<native::isa<native::x86>{}>(a, b);
 }
 #endif
 
@@ -131,7 +131,7 @@ std::uint64_t rejected(std::uint64_t a, std::uint64_t b) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a, std::uint32_t control) {
-  return native::bextr<native::scalar>(a, control);
+  return native::bextr<native::isa<native::x86>{}>(a, control);
 }
 #endif
 
@@ -139,7 +139,7 @@ std::uint64_t rejected(std::uint64_t a, std::uint32_t control) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a, unsigned start, unsigned length) {
-  return native::bextr<native::scalar>(a, start, length);
+  return native::bextr<native::isa<native::x86>{}>(a, start, length);
 }
 #endif
 
@@ -147,7 +147,7 @@ std::uint64_t rejected(std::uint64_t a, unsigned start, unsigned length) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::blsi<native::scalar>(a);
+  return native::blsi<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -155,7 +155,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::blsmsk<native::scalar>(a);
+  return native::blsmsk<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -163,7 +163,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::blsr<native::scalar>(a);
+  return native::blsr<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -171,7 +171,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a, unsigned count) {
-  return native::bzhi<native::scalar>(a, count);
+  return native::bzhi<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -179,7 +179,7 @@ std::uint64_t rejected(std::uint64_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a, std::uint64_t b, std::uint64_t* high) {
-  return native::mulx<native::scalar>(a, b, high);
+  return native::mulx<native::isa<native::x86>{}>(a, b, high);
 }
 #endif
 
@@ -187,7 +187,7 @@ std::uint64_t rejected(std::uint64_t a, std::uint64_t b, std::uint64_t* high) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a, std::uint64_t mask) {
-  return native::pdep<native::scalar>(a, mask);
+  return native::pdep<native::isa<native::x86>{}>(a, mask);
 }
 #endif
 
@@ -195,7 +195,7 @@ std::uint64_t rejected(std::uint64_t a, std::uint64_t mask) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a, std::uint64_t mask) {
-  return native::pext<native::scalar>(a, mask);
+  return native::pext<native::isa<native::x86>{}>(a, mask);
 }
 #endif
 
@@ -203,7 +203,7 @@ std::uint64_t rejected(std::uint64_t a, std::uint64_t mask) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a, unsigned count) {
-  return native::shlx<native::scalar>(a, count);
+  return native::shlx<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -211,7 +211,7 @@ std::uint64_t rejected(std::uint64_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a, unsigned count) {
-  return native::shrx<native::scalar>(a, count);
+  return native::shrx<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -219,7 +219,7 @@ std::uint64_t rejected(std::uint64_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::rorx<native::scalar, 7>(a);
+  return native::rorx<native::isa<native::x86>{}, 7>(a);
 }
 #endif
 
@@ -227,7 +227,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::int32_t rejected(std::int32_t a, unsigned count) {
-  return native::sarx<native::scalar>(a, count);
+  return native::sarx<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -235,7 +235,7 @@ std::int32_t rejected(std::int32_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi2")
 std::int64_t rejected(std::int64_t a, unsigned count) {
-  return native::sarx<native::scalar>(a, count);
+  return native::sarx<native::isa<native::x86>{}>(a, count);
 }
 #endif
 
@@ -243,7 +243,7 @@ std::int64_t rejected(std::int64_t a, unsigned count) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint16_t rejected(std::uint16_t a) {
-  return native::tzcnt<native::scalar>(a);
+  return native::tzcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -251,7 +251,7 @@ std::uint16_t rejected(std::uint16_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::tzcnt<native::scalar>(a);
+  return native::tzcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -259,7 +259,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("bmi")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::tzcnt<native::scalar>(a);
+  return native::tzcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -267,7 +267,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("popcnt")
 std::uint16_t rejected(std::uint16_t a) {
-  return native::popcnt<native::scalar>(a);
+  return native::popcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -275,7 +275,7 @@ std::uint16_t rejected(std::uint16_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("popcnt")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::popcnt<native::scalar>(a);
+  return native::popcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -283,7 +283,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("popcnt")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::popcnt<native::scalar>(a);
+  return native::popcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -291,7 +291,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("lzcnt")
 std::uint16_t rejected(std::uint16_t a) {
-  return native::lzcnt<native::scalar>(a);
+  return native::lzcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -299,7 +299,7 @@ std::uint16_t rejected(std::uint16_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("lzcnt")
 std::uint32_t rejected(std::uint32_t a) {
-  return native::lzcnt<native::scalar>(a);
+  return native::lzcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -307,7 +307,7 @@ std::uint32_t rejected(std::uint32_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("lzcnt")
 std::uint64_t rejected(std::uint64_t a) {
-  return native::lzcnt<native::scalar>(a);
+  return native::lzcnt<native::isa<native::x86>{}>(a);
 }
 #endif
 
@@ -315,7 +315,7 @@ std::uint64_t rejected(std::uint64_t a) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("crc32")
 std::uint32_t rejected(std::uint32_t a, std::uint8_t b) {
-  return native::crc32c<native::scalar>(a, b);
+  return native::crc32c<native::isa<native::x86>{}>(a, b);
 }
 #endif
 
@@ -323,7 +323,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint8_t b) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("crc32")
 std::uint32_t rejected(std::uint32_t a, std::uint16_t b) {
-  return native::crc32c<native::scalar>(a, b);
+  return native::crc32c<native::isa<native::x86>{}>(a, b);
 }
 #endif
 
@@ -331,7 +331,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint16_t b) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("crc32")
 std::uint32_t rejected(std::uint32_t a, std::uint32_t b) {
-  return native::crc32c<native::scalar>(a, b);
+  return native::crc32c<native::isa<native::x86>{}>(a, b);
 }
 #endif
 
@@ -339,7 +339,7 @@ std::uint32_t rejected(std::uint32_t a, std::uint32_t b) {
 // A matching compiler target cannot grant runtime permission to a weak tag.
 native_target("crc32")
 std::uint32_t rejected(std::uint32_t a, std::uint64_t b) {
-  return native::crc32c<native::scalar>(a, b);
+  return native::crc32c<native::isa<native::x86>{}>(a, b);
 }
 #endif
 
@@ -379,7 +379,7 @@ std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
 // AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
-  return native::pdep<native::isa(native::x86_feature::avx2)>(value, mask);
+  return native::pdep<native::isa<native::x86>(native::x86_feature::avx2)>(value, mask);
 }
 #endif
 
@@ -387,7 +387,7 @@ std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
 // AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
-  return native::pdep<native::isa(native::x86_feature::avx2)>(value, mask);
+  return native::pdep<native::isa<native::x86>(native::x86_feature::avx2)>(value, mask);
 }
 #endif
 
@@ -395,7 +395,7 @@ std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
 // AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
 native_target("bmi2")
 std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
-  return native::pext<native::isa(native::x86_feature::avx2)>(value, mask);
+  return native::pext<native::isa<native::x86>(native::x86_feature::avx2)>(value, mask);
 }
 #endif
 
@@ -403,6 +403,76 @@ std::uint32_t rejected(std::uint32_t value, std::uint32_t mask) {
 // AVX2 profile bits cannot grant BMI2 runtime permission, even in a BMI2 target.
 native_target("bmi2")
 std::uint64_t rejected(std::uint64_t value, std::uint64_t mask) {
-  return native::pext<native::isa(native::x86_feature::avx2)>(value, mask);
+  return native::pext<native::isa<native::x86>(native::x86_feature::avx2)>(value, mask);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 49
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::andn<native::isa<native::arm>{}>(value, value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 50
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::pdep<native::isa<native::arm>{}>(value, value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 51
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::popcnt<native::isa<native::arm>{}>(value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 52
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::lzcnt<native::isa<native::arm>{}>(value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 53
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::crc32c<native::isa<native::arm>{}>(value, value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 54
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::andn<native::isa<native::wasm>{}>(value, value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 55
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::pdep<native::isa<native::wasm>{}>(value, value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 56
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::popcnt<native::isa<native::wasm>{}>(value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 57
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::lzcnt<native::isa<native::wasm>{}>(value);
+}
+#endif
+
+#if NATIVE_CONSTEXPR_NEGATIVE == 58
+// Empty feature sets still belong to their declared architecture family.
+std::uint32_t rejected(std::uint32_t value) {
+  return native::crc32c<native::isa<native::wasm>{}>(value, value);
 }
 #endif

@@ -2,7 +2,18 @@
 #pragma once
 
 namespace scalar_constexpr_fixture {
-  constexpr native::isa strong = native::isa{native::x86_feature::bmi1} & native::x86_feature::bmi2 &
+  template<auto A> consteval bool rejects_foreign_family() {
+    return !requires(std::uint32_t x) { native::andn<A>(x,x); } &&
+      !requires(std::uint32_t x) { native::pdep<A>(x,x); } &&
+      !requires(std::uint32_t x) { native::popcnt<A>(x); } &&
+      !requires(std::uint32_t x) { native::lzcnt<A>(x); } &&
+      !requires(std::uint32_t x) { native::crc32c<A>(x,x); };
+  }
+  static_assert(rejects_foreign_family<native::isa<native::arm>{}>());
+  static_assert(rejects_foreign_family<native::isa<native::wasm>{}>());
+  static_assert(!rejects_foreign_family<native::isa<native::x86>{}>());
+
+  constexpr native::isa<native::x86> strong = native::isa<native::x86>{native::x86_feature::bmi1} & native::x86_feature::bmi2 &
     native::x86_feature::popcnt & native::x86_feature::lzcnt & native::x86_feature::crc32;
 
   template<class U> constexpr unsigned width = sizeof(U) * 8;
@@ -78,7 +89,7 @@ namespace scalar_constexpr_fixture {
     return x;
   }
 
-  template<native::isa A, class U> consteval bool counts() {
+  template<native::isa<native::x86> A, class U> consteval bool counts() {
     std::uint64_t state = 0x9e3779b97f4a7c15ull;
     for (unsigned i = 0; i != 96; ++i) {
       U x = i < width<U> ? U(U{1} << i) : U(random(state));
@@ -89,7 +100,7 @@ namespace scalar_constexpr_fixture {
       native::tzcnt<A>(U{0}) == width<U> && native::lzcnt<A>(U{0}) == width<U>;
   }
 
-  template<native::isa A, class U> consteval bool bmi1_values() {
+  template<native::isa<native::x86> A, class U> consteval bool bmi1_values() {
     std::uint64_t state = 0xc6a4a7935bd1e995ull;
     for (unsigned i = 0; i != 96; ++i) {
       U a = U(random(state)), b = U(random(state));
@@ -103,7 +114,7 @@ namespace scalar_constexpr_fixture {
     return true;
   }
 
-  template<native::isa A, class U> consteval bool extraction() {
+  template<native::isa<native::x86> A, class U> consteval bool extraction() {
     constexpr std::array<unsigned, 10> controls{0, 1, 15, 31, 32, 63, 64, 255, 256, ~0u};
     constexpr std::array<U, 5> values{0, 1, all<U>, U(U{1} << (width<U> - 1)), U(0xc7315a7d659ac2e3ull)};
     for (auto x : values) for (auto start : controls) for (auto length : controls) {
@@ -115,7 +126,7 @@ namespace scalar_constexpr_fixture {
     return true;
   }
 
-  template<native::isa A, class U> consteval bool deposit_extract() {
+  template<native::isa<native::x86> A, class U> consteval bool deposit_extract() {
     std::uint64_t state = 0xd6e8feb86659fd93ull;
     for (unsigned i = 0; i != 96; ++i) {
       U x = U(random(state)), mask = U(random(state));
@@ -126,7 +137,7 @@ namespace scalar_constexpr_fixture {
     return true;
   }
 
-  template<native::isa A, class U> consteval bool products() {
+  template<native::isa<native::x86> A, class U> consteval bool products() {
     std::uint64_t state = 0x94d049bb133111ebull;
     constexpr std::array<U, 7> values{0, 1, 2, all<U>, U(all<U> - 1),
       U(U{1} << (width<U> / 2)), U(U{1} << (width<U> - 1))};
@@ -149,7 +160,7 @@ namespace scalar_constexpr_fixture {
     return true;
   }
 
-  template<native::isa A, class U> consteval bool shifts() {
+  template<native::isa<native::x86> A, class U> consteval bool shifts() {
     using S = std::make_signed_t<U>;
     constexpr std::array<unsigned, 12> controls{0, 1, 15, 31, 32, 63, 64, 127, 255, 256, 257, ~0u};
     constexpr std::array<U, 5> values{0, 1, all<U>, U(U{1} << (width<U> - 1)), U(0xc7315a7d659ac2e3ull)};
@@ -165,7 +176,7 @@ namespace scalar_constexpr_fixture {
     return true;
   }
 
-  template<native::isa A, class U, unsigned I> consteval bool rotation() {
+  template<native::isa<native::x86> A, class U, unsigned I> consteval bool rotation() {
     constexpr std::array<U, 5> values{0, 1, all<U>, U(U{1} << (width<U> - 1)), U(0xc7315a7d659ac2e3ull)};
     for (auto x : values) if (native::rorx<A, I>(x) != rotate(x, I)) return false;
     return true;
@@ -187,7 +198,7 @@ namespace scalar_constexpr_fixture {
     return reverse(crc);
   }
 
-  template<native::isa A, class U> consteval bool crc_values() {
+  template<native::isa<native::x86> A, class U> consteval bool crc_values() {
     std::uint64_t state = 0x853c49e6748fea9bull;
     for (unsigned i = 0; i != 96; ++i) {
       auto accumulator = static_cast<std::uint32_t>(random(state));
@@ -197,7 +208,7 @@ namespace scalar_constexpr_fixture {
     return native::crc32c<A>(0, U{0}) == 0;
   }
 
-  template<native::isa A> consteval bool crc_sequence() {
+  template<native::isa<native::x86> A> consteval bool crc_sequence() {
     std::uint32_t crc = ~0u;
     for (auto c : std::array<std::uint8_t, 9>{'1','2','3','4','5','6','7','8','9'})
       crc = native::crc32c<A>(crc, c);
@@ -206,40 +217,40 @@ namespace scalar_constexpr_fixture {
     return native::crc32c<A>(low, std::uint32_t{0x38373635}) ==
       native::crc32c<A>(~0u, std::uint64_t{0x3837363534333231ull});
   }
-  static_assert(counts<native::scalar, std::uint16_t>());
-  static_assert(counts<native::scalar, std::uint32_t>());
-  static_assert(counts<native::scalar, std::uint64_t>());
-  static_assert(bmi1_values<native::scalar, std::uint32_t>());
-  static_assert(extraction<native::scalar, std::uint32_t>());
-  static_assert(deposit_extract<native::scalar, std::uint32_t>());
-  static_assert(products<native::scalar, std::uint32_t>());
-  static_assert(shifts<native::scalar, std::uint32_t>());
-  static_assert(rotation<native::scalar, std::uint32_t, 0>());
-  static_assert(rotation<native::scalar, std::uint32_t, 1>());
-  static_assert(rotation<native::scalar, std::uint32_t, 31>());
-  static_assert(rotation<native::scalar, std::uint32_t, 32>());
-  static_assert(rotation<native::scalar, std::uint32_t, 63>());
-  static_assert(rotation<native::scalar, std::uint32_t, 64>());
-  static_assert(rotation<native::scalar, std::uint32_t, 127>());
-  static_assert(rotation<native::scalar, std::uint32_t, 255>());
-  static_assert(bmi1_values<native::scalar, std::uint64_t>());
-  static_assert(extraction<native::scalar, std::uint64_t>());
-  static_assert(deposit_extract<native::scalar, std::uint64_t>());
-  static_assert(products<native::scalar, std::uint64_t>());
-  static_assert(shifts<native::scalar, std::uint64_t>());
-  static_assert(rotation<native::scalar, std::uint64_t, 0>());
-  static_assert(rotation<native::scalar, std::uint64_t, 1>());
-  static_assert(rotation<native::scalar, std::uint64_t, 31>());
-  static_assert(rotation<native::scalar, std::uint64_t, 32>());
-  static_assert(rotation<native::scalar, std::uint64_t, 63>());
-  static_assert(rotation<native::scalar, std::uint64_t, 64>());
-  static_assert(rotation<native::scalar, std::uint64_t, 127>());
-  static_assert(rotation<native::scalar, std::uint64_t, 255>());
-  static_assert(crc_values<native::scalar, std::uint8_t>());
-  static_assert(crc_values<native::scalar, std::uint16_t>());
-  static_assert(crc_values<native::scalar, std::uint32_t>());
-  static_assert(crc_values<native::scalar, std::uint64_t>());
-  static_assert(crc_sequence<native::scalar>());
+  static_assert(counts<native::isa<native::x86>{}, std::uint16_t>());
+  static_assert(counts<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(counts<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(bmi1_values<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(extraction<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(deposit_extract<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(products<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(shifts<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 0>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 1>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 31>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 32>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 63>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 64>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 127>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint32_t, 255>());
+  static_assert(bmi1_values<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(extraction<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(deposit_extract<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(products<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(shifts<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 0>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 1>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 31>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 32>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 63>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 64>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 127>());
+  static_assert(rotation<native::isa<native::x86>{}, std::uint64_t, 255>());
+  static_assert(crc_values<native::isa<native::x86>{}, std::uint8_t>());
+  static_assert(crc_values<native::isa<native::x86>{}, std::uint16_t>());
+  static_assert(crc_values<native::isa<native::x86>{}, std::uint32_t>());
+  static_assert(crc_values<native::isa<native::x86>{}, std::uint64_t>());
+  static_assert(crc_sequence<native::isa<native::x86>{}>());
   static_assert(counts<strong, std::uint16_t>());
   static_assert(counts<strong, std::uint32_t>());
   static_assert(counts<strong, std::uint64_t>());

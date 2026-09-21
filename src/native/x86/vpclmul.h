@@ -14,7 +14,7 @@ namespace native::detail::x86_vpclmul {
 
 
   /// Multiply selected halves of one 128-bit lane using PCLMUL and AVX.
-  template<isa Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) &&
+  template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) &&
       Arch.has(x86_feature::avx) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("avx,pclmul")
   __m128i vpclmulqdq(__m128i a, __m128i b) noexcept {
@@ -22,7 +22,7 @@ namespace native::detail::x86_vpclmul {
   }
 
   /// Multiply selected halves independently in two 128-bit lanes; AVX suffices.
-  template<isa Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
+  template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("avx,vpclmulqdq")
   __m256i vpclmulqdq(__m256i a, __m256i b) noexcept {
@@ -30,7 +30,7 @@ namespace native::detail::x86_vpclmul {
   }
 
   /// Multiply selected halves independently in four 128-bit lanes; needs AVX512F.
-  template<isa Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
+  template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx512f) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("avx512f,vpclmulqdq")
   __m512i vpclmulqdq(__m512i a, __m512i b) noexcept {
@@ -38,7 +38,7 @@ namespace native::detail::x86_vpclmul {
   }
 
   /// Reject floating registers, mixed widths and unsupported operand shapes.
-  template<isa Arch, unsigned Imm8, class A, class B>
+  template<isa<x86> Arch, unsigned Imm8, class A, class B>
   void vpclmulqdq(A, B) = delete;
 
 

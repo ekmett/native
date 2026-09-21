@@ -6,8 +6,8 @@ VPOPCNTDQ counts the set bits in each 32-bit or 64-bit integer lane.
 header is `native/x86/vpopcntdq.h`. Installed consumers import the modules;
 the package keeps implementation headers private for BMI regeneration.
 
-Every operation takes a `template<native::isa Arch>` argument and typed
-`native::simd` vectors. Use `target_features(...)` or `feature_closure(...)`
+Every operation takes a `template<native::isa<native::x86> Arch>` argument and typed
+`native::simd` vectors. Use `target_features<native::x86>(...)` or `feature_closure(...)`
 to include register prerequisites in the tag. `Arch` must contain `avx512f` and `avx512vpopcntdq`;
 128-bit and 256-bit overloads also require `avx512vl`.
 

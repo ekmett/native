@@ -13,7 +13,7 @@ export namespace native {
 
   /// Multiply the selected 64-bit halves into one 128-bit polynomial product.
   /// Requires PCLMUL. An AVX-enabled caller may use the VEX encoding.
-  template<isa Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) && Imm8 <= 255)
+  template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("pclmul")
   simd<std::uint64_t, 2, Arch> pclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_pclmul::pclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
@@ -21,7 +21,7 @@ export namespace native {
 
   // Reject implicit register conversions, mixed tags and wrong element types.
   /// Reject unsupported signatures, including implicit raw-register conversions.
-  template<isa Arch, unsigned Imm8, class... Args>
+  template<isa<x86> Arch, unsigned Imm8, class... Args>
   void pclmulqdq(Args...) = delete;
 
 /// \}

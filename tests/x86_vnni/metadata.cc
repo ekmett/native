@@ -25,7 +25,7 @@ namespace {
   static_assert(unsigned(native::arm_feature::i8mm) == 15);
 
   constexpr bool properties() {
-    isa value;
+    isa<native::x86> value;
     value.avxvnni = true;
     value.avx512vnni = true;
     value.avxvnniint8 = true;
@@ -37,14 +37,14 @@ namespace {
     value.avx512vnni = false;
     value.avxvnniint8 = false;
     value.avxvnniint16 = false;
-    if (value != native::scalar) return false;
+    if (value != native::isa<native::x86>{}) return false;
     for (unsigned i = 0; i != features.size(); ++i) {
-      isa exact{features[i]};
-      if (exact != isa(native::feature_set{features[i]})) return false;
+      isa<native::x86> exact{features[i]};
+      static_assert(std::same_as<decltype(exact),isa<native::x86>>);
       if (exact.has(x86_feature::avx2) || exact.has(x86_feature::avx512f)) return false;
       auto closure = native::feature_closure(exact);
       if (closure != (exact & (i == 1 ? evex_base : vex_base))) return false;
-      if (native::target_features(spellings[i]) != closure) return false;
+      if (native::target_features<native::x86>(spellings[i]) != closure) return false;
       for (auto other : features)
         if (closure.has(other) != (other == features[i])) return false;
       if (native::avx2.has(features[i]) || native::avx512.has(features[i])) return false;
@@ -54,9 +54,9 @@ namespace {
   static_assert(properties());
 
 #if defined(NATIVE_VNNI_EXPECT_UNKNOWN)
-  static_assert(!(NATIVE_TARGET_MINIMUM <= native::detail::known_features));
+  static_assert(!(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>));
 #else
-  static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features);
+  static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>);
 #endif
 #ifdef __AVXVNNI__
   static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::avxvnni));
@@ -80,11 +80,11 @@ namespace {
 #endif
 
   struct normalized_snapshot {
-    native::feature_set<x86_feature> present{}, observed{};
+    native::isa<native::x86> present{}, observed{};
     std::uint64_t xcr0 = 0;
     bool xcr0_observed = false;
   };
-  constexpr normalized_snapshot available(isa requested) {
+  constexpr normalized_snapshot available(isa<native::x86> requested) {
     normalized_snapshot cpu;
     auto closure = native::feature_closure(requested);
     for (unsigned i = 0; i != native::x86_feature_count; ++i) {
@@ -132,7 +132,7 @@ namespace {
     cpu = full;
     cpu.present.set(invalid, true);
     if (!native::classify_isa(cpu, feature).invalid_features) return false;
-    return !native::classify_isa(full, native::target_features("avxvnni,unregistered")).admitted();
+    return !native::classify_isa(full, native::target_features<native::x86>("avxvnni,unregistered")).admitted();
   }
   // Separate evaluations keep each complete feature sweep within Clang's
   // default constexpr step budget as the feature registry grows.

@@ -4,18 +4,18 @@
 
 namespace {
 using native::x86_feature;
-constexpr native::isa f16c{x86_feature::f16c};
+constexpr native::isa<native::x86> f16c{x86_feature::f16c};
 constexpr auto closed = native::feature_closure(f16c);
 static_assert(unsigned(x86_feature::f16c) == 11);
 static_assert(unsigned(x86_feature::crc32) == 30);
 static_assert(unsigned(x86_feature::gfni) == 31);
 static_assert(unsigned(x86_feature::avx512vpopcntdq) == 32);
-static_assert(f16c == native::isa(native::feature_set{x86_feature::f16c}));
+static_assert(std::same_as<std::remove_cv_t<decltype(f16c)>,native::isa<native::x86>>);
 static_assert(!f16c.has(x86_feature::avx));
-static_assert(closed == (native::feature_closure(native::isa(x86_feature::avx)) & f16c));
-static_assert(native::target_features("f16c") == closed);
+static_assert(closed == (native::feature_closure(native::isa<native::x86>(x86_feature::avx)) & f16c));
+static_assert(native::target_features<native::x86>("f16c") == closed);
 static_assert(!closed.has(x86_feature::avx2) && !closed.has(x86_feature::avx512fp16));
-static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features);
+static_assert(NATIVE_TARGET_MINIMUM <= native::detail::known_features<native::x86>);
 #ifdef __F16C__
 static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::f16c));
 static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::avx));
@@ -23,14 +23,14 @@ static_assert(NATIVE_TARGET_MINIMUM.has(x86_feature::avx));
 static_assert(!NATIVE_TARGET_MINIMUM.has(x86_feature::f16c));
 #endif
 static_assert([] {
-  native::isa value;
+  native::isa<native::x86> value;
   value.f16c = true;
   if (!value.f16c || value != f16c) return false;
   value.f16c = false;
-  return value == native::scalar;
+  return value == native::isa<native::x86>{};
 }());
 struct normalized_snapshot {
-  native::feature_set<x86_feature> present{}, observed{};
+  native::isa<native::x86> present{}, observed{};
   std::uint64_t xcr0 = 6;
   bool xcr0_observed = true;
 };

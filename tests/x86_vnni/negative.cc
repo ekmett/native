@@ -7,11 +7,11 @@ import native.x86.vnni;
 
 // CMake selects one operation per translation unit: target-mismatch diagnostics
 // stop code generation after the first error, so a combined source misses APIs.
-constexpr auto vex = native::feature_closure(native::isa{native::x86_feature::avxvnni});
+constexpr auto vex = native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnni});
 constexpr auto evex = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vnni);
 constexpr auto evexvl = native::feature_closure(evex & native::x86_feature::avx512vl);
-constexpr auto int8 = native::feature_closure(native::isa{native::x86_feature::avxvnniint8});
-constexpr auto int16 = native::feature_closure(native::isa{native::x86_feature::avxvnniint16});
+constexpr auto int8 = native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnniint8});
+constexpr auto int16 = native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnniint16});
 
 
 
@@ -20,7 +20,7 @@ constexpr auto int16 = native::feature_closure(native::isa{native::x86_feature::
 #if NATIVE_VNNI_FAMILY == 1
 constexpr auto requirement = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vl);
 #else
-constexpr auto requirement = native::feature_closure(native::isa{native::x86_feature::avx2});
+constexpr auto requirement = native::feature_closure(native::isa<native::x86>{native::x86_feature::avx2});
 #endif
 #elif NATIVE_VNNI_REJECT == 2
 constexpr auto requirement = native::feature_closure(native::x86_feature::avx512vnni & native::x86_feature::avx512vl);

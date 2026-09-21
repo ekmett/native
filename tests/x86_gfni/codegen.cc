@@ -5,7 +5,7 @@
 #error GFNI codegen probes require a baseline translation unit
 #endif
 
-constexpr native::isa gfni128{native::x86_feature::gfni};
+constexpr native::isa<native::x86> gfni128{native::x86_feature::gfni};
 constexpr auto gfni256 = gfni128 & native::x86_feature::avx;
 constexpr auto gfni512 = gfni128 & native::x86_feature::avx512f;
 constexpr auto gfni_mask512 = gfni512 & native::x86_feature::avx512bw;

@@ -2,7 +2,7 @@
 #pragma once
 namespace pclmul_fixture {
 using native::x86_feature;
-constexpr auto legacy = native::feature_closure(native::isa{x86_feature::pclmul});
+constexpr auto legacy = native::feature_closure(native::isa<native::x86>{x86_feature::pclmul});
 constexpr auto vex128 = native::feature_closure(legacy & x86_feature::avx);
 constexpr auto vex256 = native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx);
 constexpr auto evex512 = native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f);
@@ -158,7 +158,7 @@ int run() {
   if (cpu.present.has(x86_feature::pclmul) != bool(cpu.raw.leaf1_ecx & (1u<<1)) ||
       cpu.present.has(x86_feature::vpclmulqdq) != bool(cpu.raw.leaf7_ecx & (1u<<10))) return 1;
   unsigned executed=0;
-  auto run_one=[&](char const* name, native::isa requirements, auto operation) {
+  auto run_one=[&](char const* name, native::isa<native::x86> requirements, auto operation) {
     auto admission=native::classify_isa(cpu,requirements);
     if (!admission.admitted()) { std::printf("SKIP %s: %s\n",name,admission.reason()); return true; }
     auto status=_mm_getcsr();

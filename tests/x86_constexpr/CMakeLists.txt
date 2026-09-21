@@ -69,7 +69,7 @@ add_test(NAME native.x86.constexpr.codegen COMMAND "${Python3_EXECUTABLE}"
 set_tests_properties(native.x86.constexpr.codegen PROPERTIES LABELS "host;codegen;constexpr;baseline;x86")
 
 foreach(interface IN ITEMS header module)
-  foreach(index RANGE 0 48)
+  foreach(index RANGE 0 58)
     set(target native_x86_constexpr_reject_${interface}_${index})
     add_library(${target} OBJECT EXCLUDE_FROM_ALL negative.cc)
     target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_NEGATIVE=${index})
@@ -82,11 +82,16 @@ foreach(interface IN ITEMS header module)
       target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_INTERFACE=1)
       target_link_libraries(${target} PRIVATE native::minimal)
     endif()
+    if(index LESS 49)
+      set(diagnostic "call to consteval function.*is not a constant expression")
+    else()
+      set(diagnostic "no viable conversion.*for template parameter 'Arch'")
+    endif()
     add_test(NAME native.x86.constexpr.reject_${interface}_${index} COMMAND "${Python3_EXECUTABLE}"
       "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py" --cmake "${CMAKE_COMMAND}"
       --build "${CMAKE_BINARY_DIR}" --target "${target}" --config "$<CONFIG>"
       --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${interface}-${index}-$<CONFIG>.log"
-      --diagnostic "call to consteval function.*is not a constant expression")
+      --diagnostic "${diagnostic}")
     set_tests_properties(native.x86.constexpr.reject_${interface}_${index} PROPERTIES RUN_SERIAL TRUE
       LABELS "host;negative;constexpr;baseline;x86")
   endforeach()

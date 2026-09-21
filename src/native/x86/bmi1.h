@@ -24,11 +24,11 @@ namespace native::detail {
 namespace native {
   /// \defgroup x86_bmi1 BMI1
   /// Integer bit operations; runtime calls require x86_feature::bmi1 and target "bmi".
-  /// Constant evaluation supports every Arch; weak tags select consteval overloads.
+  /// Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
   /// \{
 
   /// ANDN: complement the first operand, then AND with the second.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t andn(std::uint32_t first, std::uint32_t second) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -38,7 +38,7 @@ namespace native {
     }
   }
   /// ANDN, with 64-bit operands.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t andn(std::uint64_t first, std::uint64_t second) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -50,7 +50,7 @@ namespace native {
 
   /// BEXTR: control[7:0] is start; control[15:8] is length; higher bits are ignored.
   /// Extraction stops at the operand width; an out-of-range start or zero length yields zero.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t bextr(std::uint32_t value, std::uint32_t control) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -60,7 +60,7 @@ namespace native {
     }
   }
   /// BEXTR, with a 64-bit value and the same packed control format.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t bextr(std::uint64_t value, std::uint32_t control) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -70,7 +70,7 @@ namespace native {
     }
   }
   /// BEXTR with separate controls; only the low eight bits of each are used.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t bextr(std::uint32_t value, unsigned start, unsigned length) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -80,7 +80,7 @@ namespace native {
     }
   }
   /// BEXTR with a 64-bit value and separate low-eight-bit controls.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t bextr(std::uint64_t value, unsigned start, unsigned length) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -91,7 +91,7 @@ namespace native {
   }
 
   /// BLSI: retain only the lowest set bit; zero remains zero.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t blsi(std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -101,7 +101,7 @@ namespace native {
     }
   }
   /// BLSI, with a 64-bit operand.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t blsi(std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -112,7 +112,7 @@ namespace native {
   }
 
   /// BLSMSK: set every bit through the lowest set bit; zero produces all ones.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t blsmsk(std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -122,7 +122,7 @@ namespace native {
     }
   }
   /// BLSMSK, with a 64-bit operand.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t blsmsk(std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -133,7 +133,7 @@ namespace native {
   }
 
   /// BLSR: clear the lowest set bit; zero remains zero.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t blsr(std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -143,7 +143,7 @@ namespace native {
     }
   }
   /// BLSR, with a 64-bit operand.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t blsr(std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -154,7 +154,7 @@ namespace native {
   }
 
   /// TZCNT: count low zero bits; zero returns the operand width, including 16-bit operands.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint16_t tzcnt(std::uint16_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -164,7 +164,7 @@ namespace native {
     }
   }
   /// TZCNT, with a 32-bit operand and result; zero returns 32.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint32_t tzcnt(std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -174,7 +174,7 @@ namespace native {
     }
   }
   /// TZCNT, with a 64-bit operand and result; zero returns 64.
-  template<isa Arch> requires(Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi1))
   native_nodiscard native_inline native_const __attribute__((target("bmi")))
   constexpr std::uint64_t tzcnt(std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
@@ -185,108 +185,108 @@ namespace native {
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t andn(std::uint32_t first, std::uint32_t second) noexcept {
-    return andn<isa{x86_feature::bmi1}>(first, second);
+    return andn<isa<x86>{x86_feature::bmi1}>(first, second);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t andn(std::uint64_t first, std::uint64_t second) noexcept {
-    return andn<isa{x86_feature::bmi1}>(first, second);
+    return andn<isa<x86>{x86_feature::bmi1}>(first, second);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t bextr(std::uint32_t value, std::uint32_t control) noexcept {
-    return bextr<isa{x86_feature::bmi1}>(value, control);
+    return bextr<isa<x86>{x86_feature::bmi1}>(value, control);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t bextr(std::uint64_t value, std::uint32_t control) noexcept {
-    return bextr<isa{x86_feature::bmi1}>(value, control);
+    return bextr<isa<x86>{x86_feature::bmi1}>(value, control);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t bextr(std::uint32_t value, unsigned start, unsigned length) noexcept {
-    return bextr<isa{x86_feature::bmi1}>(value, start, length);
+    return bextr<isa<x86>{x86_feature::bmi1}>(value, start, length);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t bextr(std::uint64_t value, unsigned start, unsigned length) noexcept {
-    return bextr<isa{x86_feature::bmi1}>(value, start, length);
+    return bextr<isa<x86>{x86_feature::bmi1}>(value, start, length);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t blsi(std::uint32_t value) noexcept {
-    return blsi<isa{x86_feature::bmi1}>(value);
+    return blsi<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t blsi(std::uint64_t value) noexcept {
-    return blsi<isa{x86_feature::bmi1}>(value);
+    return blsi<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t blsmsk(std::uint32_t value) noexcept {
-    return blsmsk<isa{x86_feature::bmi1}>(value);
+    return blsmsk<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t blsmsk(std::uint64_t value) noexcept {
-    return blsmsk<isa{x86_feature::bmi1}>(value);
+    return blsmsk<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t blsr(std::uint32_t value) noexcept {
-    return blsr<isa{x86_feature::bmi1}>(value);
+    return blsr<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t blsr(std::uint64_t value) noexcept {
-    return blsr<isa{x86_feature::bmi1}>(value);
+    return blsr<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint16_t tzcnt(std::uint16_t value) noexcept {
-    return tzcnt<isa{x86_feature::bmi1}>(value);
+    return tzcnt<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint32_t tzcnt(std::uint32_t value) noexcept {
-    return tzcnt<isa{x86_feature::bmi1}>(value);
+    return tzcnt<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
   native_nodiscard
   consteval std::uint64_t tzcnt(std::uint64_t value) noexcept {
-    return tzcnt<isa{x86_feature::bmi1}>(value);
+    return tzcnt<isa<x86>{x86_feature::bmi1}>(value);
   }
 
   /// \}

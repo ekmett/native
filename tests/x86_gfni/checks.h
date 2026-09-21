@@ -3,11 +3,11 @@
 
 namespace gfni_fixture {
   using native::x86_feature;
-  constexpr auto arch128 = native::feature_closure(native::isa{x86_feature::gfni});
-  constexpr native::isa arch256 = native::feature_closure(arch128 & x86_feature::avx);
-  constexpr native::isa arch512 = native::feature_closure(arch128 & x86_feature::avx512f);
-  constexpr native::isa mask512 = native::feature_closure(arch512 & x86_feature::avx512bw);
-  constexpr native::isa mask_narrow = native::feature_closure(mask512 & x86_feature::avx512vl);
+  constexpr auto arch128 = native::feature_closure(native::isa<native::x86>{x86_feature::gfni});
+  constexpr native::isa<native::x86> arch256 = native::feature_closure(arch128 & x86_feature::avx);
+  constexpr native::isa<native::x86> arch512 = native::feature_closure(arch128 & x86_feature::avx512f);
+  constexpr native::isa<native::x86> mask512 = native::feature_closure(arch512 & x86_feature::avx512bw);
+  constexpr native::isa<native::x86> mask_narrow = native::feature_closure(mask512 & x86_feature::avx512vl);
   static_assert(!arch128.has(x86_feature::avx));
   static_assert(!arch256.has(x86_feature::avx2));
   static_assert(!arch512.has(x86_feature::avx512bw));
@@ -270,7 +270,7 @@ namespace gfni_fixture {
       static_cast<unsigned long long>(cpu.xcr0));
     auto seed = 0x243f6a8885a308d3ull ^ unsigned(argc);
     unsigned executed = 0;
-    auto run_one = [&](char const* name, native::isa requirements, auto operation) {
+    auto run_one = [&](char const* name, native::isa<native::x86> requirements, auto operation) {
       auto admission = native::classify_isa(cpu, requirements);
       if (!admission.admitted()) {
         std::printf("SKIP %s: %s\n", name, admission.reason());

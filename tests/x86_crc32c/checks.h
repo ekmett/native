@@ -6,14 +6,14 @@
 
 namespace crc32c_fixture {
   inline constexpr auto requirements = NATIVE_TARGET_ISA(test_crc32c);
-  static_assert(requirements == native::isa(native::x86_feature::crc32));
+  static_assert(requirements == native::isa<native::x86>(native::x86_feature::crc32));
   static_assert(native::feature_closure(requirements) == requirements);
   static_assert(!requirements.has(native::x86_feature::popcnt));
   static_assert(!requirements.has(native::x86_feature::sse42));
   static_assert(!requirements.has(native::x86_feature::avx));
-  static_assert(native::target_features("sse4.2").has(native::x86_feature::crc32));
+  static_assert(native::target_features<native::x86>("sse4.2").has(native::x86_feature::crc32));
 
-  template<native::isa A, class T>
+  template<native::isa<native::x86> A, class T>
   concept has_crc32c = requires(std::uint32_t accumulator, T value) {
     { native::crc32c<A>(accumulator, value) } noexcept -> std::same_as<std::uint32_t>;
   };
@@ -21,11 +21,11 @@ namespace crc32c_fixture {
   // Immediate-only fallback signatures do not grant runtime instruction admission.
   template<class T> consteval bool signature_contract() {
     return has_crc32c<requirements, T> &&
-      has_crc32c<native::scalar, T> &&
-      has_crc32c<native::isa(native::x86_feature::popcnt), T> &&
-      has_crc32c<native::isa(native::x86_feature::sse42), T> &&
-      has_crc32c<native::isa(native::x86_feature::bmi1), T> &&
-      has_crc32c<native::isa(native::x86_feature::bmi2), T>;
+      has_crc32c<native::isa<native::x86>{}, T> &&
+      has_crc32c<native::isa<native::x86>(native::x86_feature::popcnt), T> &&
+      has_crc32c<native::isa<native::x86>(native::x86_feature::sse42), T> &&
+      has_crc32c<native::isa<native::x86>(native::x86_feature::bmi1), T> &&
+      has_crc32c<native::isa<native::x86>(native::x86_feature::bmi2), T>;
   }
   static_assert(signature_contract<std::uint8_t>());
   static_assert(signature_contract<std::uint16_t>());

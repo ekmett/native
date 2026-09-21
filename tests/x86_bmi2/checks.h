@@ -2,12 +2,12 @@
 #pragma once
 
 namespace bmi2_fixture {
-  constexpr native::isa arch{native::x86_feature::bmi2};
-  constexpr native::isa unrelated{native::x86_feature::avx2};
+  constexpr native::isa<native::x86> arch{native::x86_feature::bmi2};
+  constexpr native::isa<native::x86> unrelated{native::x86_feature::avx2};
   static_assert(!arch.has(native::x86_feature::bmi1));
   static_assert(!arch.has(native::x86_feature::avx2));
 
-  template<native::isa A, class U> concept has_unsigned_ops = requires(U x, U* high, unsigned count) {
+  template<native::isa<native::x86> A, class U> concept has_unsigned_ops = requires(U x, U* high, unsigned count) {
     { native::bzhi<A>(x, count) } noexcept -> std::same_as<U>;
     { native::mulx<A>(x, x, high) } noexcept -> std::same_as<U>;
     { native::pdep<A>(x, x) } noexcept -> std::same_as<U>;
@@ -15,29 +15,29 @@ namespace bmi2_fixture {
     { native::shlx<A>(x, count) } noexcept -> std::same_as<U>;
     { native::shrx<A>(x, count) } noexcept -> std::same_as<U>;
   };
-  template<native::isa A, class S> concept has_signed_shift = requires(S x, unsigned count) {
+  template<native::isa<native::x86> A, class S> concept has_signed_shift = requires(S x, unsigned count) {
     { native::sarx<A>(x, count) } noexcept -> std::same_as<S>;
   };
-  template<native::isa A, unsigned Imm8, class U> concept has_rotate = requires(U x) {
+  template<native::isa<native::x86> A, unsigned Imm8, class U> concept has_rotate = requires(U x) {
     { native::rorx<A, Imm8>(x) } noexcept -> std::same_as<U>;
   };
 
   // Syntactic availability includes consteval fallbacks, not runtime support.
   static_assert(has_unsigned_ops<arch, std::uint32_t> && has_unsigned_ops<arch, std::uint64_t>);
-  static_assert(has_unsigned_ops<native::scalar, std::uint32_t> &&
-                has_unsigned_ops<native::scalar, std::uint64_t>);
+  static_assert(has_unsigned_ops<native::isa<native::x86>{}, std::uint32_t> &&
+                has_unsigned_ops<native::isa<native::x86>{}, std::uint64_t>);
   static_assert(has_unsigned_ops<unrelated, std::uint32_t> &&
                 has_unsigned_ops<unrelated, std::uint64_t>);
   static_assert(has_signed_shift<arch, std::int32_t> && has_signed_shift<arch, std::int64_t>);
-  static_assert(has_signed_shift<native::scalar, std::int32_t> &&
-                has_signed_shift<native::scalar, std::int64_t>);
+  static_assert(has_signed_shift<native::isa<native::x86>{}, std::int32_t> &&
+                has_signed_shift<native::isa<native::x86>{}, std::int64_t>);
   static_assert(has_signed_shift<unrelated, std::int32_t> && has_signed_shift<unrelated, std::int64_t>);
   static_assert(has_rotate<arch, 0, std::uint32_t> && has_rotate<arch, 255, std::uint64_t>);
   static_assert(!has_rotate<arch, 256, std::uint32_t> && !has_rotate<arch, 256, std::uint64_t>);
-  static_assert(!has_rotate<native::scalar, 256, std::uint32_t> &&
-                !has_rotate<native::scalar, 256, std::uint64_t>);
-  static_assert(has_rotate<native::scalar, 0, std::uint32_t> &&
-                has_rotate<native::scalar, 0, std::uint64_t>);
+  static_assert(!has_rotate<native::isa<native::x86>{}, 256, std::uint32_t> &&
+                !has_rotate<native::isa<native::x86>{}, 256, std::uint64_t>);
+  static_assert(has_rotate<native::isa<native::x86>{}, 0, std::uint32_t> &&
+                has_rotate<native::isa<native::x86>{}, 0, std::uint64_t>);
   static_assert(has_rotate<unrelated, 7, std::uint32_t> && has_rotate<unrelated, 7, std::uint64_t>);
 
   template<class U> constexpr unsigned width = std::numeric_limits<U>::digits;
