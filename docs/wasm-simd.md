@@ -58,6 +58,11 @@ There is no SIMD128 byte-multiply, vector integer-division, or fused floating
 multiply-add instruction. No such instruction is claimed by the baseline API.
 Unsigned 64-bit comparisons/min/max and reductions use explicit compositions.
 The integer popcount operation composes byte counts for wider lanes.
+`wide<simd<T,N,A>,R>` construction and element arithmetic use the SIMD128 target
+scope, including empty packs. The `native::math::exp` approximation is currently
+unavailable for SIMD128 values and packs: its backend FMA and exponent-scaling
+graph has not been implemented and numerically qualified. No scalar or library
+call fallback is selected for that API.
 
 ## Floating-point and constant semantics
 
@@ -96,6 +101,10 @@ cmake --build build-wasm
 ctest --test-dir build-wasm --output-on-failure
 ```
 
-The SIMD128 tests compile constant assertions, execute seeded integer properties
-and floating edge cases through Node's WASI preview1 runtime, and validate the
-final module before instantiation. They do not enable engine feature flags.
+The SIMD128 tests compile constant assertions, execute seeded integer,
+conversion, permutation, bounded-memory and floating-edge cases through Node's
+WASI preview1 runtime, and validate the final module before instantiation. The
+wide client checks empty and nonempty packs. Paired codegen tests compare typed
+operations against intrinsic leaves at the same ABI; the [coverage inventory](../tests/wasm_simd/README.md)
+records primitive families and composed operations. Tests do not enable engine
+feature flags.

@@ -6,12 +6,14 @@
 #include <limits>
 
 inline std::uint64_t random_state = 0x65396746840bc671ull;
+
 inline std::uint64_t random_word() {
   random_state ^= random_state << 13;
   random_state ^= random_state >> 7;
   random_state ^= random_state << 17;
   return random_state;
 }
+
 template <class Vector, class T, std::size_t N>
 __attribute__((target("simd128"))) constexpr bool equals(Vector value,
                                                          std::array<T, N> const &expected) {
@@ -19,6 +21,7 @@ __attribute__((target("simd128"))) constexpr bool equals(Vector value,
   value.store(actual.data());
   return actual == expected;
 }
+
 template <class T> constexpr T limit(std::int64_t x) {
   if (x < std::numeric_limits<T>::min())
     return std::numeric_limits<T>::min();
@@ -26,6 +29,7 @@ template <class T> constexpr T limit(std::int64_t x) {
     return std::numeric_limits<T>::max();
   return T(x);
 }
+
 template <class T> __attribute__((target("simd128"))) bool integers() {
   constexpr auto n = V<T>::lanes;
   using U = std::make_unsigned_t<T>;
@@ -36,6 +40,41 @@ template <class T> __attribute__((target("simd128"))) bool integers() {
       y[i] = std::bit_cast<T>(U(random_word()));
     }
     V<T> p(x), q(y);
+    auto check = [&](auto result, auto scalar) __attribute__((target("simd128"))) {
+      for (unsigned i = 0; i < n; ++i)
+        r[i] = scalar(x[i], y[i]);
+      return equals(result, r);
+    };
+    if (!check(p + q, [](T a, T b) { return std::bit_cast<T>(U(std::uint64_t(U(a)) + U(b))); }) ||
+        !check(p - q, [](T a, T b) { return std::bit_cast<T>(U(std::uint64_t(U(a)) - U(b))); }) ||
+        !check(p & q, [](T a, T b) { return std::bit_cast<T>(U(U(a) & U(b))); }) ||
+        !check(p | q, [](T a, T b) { return std::bit_cast<T>(U(U(a) | U(b))); }) ||
+        !check(p ^ q, [](T a, T b) { return std::bit_cast<T>(U(U(a) ^ U(b))); }) ||
+        !check(~p, [](T a, T) { return std::bit_cast<T>(U(~U(a))); }) ||
+        !check(-p, [](T a, T) { return std::bit_cast<T>(U(0 - U(a))); }))
+      return false;
+    if constexpr (sizeof(T) > 1)
+      if (!check(p * q, [](T a, T b) { return std::bit_cast<T>(U(std::uint64_t(U(a)) * U(b))); }))
+        return false;
+    unsigned count = unsigned(random_word());
+    unsigned shift = count % (8 * sizeof(T));
+    if (!check(p << count,
+               [=](T a, T) { return std::bit_cast<T>(U(std::uint64_t(U(a)) << shift)); }) ||
+        !check(p >> count, [=](T a, T) { return T(a >> shift); }))
+      return false;
+    auto compare = [&](auto mask, auto scalar) __attribute__((target("simd128"))) {
+      std::uint64_t expected = 0;
+      for (unsigned i = 0; i < n; ++i)
+        expected |= std::uint64_t(scalar(x[i], y[i])) << i;
+      return mask.to_bitset() == expected;
+    };
+    if (!compare(p == q, [](T a, T b) { return a == b; }) ||
+        !compare(p != q, [](T a, T b) { return a != b; }) ||
+        !compare(p < q, [](T a, T b) { return a < b; }) ||
+        !compare(p <= q, [](T a, T b) { return a <= b; }) ||
+        !compare(p > q, [](T a, T b) { return a > b; }) ||
+        !compare(p >= q, [](T a, T b) { return a >= b; }))
+      return false;
     for (unsigned i = 0; i < n; ++i)
       r[i] = std::min(x[i], y[i]);
     if (!equals(native::min(p, q), r))
@@ -142,6 +181,7 @@ template <class T> __attribute__((target("simd128"))) bool integers() {
   }
   return true;
 }
+
 __attribute__((target("simd128"))) constexpr bool mixed_families() {
   V<std::int16_t> x(std::int16_t(-32768)), y(std::int16_t(-32768));
   if (!all(native::q15mulr_sat(x, y) == V<std::int16_t>(std::int16_t(32767))))
@@ -184,7 +224,9 @@ __attribute__((target("simd128"))) constexpr bool mixed_families() {
     return false;
   return true;
 }
+
 static_assert(mixed_families());
+
 __attribute__((target("simd128"))) constexpr bool conversions() {
   using F = V<float>;
   using D = V<double>;
@@ -217,12 +259,14 @@ __attribute__((target("simd128"))) constexpr bool conversions() {
     return false;
   return true;
 }
+
 static_assert(conversions());
 
 template <class T> bool fp_equal(T a, T b) {
   using U = std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>;
   return (a != a && b != b) || std::bit_cast<U>(a) == std::bit_cast<U>(b);
 }
+
 template <class T> __attribute__((target("simd128"))) bool floating_families() {
   constexpr auto n = V<T>::lanes;
   using U = std::conditional_t<sizeof(T) == 4, std::uint32_t, std::uint64_t>;

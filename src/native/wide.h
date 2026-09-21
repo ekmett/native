@@ -259,6 +259,16 @@ namespace native {
 #undef NATIVE_WIDE_INDEX
 #endif
 
+#if NATIVE_HOST_WASM
+#define NATIVE_WIDE_INDEX 16
+#define NATIVE_WIDE_DETAIL detail::wide_wasm_detail
+#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_WASM)))
+#include "native/wide_members.h"
+#undef NATIVE_WIDE_TARGET
+#undef NATIVE_WIDE_DETAIL
+#undef NATIVE_WIDE_INDEX
+#endif
+
   };
   /// Deduce the common element type and the number of homogeneous constructor arguments.
   template<class T, class... U> requires (std::same_as<T,U> && ...)
@@ -414,6 +424,16 @@ namespace native {
 #define NATIVE_WIDE_INDEX 11
 #define NATIVE_WIDE_DETAIL detail::wide_neon_half_detail
 #pragma clang attribute push(__attribute__((target(NATIVE_KERNEL_TARGET_23))), apply_to=function)
+#include "native/wide_operations.h"
+#pragma clang attribute pop
+#undef NATIVE_WIDE_DETAIL
+#undef NATIVE_WIDE_INDEX
+#endif
+
+#if NATIVE_HOST_WASM
+#define NATIVE_WIDE_INDEX 16
+#define NATIVE_WIDE_DETAIL detail::wide_wasm_detail
+#pragma clang attribute push(__attribute__((target(NATIVE_KERNEL_TARGET_WASM))), apply_to=function)
 #include "native/wide_operations.h"
 #pragma clang attribute pop
 #undef NATIVE_WIDE_DETAIL
