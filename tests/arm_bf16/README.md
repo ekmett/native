@@ -24,6 +24,8 @@ sticky prior flags, NaN payload controls and discarded results. AFP checks
 run only when AH/FIZ read back as writable. They cover BFMLAL's forced rounding,
 flushing and suppressed flags, as well as dot/matrix default-NaN signs.
 Changing FPCR between identical calls must produce the appropriate new result.
+The main-hub consumer also checks this through the high-level `dot2` API;
+its AFP witness failed with the earlier intrinsic-based implementation.
 
 The scalar banks cover AH=FIZ=0; the AFP checks use selected witnesses. They do
 not exhaust all FPCR/trap combinations. Default BF16 and AFP cases executed on

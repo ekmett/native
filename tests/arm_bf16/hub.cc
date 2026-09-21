@@ -9,5 +9,6 @@ int main(int argc, char**) {
   if(!admitted.admitted()) {std::puts(admitted.reason()); return 77;}
   bool enhanced=native::classify_isa(cpu,native::arm_feature::ebf16).admitted();
   if(argc>1 && !enhanced) {std::puts("Enhanced BF16 not observed; FPCR.EBF=1 not entered"); return 77;}
-  return bf16_fixture::arithmetic(enhanced) && bf16_fixture::effects(enhanced) && bf16_fixture::bridges()?0:1;
+  return bf16_fixture::arithmetic(enhanced) && bf16_fixture::effects(enhanced) &&
+    bf16_fixture::bridges() && bf16_fixture::dot2_controls(enhanced)?0:1;
 }
