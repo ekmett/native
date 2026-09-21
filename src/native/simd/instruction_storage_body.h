@@ -161,117 +161,135 @@ export namespace native {
     native_type value_;
   public:
     /// Default initialization leaves storage unspecified; braces zero it.
-    simd() noexcept=default;
+    constexpr simd() noexcept=default;
     /// Copy each lane's representation; unused physical bytes are zero.
-    native_inline explicit simd(T value) noexcept {
+    native_inline constexpr explicit simd(T value) noexcept {
       std::array<T,N> values;
       values.fill(value);
       *this=load(values.data());
     }
     /// Copy the array elements in lane order.
-    native_inline explicit simd(std::array<T,N> const & values) noexcept : simd(load(values.data())) {}
+    native_inline constexpr explicit simd(std::array<T,N> const & values) noexcept : simd(load(values.data())) {}
     /// Construct exactly N lanes from values of the element type.
     template<class... U> requires(sizeof...(U)==N && (std::same_as<U,T> && ...))
-    native_inline simd(U... values) noexcept : simd(std::array<T,N>{values...}) {}
+    native_inline constexpr simd(U... values) noexcept : simd(std::array<T,N>{values...}) {}
 #if NATIVE_HOST_X86
     // Native vector arguments and returns must carry their register ABI even
     // when an always-inline caller has already enabled that target.
     /// Bridge to the implementation register without numerical conversion.
-    native_nodiscard native_inline native_target("sse2")
+    native_nodiscard native_inline constexpr native_target("sse2")
     native_type to_native() const noexcept requires(sizeof(native_type)==16) { return value_; }
     /// Adopt register bits unchanged; unused physical bytes are unspecified.
-    native_nodiscard static native_inline native_target("sse2")
+    native_nodiscard static native_inline constexpr native_target("sse2")
     simd from_native(native_type value) noexcept requires(sizeof(native_type)==16) {
       simd result; result.value_=value; return result;
     }
     /// Synonym for from_native; these storage-only shapes do not normalize padding.
-    native_nodiscard static native_inline native_target("sse2")
+    native_nodiscard static native_inline constexpr native_target("sse2")
     simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==16) {
       simd result; result.value_=value; return result;
     }
     /// Bridge to the implementation register without numerical conversion.
-    native_nodiscard native_inline native_target("avx")
+    native_nodiscard native_inline constexpr native_target("avx")
     native_type to_native() const noexcept requires(sizeof(native_type)==32) { return value_; }
     /// Adopt register bits unchanged; unused physical bytes are unspecified.
-    native_nodiscard static native_inline native_target("avx")
+    native_nodiscard static native_inline constexpr native_target("avx")
     simd from_native(native_type value) noexcept requires(sizeof(native_type)==32) {
       simd result; result.value_=value; return result;
     }
     /// Synonym for from_native; these storage-only shapes do not normalize padding.
-    native_nodiscard static native_inline native_target("avx")
+    native_nodiscard static native_inline constexpr native_target("avx")
     simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==32) {
       simd result; result.value_=value; return result;
     }
     /// Bridge to the implementation register without numerical conversion.
-    native_nodiscard native_inline native_target("avx512f")
+    native_nodiscard native_inline constexpr native_target("avx512f")
     native_type to_native() const noexcept requires(sizeof(native_type)==64) { return value_; }
     /// Adopt register bits unchanged; unused physical bytes are unspecified.
-    native_nodiscard static native_inline native_target("avx512f")
+    native_nodiscard static native_inline constexpr native_target("avx512f")
     simd from_native(native_type value) noexcept requires(sizeof(native_type)==64) {
       simd result; result.value_=value; return result;
     }
     /// Synonym for from_native; these storage-only shapes do not normalize padding.
-    native_nodiscard static native_inline native_target("avx512f")
+    native_nodiscard static native_inline constexpr native_target("avx512f")
     simd unsafe_from_native(native_type value) noexcept requires(sizeof(native_type)==64) {
       simd result; result.value_=value; return result;
     }
 #else
     /// Bridge to the implementation register without numerical conversion.
-    native_nodiscard native_inline native_type to_native() const noexcept { return value_; }
+    native_nodiscard native_inline constexpr native_type to_native() const noexcept { return value_; }
     /// Adopt register bits unchanged; unused physical bytes are unspecified.
-    native_nodiscard static native_inline simd from_native(native_type value) noexcept {
+    native_nodiscard static native_inline constexpr simd from_native(native_type value) noexcept {
       simd result; result.value_=value; return result;
     }
 #endif
     /// Read exactly N objects, without requiring register-width alignment.
     template<std::size_t Alignment=1>
-    native_nodiscard static native_inline simd load_memory(T const * p) noexcept {
+    native_nodiscard static native_inline constexpr simd load_memory(T const * p) noexcept {
       static_assert(Alignment>0 && (Alignment&(Alignment-1))==0);
       simd result{};
-      std::memcpy(&result.value_,p,sizeof(T)*N);
+      if consteval {
+        std::array<T,sizeof(native_type)/sizeof(T)> values{};
+        for(std::size_t i=0;i<N;++i) values[i]=p[i];
+        result.value_=std::bit_cast<native_type>(values);
+      } else { std::memcpy(&result.value_,p,sizeof(T)*N); }
       return result;
     }
     /// Write exactly N objects; Alignment is a caller promise.
     template<std::size_t Alignment=1>
-    native_inline void store_memory(T * p) const noexcept {
+    native_inline constexpr void store_memory(T * p) const noexcept {
       static_assert(Alignment>0 && (Alignment&(Alignment-1))==0);
-      std::memcpy(p,&value_,sizeof(T)*N);
+      if consteval {
+        auto values=std::bit_cast<std::array<T,sizeof(native_type)/sizeof(T)>>(value_);
+        for(std::size_t i=0;i<N;++i) p[i]=values[i];
+      } else { std::memcpy(p,&value_,sizeof(T)*N); }
     }
     /// Read exactly N elements with their natural alignment.
-    native_nodiscard static native_inline simd load(T const * p) noexcept { return load_memory(p); }
+    native_nodiscard static native_inline constexpr simd load(T const * p) noexcept { return load_memory(p); }
     /// Synonym for load; register alignment is unnecessary.
-    native_nodiscard static native_inline simd loadu(T const * p) noexcept { return load(p); }
+    native_nodiscard static native_inline constexpr simd loadu(T const * p) noexcept { return load(p); }
     /// Write exactly N elements in lane order.
-    native_inline void store(T * p) const noexcept { store_memory(p); }
+    native_inline constexpr void store(T * p) const noexcept { store_memory(p); }
     /// Synonym for store; register alignment is unnecessary.
-    native_inline void storeu(T * p) const noexcept { store(p); }
+    native_inline constexpr void storeu(T * p) const noexcept { store(p); }
     /// Read n <= N elements and fill the remainder; a null pointer is valid for n == 0.
-    native_nodiscard static native_inline simd load_partial(T const * p,std::size_t n,T fill=T{}) noexcept {
+    native_nodiscard static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill=T{}) noexcept {
       assert(n<=N);
       std::array<T,N> values; values.fill(fill);
-      if(n) std::memcpy(values.data(),p,n*sizeof(T));
+      if consteval {
+        for(std::size_t i=0;i<n;++i) values[i]=p[i];
+      } else { if(n) std::memcpy(values.data(),p,n*sizeof(T)); }
       return load(values.data());
     }
     /// Write the first n <= N elements; a null pointer is valid for n == 0.
-    native_inline void store_partial(T * p,std::size_t n) const noexcept {
+    native_inline constexpr void store_partial(T * p,std::size_t n) const noexcept {
       assert(n<=N);
-      if(n) std::memcpy(p,&value_,n*sizeof(T));
+      if consteval {
+        if(n) {
+          auto values=std::bit_cast<std::array<T,sizeof(native_type)/sizeof(T)>>(value_);
+          for(std::size_t i=0;i<n;++i) p[i]=values[i];
+        }
+      } else { if(n) std::memcpy(p,&value_,n*sizeof(T)); }
     }
     /// Return each half lane as its unchanged unsigned representation.
-    native_nodiscard native_inline bits_type bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+    native_nodiscard native_inline constexpr bits_type bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
       return bits_type::from_native(std::bit_cast<typename bits_type::native_type>(value_));
     }
     /// Synonym for bits; no floating-point conversion occurs.
-    native_nodiscard native_inline bits_type to_bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) { return bits(); }
+    native_nodiscard native_inline constexpr bits_type to_bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) { return bits(); }
     /// Interpret unsigned words as half representations without conversion.
-    native_nodiscard static native_inline simd from_bits(bits_type words) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+    native_nodiscard static native_inline constexpr simd from_bits(bits_type words) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
       return from_native(std::bit_cast<native_type>(words.to_native()));
     }
     /// Read N unsigned half representations without numerical conversion.
-    native_nodiscard static native_inline simd load_bits(std::uint16_t const * p) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
-      simd result{}; std::memcpy(&result.value_,p,2*N); return result;
+    native_nodiscard static native_inline constexpr simd load_bits(std::uint16_t const * p) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+      if consteval { return from_bits(bits_type::load(p)); }
+      else { simd result{}; std::memcpy(&result.value_,p,2*N); return result; }
     }
     /// Write N unsigned half representations without numerical conversion.
-    native_inline void store_bits(std::uint16_t * p) const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) { std::memcpy(p,&value_,2*N); }
+    native_inline constexpr void store_bits(std::uint16_t * p) const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+      if consteval { bits().store(p); }
+      else { std::memcpy(p,&value_,2*N); }
+    }
   };
 }

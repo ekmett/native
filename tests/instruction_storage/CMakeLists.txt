@@ -27,6 +27,23 @@ foreach(order RANGE 1 2)
   set_tests_properties(native.simd.defaults_${order} PROPERTIES LABELS "host;modules;storage")
 endforeach()
 
+set(constexpr_modes modules)
+# Textual implementation headers are private; installed clients import modules.
+if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  list(APPEND constexpr_modes headers)
+endif()
+foreach(mode IN LISTS constexpr_modes)
+  set(target native_test_simd_constexpr_${mode})
+  add_executable(${target} constexpr.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  if(mode STREQUAL "headers")
+    target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_HEADERS=1)
+  endif()
+  set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.simd.constexpr_${mode} COMMAND ${target})
+  set_tests_properties(native.simd.constexpr_${mode} PROPERTIES LABELS "host;modules;constexpr")
+endforeach()
+
 # The package consumer exercises logical storage; private code-generation checks
 # additionally prevent physical-padding normalization in register bit bridges.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
@@ -52,6 +69,33 @@ add_test(NAME native.instruction_storage.codegen COMMAND "${Python3_EXECUTABLE}"
   --output "${CMAKE_CURRENT_BINARY_DIR}/storage-$<CONFIG>.disassembly"
   $<TARGET_OBJECTS:native_test_instruction_storage_codegen> COMMAND_EXPAND_LISTS)
 set_tests_properties(native.instruction_storage.codegen PROPERTIES LABELS "host;storage;codegen")
+
+foreach(mode IN ITEMS raw public)
+  set(target native_test_simd_constexpr_codegen_${mode})
+  add_library(${target} OBJECT constexpr_codegen.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(mode STREQUAL "raw")
+    target_compile_definitions(${target} PRIVATE NATIVE_CONSTEXPR_RAW=1)
+  endif()
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /O2 /clang:-fomit-frame-pointer)
+  else()
+    target_compile_options(${target} PRIVATE -O2 -fomit-frame-pointer)
+  endif()
+endforeach()
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  set(constexpr_codegen_count 7)
+else()
+  set(constexpr_codegen_count 9)
+endif()
+add_test(NAME native.simd.constexpr_codegen COMMAND "${Python3_EXECUTABLE}"
+  "${PROJECT_SOURCE_DIR}/tests/x86_codegen_pairs.py" --objdump "${instruction_objdump}"
+  --expected "${constexpr_codegen_count}"
+  --raw "$<TARGET_OBJECTS:native_test_simd_constexpr_codegen_raw>"
+  --public "$<TARGET_OBJECTS:native_test_simd_constexpr_codegen_public>"
+  --output "${CMAKE_CURRENT_BINARY_DIR}/constexpr-codegen-$<CONFIG>.txt")
+set_tests_properties(native.simd.constexpr_codegen PROPERTIES LABELS "host;codegen;constexpr")
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   foreach(index RANGE 1 3)
