@@ -57,12 +57,15 @@ namespace native {
       return result::from_native(vreinterpretq_u8_u32(vpaddlq_u16(vreinterpretq_u16_u8(value.to_native()))));
     else return result::from_native(vreinterpretq_u8_u64(vpaddlq_u32(vreinterpretq_u32_u8(value.to_native()))));
 #elif NATIVE_HAS_WASM_SIMD128
-    if constexpr(sizeof(T)==1) return result::from_native(wasm_u16x8_extadd_pairwise_u8x16(value.to_native()));
-    else if constexpr(sizeof(T)==2) return result::from_native(wasm_u32x4_extadd_pairwise_u16x8(value.to_native()));
-    else {
-      auto even=wasm_i32x4_shuffle(value.to_native(),value.to_native(),0,2,0,0);
-      auto odd=wasm_i32x4_shuffle(value.to_native(),value.to_native(),1,3,0,0);
-      return result::from_native(wasm_i64x2_add(wasm_u64x2_extend_low_u32x4(even),wasm_u64x2_extend_low_u32x4(odd)));
+    if constexpr (sizeof(T) == 1) {
+      return result::from_native(wasm_u16x8_extadd_pairwise_u8x16(value.to_native()));
+    } else if constexpr (sizeof(T) == 2) {
+      return result::from_native(wasm_u32x4_extadd_pairwise_u16x8(value.to_native()));
+    } else {
+      auto even = wasm_i32x4_shuffle(value.to_native(), value.to_native(), 0, 2, 0, 0);
+      auto odd = wasm_i32x4_shuffle(value.to_native(), value.to_native(), 1, 3, 0, 0);
+      return result::from_native(wasm_i64x2_add(
+        wasm_u64x2_extend_low_u32x4(even), wasm_u64x2_extend_low_u32x4(odd)));
     }
 #else
     // Two unsigned byte lanes sum to at most 510, well inside PMADDUBSW's
@@ -179,12 +182,16 @@ namespace native {
     }
     else {
 #if NATIVE_HAS_WASM_SIMD128
-      auto sums=[&] {
-        if constexpr(sizeof(T)==1) return pairwise_add_widened(pairwise_add_widened(pairwise_add_widened(value)));
-        else if constexpr(sizeof(T)==2) return pairwise_add_widened(pairwise_add_widened(value));
-        else return pairwise_add_widened(value);
+      auto sums = [&] {
+        if constexpr (sizeof(T) == 1) {
+          return pairwise_add_widened(pairwise_add_widened(pairwise_add_widened(value)));
+        } else if constexpr (sizeof(T) == 2) {
+          return pairwise_add_widened(pairwise_add_widened(value));
+        } else {
+          return pairwise_add_widened(value);
+        }
       }();
-      return sums.template get<0>()+sums.template get<1>();
+      return sums.template get<0>() + sums.template get<1>();
 #endif
 #if NATIVE_HAS_ARM_NEON
       if constexpr (sizeof(T)==1) return vaddlvq_u8(value.to_native());

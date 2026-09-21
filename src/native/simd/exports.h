@@ -160,14 +160,32 @@ export namespace native {
 }
 
 #if NATIVE_HOST_WASM && (!defined(NATIVE_PROFILE) || NATIVE_PROFILE != 0)
-export namespace native { using ::native::shuffle; using ::native::swizzle; using ::native::round_even;
-  using ::native::add_sat; using ::native::sub_sat; using ::native::average_round;
-  using ::native::min; using ::native::max; using ::native::pmin; using ::native::pmax;
-  using ::native::extend_low; using ::native::extend_high;
-  using ::native::multiply_widened_low; using ::native::multiply_widened_high;
-  using ::native::bitmask; using ::native::any; using ::native::all;
-  using ::native::narrow_sat; using ::native::q15mulr_sat; using ::native::dot;
-  using ::native::trunc_sat; using ::native::load_splat; using ::native::load_zero;
-  using ::native::load_lane; using ::native::store_lane; using ::native::load_widened;
+export namespace native {
+  using ::native::shuffle;
+  using ::native::swizzle;
+  using ::native::round_even;
+  using ::native::add_sat;
+  using ::native::sub_sat;
+  using ::native::average_round;
+  using ::native::min;
+  using ::native::max;
+  using ::native::pmin;
+  using ::native::pmax;
+  using ::native::extend_low;
+  using ::native::extend_high;
+  using ::native::multiply_widened_low;
+  using ::native::multiply_widened_high;
+  using ::native::bitmask;
+  using ::native::any;
+  using ::native::all;
+  using ::native::narrow_sat;
+  using ::native::q15mulr_sat;
+  using ::native::dot;
+  using ::native::trunc_sat;
+  using ::native::load_splat;
+  using ::native::load_zero;
+  using ::native::load_lane;
+  using ::native::store_lane;
+  using ::native::load_widened;
 }
 #endif

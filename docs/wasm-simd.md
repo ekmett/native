@@ -111,5 +111,6 @@ conversion, permutation, bounded-memory and floating-edge cases through Node's
 WASI preview1 runtime, and validate the final module before instantiation. The
 wide client checks empty and nonempty packs. Paired codegen tests compare typed
 operations against intrinsic leaves at the same ABI; the [coverage inventory](../tests/wasm_simd/README.md)
-records primitive families and composed operations. Tests do not enable engine
-feature flags.
+records primitive families and composed operations. These comparisons check
+compiled Wasm bytecode, not engine JIT machine code or execution overhead.
+Tests do not enable engine feature flags.

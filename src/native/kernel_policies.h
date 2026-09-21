@@ -67,12 +67,13 @@ namespace native::detail {
       NATIVE_KERNEL_TARGET_22,NATIVE_KERNEL_TARGET_20,NATIVE_KERNEL_TARGET_0};
     static constexpr std::array indices{11,12,13,14,15};
   };
-  template<> struct kernel_profiles<wasm> {
-    using raw=isa_list<feature_closure(wasm_feature::simd128),isa<wasm>{}>;
-    using storage=raw;
-    using memory=raw;
-    static constexpr std::array targets{NATIVE_KERNEL_TARGET_WASM,NATIVE_KERNEL_TARGET_0};
-    static constexpr std::array indices{16,15};
+  template<>
+  struct kernel_profiles<wasm> {
+    using raw = isa_list<feature_closure(wasm_feature::simd128), isa<wasm>{}>;
+    using storage = raw;
+    using memory = raw;
+    static constexpr std::array targets{NATIVE_KERNEL_TARGET_WASM, NATIVE_KERNEL_TARGET_0};
+    static constexpr std::array indices{16, 15};
   };
   template<architecture Family> struct kernel_policy_family {
     using profiles=kernel_profiles<Family>;

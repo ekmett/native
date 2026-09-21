@@ -35,10 +35,11 @@ namespace native {
     }
 #if NATIVE_HAS_WASM_SIMD128
     return [&]<std::size_t... I>(std::index_sequence<I...>) {
-      using V=To __attribute__((ext_vector_type(2*N)));
-      auto first=__builtin_bit_cast(V,a.to_native());
-      auto second=__builtin_bit_cast(V,b.to_native());
-      return result::from_native(__builtin_bit_cast(v128_t,__builtin_shufflevector(first,second,(2*I)...,(2*N+2*I)...)));
+      using vector_type = To __attribute__((ext_vector_type(2 * N)));
+      auto first = __builtin_bit_cast(vector_type, a.to_native());
+      auto second = __builtin_bit_cast(vector_type, b.to_native());
+      return result::from_native(__builtin_bit_cast(
+        v128_t, __builtin_shufflevector(first, second, (2 * I)..., (2 * N + 2 * I)...)));
     }(std::make_index_sequence<N>{});
 #elif NATIVE_HAS_ARM_NEON
     if constexpr (sizeof(From) == 8)

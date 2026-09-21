@@ -58,8 +58,10 @@ engine's relaxed instructions. They also do not implement the optional Wasm
 *deterministic profile*, which chooses unfused multiply-add.
 
 The [focused checks](../tests/wasm_relaxed/README.md) distinguish public-wrapper
-validation from raw-engine conformance probes. Full-bit dot operands and
-partial 16-bit lane-selection masks expose engine/specification disagreements
+validation from raw-engine conformance probes. Exact raw/public comparisons
+check compiled Wasm bytecode, not engine JIT machine code or execution overhead.
+Full-bit dot operands and partial 16-bit lane-selection masks expose
+engine/specification disagreements
 in tested runtimes. Seven-bit second operands avoid the dot ambiguity, and
 canonical zero/all-one masks have exact lane-selection semantics.
 

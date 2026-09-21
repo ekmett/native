@@ -26,6 +26,15 @@ An optional-instruction test must admit the CPU and operating-system state
 before execution. Unsupported hardware is reported as a skip. A compile-only
 check or skipped runtime check does not establish native instruction behavior.
 
+The separate [WebAssembly workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/wasm.yml)
+checks SIMD128 and relaxed SIMD on x86-64 and ARM64 hosts, including relocated
+consumers and compiler-minimum boundaries. Paired probes compare compiled Wasm
+bytecode; they do not measure engine JIT machine code or execution overhead.
+Separate raw-engine jobs verify the built modules' source revision and hashes
+before testing Node and Wasmtime. Known conformance discrepancies remain ordinary
+failures, as described in the [relaxed SIMD checks](../tests/wasm_relaxed/README.md);
+passing library checks does not establish full engine conformance.
+
 ## Values and memory
 
 The [core fixtures](https://github.com/ekmett/simd/blob/main/tests/core_regression/README.md) exercise construction,

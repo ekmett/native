@@ -7,8 +7,9 @@ The C++26 named-module fixture has four CTest entries:
   fixed-point corners and floating signed-zero/NaN cases. The seed incorporates
   a volatile input so runtime cases cannot become constant-only tests.
 - `native.wasm.simd.codegen`: 294 public/intrinsic pairs with identical external
-  register/scalar signatures, compiled at `-O2`. Every instruction and operand
-  must match and calls are rejected. The JSON output retains both bodies.
+  register/scalar signatures, compiled at `-O2`. Every Wasm bytecode instruction
+  and operand must match and calls are rejected. The JSON output retains both
+  bodies. This does not measure engine JIT machine code or execution overhead.
 - `native.wasm.simd.clients`: constant and runtime `wide<simd<float,4,A>,2>`
   arithmetic, empty packs, and compile-time checks that the unimplemented SIMD128
   exponential does not participate.

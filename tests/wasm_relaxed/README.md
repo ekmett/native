@@ -30,6 +30,8 @@ not a skip. The fixture runs these checks:
 - `codegen` compares 20 raw/public Wasm instruction streams exactly, requiring
   only argument loads, the assigned finalized opcode and `end`. It also retains
   the raw dot reproducer's disassembly and verifies its two intrinsic leaves.
+  These are compiled bytecode comparisons; they do not measure engine JIT
+  machine code or execution overhead.
 - Each operation has separately compiled rejection cases for a caller without
   the instruction target, a SIMD128-only runtime tag, a private helper without
   the feature, and raw-register public arguments. A matching successful control
