@@ -79,7 +79,7 @@ namespace gfni_fixture {
     return true;
   }());
 
-  template<std::size_t N> outputs<N> oracle(inputs<N> const& input) {
+  template<std::size_t N> constexpr outputs<N> oracle(inputs<N> const& input) {
     outputs<N> result{};
     for (std::size_t lane = 0; lane != N; ++lane) {
       auto const* matrix = input.b.data() + (lane / 8) * 8;

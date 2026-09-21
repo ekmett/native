@@ -12,30 +12,65 @@ export namespace native {
  * The 512-bit intrinsic also needs AVX512F, without AVX512BW/DQ/VL.
  * Arch records requirements; callers separately enable and admit the target.
  * All forms are pure integer computations with no floating-point effects.
+ * Constant evaluation uses exact integer semantics. Tags without the instruction
+ * features are accepted only at compile time and require complete SIMD storage.
  * \{ */
 
   /// Multiply selected halves of one 128-bit lane using PCLMUL and AVX.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) &&
       Arch.has(x86_feature::avx) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("avx,pclmul")
-  simd<std::uint64_t, 2, Arch> vpclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
-    return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+  constexpr simd<std::uint64_t, 2, Arch> vpclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
+    else {
+      return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+    }
   }
 
   /// Multiply selected halves independently in two 128-bit lanes; AVX suffices.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("avx,vpclmulqdq")
-  simd<std::uint64_t, 4, Arch> vpclmulqdq(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
-    return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+  constexpr simd<std::uint64_t, 4, Arch> vpclmulqdq(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
+    else {
+      return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+    }
   }
 
   /// Multiply selected halves independently in four 128-bit lanes; needs AVX512F.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx512f) && Imm8 <= 255)
   native_nodiscard native_inline native_const native_target("avx512f,vpclmulqdq")
-  simd<std::uint64_t, 8, Arch> vpclmulqdq(simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
-    return simd<std::uint64_t, 8, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+  constexpr simd<std::uint64_t, 8, Arch> vpclmulqdq(simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
+    else {
+      return simd<std::uint64_t, 8, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+    }
+  }
+
+  /// Evaluate vpclmulqdq at compile time when its register storage is available.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::pclmul) &&
+      Arch.has(x86_feature::avx))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 2, Arch> vpclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
+  }
+
+  /// Evaluate vpclmulqdq at compile time when its register storage is available.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::vpclmulqdq) &&
+      Arch.has(x86_feature::avx))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 4, Arch> vpclmulqdq(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
+  }
+
+  /// Evaluate vpclmulqdq at compile time when its register storage is available.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::vpclmulqdq) &&
+      Arch.has(x86_feature::avx512f))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 8, Arch> vpclmulqdq(simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
   }
 
   // Reject implicit register conversions, mixed tags and wrong element types.

@@ -45,6 +45,10 @@ for operation in args.operation:
         diagnostic = rf"error: always_inline function '{re.escape(operation)}'.*requires target feature"
     else:
         diagnostic = rf"error: (?:no matching function for call to|call to deleted function) '{re.escape(operation)}'"
+    if args.kind == "feature":
+        # Public weak tags now select an immediate-only overload. A runtime
+        # call must still fail, with the operation named in its diagnostic.
+        diagnostic += rf"|error: call to consteval function 'native::{re.escape(operation)}<[^\n]*not a constant expression"
     if not re.search(diagnostic, negative_text):
         print(negative_text)
         raise SystemExit(f"Missing {args.kind} rejection for {operation}.")
