@@ -65,7 +65,7 @@ endfunction()
 
 add_library(native_test_arm_dotprod_codegen OBJECT codegen.cc)
 native_arm_dotprod_baseline(native_test_arm_dotprod_codegen)
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/dotprod-codegen-object.txt"
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/dotprod-codegen-object.txt"
   CONTENT "$<TARGET_OBJECTS:native_test_arm_dotprod_codegen>\n")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(compiler_directory "${CMAKE_CXX_COMPILER}" DIRECTORY)

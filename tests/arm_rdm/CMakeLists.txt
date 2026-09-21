@@ -65,7 +65,7 @@ endfunction()
 
 add_library(native_test_arm_rdm_codegen OBJECT codegen.cc)
 native_arm_rdm_baseline(native_test_arm_rdm_codegen)
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/rdm-codegen-object.txt"
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/rdm-codegen-object.txt"
   CONTENT "$<TARGET_OBJECTS:native_test_arm_rdm_codegen>\n")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(compiler_directory "${CMAKE_CXX_COMPILER}" DIRECTORY)

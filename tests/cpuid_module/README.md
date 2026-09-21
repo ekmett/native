@@ -38,9 +38,10 @@ ctest --test-dir build/cpuid-check --output-on-failure
 
 Repeat in a separate build directory with exceptions ON to exercise actual
 exception propagation. The fixture disables PCH and IPO. It does not execute
-optional wait instructions or measure wait latency. `common-archive.txt`
-records the common archive path for disassembly; `wait-codegen-object.txt`
-records the separate optional-instruction probe object.
+optional wait instructions or measure wait latency. The selected configuration
+directory contains `common-archive.txt`, which records the common archive path
+for disassembly, and `wait-codegen-object.txt`, which records the separate
+optional-instruction probe object.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

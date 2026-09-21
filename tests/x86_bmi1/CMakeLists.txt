@@ -33,7 +33,7 @@ if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
 else()
   target_compile_options(native_test_x86_bmi1_codegen PRIVATE -O2)
 endif()
-file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/bmi1-codegen-object.txt"
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/bmi1-codegen-object.txt"
   CONTENT "$<TARGET_OBJECTS:native_test_x86_bmi1_codegen>\n")
 get_filename_component(bmi1_compiler_directory "${CMAKE_CXX_COMPILER}" DIRECTORY)
 find_program(NATIVE_BMI1_OBJDUMP NAMES llvm-objdump HINTS "${bmi1_compiler_directory}" REQUIRED)
