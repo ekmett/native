@@ -16,7 +16,16 @@ namespace {
   }();
   struct custom_element {};
   struct custom_value { static constexpr isa<> architecture=host_half; };
-  struct foreign_value { static constexpr auto architecture=isa<wasm>{}; };
+  struct custom_feature {
+    static constexpr auto architecture=[] {
+      if constexpr(target_arch==x86) return x86_feature::aes;
+      else if constexpr(target_arch==arm) return arm_feature::aes;
+      else if constexpr(target_arch==wasm) return wasm_feature::simd128;
+      else return isa<>{};
+    }();
+  };
+  struct foreign_nonstatic { isa<wasm> architecture{}; };
+  struct foreign_mutable { inline static isa<wasm> architecture{}; };
   struct malformed_value { using architecture=int; };
   struct malformed_constant { static constexpr int architecture=0; };
   struct nonstatic_architecture { isa<> architecture{}; };
@@ -38,10 +47,11 @@ namespace {
 #endif
   static_assert(raw_value_requirements<scalar,scalar>());
   static_assert((value_architecture_v<custom_value> == host_half));
+  static_assert(value_architecture_v<custom_feature> == isa<>{custom_feature::architecture});
   static_assert(!value_traits<int>::known && !value_traits<malformed_value>::known &&
     !value_traits<malformed_constant>::known &&
     !value_traits<nonstatic_architecture>::known && !value_traits<mutable_architecture>::known);
-  static_assert(target_arch==wasm || !value_traits<foreign_value>::known);
+  static_assert(!value_traits<foreign_nonstatic>::known && !value_traits<foreign_mutable>::known);
   static_assert(value_traits<simd<float,1,host_half>>::aggregate_default);
   static_assert(!value_traits<simd<float,2,host_half>>::aggregate_default &&
     !value_traits<simd<std::uint32_t,1,host_half>>::aggregate_default &&

@@ -27,8 +27,10 @@ namespace native {
       static constexpr bool aggregate_default=false;
     };
     template<class T> requires arch<std::remove_cvref_t<decltype(T::architecture)>> &&
-      requires { typename std::integral_constant<isa<>,T::architecture>; }
+      requires { typename std::integral_constant<std::remove_cvref_t<decltype(T::architecture)>,T::architecture>; }
     struct value_traits<T,std::void_t<decltype(T::architecture)>> {
+      static_assert(arch_family_v<std::remove_cvref_t<decltype(T::architecture)>> == target_arch,
+        "value architecture must match the compiler target family");
       static constexpr isa<> value=T::architecture;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
