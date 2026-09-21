@@ -67,7 +67,7 @@ export namespace native {
       std::uint32_t leaf7_1_eax = 0;
       /// CPUID.7.0 EDX; bit 23 reports AVX512_FP16. Zero without leaf 7.
       std::uint32_t leaf7_edx = 0;
-      /// CPUID.7.0 ECX; bit 5 reports WAITPKG. Zero without leaf 7.
+      /// CPUID.7.0 ECX; bits 5 and 8 report WAITPKG and GFNI. Zero without leaf 7.
       std::uint32_t leaf7_ecx = 0;
       /// Extended CPUID range and leaf 0x80000001 ECX (LAHF/SAHF, LZCNT and MWAITX).
       /// Zero when unavailable; source target admission checks the range first.

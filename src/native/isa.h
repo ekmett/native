@@ -16,7 +16,7 @@ namespace native {
     sse42, popcnt, avx, avx2, fma, f16c,
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
-    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32
+    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni
   };
   /// ARM instruction features and compiler bundles, using local bit indices.
   enum class arm_feature : std::uint64_t {
@@ -25,7 +25,7 @@ namespace native {
     jsconv, rcpc, pauth
   };
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::crc32)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::gfni)+1;
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::pauth)+1;
 
@@ -238,6 +238,9 @@ namespace native {
     constexpr bool get_crc32() const noexcept { return get(x86_feature::crc32); }
     constexpr void set_crc32(bool value) noexcept { set(x86_feature::crc32,value); }
     __declspec(property(get=get_crc32,put=set_crc32)) bool crc32;
+    constexpr bool get_gfni() const noexcept { return get(x86_feature::gfni); }
+    constexpr void set_gfni(bool value) noexcept { set(x86_feature::gfni,value); }
+    __declspec(property(get=get_gfni,put=set_gfni)) bool gfni;
     constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
@@ -364,6 +367,7 @@ namespace native {
       {x86_feature::mwaitx,"mwaitx",{},feature_register::extended1_ecx,29},
       {x86_feature::waitpkg,"waitpkg",{},feature_register::leaf7_ecx,5},
       {x86_feature::crc32,"crc32",{},feature_register::leaf1_ecx,20},
+      {x86_feature::gfni,"gfni",isa(x86_feature::sse2),feature_register::leaf7_ecx,8},
       {x86_feature::avx512f,"avx512f",x86_feature::avx2&x86_feature::f16c&x86_feature::fma,feature_register::leaf7_ebx,16},
       {x86_feature::avx512dq,"avx512dq",isa(x86_feature::avx512f),feature_register::leaf7_ebx,17},
       {x86_feature::avx512bw,"avx512bw",isa(x86_feature::avx512f),feature_register::leaf7_ebx,30},

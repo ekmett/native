@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/x86/gfni.h"
+export module native.x86.gfni;
+export import native.x86.features;
+export namespace native {
+  /// \addtogroup x86_gfni
+  /// \{
+  using ::native::gf2p8mulb;
+  using ::native::gf2p8mulb_mask;
+  using ::native::gf2p8mulb_maskz;
+  using ::native::gf2p8affineqb;
+  using ::native::gf2p8affineqb_mask;
+  using ::native::gf2p8affineqb_maskz;
+  using ::native::gf2p8affineinvqb;
+  using ::native::gf2p8affineinvqb_mask;
+  using ::native::gf2p8affineinvqb_maskz;
+  /// \}
+}
