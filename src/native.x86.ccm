@@ -20,3 +20,5 @@ export import native.x86.pclmul;
 export import native.x86.vpclmul;
 export import native.x86.sha;
 export import native.x86.vaes;
+export import native.x86.ifma;
+export import native.x86.adx;
