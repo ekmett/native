@@ -23,6 +23,10 @@ that ISA. This records compiler permissions, not runtime CPU detection. A
 stronger function target or importer does not change a previously built
 module's default.
 
+One-lane values retain that tag even when its features select no vector
+arithmetic profile. They use scalar operations; wider values still require
+the features for their storage and operations.
+
 Choose an explicit ISA for kernels with different requirements:
 
 ```cpp
