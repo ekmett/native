@@ -44,7 +44,7 @@ namespace native::detail::NATIVE_BACKEND {
       else if constexpr(requires { typename V::native_type; }) return sizeof(typename V::native_type)==sizeof(swizzle_native<T>);
       else return false;
     }();
-    template<class Self> static native_inline auto words(Self const & self) {
+    template<class Self> static native_inline constexpr auto words(Self const & self) {
       using T=typename Self::value_type;
       if constexpr(native_words<Self>) {
         return std::bit_cast<swizzle_native<T>>(self.to_native());
@@ -54,7 +54,7 @@ namespace native::detail::NATIVE_BACKEND {
         return std::bit_cast<swizzle_native<T>>(values);
       }
     }
-    template<class V> static native_inline V from_words(swizzle_native<typename V::value_type> words) {
+    template<class V> static native_inline constexpr V from_words(swizzle_native<typename V::value_type> words) {
       using T=typename V::value_type;
       if constexpr(native_words<V>) {
         return V::from_native(std::bit_cast<typename V::native_type>(words));
@@ -64,7 +64,7 @@ namespace native::detail::NATIVE_BACKEND {
       }
     }
     template<class Self>
-    native_nodiscard static native_inline result<Self> read(Self const & self) {
+    native_nodiscard static native_inline constexpr result<Self> read(Self const & self) {
       using T=typename Self::value_type;
       auto value=words(self);
       if constexpr(size==1) {
@@ -78,7 +78,7 @@ namespace native::detail::NATIVE_BACKEND {
       }
     }
     template<class Self>
-    native_inline static result<Self> write(Self & self,result<Self> rhs) {
+    native_inline constexpr static result<Self> write(Self & self,result<Self> rhs) {
       using T=typename Self::value_type;
       auto before=words(self);
       auto replacement=[&] {
@@ -99,9 +99,9 @@ namespace native::detail {
     template<std::size_t K> using result = std::conditional_t<K==1,T,simd<T,K,Arch>>;
 #define NATIVE_SWIZZLE_FIELD(NAME,K,...) \
     template<class Self> requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template readable<Self>()) \
-    native_nodiscard native_inline result<K> get_##NAME(this Self const & self) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); } \
+    native_nodiscard native_inline constexpr result<K> get_##NAME(this Self const & self) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); } \
     template<class Self> requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template writable<Self>()) \
-    native_inline result<K> set_##NAME(this Self & self,result<K> rhs) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::write(self,rhs); } \
+    native_inline constexpr result<K> set_##NAME(this Self & self,result<K> rhs) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::write(self,rhs); } \
     __declspec(property(get=get_##NAME,put=set_##NAME)) result<K> NAME;
 #define NATIVE_SWIZZLE_ROW2(A,I,X,Y,Z,W) \
     NATIVE_SWIZZLE_FIELD(A##X,2,I,0) NATIVE_SWIZZLE_FIELD(A##Y,2,I,1) \

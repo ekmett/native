@@ -17,3 +17,8 @@ The count-diagnostic fixture accepts dynamic counts, zero counts with null
 pointers, and counts equal to the logical lane count. Twelve invalid load/store
 forms must fail with the same specific diagnostic, through both module imports
 and private headers. Short vectors use the logical count, not register padding.
+
+Swizzle reads and overlapping assignments also run in constant evaluation.
+Compaction checks every mask and bounded store capacity for scalar, short and
+four-lane shapes, including exact signaling-NaN bit transport, fill values,
+selected counts, zero-capacity null stores and preservation of surrounding data.

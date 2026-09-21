@@ -4159,8 +4159,14 @@ namespace native {
   template<class T, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline compaction_result<simd<T,N,Arch>> compress(
+  native_nodiscard native_inline constexpr compaction_result<simd<T,N,Arch>> compress(
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> value, T fill = T{}) noexcept {
+    if consteval {
+      std::array<T,N> input{},output{}; value.store(input.data()); output.fill(fill);
+      auto bits=mask.to_bitset(); std::size_t count=0;
+      for(std::size_t i=0;i<N;++i) if((bits>>i)&1) output[count++]=input[i];
+      return {simd<T,N,Arch>::load(output.data()),count};
+    }
     using V = simd<T,N,Arch>;
     auto bits = detail::NATIVE_BACKEND::compaction_mask_bits<N>(mask);
     // Construct fill through integer object representation, without FP arithmetic.
@@ -4175,9 +4181,15 @@ namespace native {
   template<class T, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline simd<T,N,Arch> expand(
+  native_nodiscard native_inline constexpr simd<T,N,Arch> expand(
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> packed,
       simd<T,N,Arch> prior) noexcept {
+    if consteval {
+      std::array<T,N> input{},output{}; packed.store(input.data()); prior.store(output.data());
+      auto bits=mask.to_bitset(); std::size_t count=0;
+      for(std::size_t i=0;i<N;++i) if((bits>>i)&1) output[i]=input[count++];
+      return simd<T,N,Arch>::load(output.data());
+    }
     auto bits = detail::NATIVE_BACKEND::compaction_mask_bits<N>(mask);
     auto result = detail::NATIVE_BACKEND::compact_register<true>(bits, packed, prior);
     if constexpr (N == 2 || N == 3) return simd<T,N,Arch>::from_storage(result.to_storage());
@@ -4191,8 +4203,15 @@ namespace native {
   template<class T, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_inline std::size_t compress_store(T * destination, std::size_t capacity,
+  native_inline constexpr std::size_t compress_store(T * destination, std::size_t capacity,
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> value) noexcept {
+    if consteval {
+      std::array<T,N> input{}; value.store(input.data());
+      auto bits=mask.to_bitset(); std::size_t written=0;
+      for(std::size_t i=0;i<N && written<capacity;++i)
+        if((bits>>i)&1) destination[written++]=input[i];
+      return written;
+    }
     auto bits = detail::NATIVE_BACKEND::compaction_mask_bits<N>(mask);
     auto selected = std::size_t(std::popcount(bits));
     auto written = capacity < selected ? capacity : selected;
