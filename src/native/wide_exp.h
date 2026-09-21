@@ -9,7 +9,8 @@ export namespace native {
 #define NATIVE_EMIT_WIDE_EXP(i,name) \
   NATIVE_TARGET_PUSH(name) \
   template<bool Flush=false,std::size_t L,std::size_t N,isa Arch> \
-    requires (detail::exp_target<Arch> == i) \
+    requires (detail::exp_target<Arch> == i) && \
+      requires(std::array<simd<float,L,Arch>,N> const & x) { ::native::exp<Flush>(x); } \
   native_nodiscard native_inline constexpr wide<simd<float,L,Arch>,N> \
   exp(wide<simd<float,L,Arch>,N> const & input) \
       noexcept(noexcept(wide<simd<float,L,Arch>,N>{::native::exp<Flush>(input.registers)})) { \

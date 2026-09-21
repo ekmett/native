@@ -8,6 +8,18 @@
 
 namespace native {
   namespace detail::NATIVE_BACKEND {
+    // Register storage can exist without this backend's arithmetic operations.
+    template<std::size_t N> inline constexpr bool float_shape = N==1
+#if NATIVE_HAS_AVX2 || NATIVE_HAS_ARM_NEON
+      || N==2 || N==3 || N==4
+#endif
+#if NATIVE_HAS_AVX2
+      || N==8
+#endif
+#if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
+      || N==16
+#endif
+      ;
     template <class T> inline constexpr std::size_t mask_lane_bytes = [] {
       if constexpr (::native::simd_custom_element<T>) return sizeof(typename ::native::simd_traits<T>::storage_type);
       else return sizeof(T);
@@ -2796,7 +2808,8 @@ namespace native {
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
-  template <simd_integer_element T, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
+  template <simd_integer_element T, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
+    requires(predicate<N,Arch> m) { to_vector_mask<::NATIVE_BACKEND_NAMESPACE::mask_lane_for<T>>(m); }
   native_nodiscard native_inline native_const simd<std::make_unsigned_t<T>, N,Arch> mask_bits(predicate<N,Arch> m) noexcept {
     return mask_bits(to_vector_mask<::NATIVE_BACKEND_NAMESPACE::mask_lane_for<T>>(m));
   }
@@ -3364,7 +3377,7 @@ namespace native {
   /// Inactive lanes are excluded from the scaling operation. The result follows
   /// the caller's floating-point environment, including denormal controls.
   template <std::size_t N,class M, ::native::isa Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)
   native_nodiscard native_inline native_pure simd<float,N,Arch> masked_scaleb(M mask,
       simd<float,N,Arch> prior,simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
@@ -3390,7 +3403,7 @@ namespace native {
   /// \ingroup vector_math
   /// Scale active lanes by 2^floor(exponent), writing positive zero elsewhere.
   template <std::size_t N,class M, ::native::isa Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)
   native_nodiscard native_inline native_pure simd<float,N,Arch> masked_scaleb_zero(M mask,
       simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
@@ -3399,83 +3412,83 @@ namespace native {
   /// \ingroup vector_math
   /// Scale every lane by 2^floor(exponent), including fractional exponents.
   /// Unlike an integer ldexp exponent, the exponent argument is itself a vector.
-  template <std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
+  template <std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline native_pure simd<float,N,Arch> scaleb(simd<float,N,Arch> value,
       simd<float,N,Arch> exponent) noexcept {
     return masked_scaleb_zero(typename simd<float,N,Arch>::mask_type(true),value,exponent);
   }
   /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator+(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a+simd<float,N,Arch>(b); }
   /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator+(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)+b; }
   /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator-(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a-simd<float,N,Arch>(b); }
   /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator-(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)-b; }
   /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator*(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a*simd<float,N,Arch>(b); }
   /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator*(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)*b; }
   /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator/(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a/simd<float,N,Arch>(b); }
   /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator/(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)/b; }
   /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator<(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a<simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator<(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)<b; }
   /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator>(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a>simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator>(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)>b; }
   /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator<=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a<=simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator<=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)<=b; }
   /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator>=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a>=simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator>=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)>=b; }
   /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator==(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a==simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator==(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)==b; }
   /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator!=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a!=simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
+  template <std::size_t N,class U, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
   native_nodiscard native_inline auto operator!=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)!=b; }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-  template <std::size_t N,class A,class B, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
+  template <std::size_t N,class A,class B, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
   native_nodiscard native_inline auto fma(simd<float,N,Arch> a,A b,B c) noexcept(noexcept(simd<float,N,Arch>(b)) && noexcept(simd<float,N,Arch>(c))) { return fma(a,simd<float,N,Arch>(b),simd<float,N,Arch>(c)); }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-  template <std::size_t N,class A,class B, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,simd<float,N,Arch>>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
+  template <std::size_t N,class A,class B, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,simd<float,N,Arch>>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
   native_nodiscard native_inline auto fma(A a,simd<float,N,Arch> b,B c) noexcept(noexcept(simd<float,N,Arch>(a)) && noexcept(simd<float,N,Arch>(c))) { return fma(simd<float,N,Arch>(a),b,simd<float,N,Arch>(c)); }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-  template <std::size_t N,class A,class B, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,simd<float,N,Arch>>) && (!std::same_as<B,simd<float,N,Arch>>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
+  template <std::size_t N,class A,class B, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,simd<float,N,Arch>>) && (!std::same_as<B,simd<float,N,Arch>>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
   native_nodiscard native_inline auto fma(A a,B b,simd<float,N,Arch> c) noexcept(noexcept(simd<float,N,Arch>(a)) && noexcept(simd<float,N,Arch>(b))) { return fma(simd<float,N,Arch>(a),simd<float,N,Arch>(b),c); }
   /// \ingroup vector_math
   /// Clear each binary32 sign bit, preserving the remaining payload bits.
-  template <std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
+  template <std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline native_const auto abs(simd<float,N,Arch> a) noexcept {
     return simd<float,N,Arch>::from_bits(a.bits() & typename simd<float,N,Arch>::bits_type(0x7fffffffu));
   }
@@ -3484,7 +3497,7 @@ namespace native {
   /// \ingroup vector_math
   /// Convert floats to signed 32-bit integers by truncation toward zero.
   /// \pre Every truncated result is representable; NaNs and infinities are outside the contract.
-  template <class To, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<To,std::int32_t>
+  template <class To, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && std::same_as<To,std::int32_t>
   native_nodiscard native_inline simd<To,N,Arch> convert(simd<float,N,Arch> x) noexcept {
     if constexpr(N==2 || N==3) return simd<To,N,Arch>::from_storage(convert<To>(x.to_storage()));
     else if constexpr (N==1) return simd<To,N,Arch>(static_cast<std::int32_t>(x.value));
@@ -3502,7 +3515,7 @@ namespace native {
   /// \ingroup vector_math
   /// Numerically convert signed 32-bit integers to binary32.
   /// This is not a bit cast. Values outside binary32's exact integer range round.
-  template <class To, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<To,float>
+  template <class To, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && std::same_as<To,float>
   native_nodiscard native_inline simd<To,N,Arch> convert(simd<std::int32_t,N,Arch> x) noexcept {
     if constexpr(N==2 || N==3) return simd<To,N,Arch>::from_storage(convert<To>(x.to_storage()));
     else if constexpr (N==1) return simd<To,N,Arch>(static_cast<float>(x.value));
@@ -3601,7 +3614,8 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
   using fp32x16 = ::native::simd<float,16,NATIVE_DEFAULT_ARCH>;
 #endif
-  template<class V> concept float_register = requires { V::lanes; V::architecture; } && (::native::abi_lookup<V::architecture,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_RAW_TARGET != 6 || V::architecture == ::native::scalar));
+  template<class V> concept float_register = requires { V::lanes; V::architecture; typename V::value_type; } &&
+    std::same_as<typename V::value_type,float> && ::NATIVE_BACKEND_NAMESPACE::float_shape<V::lanes> && (::native::abi_lookup<V::architecture,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET && (NATIVE_RAW_TARGET != 6 || V::architecture == ::native::scalar));
   // Ordered comparison: second operand wins on equality or unordered, including
   // signed zero and NaNs, identically on each architecture.
   template<float_register V> native_nodiscard native_inline native_const V min(V a, V b) { return select(a < b, a, b); }
@@ -3689,13 +3703,13 @@ namespace native {
   /// Signed zeros and infinities are preserved; NaNs remain NaNs. Raw denormal
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
-  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<float,N,Arch>::native_type; }
+  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline simd<float,N,Arch> floor(simd<float,N,Arch> x) noexcept {
     return detail::NATIVE_BACKEND::round_integral<detail::NATIVE_BACKEND::rounding_direction::down>(x);
   }
   /// \ingroup vector_math
   /// Apply floor to each register in an array; an empty array performs no lane work.
-  template<std::size_t N,std::size_t M, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<float,N,Arch>::native_type; }
+  template<std::size_t N,std::size_t M, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline std::array<simd<float,N,Arch>,M> floor(std::array<simd<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{floor(x)...}};
@@ -3705,13 +3719,13 @@ namespace native {
   /// Signed zeros and infinities are preserved; NaNs remain NaNs. Raw denormal
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
-  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<float,N,Arch>::native_type; }
+  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline simd<float,N,Arch> ceil(simd<float,N,Arch> x) noexcept {
     return detail::NATIVE_BACKEND::round_integral<detail::NATIVE_BACKEND::rounding_direction::up>(x);
   }
   /// \ingroup vector_math
   /// Apply ceil to each register in an array; an empty array performs no lane work.
-  template<std::size_t N,std::size_t M, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<float,N,Arch>::native_type; }
+  template<std::size_t N,std::size_t M, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline std::array<simd<float,N,Arch>,M> ceil(std::array<simd<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{ceil(x)...}};
@@ -3721,13 +3735,13 @@ namespace native {
   /// Signed zeros and infinities are preserved; NaNs remain NaNs. Raw denormal
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
-  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<float,N,Arch>::native_type; }
+  template<std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline simd<float,N,Arch> trunc(simd<float,N,Arch> x) noexcept {
     return detail::NATIVE_BACKEND::round_integral<detail::NATIVE_BACKEND::rounding_direction::zero>(x);
   }
   /// \ingroup vector_math
   /// Apply trunc to each register in an array; an empty array performs no lane work.
-  template<std::size_t N,std::size_t M, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<float,N,Arch>::native_type; }
+  template<std::size_t N,std::size_t M, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline std::array<simd<float,N,Arch>,M> trunc(std::array<simd<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{trunc(x)...}};
@@ -3860,7 +3874,7 @@ namespace native {
   /// \snippet api.cc compaction
   template<class T, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
-    requires { typename simd<T,N,Arch>::native_type; }
+    ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline compaction_result<simd<T,N,Arch>> compress(
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> value, T fill = T{}) noexcept {
     using V = simd<T,N,Arch>;
@@ -3876,7 +3890,7 @@ namespace native {
   /// Unselected lanes retain prior bitwise. Short physical padding is zeroed.
   template<class T, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
-    requires { typename simd<T,N,Arch>::native_type; }
+    ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_nodiscard native_inline simd<T,N,Arch> expand(
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> packed,
       simd<T,N,Arch> prior) noexcept {
@@ -3892,7 +3906,7 @@ namespace native {
   /// that prefix is accessed. Null is valid when capacity or the mask is zero.
   template<class T, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
-    requires { typename simd<T,N,Arch>::native_type; }
+    ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
   native_inline std::size_t compress_store(T * destination, std::size_t capacity,
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> value) noexcept {
     auto bits = detail::NATIVE_BACKEND::compaction_mask_bits<N>(mask);
