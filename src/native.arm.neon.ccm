@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/arm/neon.h"
+#include "native/arm/neon_constant.h"
+export module native.arm.neon;
+export import native.arm.features;
+export import native.simd;
+#include "native/arm/neon_body.h"
