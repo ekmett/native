@@ -3,7 +3,7 @@
 #if TEST_KIND == 0
 constexpr auto requirements=native::neon;
 #else
-constexpr auto requirements=native::target_features("crc");
+constexpr auto requirements=native::target_features<native::arm>("crc");
 #endif
 #if TEST_KIND != 1
 native_target("crc")

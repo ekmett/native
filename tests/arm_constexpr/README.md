@@ -24,3 +24,7 @@ instruction. CRC and crypto family runtime references remain unchanged.
 
 The standalone installed-package suite uses the same granular-module and hub
 constant assertions after relocation. It needs no optional hardware feature.
+
+ARM requirements have type `isa<arm>`. The header and module checks reject x86
+and Wasm tags, and six failing compilation fixtures verify that foreign tags
+cannot enter the immediate CRC, SHA1H or PMULL paths.

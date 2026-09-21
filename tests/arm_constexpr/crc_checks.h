@@ -3,8 +3,8 @@
 #include <cstdint>
 
 namespace crc_constant_fixture {
-  constexpr auto strong = native::isa(native::arm_feature::crc);
-  constexpr auto weak = native::isa{};
+  constexpr auto strong = native::isa<native::arm>(native::arm_feature::crc);
+  constexpr auto weak = native::isa<native::arm>{};
   constexpr std::uint32_t reverse(std::uint32_t x) {
     std::uint32_t r=0;
     for(unsigned i=0;i<32;++i) { r=(r<<1)|(x&1); x>>=1; }

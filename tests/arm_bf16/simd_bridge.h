@@ -2,7 +2,7 @@
 #pragma once
 // The oracle uses ACLE storage; every operation crosses the public semantic API.
 namespace instruction_fixture {
-  template<native::isa Arch>
+  template<native::isa<native::arm> Arch>
     requires(Arch.has(native::arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x2_t bfdot(float32x2_t acc, bfloat16x4_t a, bfloat16x4_t b) noexcept {
@@ -10,7 +10,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 2, Arch>>);
     return vget_low_f32(result.to_storage().to_native());
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 2)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x2_t bfdot_lane(float32x2_t acc, bfloat16x4_t a, bfloat16x4_t b) noexcept {
@@ -18,7 +18,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 2, Arch>>);
     return vget_low_f32(result.to_storage().to_native());
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x2_t bfdot_lane(float32x2_t acc, bfloat16x4_t a, bfloat16x8_t b) noexcept {
@@ -26,7 +26,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 2, Arch>>);
     return vget_low_f32(result.to_storage().to_native());
   }
-  template<native::isa Arch>
+  template<native::isa<native::arm> Arch>
     requires(Arch.has(native::arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfdot(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -34,7 +34,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 2)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfdot_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x4_t b) noexcept {
@@ -42,7 +42,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfdot_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -50,7 +50,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch>
+  template<native::isa<native::arm> Arch>
     requires(Arch.has(native::arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmmla(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -58,7 +58,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch>
+  template<native::isa<native::arm> Arch>
     requires(Arch.has(native::arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalb(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -66,7 +66,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalb_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x4_t b) noexcept {
@@ -74,7 +74,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalb_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -82,7 +82,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch>
+  template<native::isa<native::arm> Arch>
     requires(Arch.has(native::arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalt(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -90,7 +90,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalt_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x4_t b) noexcept {
@@ -98,7 +98,7 @@ namespace instruction_fixture {
     static_assert(std::same_as<decltype(result), native::simd<float, 4, Arch>>);
     return result.to_native();
   }
-  template<native::isa Arch, unsigned Lane>
+  template<native::isa<native::arm> Arch, unsigned Lane>
     requires(Arch.has(native::arm_feature::neon_bf16) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalt_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {

@@ -5,7 +5,9 @@
 // full ISA admission is checked separately by the ordinary module/header fixtures.
 namespace native {
   enum class arm_feature { complxnum, neon_fp16, fp16fml };
-  struct isa {
+  enum class architecture { arm };
+  inline constexpr auto arm=architecture::arm;
+  template<architecture Family=arm> struct isa {
     unsigned bits;
     constexpr isa(arm_feature f) : bits(1u << unsigned(f)) {}
     constexpr bool has(arm_feature f) const { return bits & (1u << unsigned(f)); }

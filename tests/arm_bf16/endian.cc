@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/arm/bf16.h>
-constexpr native::isa arch{native::arm_feature::neon_bf16};
+constexpr native::isa<native::arm> arch{native::arm_feature::neon_bf16};
 extern "C" __attribute__((target("bf16")))
 void native_bfdot_2_0_0(float* out,float const* acc,bfloat16_t const* a,bfloat16_t const* b) {
   auto vc=vld1_f32(acc);

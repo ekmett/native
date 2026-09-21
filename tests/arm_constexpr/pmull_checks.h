@@ -3,7 +3,7 @@
 namespace polynomial_constant_fixture {
   constexpr auto strong=native::feature_closure(native::arm_feature::pmull);
   constexpr auto weak=native::neon;
-  template<native::isa A> constexpr auto words(native::simd<std::uint64_t,2,A> value) {
+  template<native::isa<native::arm> A> constexpr auto words(native::simd<std::uint64_t,2,A> value) {
     return std::bit_cast<std::array<std::uint64_t,2>>(value.to_native());
   }
   template<unsigned I> consteval bool row() {
@@ -33,6 +33,6 @@ namespace polynomial_constant_fixture {
   static_assert(std::same_as<decltype(native::pmull<weak>(all,all)),native::simd<std::uint64_t,2,weak>>);
   static_assert(std::same_as<decltype(native::pmull<strong>(all,all)),native::simd<std::uint64_t,2,strong>>);
   static_assert(std::same_as<decltype(native::pmull(all,all)),native::simd<std::uint64_t,2,weak>>);
-  template<native::isa A> concept shape = requires { native::pmull<A>(std::uint64_t{},std::uint64_t{}); };
+  template<native::isa<native::arm> A> concept shape = requires { native::pmull<A>(std::uint64_t{},std::uint64_t{}); };
   static_assert(!shape<native::scalar>);
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/arm/fcma.h>
-constexpr native::isa arch{native::arm_feature::complxnum};
-constexpr native::isa half_arch = [] { auto a = arch; a.set(native::arm_feature::neon_fp16, true); return a; }();
+constexpr native::isa<native::arm> arch{native::arm_feature::complxnum};
+constexpr native::isa<native::arm> half_arch = [] { auto a = arch; a.set(native::arm_feature::neon_fp16, true); return a; }();
 
 extern "C" __attribute__((target("complxnum")))
 void native_add_32_2(float* output, float const* acc, float const* a, float const* b) {

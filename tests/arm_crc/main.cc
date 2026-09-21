@@ -12,8 +12,8 @@ import native.arm;
 #else
 import native;
 #endif
-constexpr auto requirements=native::target_features("crc");
-static_assert(requirements==native::isa(native::arm_feature::crc));
+constexpr auto requirements=native::target_features<native::arm>("crc");
+static_assert(requirements==native::isa<native::arm>(native::arm_feature::crc));
 static_assert([] {
   native::arm_capabilities cpu;
   cpu.present.set(native::arm_feature::crc,true);

@@ -12,7 +12,7 @@ namespace native {
 
   // All vector operands share Arch; native registers remain implementation details.
   /// Add products from the low 2 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlal(
       simd<float, 2, Arch> acc,
@@ -26,7 +26,7 @@ namespace native {
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlal_lane(
       simd<float, 2, Arch> acc,
@@ -40,7 +40,7 @@ namespace native {
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlal_lane(
       simd<float, 2, Arch> acc,
@@ -54,7 +54,7 @@ namespace native {
   }
 
   /// Add products from the low 4 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlal(
       simd<float, 4, Arch> acc,
@@ -68,7 +68,7 @@ namespace native {
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlal_lane(
       simd<float, 4, Arch> acc,
@@ -82,7 +82,7 @@ namespace native {
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlal_lane(
       simd<float, 4, Arch> acc,
@@ -96,7 +96,7 @@ namespace native {
   }
 
   /// Add products from the high 2 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlal2(
       simd<float, 2, Arch> acc,
@@ -110,7 +110,7 @@ namespace native {
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlal2_lane(
       simd<float, 2, Arch> acc,
@@ -124,7 +124,7 @@ namespace native {
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlal2_lane(
       simd<float, 2, Arch> acc,
@@ -138,7 +138,7 @@ namespace native {
   }
 
   /// Add products from the high 4 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlal2(
       simd<float, 4, Arch> acc,
@@ -152,7 +152,7 @@ namespace native {
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlal2_lane(
       simd<float, 4, Arch> acc,
@@ -166,7 +166,7 @@ namespace native {
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlal2_lane(
       simd<float, 4, Arch> acc,
@@ -180,7 +180,7 @@ namespace native {
   }
 
   /// Subtract products from the low 2 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlsl(
       simd<float, 2, Arch> acc,
@@ -194,7 +194,7 @@ namespace native {
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlsl_lane(
       simd<float, 2, Arch> acc,
@@ -208,7 +208,7 @@ namespace native {
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlsl_lane(
       simd<float, 2, Arch> acc,
@@ -222,7 +222,7 @@ namespace native {
   }
 
   /// Subtract products from the low 4 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlsl(
       simd<float, 4, Arch> acc,
@@ -236,7 +236,7 @@ namespace native {
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlsl_lane(
       simd<float, 4, Arch> acc,
@@ -250,7 +250,7 @@ namespace native {
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlsl_lane(
       simd<float, 4, Arch> acc,
@@ -264,7 +264,7 @@ namespace native {
   }
 
   /// Subtract products from the high 2 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlsl2(
       simd<float, 2, Arch> acc,
@@ -278,7 +278,7 @@ namespace native {
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlsl2_lane(
       simd<float, 2, Arch> acc,
@@ -292,7 +292,7 @@ namespace native {
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 2 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 2, Arch> fmlsl2_lane(
       simd<float, 2, Arch> acc,
@@ -306,7 +306,7 @@ namespace native {
   }
 
   /// Subtract products from the high 4 half lanes of a and b.
-  template<isa Arch> requires(Arch.has(arm_feature::fp16fml))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlsl2(
       simd<float, 4, Arch> acc,
@@ -320,7 +320,7 @@ namespace native {
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlsl2_lane(
       simd<float, 4, Arch> acc,
@@ -334,7 +334,7 @@ namespace native {
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 4 lanes of a.
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("fp16fml")))
   simd<float, 4, Arch> fmlsl2_lane(
       simd<float, 4, Arch> acc,
@@ -348,21 +348,21 @@ namespace native {
   }
 
   /// \cond
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void fmlal(A, B, C) = delete;
-  template<isa Arch, unsigned Lane, class A, class B, class C>
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
   void fmlal_lane(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void fmlal2(A, B, C) = delete;
-  template<isa Arch, unsigned Lane, class A, class B, class C>
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
   void fmlal2_lane(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void fmlsl(A, B, C) = delete;
-  template<isa Arch, unsigned Lane, class A, class B, class C>
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
   void fmlsl_lane(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void fmlsl2(A, B, C) = delete;
-  template<isa Arch, unsigned Lane, class A, class B, class C>
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
   void fmlsl2_lane(A, B, C) = delete;
   /// \endcond
   /// \}

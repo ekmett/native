@@ -3,12 +3,12 @@
 #include "simd_bridge.h"
 #include "availability.h"
 namespace crypto_fixture {
-  constexpr auto aes = native::feature_closure(native::isa{native::arm_feature::aes});
-  constexpr auto pmull = native::feature_closure(native::isa{native::arm_feature::pmull});
-  constexpr auto sha1 = native::feature_closure(native::isa{native::arm_feature::sha1});
-  constexpr auto sha2 = native::feature_closure(native::isa{native::arm_feature::sha2});
-  constexpr auto sha512 = native::feature_closure(native::isa{native::arm_feature::sha512});
-  constexpr auto sha3 = native::feature_closure(native::isa{native::arm_feature::sha3});
+  constexpr auto aes = native::feature_closure(native::isa<native::arm>{native::arm_feature::aes});
+  constexpr auto pmull = native::feature_closure(native::isa<native::arm>{native::arm_feature::pmull});
+  constexpr auto sha1 = native::feature_closure(native::isa<native::arm>{native::arm_feature::sha1});
+  constexpr auto sha2 = native::feature_closure(native::isa<native::arm>{native::arm_feature::sha2});
+  constexpr auto sha512 = native::feature_closure(native::isa<native::arm>{native::arm_feature::sha512});
+  constexpr auto sha3 = native::feature_closure(native::isa<native::arm>{native::arm_feature::sha3});
 
   inline std::uint64_t random_word(std::uint64_t &s) {
     s ^= s << 13; s ^= s >> 7; s ^= s << 17; return s;
@@ -201,7 +201,7 @@ namespace crypto_fixture {
     }
     return true;
   }
-  constexpr native::arm_capabilities capabilities(native::isa features) {
+  constexpr native::arm_capabilities capabilities(native::isa<native::arm> features) {
     native::arm_capabilities cpu{};
     for(auto f : {native::arm_feature::neon,native::arm_feature::aes,native::arm_feature::pmull,
                   native::arm_feature::sha1,native::arm_feature::sha2,
@@ -213,13 +213,13 @@ namespace crypto_fixture {
   consteval bool admission_contract() {
     for(auto f : {native::arm_feature::aes,native::arm_feature::pmull,native::arm_feature::sha1,
                   native::arm_feature::sha2,native::arm_feature::sha512,native::arm_feature::sha3}) {
-      auto cpu=capabilities(native::feature_closure(native::isa{f}));
-      if(!native::classify_isa(cpu,native::isa{f}).admitted()) return false;
+      auto cpu=capabilities(native::feature_closure(native::isa<native::arm>{f}));
+      if(!native::classify_isa(cpu,native::isa<native::arm>{f}).admitted()) return false;
       cpu.observed.set(f,false);
-      if(native::classify_isa(cpu,native::isa{f}).admitted()) return false;
+      if(native::classify_isa(cpu,native::isa<native::arm>{f}).admitted()) return false;
     }
     for(auto target : {"aes","sha2","sha3"}) {
-      auto features=native::target_features(target);
+      auto features=native::target_features<native::arm>(target);
       for(auto f : {native::arm_feature::aes,native::arm_feature::pmull,native::arm_feature::sha1,
                     native::arm_feature::sha2,native::arm_feature::sha512,native::arm_feature::sha3}) {
         if(!features.has(f)) continue;
@@ -237,7 +237,7 @@ namespace crypto_fixture {
   inline int run(unsigned seed) {
     auto cpu=native::observe_arm_capabilities();
     for(auto target : {"aes","sha2","sha3"}) {
-      auto result=native::classify_isa(cpu,native::target_features(target));
+      auto result=native::classify_isa(cpu,native::target_features<native::arm>(target));
       if(!result.admitted()) { std::printf("Skipped %s: %s\n",target,result.reason()); return 77; }
     }
     auto control=fpcr(),saved_status=fpsr();

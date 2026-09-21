@@ -68,7 +68,7 @@ bytes round(bytes state, bytes key) {
 
 bool supported() {
   return native::classify_isa(native::observe_arm_capabilities(),
-    native::target_features("aes")).admitted();
+    native::target_features<native::arm>("aes")).admitted();
 }
 ```
 

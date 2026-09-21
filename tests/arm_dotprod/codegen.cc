@@ -9,7 +9,7 @@ import native.arm.dotprod;
     defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_ATOMICS)
 #error The code-generation fixture must start from baseline AArch64.
 #endif
-constexpr auto requirements = native::isa(native::arm_feature::dotprod);
+constexpr auto requirements = native::isa<native::arm>(native::arm_feature::dotprod);
 extern "C" __attribute__((target("dotprod"), noinline))
 int32x2_t native_sdot_int32x2(int32x2_t a, int8x8_t b, int8x8_t c) noexcept {
   return dotprod_api::sdot<requirements>(a, b, c);

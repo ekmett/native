@@ -66,8 +66,8 @@ bool can_multiply() {
 
 I8MM requires NEON but can be requested independently of DotProd, FP16 and
 BF16, matching [LLVM's AArch64 feature definition](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/AArch64/AArch64Features.td).
-The `isa::arm_i8mm` property accesses the `arm_feature::i8mm` bit.
-`target_features("i8mm")` adds the NEON prerequisite, and `NATIVE_TARGET_MINIMUM`
+The `isa<arm>::i8mm` property accesses the `arm_feature::i8mm` bit.
+`target_features<native::arm>("i8mm")` adds the NEON prerequisite, and `NATIVE_TARGET_MINIMUM`
 records I8MM when the compiler defines `__ARM_FEATURE_MATMUL_INT8`.
 
 The macOS detector queries `hw.optional.arm.FEAT_I8MM`. The Linux detector

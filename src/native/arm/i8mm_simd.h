@@ -13,7 +13,7 @@ namespace native {
 
   // All vector operands share Arch; native registers remain implementation details.
   /// Signed 2x8 times 8x2 matrix multiply-accumulate.
-  template<isa Arch> requires(Arch.has(arm_feature::i8mm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> smmla(
       simd<std::int32_t, 4, Arch> acc,
@@ -27,7 +27,7 @@ namespace native {
   }
 
   /// Unsigned 2x8 times 8x2 matrix multiply-accumulate.
-  template<isa Arch> requires(Arch.has(arm_feature::i8mm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::uint32_t, 4, Arch> ummla(
       simd<std::uint32_t, 4, Arch> acc,
@@ -41,7 +41,7 @@ namespace native {
   }
 
   /// Unsigned left matrix times signed right matrix, with signed accumulator.
-  template<isa Arch> requires(Arch.has(arm_feature::i8mm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> usmmla(
       simd<std::int32_t, 4, Arch> acc,
@@ -55,7 +55,7 @@ namespace native {
   }
 
   /// Accumulate each corresponding group of four unsigned a bytes times signed b bytes.
-  template<isa Arch> requires(Arch.has(arm_feature::i8mm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 2, Arch> usdot(
       simd<std::int32_t, 2, Arch> acc,
@@ -69,7 +69,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 2, Arch> usdot_lane(
       simd<std::int32_t, 2, Arch> acc,
@@ -83,7 +83,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 2, Arch> sudot_lane(
       simd<std::int32_t, 2, Arch> acc,
@@ -97,7 +97,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 2, Arch> usdot_lane(
       simd<std::int32_t, 2, Arch> acc,
@@ -111,7 +111,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 2, Arch> sudot_lane(
       simd<std::int32_t, 2, Arch> acc,
@@ -125,7 +125,7 @@ namespace native {
   }
 
   /// Accumulate each corresponding group of four unsigned a bytes times signed b bytes.
-  template<isa Arch> requires(Arch.has(arm_feature::i8mm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::i8mm))
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> usdot(
       simd<std::int32_t, 4, Arch> acc,
@@ -139,7 +139,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> usdot_lane(
       simd<std::int32_t, 4, Arch> acc,
@@ -153,7 +153,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> sudot_lane(
       simd<std::int32_t, 4, Arch> acc,
@@ -167,7 +167,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> usdot_lane(
       simd<std::int32_t, 4, Arch> acc,
@@ -181,7 +181,7 @@ namespace native {
   }
 
   /// Accumulate each four-byte group of a times b[4*Lane..4*Lane+3].
-  template<isa Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::i8mm) && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("i8mm")))
   simd<std::int32_t, 4, Arch> sudot_lane(
       simd<std::int32_t, 4, Arch> acc,
@@ -195,17 +195,17 @@ namespace native {
   }
 
   /// \cond
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void smmla(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void ummla(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void usmmla(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void usdot(A, B, C) = delete;
-  template<isa Arch, unsigned Lane, class A, class B, class C>
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
   void usdot_lane(A, B, C) = delete;
-  template<isa Arch, unsigned Lane, class A, class B, class C>
+  template<isa<arm> Arch, unsigned Lane, class A, class B, class C>
   void sudot_lane(A, B, C) = delete;
   /// \endcond
   /// \}

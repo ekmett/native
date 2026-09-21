@@ -34,19 +34,19 @@ consteval bool admission_contract() {
   return !native::classify_isa(cpu, requirements).admitted();
 }
 static_assert(admission_contract());
-template<native::isa A, class R, class X>
+template<native::isa<native::arm> A, class R, class X>
 concept has_sqrdmlah = requires(R r, X x) {
   { rdm_api::sqrdmlah<A>(r, x, x) } noexcept -> std::same_as<R>;
 };
-template<native::isa A, int Lane, class R, class X, class Y>
+template<native::isa<native::arm> A, int Lane, class R, class X, class Y>
 concept has_sqrdmlah_lane = requires(R r, X x, Y y) {
   { rdm_api::sqrdmlah_lane<A, Lane>(r, x, y) } noexcept -> std::same_as<R>;
 };
-template<native::isa A, class R, class X>
+template<native::isa<native::arm> A, class R, class X>
 concept has_sqrdmlsh = requires(R r, X x) {
   { rdm_api::sqrdmlsh<A>(r, x, x) } noexcept -> std::same_as<R>;
 };
-template<native::isa A, int Lane, class R, class X, class Y>
+template<native::isa<native::arm> A, int Lane, class R, class X, class Y>
 concept has_sqrdmlsh_lane = requires(R r, X x, Y y) {
   { rdm_api::sqrdmlsh_lane<A, Lane>(r, x, y) } noexcept -> std::same_as<R>;
 };
@@ -172,10 +172,10 @@ bool check_saturation_flag() {
   return passed;
 }
 static_assert(has_sqrdmlah<requirements, int16_t, int16_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int16_t, int16_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int16_t, int16_t>);
 static_assert(!has_sqrdmlah<native::scalar, int16_t, int16_t>);
 static_assert(!has_sqrdmlah<native::neon, int16_t, int16_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int16_t, int16_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int16_t, int16_t>);
 static_assert(has_sqrdmlah_lane<requirements, 3, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 4, int16_t, int16_t, int16x4_t>);
@@ -185,10 +185,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int16_t, int16_t, int16x8_t>)
 static_assert(!has_sqrdmlah_lane<requirements, 8, int16_t, int16_t, int16x8_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int16_t, int16_t, int16x8_t>);
 static_assert(has_sqrdmlah<requirements, int16x4_t, int16x4_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int16x4_t, int16x4_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah<native::scalar, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah<native::neon, int16x4_t, int16x4_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
 static_assert(has_sqrdmlah_lane<requirements, 3, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 4, int16x4_t, int16x4_t, int16x4_t>);
@@ -198,10 +198,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int16x4_t, int16x4_t, int16x8
 static_assert(!has_sqrdmlah_lane<requirements, 8, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(has_sqrdmlah<requirements, int16x8_t, int16x8_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int16x8_t, int16x8_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlah<native::scalar, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlah<native::neon, int16x8_t, int16x8_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlah_lane<requirements, 3, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 4, int16x8_t, int16x8_t, int16x4_t>);
@@ -211,10 +211,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int16x8_t, int16x8_t, int16x8
 static_assert(!has_sqrdmlah_lane<requirements, 8, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlah<requirements, int32_t, int32_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int32_t, int32_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int32_t, int32_t>);
 static_assert(!has_sqrdmlah<native::scalar, int32_t, int32_t>);
 static_assert(!has_sqrdmlah<native::neon, int32_t, int32_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int32_t, int32_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int32_t, int32_t>);
 static_assert(has_sqrdmlah_lane<requirements, 1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 2, int32_t, int32_t, int32x2_t>);
@@ -224,10 +224,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int32_t, int32_t, int32x4_t>)
 static_assert(!has_sqrdmlah_lane<requirements, 4, int32_t, int32_t, int32x4_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int32_t, int32_t, int32x4_t>);
 static_assert(has_sqrdmlah<requirements, int32x2_t, int32x2_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int32x2_t, int32x2_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah<native::scalar, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah<native::neon, int32x2_t, int32x2_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
 static_assert(has_sqrdmlah_lane<requirements, 1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 2, int32x2_t, int32x2_t, int32x2_t>);
@@ -237,10 +237,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int32x2_t, int32x2_t, int32x4
 static_assert(!has_sqrdmlah_lane<requirements, 4, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(has_sqrdmlah<requirements, int32x4_t, int32x4_t>);
-static_assert(has_sqrdmlah<native::isa(native::arm_feature::rdm), int32x4_t, int32x4_t>);
+static_assert(has_sqrdmlah<native::isa<native::arm>(native::arm_feature::rdm), int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlah<native::scalar, int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlah<native::neon, int32x4_t, int32x4_t>);
-static_assert(!has_sqrdmlah<native::isa(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
+static_assert(!has_sqrdmlah<native::isa<native::arm>(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
 static_assert(has_sqrdmlah_lane<requirements, 1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, -1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlah_lane<requirements, 2, int32x4_t, int32x4_t, int32x2_t>);
@@ -250,10 +250,10 @@ static_assert(!has_sqrdmlah_lane<requirements, -1, int32x4_t, int32x4_t, int32x4
 static_assert(!has_sqrdmlah_lane<requirements, 4, int32x4_t, int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlah_lane<native::neon, 0, int32x4_t, int32x4_t, int32x4_t>);
 static_assert(has_sqrdmlsh<requirements, int16_t, int16_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int16_t, int16_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int16_t, int16_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int16_t, int16_t>);
 static_assert(!has_sqrdmlsh<native::neon, int16_t, int16_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int16_t, int16_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int16_t, int16_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 3, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int16_t, int16_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int16_t, int16_t, int16x4_t>);
@@ -263,10 +263,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int16_t, int16_t, int16x8_t>)
 static_assert(!has_sqrdmlsh_lane<requirements, 8, int16_t, int16_t, int16x8_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int16_t, int16_t, int16x8_t>);
 static_assert(has_sqrdmlsh<requirements, int16x4_t, int16x4_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int16x4_t, int16x4_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh<native::neon, int16x4_t, int16x4_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int16x4_t, int16x4_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 3, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x4_t, int16x4_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int16x4_t, int16x4_t, int16x4_t>);
@@ -276,10 +276,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x4_t, int16x4_t, int16x8
 static_assert(!has_sqrdmlsh_lane<requirements, 8, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int16x4_t, int16x4_t, int16x8_t>);
 static_assert(has_sqrdmlsh<requirements, int16x8_t, int16x8_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int16x8_t, int16x8_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlsh<native::neon, int16x8_t, int16x8_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 3, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x8_t, int16x8_t, int16x4_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int16x8_t, int16x8_t, int16x4_t>);
@@ -289,10 +289,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int16x8_t, int16x8_t, int16x8
 static_assert(!has_sqrdmlsh_lane<requirements, 8, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int16x8_t, int16x8_t, int16x8_t>);
 static_assert(has_sqrdmlsh<requirements, int32_t, int32_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int32_t, int32_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int32_t, int32_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int32_t, int32_t>);
 static_assert(!has_sqrdmlsh<native::neon, int32_t, int32_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int32_t, int32_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int32_t, int32_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int32_t, int32_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 2, int32_t, int32_t, int32x2_t>);
@@ -302,10 +302,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int32_t, int32_t, int32x4_t>)
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int32_t, int32_t, int32x4_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int32_t, int32_t, int32x4_t>);
 static_assert(has_sqrdmlsh<requirements, int32x2_t, int32x2_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int32x2_t, int32x2_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh<native::neon, int32x2_t, int32x2_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int32x2_t, int32x2_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int32x2_t, int32x2_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 2, int32x2_t, int32x2_t, int32x2_t>);
@@ -315,10 +315,10 @@ static_assert(!has_sqrdmlsh_lane<requirements, -1, int32x2_t, int32x2_t, int32x4
 static_assert(!has_sqrdmlsh_lane<requirements, 4, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(!has_sqrdmlsh_lane<native::neon, 0, int32x2_t, int32x2_t, int32x4_t>);
 static_assert(has_sqrdmlsh<requirements, int32x4_t, int32x4_t>);
-static_assert(has_sqrdmlsh<native::isa(native::arm_feature::rdm), int32x4_t, int32x4_t>);
+static_assert(has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::rdm), int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlsh<native::scalar, int32x4_t, int32x4_t>);
 static_assert(!has_sqrdmlsh<native::neon, int32x4_t, int32x4_t>);
-static_assert(!has_sqrdmlsh<native::isa(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
+static_assert(!has_sqrdmlsh<native::isa<native::arm>(native::arm_feature::dotprod), int32x4_t, int32x4_t>);
 static_assert(has_sqrdmlsh_lane<requirements, 1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, -1, int32x4_t, int32x4_t, int32x2_t>);
 static_assert(!has_sqrdmlsh_lane<requirements, 2, int32x4_t, int32x4_t, int32x2_t>);

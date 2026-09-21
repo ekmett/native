@@ -3,8 +3,8 @@
 #include <native/arm/fcma.h>
 import native.arm.fcma;
 #include "simd_adapter.h"
-constexpr native::isa arch{native::arm_feature::complxnum};
-constexpr native::isa half_arch = [] { auto a = arch; a.set(native::arm_feature::neon_fp16, true); return a; }();
+constexpr native::isa<native::arm> arch{native::arm_feature::complxnum};
+constexpr native::isa<native::arm> half_arch = [] { auto a = arch; a.set(native::arm_feature::neon_fp16, true); return a; }();
 extern "C" __attribute__((target("complxnum"), noinline)) float32x2_t native_fcadd_32_2_90(float32x2_t a, float32x2_t b) { return fcma_api::fcadd<arch, 90>(a, b); }
 extern "C" __attribute__((target("complxnum"), noinline)) float32x2_t native_fcadd_32_2_270(float32x2_t a, float32x2_t b) { return fcma_api::fcadd<arch, 270>(a, b); }
 extern "C" __attribute__((target("complxnum"), noinline)) float32x2_t native_fcmla_32_2_0(float32x2_t acc, float32x2_t a, float32x2_t b) { return fcma_api::fcmla<arch, 0>(acc, a, b); }

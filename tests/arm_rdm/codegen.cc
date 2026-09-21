@@ -9,7 +9,7 @@ import native.arm.rdm;
     defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_ATOMICS)
 #error The code-generation fixture must start from baseline AArch64.
 #endif
-constexpr auto requirements = native::isa(native::arm_feature::rdm);
+constexpr auto requirements = native::isa<native::arm>(native::arm_feature::rdm);
 extern "C" __attribute__((target("rdm"), noinline))
 int16_t native_sqrdmlah_int16(int16_t a, int16_t b, int16_t c) noexcept {
   return rdm_api::sqrdmlah<requirements>(a, b, c);

@@ -18,7 +18,7 @@ namespace native::detail::arm_bf16 {
   // preserves both contracts; the memory clobber orders environment accesses
   // without adding a CPU memory fence.
 
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x2_t bfdot(float32x2_t acc, bfloat16x4_t a, bfloat16x4_t b) noexcept {
@@ -30,7 +30,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 2)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x2_t bfdot_lane(float32x2_t acc, bfloat16x4_t a, bfloat16x4_t b) noexcept {
@@ -42,7 +42,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x2_t bfdot_lane(float32x2_t acc, bfloat16x4_t a, bfloat16x8_t b) noexcept {
@@ -54,7 +54,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfdot(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -66,7 +66,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 2)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfdot_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x4_t b) noexcept {
@@ -78,7 +78,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfdot_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -90,7 +90,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmmla(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -102,7 +102,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalb(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -114,7 +114,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalb_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x4_t b) noexcept {
@@ -126,7 +126,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalb_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -138,7 +138,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalt(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -150,7 +150,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalt_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x4_t b) noexcept {
@@ -162,7 +162,7 @@ namespace native::detail::arm_bf16 {
     return ::native::detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("bf16")))
   float32x4_t bfmlalt_lane(float32x4_t acc, bfloat16x8_t a, bfloat16x8_t b) noexcept {
@@ -176,13 +176,13 @@ namespace native::detail::arm_bf16 {
 
   // Exact deduction rejects unrelated vectors and invalid immediates before
   // Clang's lax vector conversions can select an overload for another shape.
-  template<isa Arch, class R, class A, class B> void bfdot(R, A, B) = delete;
-  template<isa Arch, class R, class A, class B> void bfmmla(R, A, B) = delete;
-  template<isa Arch, class R, class A, class B> void bfmlalb(R, A, B) = delete;
-  template<isa Arch, class R, class A, class B> void bfmlalt(R, A, B) = delete;
-  template<isa Arch, unsigned Lane, class R, class A, class B> void bfdot_lane(R, A, B) = delete;
-  template<isa Arch, unsigned Lane, class R, class A, class B> void bfmlalb_lane(R, A, B) = delete;
-  template<isa Arch, unsigned Lane, class R, class A, class B> void bfmlalt_lane(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfdot(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfmmla(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfmlalb(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfmlalt(R, A, B) = delete;
+  template<isa<arm> Arch, unsigned Lane, class R, class A, class B> void bfdot_lane(R, A, B) = delete;
+  template<isa<arm> Arch, unsigned Lane, class R, class A, class B> void bfmlalb_lane(R, A, B) = delete;
+  template<isa<arm> Arch, unsigned Lane, class R, class A, class B> void bfmlalt_lane(R, A, B) = delete;
 
 }
 #endif

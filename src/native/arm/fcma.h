@@ -19,7 +19,7 @@ namespace native::detail {
 
 
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
   float32x2_t fcadd(float32x2_t a, float32x2_t b) noexcept {
@@ -31,7 +31,7 @@ namespace native::detail {
     return detail::arm_register_order(result);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
   float32x2_t fcmla(float32x2_t acc, float32x2_t a, float32x2_t b) noexcept {
@@ -43,7 +43,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
@@ -52,7 +52,7 @@ namespace native::detail {
     return fcmla<Arch, Rotation>(acc, a, b);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
@@ -64,7 +64,7 @@ namespace native::detail {
       return fcmla<Arch, Rotation>(acc, a, vget_high_f32(b));
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
   float32x4_t fcadd(float32x4_t a, float32x4_t b) noexcept {
@@ -76,7 +76,7 @@ namespace native::detail {
     return detail::arm_register_order(result);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
   float32x4_t fcmla(float32x4_t acc, float32x4_t a, float32x4_t b) noexcept {
@@ -88,7 +88,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
@@ -102,7 +102,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
@@ -116,7 +116,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
   float64x2_t fcadd(float64x2_t a, float64x2_t b) noexcept {
@@ -128,7 +128,7 @@ namespace native::detail {
     return detail::arm_register_order(result);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum")))
   float64x2_t fcmla(float64x2_t acc, float64x2_t a, float64x2_t b) noexcept {
@@ -140,7 +140,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
   float16x4_t fcadd(float16x4_t a, float16x4_t b) noexcept {
@@ -152,7 +152,7 @@ namespace native::detail {
     return detail::arm_register_order(result);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
   float16x4_t fcmla(float16x4_t acc, float16x4_t a, float16x4_t b) noexcept {
@@ -164,7 +164,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
@@ -178,7 +178,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
@@ -195,7 +195,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
   float16x8_t fcadd(float16x8_t a, float16x8_t b) noexcept {
@@ -207,7 +207,7 @@ namespace native::detail {
     return detail::arm_register_order(result);
   }
 
-  template<isa Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
+  template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
   native_nodiscard native_inline __attribute__((target("complxnum,fullfp16")))
   float16x8_t fcmla(float16x8_t acc, float16x8_t a, float16x8_t b) noexcept {
@@ -219,7 +219,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
@@ -233,7 +233,7 @@ namespace native::detail {
     return detail::arm_register_order(acc);
   }
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
@@ -250,99 +250,99 @@ namespace native::detail {
   // Clang permits implicit same-size NEON vector conversions. Exact deleted
   // overloads keep missing features and invalid immediates from selecting
   // an overload of another element format through those conversions.
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 90 || Rotation == 270)))
   float32x2_t fcadd(float32x2_t, float32x2_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)))
   float32x2_t fcmla(float32x2_t, float32x2_t, float32x2_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1))
   float32x2_t fcmla_lane(float32x2_t, float32x2_t, float32x2_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2))
   float32x2_t fcmla_lane(float32x2_t, float32x2_t, float32x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 90 || Rotation == 270)))
   float32x4_t fcadd(float32x4_t, float32x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)))
   float32x4_t fcmla(float32x4_t, float32x4_t, float32x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1))
   float32x4_t fcmla_lane(float32x4_t, float32x4_t, float32x2_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2))
   float32x4_t fcmla_lane(float32x4_t, float32x4_t, float32x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 90 || Rotation == 270)))
   float64x2_t fcadd(float64x2_t, float64x2_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)))
   float64x2_t fcmla(float64x2_t, float64x2_t, float64x2_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 90 || Rotation == 270)))
   float16x4_t fcadd(float16x4_t, float16x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)))
   float16x4_t fcmla(float16x4_t, float16x4_t, float16x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2))
   float16x4_t fcmla_lane(float16x4_t, float16x4_t, float16x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4))
   float16x4_t fcmla_lane(float16x4_t, float16x4_t, float16x8_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 90 || Rotation == 270)))
   float16x8_t fcadd(float16x8_t, float16x8_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation>
+  template<isa<arm> Arch, unsigned Rotation>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)))
   float16x8_t fcmla(float16x8_t, float16x8_t, float16x8_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2))
   float16x8_t fcmla_lane(float16x8_t, float16x8_t, float16x4_t) noexcept = delete;
 
-  template<isa Arch, unsigned Rotation, unsigned Lane>
+  template<isa<arm> Arch, unsigned Rotation, unsigned Lane>
     requires(!(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4))

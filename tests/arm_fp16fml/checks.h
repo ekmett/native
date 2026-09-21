@@ -3,14 +3,14 @@
 #include "simd_adapter.h"
 #include "simd_contract.h"
 namespace fp16fml_fixture {
-  constexpr native::isa arch{native::arm_feature::fp16fml};
-  template<native::isa A, class F, class H> concept available = requires(F f, H h) {
+  constexpr native::isa<native::arm> arch{native::arm_feature::fp16fml};
+  template<native::isa<native::arm> A, class F, class H> concept available = requires(F f, H h) {
     { fp16fml_api::fmlal<A>(f, h, h) } noexcept -> std::same_as<F>;
     { fp16fml_api::fmlal2<A>(f, h, h) } noexcept -> std::same_as<F>;
     { fp16fml_api::fmlsl<A>(f, h, h) } noexcept -> std::same_as<F>;
     { fp16fml_api::fmlsl2<A>(f, h, h) } noexcept -> std::same_as<F>;
   };
-  template<native::isa A, unsigned L, class F, class H, class B>
+  template<native::isa<native::arm> A, unsigned L, class F, class H, class B>
   concept lane_available = requires(F f, H h, B b) {
     fp16fml_api::fmlal_lane<A, L>(f, h, b);
     fp16fml_api::fmlal2_lane<A, L>(f, h, b);
@@ -21,7 +21,7 @@ namespace fp16fml_fixture {
   static_assert(!available<native::scalar, float32x2_t, float16x4_t>);
   static_assert(!available<native::neon, float32x2_t, float16x4_t>);
   static_assert(!available<native::neon_fp16, float32x2_t, float16x4_t>);
-  static_assert(!available<native::isa{native::arm_feature::complxnum}, float32x2_t, float16x4_t>);
+  static_assert(!available<native::isa<native::arm>{native::arm_feature::complxnum}, float32x2_t, float16x4_t>);
   static_assert(!available<native::neon_bf16, float32x2_t, float16x4_t>);
   static_assert(lane_available<arch, 3, float32x2_t, float16x4_t, float16x4_t>);
   static_assert(!lane_available<arch, 4, float32x2_t, float16x4_t, float16x4_t>);
@@ -31,7 +31,7 @@ namespace fp16fml_fixture {
   static_assert(!available<native::scalar, float32x4_t, float16x8_t>);
   static_assert(!available<native::neon, float32x4_t, float16x8_t>);
   static_assert(!available<native::neon_fp16, float32x4_t, float16x8_t>);
-  static_assert(!available<native::isa{native::arm_feature::complxnum}, float32x4_t, float16x8_t>);
+  static_assert(!available<native::isa<native::arm>{native::arm_feature::complxnum}, float32x4_t, float16x8_t>);
   static_assert(!available<native::neon_bf16, float32x4_t, float16x8_t>);
   static_assert(lane_available<arch, 3, float32x4_t, float16x8_t, float16x4_t>);
   static_assert(!lane_available<arch, 4, float32x4_t, float16x8_t, float16x4_t>);

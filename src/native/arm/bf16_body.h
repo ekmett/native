@@ -14,7 +14,7 @@ export namespace native {
   /// \{
 
   /// Accumulate each adjacent pair of BF16 products into the corresponding FP32 lane.
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 2, Arch> bfdot(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
@@ -24,7 +24,7 @@ export namespace native {
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 2)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
@@ -34,7 +34,7 @@ export namespace native {
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -44,7 +44,7 @@ export namespace native {
   }
 
   /// Accumulate each adjacent pair of BF16 products into the corresponding FP32 lane.
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfdot(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -53,7 +53,7 @@ export namespace native {
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 2)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
@@ -62,7 +62,7 @@ export namespace native {
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -71,7 +71,7 @@ export namespace native {
   }
 
   /// Accumulate a row-major 2x4 matrix times a column-major 4x2 matrix, two BFDOT steps per result.
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmmla(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -80,7 +80,7 @@ export namespace native {
   }
 
   /// Fused multiply-add of the even BF16 lanes into the corresponding FP32 lanes.
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmlalb(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -89,7 +89,7 @@ export namespace native {
   }
 
   /// Fused multiply-add of the even lanes of a with b[Lane] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
@@ -98,7 +98,7 @@ export namespace native {
   }
 
   /// Fused multiply-add of the even lanes of a with b[Lane] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -107,7 +107,7 @@ export namespace native {
   }
 
   /// Fused multiply-add of the odd BF16 lanes into the corresponding FP32 lanes.
-  template<isa Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::neon_bf16))
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmlalt(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -116,7 +116,7 @@ export namespace native {
   }
 
   /// Fused multiply-add of the odd lanes of a with b[Lane] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 4)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
@@ -125,7 +125,7 @@ export namespace native {
   }
 
   /// Fused multiply-add of the odd lanes of a with b[Lane] shared by all output lanes.
-  template<isa Arch, unsigned Lane>
+  template<isa<arm> Arch, unsigned Lane>
     requires(Arch.has(arm_feature::neon_bf16) && Lane < 8)
   native_nodiscard native_inline __attribute__((target("bf16")))
   simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
@@ -136,13 +136,13 @@ export namespace native {
   // Exact deduction rejects unrelated vectors and invalid immediates before
   // Clang's lax vector conversions can select an overload for another shape.
   /// \cond
-  template<isa Arch, class R, class A, class B> void bfdot(R, A, B) = delete;
-  template<isa Arch, class R, class A, class B> void bfmmla(R, A, B) = delete;
-  template<isa Arch, class R, class A, class B> void bfmlalb(R, A, B) = delete;
-  template<isa Arch, class R, class A, class B> void bfmlalt(R, A, B) = delete;
-  template<isa Arch, unsigned Lane, class R, class A, class B> void bfdot_lane(R, A, B) = delete;
-  template<isa Arch, unsigned Lane, class R, class A, class B> void bfmlalb_lane(R, A, B) = delete;
-  template<isa Arch, unsigned Lane, class R, class A, class B> void bfmlalt_lane(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfdot(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfmmla(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfmlalb(R, A, B) = delete;
+  template<isa<arm> Arch, class R, class A, class B> void bfmlalt(R, A, B) = delete;
+  template<isa<arm> Arch, unsigned Lane, class R, class A, class B> void bfdot_lane(R, A, B) = delete;
+  template<isa<arm> Arch, unsigned Lane, class R, class A, class B> void bfmlalb_lane(R, A, B) = delete;
+  template<isa<arm> Arch, unsigned Lane, class R, class A, class B> void bfmlalt_lane(R, A, B) = delete;
 
   /// \endcond
   /// \}

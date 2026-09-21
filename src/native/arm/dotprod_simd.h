@@ -11,7 +11,7 @@ namespace native {
  * \{ */
   // All vector operands share Arch; native registers remain implementation details.
   /// SDOT: four byte products per accumulator lane, modulo 2^32.
-  template<isa Arch> requires(Arch.has(arm_feature::dotprod))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::int32_t, 2, Arch> sdot(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -25,7 +25,7 @@ namespace native {
   }
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::int32_t, 2, Arch> sdot_lane(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -39,7 +39,7 @@ namespace native {
   }
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::int32_t, 2, Arch> sdot_lane(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -53,7 +53,7 @@ namespace native {
   }
 
   /// SDOT: four byte products per accumulator lane, modulo 2^32.
-  template<isa Arch> requires(Arch.has(arm_feature::dotprod))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::int32_t, 4, Arch> sdot(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -67,7 +67,7 @@ namespace native {
   }
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::int32_t, 4, Arch> sdot_lane(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -81,7 +81,7 @@ namespace native {
   }
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::int32_t, 4, Arch> sdot_lane(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -95,7 +95,7 @@ namespace native {
   }
 
   /// UDOT: four byte products per accumulator lane, modulo 2^32.
-  template<isa Arch> requires(Arch.has(arm_feature::dotprod))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::uint32_t, 2, Arch> udot(
       simd<std::uint32_t, 2, Arch> accumulator,
@@ -109,7 +109,7 @@ namespace native {
   }
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::uint32_t, 2, Arch> udot_lane(
       simd<std::uint32_t, 2, Arch> accumulator,
@@ -123,7 +123,7 @@ namespace native {
   }
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::uint32_t, 2, Arch> udot_lane(
       simd<std::uint32_t, 2, Arch> accumulator,
@@ -137,7 +137,7 @@ namespace native {
   }
 
   /// UDOT: four byte products per accumulator lane, modulo 2^32.
-  template<isa Arch> requires(Arch.has(arm_feature::dotprod))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::uint32_t, 4, Arch> udot(
       simd<std::uint32_t, 4, Arch> accumulator,
@@ -151,7 +151,7 @@ namespace native {
   }
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::uint32_t, 4, Arch> udot_lane(
       simd<std::uint32_t, 4, Arch> accumulator,
@@ -165,7 +165,7 @@ namespace native {
   }
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline native_const __attribute__((target("dotprod")))
   simd<std::uint32_t, 4, Arch> udot_lane(
       simd<std::uint32_t, 4, Arch> accumulator,
@@ -179,13 +179,13 @@ namespace native {
   }
 
   /// \cond
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void sdot(A, B, C) = delete;
-  template<isa Arch, int Lane, class A, class B, class C>
+  template<isa<arm> Arch, int Lane, class A, class B, class C>
   void sdot_lane(A, B, C) = delete;
-  template<isa Arch, class A, class B, class C>
+  template<isa<arm> Arch, class A, class B, class C>
   void udot(A, B, C) = delete;
-  template<isa Arch, int Lane, class A, class B, class C>
+  template<isa<arm> Arch, int Lane, class A, class B, class C>
   void udot_lane(A, B, C) = delete;
   /// \endcond
   /// \}

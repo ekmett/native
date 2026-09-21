@@ -14,7 +14,7 @@ namespace native {
  * \{ */
   // All vector operands share Arch; native registers remain implementation details.
   /// SQRDMLAH: signed 16-bit rounding saturating add.
-  template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   int16_t sqrdmlah(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
     auto result = detail::sqrdmlah<Arch>(
@@ -25,7 +25,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 4, Arch> rhs) noexcept {
     auto result = detail::sqrdmlah_lane<Arch, Lane>(
@@ -36,7 +36,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 8, Arch> rhs) noexcept {
     auto result = detail::sqrdmlah_lane<Arch, Lane>(
@@ -47,7 +47,7 @@ namespace native {
   }
 
   /// SQRDMLAH: signed 16-bit rounding saturating add.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 4, Arch> sqrdmlah(
       simd<std::int16_t, 4, Arch> accumulator,
@@ -61,7 +61,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 4, Arch> sqrdmlah_lane(
       simd<std::int16_t, 4, Arch> accumulator,
@@ -75,7 +75,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 4, Arch> sqrdmlah_lane(
       simd<std::int16_t, 4, Arch> accumulator,
@@ -89,7 +89,7 @@ namespace native {
   }
 
   /// SQRDMLAH: signed 16-bit rounding saturating add.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 8, Arch> sqrdmlah(
       simd<std::int16_t, 8, Arch> accumulator,
@@ -103,7 +103,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 8, Arch> sqrdmlah_lane(
       simd<std::int16_t, 8, Arch> accumulator,
@@ -117,7 +117,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 8, Arch> sqrdmlah_lane(
       simd<std::int16_t, 8, Arch> accumulator,
@@ -131,7 +131,7 @@ namespace native {
   }
 
   /// SQRDMLAH: signed 32-bit rounding saturating add.
-  template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   int32_t sqrdmlah(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
     auto result = detail::sqrdmlah<Arch>(
@@ -142,7 +142,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 2, Arch> rhs) noexcept {
     auto result = detail::sqrdmlah_lane<Arch, Lane>(
@@ -153,7 +153,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 4, Arch> rhs) noexcept {
     auto result = detail::sqrdmlah_lane<Arch, Lane>(
@@ -164,7 +164,7 @@ namespace native {
   }
 
   /// SQRDMLAH: signed 32-bit rounding saturating add.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 2, Arch> sqrdmlah(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -178,7 +178,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 2, Arch> sqrdmlah_lane(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -192,7 +192,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 2, Arch> sqrdmlah_lane(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -206,7 +206,7 @@ namespace native {
   }
 
   /// SQRDMLAH: signed 32-bit rounding saturating add.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 4, Arch> sqrdmlah(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -220,7 +220,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 4, Arch> sqrdmlah_lane(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -234,7 +234,7 @@ namespace native {
   }
 
   /// SQRDMLAH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 4, Arch> sqrdmlah_lane(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -248,7 +248,7 @@ namespace native {
   }
 
   /// SQRDMLSH: signed 16-bit rounding saturating subtract.
-  template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   int16_t sqrdmlsh(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
     auto result = detail::sqrdmlsh<Arch>(
@@ -259,7 +259,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 4, Arch> rhs) noexcept {
     auto result = detail::sqrdmlsh_lane<Arch, Lane>(
@@ -270,7 +270,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 8, Arch> rhs) noexcept {
     auto result = detail::sqrdmlsh_lane<Arch, Lane>(
@@ -281,7 +281,7 @@ namespace native {
   }
 
   /// SQRDMLSH: signed 16-bit rounding saturating subtract.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 4, Arch> sqrdmlsh(
       simd<std::int16_t, 4, Arch> accumulator,
@@ -295,7 +295,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 4, Arch> accumulator,
@@ -309,7 +309,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 4, Arch> accumulator,
@@ -323,7 +323,7 @@ namespace native {
   }
 
   /// SQRDMLSH: signed 16-bit rounding saturating subtract.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 8, Arch> sqrdmlsh(
       simd<std::int16_t, 8, Arch> accumulator,
@@ -337,7 +337,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 8, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 8, Arch> accumulator,
@@ -351,7 +351,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int16_t, 8, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 8, Arch> accumulator,
@@ -365,7 +365,7 @@ namespace native {
   }
 
   /// SQRDMLSH: signed 32-bit rounding saturating subtract.
-  template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   int32_t sqrdmlsh(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
     auto result = detail::sqrdmlsh<Arch>(
@@ -376,7 +376,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 2, Arch> rhs) noexcept {
     auto result = detail::sqrdmlsh_lane<Arch, Lane>(
@@ -387,7 +387,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 4, Arch> rhs) noexcept {
     auto result = detail::sqrdmlsh_lane<Arch, Lane>(
@@ -398,7 +398,7 @@ namespace native {
   }
 
   /// SQRDMLSH: signed 32-bit rounding saturating subtract.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 2, Arch> sqrdmlsh(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -412,7 +412,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 2, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -426,7 +426,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 2, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 2, Arch> accumulator,
@@ -440,7 +440,7 @@ namespace native {
   }
 
   /// SQRDMLSH: signed 32-bit rounding saturating subtract.
-  template<isa Arch> requires(Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 4, Arch> sqrdmlsh(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -454,7 +454,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -468,7 +468,7 @@ namespace native {
   }
 
   /// SQRDMLSH by element: broadcast rhs[Lane] before rounding and saturation.
-  template<isa Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
+  template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
   native_nodiscard native_inline __attribute__((target("rdm")))
   simd<std::int32_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 4, Arch> accumulator,
@@ -482,13 +482,13 @@ namespace native {
   }
 
   /// \cond
-  template<isa Arch=NATIVE_BASELINE, class A, class B, class C>
+  template<isa<arm> Arch=NATIVE_BASELINE, class A, class B, class C>
   void sqrdmlah(A, B, C) = delete;
-  template<isa Arch, int Lane, class A, class B, class C>
+  template<isa<arm> Arch, int Lane, class A, class B, class C>
   void sqrdmlah_lane(A, B, C) = delete;
-  template<isa Arch=NATIVE_BASELINE, class A, class B, class C>
+  template<isa<arm> Arch=NATIVE_BASELINE, class A, class B, class C>
   void sqrdmlsh(A, B, C) = delete;
-  template<isa Arch, int Lane, class A, class B, class C>
+  template<isa<arm> Arch, int Lane, class A, class B, class C>
   void sqrdmlsh_lane(A, B, C) = delete;
   /// \endcond
   /// \}

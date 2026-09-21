@@ -4,6 +4,8 @@
 32- and 64-bit operands. `native.arm` and `native` re-export them. Use `crc32`
 for the IEEE polynomial and `crc32c` for the Castagnoli polynomial. Both return
 an unsigned 32-bit accumulator and require `arm_feature::crc`.
+The `Arch` parameter has type `native::isa<native::arm>`; x86 and Wasm
+requirements cannot select an ARM operation, including during constant evaluation.
 
 Imported scalar calls may omit `Arch`, as in `crc32c(crc, word)`. The default
 is captured from `NATIVE_BASELINE` when `native.arm.crc` is compiled. Runtime
@@ -22,7 +24,7 @@ an actual call with a runtime value is rejected. Exact unsigned operand types
 are required in both cases. Ordinary headers retain C++20 compatibility.
 
 ```cpp
-static_assert(native::crc32<native::isa{}>(
+static_assert(native::crc32<native::isa<native::arm>{}>(
   std::uint32_t{0}, std::uint8_t{1}) == 0x77073096);
 ```
 

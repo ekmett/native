@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/arm/crc.h>
-constexpr auto requirements=native::target_features("crc");
+constexpr auto requirements=native::target_features<native::arm>("crc");
 extern "C" native_noinline native_target("crc")
 std::uint32_t native_crc32_8(std::uint32_t a,std::uint8_t b) {return native::crc32<requirements>(a,b);}
 extern "C" native_noinline native_target("crc")

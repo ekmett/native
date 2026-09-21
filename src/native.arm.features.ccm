@@ -34,13 +34,14 @@ export namespace native {
 
   /// \ingroup arm_capabilities
   /// Normalized OS-advertised ARM features; unknown platforms reject.
+  /// Both sets have type isa<arm>; foreign-family requirements are rejected by the type system.
   /// Admission reads present/observed. Crypto capabilities are independent;
   /// target_features expands compiler bundles before admitting a compiled target.
   struct arm_capabilities {
     /// Features whose queries succeeded and reported support; no compiler closure.
-    feature_set<arm_feature> present{};
+    isa<arm> present{};
     /// Features whose OS queries succeeded, whether present or absent.
-    feature_set<arm_feature> observed{};
+    isa<arm> observed{};
     /// Raw OS query results retained for diagnostics and enhanced BF16 behavior.
     struct raw_observations {
       /// True only after the OS baseline FP/Advanced SIMD query succeeds.
@@ -66,7 +67,7 @@ export namespace native {
       bool ebf16 = false;
       /// Additional independent instruction-feature queries.
       /// A feature must occur in both sets; failed queries never authorize it.
-      feature_set<arm_feature> extra_observed{}, extra_features{};
+      isa<arm> extra_observed{}, extra_features{};
     };
     /// Diagnostic snapshot; editing it does not update present/observed.
     raw_observations raw{};

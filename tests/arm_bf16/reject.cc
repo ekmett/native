@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "prelude.h"
 import native.arm.bf16;
-constexpr auto arch = native::feature_closure(native::isa{native::arm_feature::neon_bf16});
+constexpr auto arch = native::feature_closure(native::isa<native::arm>{native::arm_feature::neon_bf16});
 #if NATIVE_BF16_REJECT_CASE == 0
 native::simd<float, 4, arch> bad(native::simd<float, 4, arch> c,native::simd<native::bf16, 8, arch> a) {return native::bfdot<arch>(c,a,a);}
 #elif NATIVE_BF16_REJECT_CASE == 1

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/arm/fp16fml.h>
-constexpr native::isa arch{native::arm_feature::fp16fml};
+constexpr native::isa<native::arm> arch{native::arm_feature::fp16fml};
 
 extern "C" __attribute__((target("fp16fml")))
 void native_fmlal_2(float* output, float const* acc, __fp16 const* a, __fp16 const* b) {

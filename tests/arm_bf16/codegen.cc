@@ -3,7 +3,7 @@
 #include <native/arm/bf16.h>
 import native.arm.bf16;
 #include "simd_bridge.h"
-constexpr auto arch = native::feature_closure(native::isa{native::arm_feature::neon_bf16});
+constexpr auto arch = native::feature_closure(native::isa<native::arm>{native::arm_feature::neon_bf16});
 extern "C" __attribute__((target("bf16"),noinline)) float32x2_t native_bfdot_2_0_0(float32x2_t acc, bfloat16x4_t a, bfloat16x4_t b) {
   return instruction_fixture::bfdot<arch>(acc,a,b);
 }

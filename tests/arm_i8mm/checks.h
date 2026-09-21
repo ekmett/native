@@ -3,16 +3,16 @@
 #include "simd_adapter.h"
 #include "simd_contract.h"
 namespace i8mm_fixture {
-  constexpr auto feature=native::isa(native::arm_feature::i8mm);
+  constexpr auto feature=native::isa<native::arm>(native::arm_feature::i8mm);
   static_assert(native::feature_closure(feature)==(feature&native::neon));
-  static_assert(native::target_features("i8mm")==native::feature_closure(feature));
+  static_assert(native::target_features<native::arm>("i8mm")==native::feature_closure(feature));
   static_assert(std::uint64_t(native::arm_feature::pauth)==14);
   static_assert(std::uint64_t(native::arm_feature::i8mm)==15);
-  template<native::isa A> concept accepts=requires(int32x4_t c,int8x16_t a) {
+  template<native::isa<native::arm> A> concept accepts=requires(int32x4_t c,int8x16_t a) {
     i8mm_api::smmla<A>(c,a,a);
   };
   static_assert(accepts<feature> && !accepts<native::neon>);
-  static_assert(!accepts<native::isa(native::arm_feature::dotprod)>);
+  static_assert(!accepts<native::isa<native::arm>(native::arm_feature::dotprod)>);
   template<unsigned L> concept accepts_lane=requires(int32x4_t c,uint8x16_t a,int8x8_t b) {
     i8mm_api::usdot_lane<feature,L>(c,a,b);
   };

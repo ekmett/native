@@ -4,12 +4,12 @@
 #include "reference_cases.h"
 #include "../neon_bf16/reference_cases.h"
 namespace bf16_fixture {
-  constexpr auto arch = native::feature_closure(native::isa{native::arm_feature::neon_bf16});
-  template<native::isa A, class R, class V, class W>
+  constexpr auto arch = native::feature_closure(native::isa<native::arm>{native::arm_feature::neon_bf16});
+  template<native::isa<native::arm> A, class R, class V, class W>
   concept dot_valid = requires(R r, V v, W w) { native::bfdot<A>(r,v,w); };
-  template<native::isa A, unsigned Lane, class R, class V, class W>
+  template<native::isa<native::arm> A, unsigned Lane, class R, class V, class W>
   concept dot_lane_valid = requires(R r, V v, W w) { native::bfdot_lane<A,Lane>(r,v,w); };
-  template<native::isa A, unsigned Lane, class V>
+  template<native::isa<native::arm> A, unsigned Lane, class V>
   concept fma_lane_valid = requires(native::simd<float, 4, arch> r, native::simd<native::bf16, 8, arch> v, V w) { native::bfmlalb_lane<A,Lane>(r,v,w); native::bfmlalt_lane<A,Lane>(r,v,w); };
   static_assert(dot_valid<arch,native::simd<float, 2, arch>,native::simd<native::bf16, 4, arch>,native::simd<native::bf16, 4, arch>>);
   static_assert(dot_valid<arch,native::simd<float, 4, arch>,native::simd<native::bf16, 8, arch>,native::simd<native::bf16, 8, arch>>);

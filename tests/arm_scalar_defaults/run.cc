@@ -51,7 +51,7 @@ __attribute__((noinline)) static bool check(unsigned seed) {
 }
 int main(int argc,char**) {
   auto admitted = native::classify_isa(native::observe_arm_capabilities(),
-    native::target_features("neon,crc,aes,sha2,rdm"));
+    native::target_features<native::arm>("neon,crc,aes,sha2,rdm"));
   if(!admitted.admitted()) { std::puts(admitted.reason()); return 77; }
   if(!check(static_cast<unsigned>(argc))) { std::puts("ARM scalar default reference check failed"); return 1; }
   return 0;

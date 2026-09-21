@@ -3,7 +3,7 @@
 #include <native/arm/i8mm.h>
 import native.arm.i8mm;
 #include "simd_adapter.h"
-constexpr auto feature=native::isa(native::arm_feature::i8mm);
+constexpr auto feature=native::isa<native::arm>(native::arm_feature::i8mm);
 extern "C" {
 __attribute__((target("i8mm"),noinline)) int32x4_t native_smmla(int32x4_t c,int8x16_t a,int8x16_t b) { return i8mm_api::smmla<feature>(c,a,b); }
 __attribute__((target("i8mm"),noinline)) uint32x4_t native_ummla(uint32x4_t c,uint8x16_t a,uint8x16_t b) { return i8mm_api::ummla<feature>(c,a,b); }

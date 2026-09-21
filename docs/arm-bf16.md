@@ -94,7 +94,7 @@ bool available() {
 
 `arm_feature::ebf16` describes enhanced arithmetic support. Check its admission
 before setting FPCR.EBF; the feature bit alone does not set the control.
-`target_features("ebf16")` is rejected because Clang 23 has no standalone target
+`target_features<native::arm>("ebf16")` is rejected because Clang 23 has no standalone target
 feature with that spelling. Enhanced arithmetic uses the same BF16 instructions.
 
 Pass BF16 and FP32 `simd` values directly between vector algorithms and these APIs. The
