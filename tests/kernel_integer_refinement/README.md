@@ -50,3 +50,13 @@ in the main test driver, add this inside its existing test-enabled block:
 ```cmake
 add_subdirectory(tests/kernel_integer_refinement)
 ```
+
+`constexpr.h` exercises the public header and imported module in each existing
+scalar/NEON/AVX2/AVX-512 target cell. Seeded constant cases and native execution
+check population counts, representation roundtrips, unsigned widened sums,
+truncating concatenation, signed/unsigned masked arithmetic and bit selection.
+Boolean and full-mask transfers cover every partial count, null empty tails,
+fill values, untouched sentinels, mask casts and compact-predicate roundtrips.
+Each independent reference uses lane arithmetic; failures report the seed, case
+index and inputs. `NATIVE_TEST_SEED` and `NATIVE_TEST_CASES` select reproducible
+runtime cases. Existing unsupported-shape guards and codegen controls remain.

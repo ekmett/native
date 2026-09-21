@@ -20,7 +20,7 @@ namespace native {
         || sizeof(typename simd<From,N,Arch>::native_type) == 64
 #endif
       ))
-  native_nodiscard native_inline native_const auto reinterpret_bits(simd<From,N,Arch> value) noexcept
+  native_nodiscard native_inline constexpr native_const auto reinterpret_bits(simd<From,N,Arch> value) noexcept
       -> simd<To,sizeof(From)*N/sizeof(To),Arch> {
     using result = simd<To,sizeof(From)*N/sizeof(To),Arch>;
     // Keep native vectors in this target scope: the standard-library wrapper
@@ -33,10 +33,17 @@ namespace native {
   template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T) <= 4 && N > 1 && N % 2 == 0 &&
       detail::integer_arithmetic<T,N,Arch>)
-  native_nodiscard native_inline native_const auto pairwise_add_widened(simd<T,N,Arch> value) noexcept {
+  native_nodiscard native_inline constexpr native_const auto pairwise_add_widened(simd<T,N,Arch> value) noexcept {
     using U = std::conditional_t<sizeof(T)==1,std::uint16_t,
               std::conditional_t<sizeof(T)==2,std::uint32_t,std::uint64_t>>;
     using result = simd<U,N/2,Arch>;
+    if consteval {
+      std::array<T,N> source{};
+      value.store(source.data());
+      std::array<U,N/2> lanes{};
+      for(std::size_t i=0;i<N/2;++i) lanes[i]=U(source[2*i])+source[2*i+1];
+      return result(lanes);
+    }
     if constexpr (sizeof(T)==4 && N==2) {
       // A logical two-lane input has four physical lanes. Only the live pair
       // contributes to the scalar result, regardless of padding bits.
@@ -75,8 +82,14 @@ namespace native {
   /// Byte populations use CNT on NEON and register nibble tables on x86.
   template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && detail::integer_arithmetic<T,N,Arch>)
-  native_nodiscard native_inline native_const simd<T,N,Arch> popcount(simd<T,N,Arch> value) noexcept {
+  native_nodiscard native_inline constexpr native_const simd<T,N,Arch> popcount(simd<T,N,Arch> value) noexcept {
     using result = simd<T,N,Arch>;
+    if consteval {
+      std::array<T,N> lanes{};
+      value.store(lanes.data());
+      for(auto &lane:lanes) lane=T(std::popcount(lane));
+      return result(lanes);
+    }
     if constexpr (N==1) return result(T(std::popcount(value.to_native())));
     else if constexpr (sizeof(T)==4 && (N==2 || N==3))
       return result::from_storage(popcount(value.to_storage()));
@@ -138,7 +151,14 @@ namespace native {
   template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T)<=4 &&
       detail::integer_arithmetic<T,N,Arch>)
-  native_nodiscard native_inline native_const std::uint64_t reduce_add_widened(simd<T,N,Arch> value) noexcept {
+  native_nodiscard native_inline constexpr native_const std::uint64_t reduce_add_widened(simd<T,N,Arch> value) noexcept {
+    if consteval {
+      std::array<T,N> lanes{};
+      value.store(lanes.data());
+      std::uint64_t sum=0;
+      for(auto lane:lanes) sum+=lane;
+      return sum;
+    }
     if constexpr (N==1) return value.to_native();
     else if constexpr (sizeof(T)==4 && (N==2 || N==3)) {
       auto lanes = value.to_native();
