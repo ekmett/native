@@ -12,11 +12,13 @@ namespace native::detail::arm_neon {
   native_inline native_target("neon") V register_order(V value,
     std::index_sequence<I...>) noexcept {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    if constexpr (sizeof(V) == 16 && sizeof(value[0]) > 1) {
-      constexpr auto bytes = sizeof(value[0]);
+    // Clang maps a 128-bit inline-asm vector operand as bytes on big endian.
+    // Cancel that whole-register byte permutation, independently of lane width.
+    // Its 64-bit asm operands already use the ACLE register representation.
+    if constexpr (sizeof(V) == 16) {
       auto raw = __builtin_bit_cast(uint8x16_t, value);
       return __builtin_bit_cast(
-        V, __builtin_shufflevector(raw, raw, ((I / bytes) * bytes + bytes - 1 - I % bytes)...));
+        V, __builtin_shufflevector(raw, raw, (15 - I)...));
     }
 #endif
     return value;
@@ -24,6 +26,24 @@ namespace native::detail::arm_neon {
 
   template<class V> native_inline native_target("neon") V register_order(V value) noexcept {
     return register_order(value, std::make_index_sequence<16>{});
+  }
+
+  // The narrowing-high instruction overwrites the upper 64 register bits.
+  // Duplicate the low vector on BE so widening needs no constant-table shuffle.
+  template<class V, std::size_t... I>
+  native_inline native_target("neon") auto low_register(V low, std::index_sequence<I...>) noexcept {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+    using result_type = decltype(__builtin_shufflevector(low, low, I...));
+    result_type result;
+    asm("dup %0.2d, %1.d[0]" : "=w"(result) : "w"(low));
+    return result;
+#else
+    return register_order(__builtin_shufflevector(low, V{}, I...));
+#endif
+  }
+
+  template<class V> native_inline native_target("neon") auto low_register(V low) noexcept {
+    return low_register(low, std::make_index_sequence<2 * sizeof(V) / sizeof(low[0])>{});
   }
 
   template<class R, class V> native_inline native_target("neon") R to_register(V value) noexcept {
@@ -887,8 +907,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") int8x16_t sqxtn_high(int8x8_t low, int16x8_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, int8x8_t{}, 0, 1, 2, 3, 4, 5, 6, 7, 8,
-                                                         9, 10, 11, 12, 13, 14, 15));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("sqxtn2 %0.16b, %1.8h" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -902,7 +921,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") int16x8_t sqxtn_high(int16x4_t low, int32x4_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, int16x4_t{}, 0, 1, 2, 3, 4, 5, 6, 7));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("sqxtn2 %0.8h, %1.4s" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -916,7 +935,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") int32x4_t sqxtn_high(int32x2_t low, int64x2_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, int32x2_t{}, 0, 1, 2, 3));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("sqxtn2 %0.4s, %1.2d" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -930,8 +949,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") uint8x16_t uqxtn_high(uint8x8_t low, uint16x8_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, uint8x8_t{}, 0, 1, 2, 3, 4, 5, 6, 7,
-                                                         8, 9, 10, 11, 12, 13, 14, 15));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("uqxtn2 %0.16b, %1.8h" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -945,8 +963,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") uint16x8_t uqxtn_high(uint16x4_t low, uint32x4_t a) noexcept {
-    auto result =
-        register_order(__builtin_shufflevector(low, uint16x4_t{}, 0, 1, 2, 3, 4, 5, 6, 7));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("uqxtn2 %0.8h, %1.4s" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -960,7 +977,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") uint32x4_t uqxtn_high(uint32x2_t low, uint64x2_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, uint32x2_t{}, 0, 1, 2, 3));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("uqxtn2 %0.4s, %1.2d" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -974,8 +991,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") uint8x16_t sqxtun_high(uint8x8_t low, int16x8_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, uint8x8_t{}, 0, 1, 2, 3, 4, 5, 6, 7,
-                                                         8, 9, 10, 11, 12, 13, 14, 15));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("sqxtun2 %0.16b, %1.8h" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -989,8 +1005,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") uint16x8_t sqxtun_high(uint16x4_t low, int32x4_t a) noexcept {
-    auto result =
-        register_order(__builtin_shufflevector(low, uint16x4_t{}, 0, 1, 2, 3, 4, 5, 6, 7));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("sqxtun2 %0.8h, %1.4s" : "+w"(result) : "w"(source));
     return register_order(result);
@@ -1004,7 +1019,7 @@ namespace native::detail::arm_neon {
   }
 
   native_inline native_target("neon") uint32x4_t sqxtun_high(uint32x2_t low, int64x2_t a) noexcept {
-    auto result = register_order(__builtin_shufflevector(low, uint32x2_t{}, 0, 1, 2, 3));
+    auto result = low_register(low);
     auto source = register_order(a);
     asm volatile("sqxtun2 %0.4s, %1.2d" : "+w"(result) : "w"(source));
     return register_order(result);

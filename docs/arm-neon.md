@@ -62,3 +62,10 @@ reference, randomized native execution, FPSR.QC tests and identical raw/public
 assembly streams. It also checks feature, caller-target, shape and signedness
 boundaries, preserved architecture tags, and public module imports. The same
 fixture is an installed-package consumer through `find_package(native)`.
+
+Big-endian compiler validation compares all 122 instruction shapes and their
+storage bridges with Clang's ACLE lowering. It symbolically checks register-bit
+permutations and the sticky QC contributions, including low/high narrowing and
+padded two-word storage. The 128-bit inline-assembly boundary reverses the complete
+register byte order; 64-bit operands already have the ACLE representation.
+This is cross-compiled layout evidence, not execution on a big-endian host.

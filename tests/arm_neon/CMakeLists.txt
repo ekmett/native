@@ -56,3 +56,10 @@ foreach(kind IN ITEMS feature target shape)
   set_tests_properties(native.arm.neon.reject_${kind} PROPERTIES
     LABELS "arm;neon;negative" RUN_SERIAL TRUE)
 endforeach()
+
+add_test(NAME native.arm.neon.big_endian_codegen COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check_big_endian.py"
+  --compiler "${CMAKE_CXX_COMPILER}"
+  --header "${PROJECT_SOURCE_DIR}/src/native/arm/neon.h"
+  --output-dir "${CMAKE_CURRENT_BINARY_DIR}/big-endian")
+set_tests_properties(native.arm.neon.big_endian_codegen PROPERTIES LABELS "arm;neon;codegen;big-endian")
