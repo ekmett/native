@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+cmake_minimum_required(VERSION 4.4)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_instruction_storage_consumer LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+  enable_testing()
+endif()
+add_executable(native_test_instruction_storage main.cc)
+target_link_libraries(native_test_instruction_storage PRIVATE native::native)
+set_target_properties(native_test_instruction_storage PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+add_test(NAME native.instruction_storage COMMAND native_test_instruction_storage)
+set_tests_properties(native.instruction_storage PROPERTIES LABELS "host;modules;storage")

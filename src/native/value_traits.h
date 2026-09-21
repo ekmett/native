@@ -39,12 +39,13 @@ namespace native {
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
-    template<class T,std::size_t N,isa A>
-      requires (std::same_as<T,float> || std::same_as<T,bool> || is_mask_lane<T> ||
-        std::same_as<T,std::int8_t> || std::same_as<T,std::uint8_t> ||
-        std::same_as<T,std::int16_t> || std::same_as<T,std::uint16_t> ||
-        std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t> ||
-        std::same_as<T,std::int64_t> || std::same_as<T,std::uint64_t>)
+    template<class T> concept ordinary_simd_element =
+      std::same_as<T,float> || std::same_as<T,bool> || is_mask_lane<T> ||
+      std::same_as<T,std::int8_t> || std::same_as<T,std::uint8_t> ||
+      std::same_as<T,std::int16_t> || std::same_as<T,std::uint16_t> ||
+      std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t> ||
+      std::same_as<T,std::int64_t> || std::same_as<T,std::uint64_t>;
+    template<class T,std::size_t N,isa A> requires ordinary_simd_element<T>
     struct value_traits<simd<T,N,A>> {
       static constexpr isa value=abi_lookup<A,raw_kernel_policies>::architecture;
       static constexpr bool known=true;

@@ -30,3 +30,5 @@ export namespace native { using ::native::mask_traits; }
 #include "native/simd/neon_bf16_body.h"
 #include "native/simd/neon_fp16_body.h"
 #endif
+
+#include "native/simd/instruction_storage_body.h"
