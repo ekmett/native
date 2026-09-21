@@ -81,37 +81,16 @@ endforeach()
 
 add_executable(native_test_wasm_relaxed_dot_engine dot_engine.cc)
 target_compile_features(native_test_wasm_relaxed_dot_engine PRIVATE cxx_std_26)
-add_test(NAME native.wasm.relaxed.engine.dot COMMAND "${NATIVE_WASM_NODE}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_relaxed_dot_engine>)
-set_tests_properties(native.wasm.relaxed.engine.dot PROPERTIES LABELS "wasm;engine-conformance;relaxed_simd")
+add_executable(native_test_wasm_relaxed_laneselect_engine laneselect_engine.cc)
+target_compile_features(native_test_wasm_relaxed_laneselect_engine PRIVATE cxx_std_26)
 
 find_program(NATIVE_WASM_WASMTIME NAMES wasmtime)
 if(NATIVE_WASM_WASMTIME)
-  foreach(interface IN ITEMS main dot_engine)
-    add_test(NAME native.wasm.relaxed.wasmtime.${interface} COMMAND "${NATIVE_WASM_WASMTIME}"
-      run -Ccache=n -Wsimd=y -Wrelaxed-simd=y $<TARGET_FILE:native_test_wasm_relaxed_${interface}>)
-    set_tests_properties(native.wasm.relaxed.wasmtime.${interface} PROPERTIES LABELS "wasm;wasmtime;relaxed_simd")
-  endforeach()
-  add_test(NAME native.wasm.relaxed.wasmtime.dot_deterministic COMMAND "${NATIVE_WASM_WASMTIME}"
-    run -Ccache=n -Wsimd=y -Wrelaxed-simd=y -Wrelaxed-simd-deterministic=y
-    $<TARGET_FILE:native_test_wasm_relaxed_dot_engine> --deterministic)
-  set_tests_properties(native.wasm.relaxed.wasmtime.dot_engine
-    native.wasm.relaxed.wasmtime.dot_deterministic PROPERTIES LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
+  add_test(NAME native.wasm.relaxed.wasmtime.main COMMAND "${NATIVE_WASM_WASMTIME}"
+    run -Ccache=n -Wsimd=y -Wrelaxed-simd=y $<TARGET_FILE:native_test_wasm_relaxed_main>)
+  set_tests_properties(native.wasm.relaxed.wasmtime.main PROPERTIES LABELS "wasm;wasmtime;relaxed_simd")
 endif()
 
-add_executable(native_test_wasm_relaxed_laneselect_engine laneselect_engine.cc)
-target_compile_features(native_test_wasm_relaxed_laneselect_engine PRIVATE cxx_std_26)
-add_test(NAME native.wasm.relaxed.engine.laneselect COMMAND "${NATIVE_WASM_NODE}"
-  "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>)
-set_tests_properties(native.wasm.relaxed.engine.laneselect PROPERTIES
-  LABELS "wasm;engine-conformance;relaxed_simd")
-if(NATIVE_WASM_WASMTIME)
-  add_test(NAME native.wasm.relaxed.wasmtime.laneselect_engine COMMAND "${NATIVE_WASM_WASMTIME}"
-    run -Ccache=n -Wsimd=y -Wrelaxed-simd=y $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>)
-  add_test(NAME native.wasm.relaxed.wasmtime.laneselect_deterministic COMMAND "${NATIVE_WASM_WASMTIME}"
-    run -Ccache=n -Wsimd=y -Wrelaxed-simd=y -Wrelaxed-simd-deterministic=y
-    $<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine> --deterministic)
-  set_tests_properties(native.wasm.relaxed.wasmtime.laneselect_engine
-    native.wasm.relaxed.wasmtime.laneselect_deterministic
-    PROPERTIES LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
-endif()
+include("${CMAKE_CURRENT_LIST_DIR}/engine_tests.cmake")
+native_add_wasm_engine_tests("$<TARGET_FILE:native_test_wasm_relaxed_dot_engine>"
+  "$<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>")

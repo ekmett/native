@@ -63,6 +63,12 @@ partial 16-bit lane-selection masks expose engine/specification disagreements
 in tested runtimes. Seven-bit second operands avoid the dot ambiguity, and
 canonical zero/all-one masks have exact lane-selection semantics.
 
+CI reports library qualification and raw-engine conformance independently.
+Raw probes use the same built modules and retain ordinary test failures.
+The public wrappers inherit the documented engine deviations on affected inputs;
+passing the library checks does not establish full runtime specification
+conformance on those engines.
+
 The semantic reference is the [WebAssembly core numerics specification](https://webassembly.github.io/spec/core/exec/numerics.html#relaxed-ops),
 pinned for these checks at [revision ba9fd9f5](https://github.com/WebAssembly/spec/blob/ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0/document/core/exec/numerics.rst).
 The native mappings use [Clang's `wasm_simd128.h`](https://clang.llvm.org/doxygen/wasm__simd128_8h_source.html).

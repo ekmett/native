@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  wasm:
-    name: WASI Clang 23 / ${{ matrix.platform.name }}
+  library:
+    name: Library qualification / WASI Clang 23 / ${{ matrix.platform.name }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 30
     defaults:
@@ -87,6 +87,7 @@ jobs:
             wasmtime --version
           } | tee build/wasm-environment.log
       - name: Build C++26 module providers and consumers
+        id: build
         run: |
           cmake -S . -B build/wasm -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
@@ -138,15 +139,26 @@ jobs:
             ctest --test-dir "$consumer" --no-tests=error --output-on-failure \
               --output-junit "$GITHUB_WORKSPACE/build/wasm-minimum-$level-tests.xml"
           done
-      - name: Check raw engine conformance against the core specification
+      - name: Stage the exact raw engine modules
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          ctest --test-dir build/wasm -L engine-conformance --no-tests=error --output-on-failure \
-            --output-junit "$GITHUB_WORKSPACE/build/wasm-engine-tests.xml"
+          mkdir -p build/raw-engine
+          cp build/wasm/tests/wasm_relaxed/native_test_wasm_relaxed_dot_engine build/raw-engine/dot.wasm
+          cp build/wasm/tests/wasm_relaxed/native_test_wasm_relaxed_laneselect_engine build/raw-engine/laneselect.wasm
+          git rev-parse HEAD > build/raw-engine/source-revision.txt
+          (cd build/raw-engine && sha256sum dot.wasm laneselect.wasm > SHA256SUMS)
+      - name: Publish raw engine modules
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wasm-raw-modules-${{ matrix.platform.name }}
+          if-no-files-found: error
+          path: build/raw-engine/
       - name: Retain Wasm artifacts and validation logs
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: wasm-${{ matrix.platform.name }}
+          name: wasm-library-${{ matrix.platform.name }}
           if-no-files-found: ignore
           path: |
             build/wasm-environment.log
@@ -163,3 +175,84 @@ jobs:
             build/wasm/Testing/Temporary/
             build/wasm_*/Testing/Temporary/
             build/wasm_boundaries/boundaries/
+
+  engine:
+    name: Raw engine conformance / Node 24 + Wasmtime 49 / ${{ matrix.platform.name }}
+    needs: library
+    if: ${{ !cancelled() && needs.library.result != 'skipped' }}
+    runs-on: ${{ matrix.platform.runner }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: x86-64
+            runner: ubuntu-24.04
+            runtime: x86_64
+            runtime_sha256: a956c279ac6e80109369a285db30fc46f68239fa1bbeb03ccfa8e913bbca85fc
+          - name: ARM64
+            runner: ubuntu-24.04-arm
+            runtime: aarch64
+            runtime_sha256: 211255e48fcf3107e6ea357b6214938c4f45e29ea1b295398e7ab6b269d51294
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup/ubuntu/build-tools
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install the verified Wasmtime release
+        env:
+          RUNTIME_ARCH: ${{ matrix.platform.runtime }}
+          RUNTIME_SHA256: ${{ matrix.platform.runtime_sha256 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/wasm-tools"
+          cd "$RUNNER_TEMP/wasm-tools"
+          runtime="wasmtime-v49.0.0-${RUNTIME_ARCH}-linux"
+          curl --fail --location --retry 3 -o "$runtime.tar.xz" \
+            "https://github.com/bytecodealliance/wasmtime/releases/download/v49.0.0/$runtime.tar.xz"
+          echo "$RUNTIME_SHA256  $runtime.tar.xz" | sha256sum --check -
+          tar -xJf "$runtime.tar.xz"
+          echo "$PWD/$runtime" >> "$GITHUB_PATH"
+      - name: Download the raw modules from this run
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: wasm-raw-modules-${{ matrix.platform.name }}
+          path: build/raw-engine
+      - name: Verify raw module provenance and record the engine host
+        run: |
+          test "$(cat build/raw-engine/source-revision.txt)" = "$(git rev-parse HEAD)"
+          (cd build/raw-engine && sha256sum --check SHA256SUMS)
+          {
+            git rev-parse HEAD
+            uname -a
+            lscpu
+            cmake --version
+            node --version
+            wasmtime --version
+          } | tee build/wasm-engine-environment.log
+      - name: Check all six raw engine conformance gates
+        run: |
+          cmake -S tests/wasm_relaxed/engine -B build/engine \
+            "-DNATIVE_WASM_ENGINE_MODULE_DIR=$GITHUB_WORKSPACE/build/raw-engine"
+          ctest --test-dir build/engine --show-only=json-v1 > build/wasm-engine-tests.json
+          ctest --test-dir build/engine --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/wasm-engine-tests.xml"
+      - name: Retain raw engine modules and conformance logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wasm-engine-${{ matrix.platform.name }}
+          if-no-files-found: ignore
+          path: |
+            build/raw-engine/
+            build/wasm-engine-environment.log
+            build/wasm-engine-tests.json
+            build/wasm-engine-tests.xml
+            build/engine/CMakeCache.txt
+            build/engine/CMakeFiles/CMakeConfigureLog.yaml
+            build/engine/Testing/Temporary/

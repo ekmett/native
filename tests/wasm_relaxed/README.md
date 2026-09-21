@@ -50,6 +50,26 @@ with Wasmtime's deterministic relaxed-SIMD option. The raw executables accept
 `--deterministic` to require parameter zero: signed, saturated dot pairs and bit
 selection. This argument changes the oracle; it does not configure the engine.
 
+CI reports **Library qualification** and **Raw engine conformance** as separate
+checks on each host. Library qualification runs the source tests, exact opcode
+comparisons, relocated consumers and compiler-minimum checks. The raw-engine
+job consumes the two raw modules from that same build, verifies their source
+revision and SHA256 digests, then runs all six conformance gates under Node 24
+and the same verified Wasmtime release. Both checks retain ordinary failure
+semantics and upload their logs; known engine failures are not suppressed.
+
+The raw-module artifact contains `dot.wasm` and `laneselect.wasm`. Its gates can
+also be run without rebuilding the library or installing a WASI compiler:
+
+```sh
+cmake -S tests/wasm_relaxed/engine -B build-engine \
+  -DNATIVE_WASM_ENGINE_MODULE_DIR=/path/to/raw-modules
+ctest --test-dir build-engine --no-tests=error --output-on-failure
+```
+
+This test project requires both Node and Wasmtime and shares its six test
+registrations with the source and installed-consumer fixtures.
+
 ## Raw-engine conformance discrepancies
 
 The pinned semantic source is
@@ -65,7 +85,7 @@ requires `(dot, dot_add) = (32767, 65534)`. Unsigned interpretation requires
 `(-32768, -65536)`. With `a = 1`, `b = 255`, signed interpretation gives `(-2,-4)`
 and unsigned interpretation gives `(510,1020)`.
 
-The raw test currently fails on ARM64 in Node 23.11.0: its first pair is
+The raw test currently fails on ARM64 in Node 23.11.0 and 24.19.0: its first pair is
 `(-32768,-65536)` and its second pair is `(-2,-4)`, so no fixed interpretation
 matches both. Wasmtime 49.0.0 (`17830bd3c`), both default and deterministic mode,
 produces `(-32768,65536)` for the first case and `(-2,-4)` for the second. Its
@@ -85,8 +105,10 @@ fails the requirement for one interpretation shared across all lane widths,
 lanes and calls. Its deterministic lane-selection mode passes. Ordinary Node
 and Wasmtime x86 dot checks pass; Wasmtime's deterministic dot mode fails.
 
-The tested toolchain is WASI SDK 34 / Clang 23.1.0. Passing wrapper, constant and
-opcode checks does not establish full engine conformance or agreement across
-other engines or architectures.
+The tested toolchain is WASI SDK 34 / Clang 23.1.0. The public runtime wrappers
+inherit these engine limitations because they emit the same instructions.
+Passing wrapper, constant and opcode checks establishes the mappings and tested
+library contracts; it does not establish full runtime specification conformance
+on the affected engines or agreement across other engines or architectures.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
