@@ -60,7 +60,7 @@ foreach(family RANGE 0 1)
 endforeach()
 
 # Resolve the real Wasm predefines without a C++ sysroot, then type-check the
-# resulting ISA expressions against the public metadata on the native host.
+# resulting feature expressions as explicit isa<wasm> values on the native host.
 set(wasm_baseline_source "${CMAKE_CURRENT_BINARY_DIR}/wasm-baseline.cc")
 add_custom_command(OUTPUT "${wasm_baseline_source}"
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/baseline.py"
