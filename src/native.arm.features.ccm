@@ -3,7 +3,6 @@
 module;
 #include <cstdint>
 #include <cstddef>
-#include "native/isa.h"
 #if defined(__APPLE__)
 #include <cerrno>
 #include <sys/sysctl.h>
