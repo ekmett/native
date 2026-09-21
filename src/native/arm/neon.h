@@ -8,25 +8,25 @@
 #include <arm_neon.h>
 
 namespace native::detail::arm_neon {
-  template <class V, std::size_t... I>
+  template<class V, std::size_t... I>
   native_inline native_target("neon") V register_order(V value,
-                                                       std::index_sequence<I...>) noexcept {
+    std::index_sequence<I...>) noexcept {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
     if constexpr (sizeof(V) == 16 && sizeof(value[0]) > 1) {
       constexpr auto bytes = sizeof(value[0]);
       auto raw = __builtin_bit_cast(uint8x16_t, value);
       return __builtin_bit_cast(
-          V, __builtin_shufflevector(raw, raw, ((I / bytes) * bytes + bytes - 1 - I % bytes)...));
+        V, __builtin_shufflevector(raw, raw, ((I / bytes) * bytes + bytes - 1 - I % bytes)...));
     }
 #endif
     return value;
   }
 
-  template <class V> native_inline native_target("neon") V register_order(V value) noexcept {
+  template<class V> native_inline native_target("neon") V register_order(V value) noexcept {
     return register_order(value, std::make_index_sequence<16>{});
   }
 
-  template <class R, class V> native_inline native_target("neon") R to_register(V value) noexcept {
+  template<class R, class V> native_inline native_target("neon") R to_register(V value) noexcept {
     if constexpr (sizeof(R) == sizeof(typename V::native_type))
       return __builtin_bit_cast(R, value.to_native());
     else {
@@ -35,15 +35,15 @@ namespace native::detail::arm_neon {
     }
   }
 
-  template <class V, class R>
+  template<class V, class R>
   native_inline native_target("neon") V from_register(R value) noexcept {
     if constexpr (sizeof(R) == sizeof(typename V::native_type))
       return V::from_native(__builtin_bit_cast(typename V::native_type, value));
     else {
       auto bytes = __builtin_bit_cast(uint8x8_t, value);
       return V::from_native(__builtin_bit_cast(
-          typename V::native_type, __builtin_shufflevector(bytes, uint8x8_t{}, 0, 1, 2, 3, 4, 5, 6,
-                                                           7, 8, 9, 10, 11, 12, 13, 14, 15)));
+        typename V::native_type, __builtin_shufflevector(bytes, uint8x8_t{}, 0, 1, 2, 3, 4, 5, 6,
+          7, 8, 9, 10, 11, 12, 13, 14, 15)));
     }
   }
 

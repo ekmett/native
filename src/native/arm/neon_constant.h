@@ -4,7 +4,7 @@
 #include <limits>
 
 namespace native::detail::arm_neon_constant {
-  template <class T> constexpr T add(T a, T b) noexcept {
+  template<class T> constexpr T add(T a, T b) noexcept {
     constexpr auto lo = std::numeric_limits<T>::min();
     constexpr auto hi = std::numeric_limits<T>::max();
     if constexpr (std::is_signed_v<T>) {
@@ -18,7 +18,7 @@ namespace native::detail::arm_neon_constant {
     return T(a + b);
   }
 
-  template <class T> constexpr T sub(T a, T b) noexcept {
+  template<class T> constexpr T sub(T a, T b) noexcept {
     constexpr auto lo = std::numeric_limits<T>::min();
     constexpr auto hi = std::numeric_limits<T>::max();
     if constexpr (std::is_signed_v<T>) {
@@ -32,7 +32,7 @@ namespace native::detail::arm_neon_constant {
     return T(a - b);
   }
 
-  template <class To, class From> constexpr To narrow(From a) noexcept {
+  template<class To, class From> constexpr To narrow(From a) noexcept {
     if (a < From(std::numeric_limits<To>::min()))
       return std::numeric_limits<To>::min();
     if (a > From(std::numeric_limits<To>::max()))
@@ -40,7 +40,7 @@ namespace native::detail::arm_neon_constant {
     return To(a);
   }
 
-  template <bool Round, class T> constexpr T multiply_high(T a, T b) noexcept {
+  template<bool Round, class T> constexpr T multiply_high(T a, T b) noexcept {
     constexpr unsigned width = sizeof(T) * 8;
     auto product = std::int64_t(a) * b;
     if constexpr (Round)
@@ -48,7 +48,7 @@ namespace native::detail::arm_neon_constant {
     return narrow<T>(product >> (width - 1));
   }
 
-  template <bool Round, bool Saturate, class T, class S>
+  template<bool Round, bool Saturate, class T, class S>
   constexpr T shift(T value, S count) noexcept {
     using U = std::make_unsigned_t<T>;
     constexpr unsigned width = sizeof(T) * 8;
@@ -89,7 +89,7 @@ namespace native::detail::arm_neon_constant {
     return result;
   }
 
-  template <class V, class W, class F> constexpr V binary(V a, W b, F operation) noexcept {
+  template<class V, class W, class F> constexpr V binary(V a, W b, F operation) noexcept {
     auto left = arm_constant::lanes(a);
     auto right = arm_constant::lanes(b);
     for (unsigned i = 0; i < V::lanes; ++i)
@@ -97,7 +97,7 @@ namespace native::detail::arm_neon_constant {
     return arm_constant::pack<V>(left);
   }
 
-  template <class Result, class V> constexpr Result narrow_low(V input) noexcept {
+  template<class Result, class V> constexpr Result narrow_low(V input) noexcept {
     auto source = arm_constant::lanes(input);
     std::array<typename Result::value_type, Result::lanes> result{};
     for (unsigned i = 0; i < Result::lanes; ++i)
@@ -105,7 +105,7 @@ namespace native::detail::arm_neon_constant {
     return arm_constant::pack<Result>(result);
   }
 
-  template <class Result, class Low, class V>
+  template<class Result, class Low, class V>
   constexpr Result narrow_high(Low low, V input) noexcept {
     auto bottom = arm_constant::lanes(low);
     auto source = arm_constant::lanes(input);

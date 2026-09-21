@@ -220,7 +220,7 @@ jobs:
           if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
             suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_aes x86_gfni x86_vpopcntdq x86_avx512cd x86_pclmul x86_vnni x86_f16c x86_scalar_defaults x86_constexpr x86_integer_constexpr)
           else
-            suites+=(neon_fp16 neon_bf16 arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_bf16 arm_crc arm_crypto arm_scalar_defaults arm_constexpr)
+            suites+=(neon_fp16 neon_bf16 arm_neon arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_bf16 arm_crc arm_crypto arm_scalar_defaults arm_constexpr)
           fi
           for suite in "${suites[@]}"; do
             cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
@@ -288,6 +288,7 @@ jobs:
             build/core/tests/x86_crc32c/reject-*.log
             build/x86_crc32c/*.disassembly
             build/x86_crc32c/reject-*.log
+            build/core/tests/arm_neon/paired-*.json
             build/core/tests/arm_*/*codegen.txt
             build/core/tests/arm_*/*.disassembly
             build/core/tests/arm_*/negative-*.txt
