@@ -21,7 +21,7 @@ namespace native {
     auto result = detail::fcadd<Arch, Rotation>(
       vget_low_f32(a.to_native()),
       vget_low_f32(b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FCMLA on 1 binary32 complex pair(s), rotation in degrees.
@@ -36,7 +36,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       vget_low_f32(a.to_native()),
       vget_low_f32(b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -53,7 +53,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       vget_low_f32(a.to_native()),
       vget_low_f32(b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FCMLA using complex pair Lane of b (the lane indexes pairs, not scalars).
@@ -70,7 +70,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       vget_low_f32(a.to_native()),
       __builtin_bit_cast(float32x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FCADD on 2 binary32 complex pair(s), rotation in degrees.

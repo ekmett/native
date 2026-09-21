@@ -22,7 +22,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -36,7 +36,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -50,7 +50,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// Add products from the low 4 half lanes of a and b.
@@ -106,7 +106,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -120,7 +120,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -134,7 +134,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// Add products from the high 4 half lanes of a and b.
@@ -190,7 +190,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -204,7 +204,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -218,7 +218,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// Subtract products from the low 4 half lanes of a and b.
@@ -274,7 +274,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -288,7 +288,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x4_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -302,7 +302,7 @@ namespace native {
       vget_low_f32(acc.to_native()),
       __builtin_bit_cast(float16x4_t, a.to_native()),
       __builtin_bit_cast(float16x8_t, b.to_native()));
-    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0)));
+    return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
   }
 
   /// Subtract products from the high 4 half lanes of a and b.
