@@ -58,7 +58,9 @@ for present in (0, 1):
             continue
         else:
             syntax.append(arg)
-    syntax.append('/clang:-fsyntax-only' if cl else '-fsyntax-only')
+    # CMake's clang-cl command ends its options with -- before the source path.
+    # Keep our extra option ahead of that marker so it is not treated as a file.
+    syntax.insert(1, '/clang:-fsyntax-only' if cl else '-fsyntax-only')
     for name, arch, succeeds in (
         ('same-importer', None, True),
         ('stronger-importer', 'armv8.1-a+nolse+crc+aes+sha2+rdm+dotprod', None),
