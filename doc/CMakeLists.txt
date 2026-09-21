@@ -116,6 +116,34 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
   "${PROJECT_SOURCE_DIR}/src/native.wide.ccm")
 list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/src/native.wide.ccm")
 
+# Doxygen 1.18 assigns bodies included inside an export block to the module
+# file, but retains their header line numbers. Move the export to the namespace
+# in the rendering copies so source links name the header that owns each body.
+# The declarations, comments and line counts stay unchanged.
+set(docs_instruction_inputs)
+foreach(family IN ITEMS dotprod rdm fp16fml fcma i8mm)
+  set(module_path "src/native.arm.${family}.ccm")
+  set(body_path "src/native/arm/${family}_simd.h")
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${PROJECT_SOURCE_DIR}/${module_path}" "${PROJECT_SOURCE_DIR}/${body_path}")
+  file(READ "${PROJECT_SOURCE_DIR}/${module_path}" module_text)
+  file(READ "${PROJECT_SOURCE_DIR}/${body_path}" body_text)
+  set(body_include "#include \"native/arm/${family}_simd.h\"")
+  set(export_block "export {\n${body_include}\n}")
+  string(FIND "${module_text}" "${export_block}" export_offset)
+  string(FIND "${body_text}" "\nnamespace native {" namespace_offset)
+  if(export_offset EQUAL -1 OR namespace_offset EQUAL -1)
+    message(FATAL_ERROR "Doxygen instruction staging could not find the export scope for ${family}")
+  endif()
+  string(REPLACE "${export_block}" "\n${body_include}\n" module_text "${module_text}")
+  string(REPLACE "\nnamespace native {" "\nexport namespace native {" body_text "${body_text}")
+  file(MAKE_DIRECTORY "${docs_source_root}/src/native/arm")
+  file(WRITE "${docs_source_root}/${module_path}" "${module_text}")
+  file(WRITE "${docs_source_root}/${body_path}" "${body_text}")
+  list(APPEND DOXYGEN_EXCLUDE "${PROJECT_SOURCE_DIR}/${module_path}" "${PROJECT_SOURCE_DIR}/${body_path}")
+  list(APPEND docs_instruction_inputs "${docs_source_root}/${module_path}" "${docs_source_root}/${body_path}")
+endforeach()
+
 set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
   "CPUID=@c CPUID" "PAUSE=@c PAUSE" "MONITOR=@c MONITOR" "MWAIT=@c MWAIT"
   "UMONITOR=@c UMONITOR" "UMWAIT=@c UMWAIT")
@@ -149,6 +177,8 @@ endforeach()
 # Render nested README files as pages, not implicit directory descriptions.
 # Directory descriptions otherwise leak build paths into link tooltips.
 set(DOXYGEN_IMPLICIT_DIR_DOCS NO)
+# Match the section fragments used by relative links in the Markdown guides.
+set(DOXYGEN_MARKDOWN_ID_STYLE GITHUB)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${docs_markdown_root}/README.md")
 set(DOXYGEN_STRIP_FROM_PATH "${docs_source_root}" "${docs_markdown_root}" "${PROJECT_SOURCE_DIR}")
 set(DOXYGEN_HAVE_DOT NO)
@@ -172,6 +202,7 @@ set(DOXYGEN_PROJECT_BRIEF "Vectors, masks and wide register packs for C++26")
 doxygen_add_docs(native_docs
   "${PROJECT_SOURCE_DIR}/src"
   "${docs_isa}" "${docs_wide}" "${docs_wide_adapter}"
+  ${docs_instruction_inputs}
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
   COMMENT "Build native API documentation and examples")
