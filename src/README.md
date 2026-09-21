@@ -99,3 +99,5 @@ New implementation code uses the standard library, including `std::forward_like`
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
+`native.arm.crc` provides the scalar CRC32 and CRC32C instruction updates.

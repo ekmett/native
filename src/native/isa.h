@@ -432,7 +432,7 @@ namespace native {
       {arm_feature::aes,"aes",isa(arm_feature::neon),feature_register::arm,3,isa(arm_feature::pmull)},
       {arm_feature::sha2,"sha2",isa(arm_feature::neon),feature_register::arm,4,isa(arm_feature::sha1)},
       {arm_feature::sha3,"sha3",isa(arm_feature::neon),feature_register::arm,5,arm_feature::sha1&arm_feature::sha2&arm_feature::sha512},
-      {arm_feature::crc,"crc",isa(arm_feature::neon),feature_register::arm,6},
+      {arm_feature::crc,"crc",{},feature_register::arm,6},
       {arm_feature::lse,"lse",isa(arm_feature::neon),feature_register::arm,7},
       {arm_feature::rdm,"rdm",isa(arm_feature::neon),feature_register::arm,8},
       {arm_feature::fp16fml,"fp16fml",isa(arm_feature::neon_fp16),feature_register::arm,9},

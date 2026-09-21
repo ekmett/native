@@ -94,6 +94,7 @@ custom element types and application dispatch.
 | `native.x86.f16c` | [Binary32 / binary16 conversions](docs/x86-f16c.md), scalar and packed four/eight lanes |
 | `native.x86.vpopcntdq` | [VPOPCNTDQ](docs/x86-vpopcntdq.md) for 32- and 64-bit lanes, including merge and zero masks |
 | `native.x86.vnni` | [VNNI integer dot products](docs/x86-vnni.md), including saturation, EVEX masks and INT8/INT16 signedness extensions |
+| `native.arm.crc` | [CRC32 and CRC32C updates](docs/arm-crc.md) for unsigned 8-, 16-, 32- and 64-bit operands |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
 | `native.arm.dotprod` | [Signed and unsigned byte dot products](docs/arm-dotprod.md) |
 | `native.arm.rdm` | [Rounding, saturating fixed-point multiply-add and multiply-subtract](docs/arm-rdm.md) |

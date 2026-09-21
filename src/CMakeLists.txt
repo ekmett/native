@@ -97,7 +97,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(native_minimal PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
     FILES native.arm.features.ccm native.arm.dotprod.ccm native.arm.rdm.ccm
-      native.arm.fp16fml.ccm native.arm.fcma.ccm native.arm.i8mm.ccm native.arm.ccm)
+      native.arm.fp16fml.ccm native.arm.fcma.ccm native.arm.i8mm.ccm native.arm.crc.ccm native.arm.ccm)
 endif()
 
 native_module_target(native native)

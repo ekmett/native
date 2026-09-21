@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/arm/crc.h"
+export module native.arm.crc;
+export import native.arm.features;
+export namespace native {
+  /// \addtogroup arm_crc
+  /// \{
+  using ::native::crc32;
+  using ::native::crc32c;
+  /// \}
+}
