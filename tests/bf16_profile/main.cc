@@ -103,7 +103,7 @@ int main(int argc,char **argv) {
   if(!std::strcmp(argv[1],"none")) {std::puts("No BF16 profile entered.");return 0;}
   if(std::strcmp(argv[1],"native"))return 2;
   auto admission=native::classify_isa(native::observe_x86_capabilities(),native::avx512_bf16);
-  if(!admission.admitted()) {std::puts(admission.reason());return 77;}
+  if(!admission.admitted()) {std::puts(admission.reason());return admission.invalid_features ? 1 : 77;}
   if(!bf16_storage()) {std::puts("BF16 storage failure");return 3;}
   if(!contract())return 4;
   std::puts("BF16x8/x16/x32: 65536 encodings per width and all guarded tails; dot2: 4112 lanes per width in 32 MXCSR states with partition agreement");

@@ -53,6 +53,10 @@ int main() {
   return 0;
 #endif
 #if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__) || defined(_M_ARM64)
+  if(!cpu.present.valid() || !cpu.observed.valid()) {
+    std::fputs("Live capability observation contains invalid feature bits\n",stderr);
+    return 2;
+  }
   int calls=0;
   auto selected=native::with_isa(native::isa_list<native::scalar>{},cpu,
     [&]<native::isa<> A> { static_assert(A==native::scalar); ++calls; });

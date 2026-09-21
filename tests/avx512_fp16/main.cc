@@ -134,7 +134,7 @@ int main(int argc,char **argv) {
   auto cpu=native::observe_x86_capabilities();
   std::printf("CPUID.7.0.EDX=%08x XCR0=%llx\n",cpu.raw.leaf7_edx,static_cast<unsigned long long>(cpu.xcr0));
   auto admission=native::classify_isa(cpu,native::avx512_fp16);
-  if(!admission.admitted()) {std::puts(admission.reason());return 77;}
+  if(!admission.admitted()) {std::puts(admission.reason());return admission.invalid_features ? 1 : 77;}
   if(!fp16_storage()) {std::puts("FP16 storage failure");return 4;}
   if(!contract())return 5;
   if(!masks()) {std::puts("FP16 mask/selection failure");return 6;}
