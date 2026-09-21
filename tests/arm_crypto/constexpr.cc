@@ -59,818 +59,818 @@ namespace {
   struct case_0 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::aes);
     static constexpr char name[] = "aese_uint8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::aese<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1])));
     }
-    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::aese<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]))); }
   };
   struct case_1 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::aes);
     static constexpr char name[] = "aesd_uint8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::aesd<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1])));
     }
-    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::aesd<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]))); }
   };
   struct case_2 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::aes);
     static constexpr char name[] = "aesmc_uint8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::aesmc<A>(vector<std::uint8_t, 16, A>(in[0])));
     }
-    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::aesmc<A>(vector<std::uint8_t, 16, A>(in[0]))); }
   };
   struct case_3 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::aes);
     static constexpr char name[] = "aesimc_uint8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::aesimc<A>(vector<std::uint8_t, 16, A>(in[0])));
     }
-    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::aesimc<A>(vector<std::uint8_t, 16, A>(in[0]))); }
   };
   struct case_4 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::pmull);
     static constexpr char name[] = "pmull_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::pmull<A>(static_cast<std::uint64_t>(in[0][0]), static_cast<std::uint64_t>(in[1][0])));
     }
-    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::pmull<A>(static_cast<std::uint64_t>(in[0][0]), static_cast<std::uint64_t>(in[1][0]))); }
   };
   struct case_5 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::pmull);
     static constexpr char name[] = "pmull2_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::pmull2<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("aes"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::pmull2<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_6 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::neon);
     static constexpr char name[] = "pmull_uint16_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::pmull<A>(vector<std::uint8_t, 8, A>(in[0]), vector<std::uint8_t, 8, A>(in[1])));
     }
-    __attribute__((target("neon"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("neon"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::pmull<A>(vector<std::uint8_t, 8, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]))); }
   };
   struct case_7 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::neon);
     static constexpr char name[] = "pmull2_uint16_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::pmull2<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1])));
     }
-    __attribute__((target("neon"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("neon"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::pmull2<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]))); }
   };
   struct case_8 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha1);
     static constexpr char name[] = "sha1c_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha1c<A>(vector<std::uint32_t, 4, A>(in[0]), static_cast<std::uint32_t>(in[1][0]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha1c<A>(vector<std::uint32_t, 4, A>(in[0]), static_cast<std::uint32_t>(in[1][0]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_9 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha1);
     static constexpr char name[] = "sha1p_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha1p<A>(vector<std::uint32_t, 4, A>(in[0]), static_cast<std::uint32_t>(in[1][0]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha1p<A>(vector<std::uint32_t, 4, A>(in[0]), static_cast<std::uint32_t>(in[1][0]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_10 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha1);
     static constexpr char name[] = "sha1m_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha1m<A>(vector<std::uint32_t, 4, A>(in[0]), static_cast<std::uint32_t>(in[1][0]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha1m<A>(vector<std::uint32_t, 4, A>(in[0]), static_cast<std::uint32_t>(in[1][0]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_11 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha1);
     static constexpr char name[] = "sha1su0_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha1su0<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha1su0<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_12 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha1);
     static constexpr char name[] = "sha1su1_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha1su1<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha1su1<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]))); }
   };
   struct case_13 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha2);
     static constexpr char name[] = "sha256h_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha256h<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha256h<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_14 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha2);
     static constexpr char name[] = "sha256h2_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha256h2<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha256h2<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_15 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha2);
     static constexpr char name[] = "sha256su0_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha256su0<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha256su0<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]))); }
   };
   struct case_16 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha2);
     static constexpr char name[] = "sha256su1_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha256su1<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha2"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha256su1<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_17 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha512);
     static constexpr char name[] = "sha512h_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha512h<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha512h<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2]))); }
   };
   struct case_18 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha512);
     static constexpr char name[] = "sha512h2_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha512h2<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha512h2<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2]))); }
   };
   struct case_19 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha512);
     static constexpr char name[] = "sha512su0_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha512su0<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha512su0<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_20 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha512);
     static constexpr char name[] = "sha512su1_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::sha512su1<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::sha512su1<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2]))); }
   };
   struct case_21 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_uint8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2]))); }
   };
   struct case_22 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_uint16_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::uint16_t, 8, A>(in[0]), vector<std::uint16_t, 8, A>(in[1]), vector<std::uint16_t, 8, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::uint16_t, 8, A>(in[0]), vector<std::uint16_t, 8, A>(in[1]), vector<std::uint16_t, 8, A>(in[2]))); }
   };
   struct case_23 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_24 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2]))); }
   };
   struct case_25 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_int8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::int8_t, 16, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::int8_t, 16, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2]))); }
   };
   struct case_26 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_int16_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2]))); }
   };
   struct case_27 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_int32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2]))); }
   };
   struct case_28 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "eor3_int64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::eor3<A>(vector<std::int64_t, 2, A>(in[0]), vector<std::int64_t, 2, A>(in[1]), vector<std::int64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::eor3<A>(vector<std::int64_t, 2, A>(in[0]), vector<std::int64_t, 2, A>(in[1]), vector<std::int64_t, 2, A>(in[2]))); }
   };
   struct case_29 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_uint8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::uint8_t, 16, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2]))); }
   };
   struct case_30 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_uint16_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::uint16_t, 8, A>(in[0]), vector<std::uint16_t, 8, A>(in[1]), vector<std::uint16_t, 8, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::uint16_t, 8, A>(in[0]), vector<std::uint16_t, 8, A>(in[1]), vector<std::uint16_t, 8, A>(in[2]))); }
   };
   struct case_31 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_uint32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint32_t, 4, A>(in[1]), vector<std::uint32_t, 4, A>(in[2]))); }
   };
   struct case_32 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]), vector<std::uint64_t, 2, A>(in[2]))); }
   };
   struct case_33 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_int8_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::int8_t, 16, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::int8_t, 16, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2]))); }
   };
   struct case_34 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_int16_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2]))); }
   };
   struct case_35 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_int32_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2]))); }
   };
   struct case_36 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "bcax_int64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::bcax<A>(vector<std::int64_t, 2, A>(in[0]), vector<std::int64_t, 2, A>(in[1]), vector<std::int64_t, 2, A>(in[2])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::bcax<A>(vector<std::int64_t, 2, A>(in[0]), vector<std::int64_t, 2, A>(in[1]), vector<std::int64_t, 2, A>(in[2]))); }
   };
   struct case_37 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "rax1_uint64_t";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::rax1<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::rax1<A>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_38 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_0";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 0>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 0>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_39 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_1";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 1>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 1>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_40 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_2";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 2>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 2>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_41 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_3";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 3>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 3>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_42 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_4";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 4>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 4>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_43 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_5";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 5>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 5>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_44 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_6";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 6>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 6>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_45 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_7";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 7>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 7>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_46 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_8";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 8>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 8>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_47 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_9";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 9>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 9>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_48 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_10";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 10>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 10>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_49 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_11";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 11>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 11>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_50 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_12";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 12>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 12>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_51 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_13";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 13>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 13>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_52 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_14";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 14>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 14>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_53 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_15";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 15>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 15>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_54 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_16";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 16>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 16>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_55 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_17";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 17>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 17>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_56 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_18";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 18>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 18>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_57 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_19";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 19>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 19>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_58 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_20";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 20>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 20>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_59 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_21";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 21>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 21>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_60 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_22";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 22>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 22>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_61 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_23";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 23>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 23>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_62 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_24";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 24>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 24>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_63 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_25";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 25>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 25>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_64 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_26";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 26>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 26>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_65 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_27";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 27>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 27>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_66 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_28";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 28>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 28>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_67 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_29";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 29>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 29>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_68 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_30";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 30>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 30>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_69 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_31";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 31>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 31>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_70 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_32";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 32>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 32>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_71 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_33";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 33>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 33>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_72 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_34";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 34>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 34>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_73 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_35";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 35>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 35>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_74 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_36";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 36>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 36>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_75 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_37";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 37>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 37>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_76 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_38";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 38>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 38>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_77 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_39";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 39>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 39>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_78 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_40";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 40>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 40>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_79 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_41";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 41>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 41>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_80 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_42";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 42>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 42>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_81 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_43";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 43>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 43>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_82 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_44";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 44>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 44>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_83 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_45";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 45>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 45>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_84 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_46";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 46>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 46>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_85 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_47";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 47>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 47>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_86 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_48";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 48>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 48>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_87 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_49";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 49>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 49>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_88 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_50";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 50>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 50>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_89 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_51";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 51>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 51>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_90 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_52";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 52>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 52>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_91 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_53";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 53>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 53>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_92 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_54";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 54>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 54>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_93 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_55";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 55>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 55>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_94 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_56";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 56>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 56>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_95 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_57";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 57>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 57>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_96 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_58";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 58>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 58>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_97 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_59";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 59>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 59>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_98 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_60";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 60>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 60>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_99 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_61";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 61>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 61>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_100 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_62";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 62>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 62>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   struct case_101 {
     static constexpr auto arch = native::feature_closure(native::arm_feature::sha3);
     static constexpr char name[] = "xar_uint64_t_63";
-    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
       return result(native::xar<A, 63>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1])));
     }
-    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { return evaluate<arch>(in); }
+    __attribute__((target("sha3"), noinline)) static output runtime(input const &in) { constexpr auto A = arch; return result(native::xar<A, 63>(vector<std::uint64_t, 2, A>(in[0]), vector<std::uint64_t, 2, A>(in[1]))); }
   };
   consteval bool aes_identities() {
     using V = native::simd<std::uint8_t, 16, native::neon>;
@@ -944,8 +944,11 @@ namespace {
 }
 int main() {
   auto cpu = native::observe_arm_capabilities();
-  for (auto target : {"aes", "sha2", "sha3"})
-    if (!native::classify_isa(cpu, native::target_features<native::arm>(target)).admitted()) return 77;
+  for (auto target : {"aes", "sha2", "sha3"}) {
+    auto admission = native::classify_isa(cpu, native::target_features<native::arm>(target));
+    if (admission.invalid_features) return 1;
+    if (!admission.admitted()) return 77;
+  }
   bool ok = true;
   ok = check<case_0>() && ok;
   ok = check<case_1>() && ok;
