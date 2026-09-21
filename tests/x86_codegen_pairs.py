@@ -29,7 +29,7 @@ def functions(path):
             continue
         instruction = re.match(r'\s*[0-9a-fA-F]+:\s+(.+)', line)
         if instruction and current:
-            text = instruction[1].split('##')[0].strip()
+            text = instruction[1].split('#')[0].strip()
             # Function alignment changes when independent module initializers exist.
             if re.match(r'(?:nop\w*|int3)\b', text):
                 continue
