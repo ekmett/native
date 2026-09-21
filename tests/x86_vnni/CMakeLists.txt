@@ -14,8 +14,8 @@ get_filename_component(vnni_compiler_directory "${CMAKE_CXX_COMPILER}" DIRECTORY
 find_program(NATIVE_VNNI_OBJDUMP NAMES llvm-objdump
   HINTS "${vnni_compiler_directory}" REQUIRED)
 
-set(vnni_interface_number 0)
-set(vnni_interfaces header module x86 hub)
+set(vnni_interface_number 1)
+set(vnni_interfaces module x86 hub)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   # Installed consumers use modules from the package, including after relocation.
   set(vnni_interface_number 1)
@@ -27,11 +27,7 @@ foreach(interface IN LISTS vnni_interfaces)
   add_library(${objects} OBJECT main.cc)
   add_executable(${target} $<TARGET_OBJECTS:${objects}>)
   target_compile_definitions(${objects} PRIVATE NATIVE_TEST_INTERFACE=${vnni_interface_number})
-  if(interface STREQUAL "hub")
-    set(provider native::native)
-  else()
-    set(provider native::minimal)
-  endif()
+  set(provider native::native)
   target_link_libraries(${objects} PRIVATE ${provider})
   target_link_libraries(${target} PRIVATE ${provider})
   # Importers retain the provider baseline; changing ISA flags here duplicates BMIs.
@@ -147,7 +143,7 @@ function(native_vnni_rejection label family width variants rejection kind)
   if(ARGC GREATER 6 AND ARGV6 STREQUAL "module")
     # Match the module provider's baseline; instruction targets remain local to
     # the rejected functions, including explicit feature removal.
-    target_link_libraries(${target} PRIVATE native::minimal)
+    target_link_libraries(${target} PRIVATE native::native)
     target_compile_definitions(${target} PRIVATE NATIVE_VNNI_IMPORT=1)
     set_target_properties(${target} PROPERTIES
       CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
@@ -218,3 +214,32 @@ foreach(family RANGE 0 3)
   native_vnni_rejection(shape_b${family}_256 ${family} 256 "${variants}" 15 shape)
   native_vnni_rejection(shape_width${family}_256 ${family} 256 "${variants}" 9 shape)
 endforeach()
+
+# Public instruction bindings must preserve the same opcodes and immediates.
+add_library(native_test_x86_vnni_codegen_public OBJECT codegen_public.cc)
+target_link_libraries(native_test_x86_vnni_codegen_public PRIVATE native::native)
+set_target_properties(native_test_x86_vnni_codegen_public PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_x86_vnni_codegen_public PRIVATE /O2)
+else()
+  target_compile_options(native_test_x86_vnni_codegen_public PRIVATE -O2)
+endif()
+add_test(NAME native.x86.vnni.codegen_public
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
+    --objdump "${NATIVE_VNNI_OBJDUMP}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/vnni-public-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:native_test_x86_vnni_codegen_public>
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.vnni.codegen_public PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;vnni")
+
+add_test(NAME native.x86.vnni.codegen_pairs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../x86_codegen_pairs.py"
+    --objdump "${NATIVE_VNNI_OBJDUMP}"
+    --raw $<TARGET_OBJECTS:native_test_x86_vnni_codegen>
+    --public $<TARGET_OBJECTS:native_test_x86_vnni_codegen_public>
+    --output "${CMAKE_CURRENT_BINARY_DIR}/vnni-paired-$<CONFIG>.txt"
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.vnni.codegen_pairs PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;vnni")

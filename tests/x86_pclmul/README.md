@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 # PCLMULQDQ and VPCLMULQDQ fixture
 
-The header, granular-module, `native.x86` and `native` executables check all
+The granular-module, `native.x86` and `native` executables check all
 four callable overloads against an independent scalar bit-polynomial oracle.
 Each admitted form exercises all 4096 one-hot pairs per half selector and lane,
 2048 deterministic random inputs, directed zero/one/high-bit/alternating-bit
@@ -57,3 +57,8 @@ the baseline importer check. To test relocation, install to one prefix,
 physically move the entire installation, remove the original prefix, and
 configure a fresh consumer against the destination. CMake regenerates provider
 BMIs using the installed module sources.
+
+The public vector calls use `native::simd` with exact element types, lane counts
+and architecture tags. Masked calls use `native::predicate` with the result lane count and tag.
+Private register probes and public module probes independently retain instruction
+and immediate checks; scalar oracles operate outside optional target scopes.

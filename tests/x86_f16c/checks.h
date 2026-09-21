@@ -3,15 +3,13 @@
 #include "oracle.h"
 
 namespace f16c_fixture {
-  constexpr native::isa arch{native::x86_feature::f16c};
+  constexpr auto arch = native::feature_closure(native::isa{native::x86_feature::f16c});
   static_assert(!arch.has(native::x86_feature::avx2));
   static_assert(!native::feature_closure(arch).has(native::x86_feature::avx512fp16));
   static_assert(std::same_as<decltype(native::cvtss_sh<arch, 255>(0.f)), std::uint16_t>);
   static_assert(std::same_as<decltype(native::cvtsh_ss<arch>(0)), float>);
-  static_assert(std::same_as<decltype(native::cvtps_ph<arch, 0>(__m128{})), __m128i>);
-  static_assert(std::same_as<decltype(native::cvtps_ph<arch, 0>(__m256{})), __m128i>);
-  static_assert(std::same_as<decltype(native::cvtph_ps<arch, 4>(__m128i{})), __m128>);
-  static_assert(std::same_as<decltype(native::cvtph_ps<arch, 8>(__m128i{})), __m256>);
+
+#include "api_checks.h"
 
   struct mxcsr_guard {
     unsigned saved = _mm_getcsr();
@@ -38,15 +36,15 @@ namespace f16c_fixture {
       out.scalar[i] = std::bit_cast<std::uint32_t>(native::cvtsh_ss<arch>(input[i]));
     out.scalar_flags = _mm_getcsr();
     _mm_setcsr(csr);
-    __m128 lo = native::cvtph_ps<arch, 4>(h);
+    __m128 lo = native::cvtph_ps<arch, 4>(native::simd<native::fp16, 4, arch>::from_native(h)).to_native();
     // Upper words must be ignored, including signaling NaNs.
     __m128i upper = _mm_srli_si128(h, 8);
-    __m128 hi = native::cvtph_ps<arch, 4>(upper);
+    __m128 hi = native::cvtph_ps<arch, 4>(native::simd<native::fp16, 4, arch>::from_native(upper)).to_native();
     __builtin_memcpy(out.four.data(), &lo, 16);
     __builtin_memcpy(out.four.data() + 4, &hi, 16);
     out.four_flags = _mm_getcsr();
     _mm_setcsr(csr);
-    __m256 all = native::cvtph_ps<arch, 8>(h);
+    __m256 all = native::cvtph_ps<arch, 8>(native::simd<native::fp16, 8, arch>::from_native(h)).to_native();
     __builtin_memcpy(out.eight.data(), &all, 32);
     out.eight_flags = _mm_getcsr();
     return out;
@@ -65,7 +63,7 @@ namespace f16c_fixture {
       out.scalar[i] = native::cvtss_sh<arch, Imm8>(std::bit_cast<float>(input[i]));
     out.scalar_flags = _mm_getcsr();
     _mm_setcsr(csr);
-    auto a = native::cvtps_ph<arch, Imm8>(lo), b = native::cvtps_ph<arch, Imm8>(hi);
+    auto a = native::cvtps_ph<arch, Imm8>(native::simd<float, sizeof(lo) / sizeof(float), arch>::from_native(lo)).to_native(), b = native::cvtps_ph<arch, Imm8>(native::simd<float, sizeof(hi) / sizeof(float), arch>::from_native(hi)).to_native();
     __builtin_memcpy(out.four.data(), &a, 8);
     __builtin_memcpy(out.four.data() + 4, &b, 8);
     out.four_flags = _mm_getcsr();
@@ -73,7 +71,7 @@ namespace f16c_fixture {
     if (_mm_cvtsi128_si64(_mm_srli_si128(a, 8)) || _mm_cvtsi128_si64(_mm_srli_si128(b, 8)))
       out.four[0] ^= 0xffff;
     _mm_setcsr(csr);
-    auto c = native::cvtps_ph<arch, Imm8>(all);
+    auto c = native::cvtps_ph<arch, Imm8>(native::simd<float, sizeof(all) / sizeof(float), arch>::from_native(all)).to_native();
     __builtin_memcpy(out.eight.data(), &c, 16);
     out.eight_flags = _mm_getcsr();
     return out;
@@ -131,25 +129,25 @@ namespace f16c_fixture {
     float a = std::bit_cast<float>(bits);
     _mm_setcsr(csr);
     if (lanes == 1) (void)native::cvtss_sh<arch, Imm8>(a);
-    else if (lanes == 4) (void)native::cvtps_ph<arch, Imm8>(_mm_set1_ps(a));
-    else (void)native::cvtps_ph<arch, Imm8>(_mm256_set1_ps(a));
+    else if (lanes == 4) (void)native::cvtps_ph<arch, Imm8>(native::simd<float, sizeof(_mm_set1_ps(a)) / sizeof(float), arch>::from_native(_mm_set1_ps(a))).to_native();
+    else (void)native::cvtps_ph<arch, Imm8>(native::simd<float, sizeof(_mm256_set1_ps(a)) / sizeof(float), arch>::from_native(_mm256_set1_ps(a))).to_native();
     return _mm_getcsr();
   }
   native_target("f16c,no-avx2,no-avx512fp16") native_noinline
   unsigned discarded_widen(std::uint16_t bits, unsigned csr, unsigned lanes) {
     _mm_setcsr(csr);
     if (lanes == 1) (void)native::cvtsh_ss<arch>(bits);
-    else if (lanes == 4) (void)native::cvtph_ps<arch, 4>(_mm_set1_epi16(short(bits)));
-    else (void)native::cvtph_ps<arch, 8>(_mm_set1_epi16(short(bits)));
+    else if (lanes == 4) (void)native::cvtph_ps<arch, 4>(native::simd<native::fp16, 4, arch>::from_native(_mm_set1_epi16(short(bits)))).to_native();
+    else (void)native::cvtph_ps<arch, 8>(native::simd<native::fp16, 8, arch>::from_native(_mm_set1_epi16(short(bits)))).to_native();
     return _mm_getcsr();
   }
   native_target("f16c,no-avx2,no-avx512fp16") native_noinline
   bool ignored_upper(unsigned csr) {
     auto h = _mm_set_epi16(0x7c01, 0x7c01, 0x7c01, 0x7c01, 0x3c00, 0, 1, 0x7c00);
     _mm_setcsr(csr);
-    (void)native::cvtph_ps<arch, 4>(h);
+    (void)native::cvtph_ps<arch, 4>(native::simd<native::fp16, 4, arch>::from_native(h)).to_native();
     if (_mm_getcsr() != csr) return false;
-    (void)native::cvtph_ps<arch, 8>(h);
+    (void)native::cvtph_ps<arch, 8>(native::simd<native::fp16, 8, arch>::from_native(h)).to_native();
     return _mm_getcsr() == (csr | 1);
   }
   bool status_checks(unsigned csr) {

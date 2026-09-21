@@ -1,11 +1,11 @@
 # VNNI integer dot products
 
-`import native.x86.vnni;` exposes integer dot products on raw x86 registers.
-The module belongs to `native::minimal` and is reexported by `native.x86` and
+`import native.x86.vnni;` exposes integer dot products on typed `native::simd` vectors.
+The module belongs to `native::native` and is reexported by `native.x86` and
 `native`. Importing it leaves the caller's instruction target unchanged.
 
-Every operation takes an explicit `isa` template argument and three equal-width
-integer registers: `(accumulator, a, b)`. Each 32-bit result lane accumulates
+Every operation takes an explicit `isa` template argument and three vectors
+with equal register widths and matching architecture tags: `(accumulator, a, b)`. Each 32-bit result lane accumulates
 products from the corresponding group of four bytes or two 16-bit words.
 Non-saturating operations return the low 32 bits of the complete sum.
 
@@ -52,13 +52,19 @@ enable either extension.
 
 For each core name, `mask_NAME<Arch>(accumulator, mask, a, b)` retains the
 accumulator in inactive lanes, and `maskz_NAME<Arch>(mask, accumulator, a, b)`
-zeros them. Mask bit `i` selects 32-bit lane `i`. The mask type is `__mmask8`
-for 128/256 bits and `__mmask16` for 512 bits; the high four mask bits are
-ignored at 128 bits. Register operands must have the same exact integer
-register type. Floating-point registers and mixed shapes are rejected.
+zeros them. Masks use `native::predicate<N,Arch>` for the accumulator lane count; bit `i`
+selects 32-bit lane `i`. Constructing the mask clears excess bits.
+
+Source vectors use the signed or unsigned 8-bit or 16-bit types in the table.
+Accumulators and results use `simd<std::int32_t,N,Arch>`, except the two
+unsigned-by-unsigned pairs, which use `simd<std::uint32_t,N,Arch>`.
+The sources have 4*N byte lanes or 2*N word lanes. N is 4, 8 or 16 where
+the instruction family supports that width. Wrong element types, raw registers,
+mixed widths and mixed architecture tags are rejected. Use `target_features`
+or `feature_closure` to include register prerequisites in `Arch`.
 
 ```cpp
-#include <immintrin.h>
+#include <cstdint>
 #include <native/targets.h>
 import native.x86.vnni;
 
@@ -66,21 +72,19 @@ import native.x86.vnni;
 constexpr auto dot_isa = NATIVE_TARGET_ISA(dot);
 
 NATIVE_TARGET_PUSH(dot)
-void accumulate(int* out, int const* acc, void const* a, void const* b) {
-  __m256i s, x, y;
-  __builtin_memcpy(&s, acc, sizeof(s));
-  __builtin_memcpy(&x, a, sizeof(x));
-  __builtin_memcpy(&y, b, sizeof(y));
-  auto result = native::dpbusd<dot_isa>(s, x, y);
-  __builtin_memcpy(out, &result, sizeof(result));
+void accumulate(std::int32_t* out, std::int32_t const* acc,
+                std::uint8_t const* a, std::int8_t const* b) {
+  auto s = native::simd<std::int32_t,8,dot_isa>::load(acc);
+  auto x = native::simd<std::uint8_t,32,dot_isa>::load(a);
+  auto y = native::simd<std::int8_t,32,dot_isa>::load(b);
+  native::dpbusd<dot_isa>(s,x,y).store(out);
 }
 NATIVE_TARGET_POP()
 ```
 
 Call this function only after `classify_isa(observe_x86_capabilities(), dot_isa,
-NATIVE_TARGET_MINIMUM).admitted()`. `simd::to_native()` and `simd::from_native()`
-provide the boundary to `native::simd` when the selected profile supports it.
-The raw instruction module itself does not depend on the SIMD provider.
+NATIVE_TARGET_MINIMUM).admitted()`. The module imports the SIMD provider;
+loading and storing these vectors preserves their element representations.
 
 Detection preserves CPUID presence separately from executable OS state.
 `avxvnni` is leaf 7, subleaf 1, EAX bit 4; `avx512vnni` is leaf 7, subleaf 0,
@@ -91,7 +95,7 @@ AVX512VNNI, without adding another VNNI family. See
 [Intel CPUID definitions](https://cdrdv2-public.intel.com/874240/325462-090-sdm-vol-1-2abcd-3abcd-4.pdf)
 and [LLVM feature prerequisites](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/X86/X86.td).
 
-The [VNNI fixture](../tests/x86_vnni/README.md) exercises the textual header, granular module,
+The [VNNI fixture](../tests/x86_vnni/README.md) exercises the granular module,
 x86 umbrella and main hub. It also runs as an installed module consumer.
 Independent wide scalar arithmetic checks grouping, wrapping, saturation and
 masks, including cancellation after an overflowing signed word product pair.

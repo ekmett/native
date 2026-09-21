@@ -3,68 +3,17 @@
 
 namespace gfni_fixture {
   using native::x86_feature;
-  constexpr native::isa arch128{x86_feature::gfni};
-  constexpr native::isa arch256 = arch128 & x86_feature::avx;
-  constexpr native::isa arch512 = arch128 & x86_feature::avx512f;
-  constexpr native::isa mask512 = arch512 & x86_feature::avx512bw;
-  constexpr native::isa mask_narrow = mask512 & x86_feature::avx512vl;
+  constexpr auto arch128 = native::feature_closure(native::isa{x86_feature::gfni});
+  constexpr native::isa arch256 = native::feature_closure(arch128 & x86_feature::avx);
+  constexpr native::isa arch512 = native::feature_closure(arch128 & x86_feature::avx512f);
+  constexpr native::isa mask512 = native::feature_closure(arch512 & x86_feature::avx512bw);
+  constexpr native::isa mask_narrow = native::feature_closure(mask512 & x86_feature::avx512vl);
   static_assert(!arch128.has(x86_feature::avx));
   static_assert(!arch256.has(x86_feature::avx2));
   static_assert(!arch512.has(x86_feature::avx512bw));
 
-  template<native::isa A, class V, unsigned Imm8 = 0>
-  concept has_operations = requires(V x) {
-    { native::gf2p8mulb<A>(x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8affineqb<A, Imm8>(x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8affineinvqb<A, Imm8>(x, x) } noexcept -> std::same_as<V>;
-  };
-  template<native::isa A, class V, class K, unsigned Imm8 = 0>
-  concept has_masks = requires(V x, K k) {
-    { native::gf2p8mulb_mask<A>(x, k, x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8mulb_maskz<A>(k, x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8affineqb_mask<A, Imm8>(x, k, x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8affineqb_maskz<A, Imm8>(k, x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8affineinvqb_mask<A, Imm8>(x, k, x, x) } noexcept -> std::same_as<V>;
-    { native::gf2p8affineinvqb_maskz<A, Imm8>(k, x, x) } noexcept -> std::same_as<V>;
-  };
-  template<native::isa A, class V>
-  concept rejects_operations =
-    !requires(V x) { native::gf2p8mulb<A>(x, x); } &&
-    !requires(V x) { native::gf2p8affineqb<A, 0>(x, x); } &&
-    !requires(V x) { native::gf2p8affineinvqb<A, 0>(x, x); };
-  template<native::isa A, class V, class K>
-  concept rejects_masks =
-    !requires(V x, K k) { native::gf2p8mulb_mask<A>(x, k, x, x); } &&
-    !requires(V x, K k) { native::gf2p8mulb_maskz<A>(k, x, x); } &&
-    !requires(V x, K k) { native::gf2p8affineqb_mask<A, 0>(x, k, x, x); } &&
-    !requires(V x, K k) { native::gf2p8affineqb_maskz<A, 0>(k, x, x); } &&
-    !requires(V x, K k) { native::gf2p8affineinvqb_mask<A, 0>(x, k, x, x); } &&
-    !requires(V x, K k) { native::gf2p8affineinvqb_maskz<A, 0>(k, x, x); };
 
-  static_assert(has_operations<arch128, __m128i, 255>);
-  static_assert(has_operations<arch256, __m256i, 255>);
-  static_assert(has_operations<arch512, __m512i, 255>);
-  static_assert(rejects_operations<native::scalar, __m128i>);
-  static_assert(rejects_operations<native::avx2, __m128i>);
-  static_assert(rejects_operations<arch128, __m256i>);
-  static_assert(rejects_operations<arch256, __m512i>);
-  static_assert(!has_operations<arch128, __m128i, 256>);
-  static_assert(!has_operations<arch256, __m256i, 256>);
-  static_assert(!has_operations<arch512, __m512i, 256>);
-  static_assert(has_masks<mask_narrow, __m128i, __mmask16, 255>);
-  static_assert(has_masks<mask_narrow, __m256i, __mmask32, 255>);
-  static_assert(has_masks<mask512, __m512i, __mmask64, 255>);
-  static_assert(rejects_masks<mask512, __m128i, __mmask16>);
-  static_assert(rejects_masks<mask512, __m256i, __mmask32>);
-  static_assert(rejects_masks<arch512, __m512i, __mmask64>);
-  static_assert(rejects_masks<arch512 & x86_feature::avx512vl, __m128i, __mmask16>);
-  static_assert(rejects_masks<arch512 & x86_feature::avx512vl, __m256i, __mmask32>);
-  static_assert(rejects_masks<native::avx512, __m128i, __mmask16>);
-  static_assert(rejects_masks<native::avx512, __m256i, __mmask32>);
-  static_assert(rejects_masks<native::avx512, __m512i, __mmask64>);
-  static_assert(!has_masks<mask_narrow, __m128i, __mmask16, 256>);
-  static_assert(!has_masks<mask_narrow, __m256i, __mmask32, 256>);
-  static_assert(!has_masks<mask512, __m512i, __mmask64, 256>);
+#include "api_checks.h"
 
   using byte = std::uint8_t;
   template<std::size_t N> using bytes = std::array<byte, N>;
@@ -151,13 +100,13 @@ namespace gfni_fixture {
     __builtin_memcpy(&a, input.a.data(), N); \
     __builtin_memcpy(&b, input.b.data(), N); \
     V result[] = { \
-      native::gf2p8mulb<ARCH>(a, b), \
-      native::gf2p8affineqb<ARCH, 0>(a, b), \
-      native::gf2p8affineqb<ARCH, 0xa5>(a, b), \
-      native::gf2p8affineqb<ARCH, 0xff>(a, b), \
-      native::gf2p8affineinvqb<ARCH, 0>(a, b), \
-      native::gf2p8affineinvqb<ARCH, 0xa5>(a, b), \
-      native::gf2p8affineinvqb<ARCH, 0xff>(a, b) \
+      native::gf2p8mulb<ARCH>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb<ARCH, 0>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb<ARCH, 0xa5>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb<ARCH, 0xff>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb<ARCH, 0>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb<ARCH, 0xa5>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb<ARCH, 0xff>(native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native() \
     }; \
     __builtin_memcpy(output.data(), result, sizeof(result)); \
   }
@@ -175,22 +124,22 @@ namespace gfni_fixture {
     __builtin_memcpy(&source, input.source.data(), N); \
     K k = K(bits); \
     V merge_results[] = { \
-      native::gf2p8mulb_mask<ARCH>(source, k, a, b), \
-      native::gf2p8affineqb_mask<ARCH, 0>(source, k, a, b), \
-      native::gf2p8affineqb_mask<ARCH, 0xa5>(source, k, a, b), \
-      native::gf2p8affineqb_mask<ARCH, 0xff>(source, k, a, b), \
-      native::gf2p8affineinvqb_mask<ARCH, 0>(source, k, a, b), \
-      native::gf2p8affineinvqb_mask<ARCH, 0xa5>(source, k, a, b), \
-      native::gf2p8affineinvqb_mask<ARCH, 0xff>(source, k, a, b) \
+      native::gf2p8mulb_mask<ARCH>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb_mask<ARCH, 0>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb_mask<ARCH, 0xa5>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb_mask<ARCH, 0xff>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb_mask<ARCH, 0>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb_mask<ARCH, 0xa5>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb_mask<ARCH, 0xff>(native::simd<std::uint8_t, sizeof(source) / sizeof(std::uint8_t), ARCH>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native() \
     }; \
     V zero_results[] = { \
-      native::gf2p8mulb_maskz<ARCH>(k, a, b), \
-      native::gf2p8affineqb_maskz<ARCH, 0>(k, a, b), \
-      native::gf2p8affineqb_maskz<ARCH, 0xa5>(k, a, b), \
-      native::gf2p8affineqb_maskz<ARCH, 0xff>(k, a, b), \
-      native::gf2p8affineinvqb_maskz<ARCH, 0>(k, a, b), \
-      native::gf2p8affineinvqb_maskz<ARCH, 0xa5>(k, a, b), \
-      native::gf2p8affineinvqb_maskz<ARCH, 0xff>(k, a, b) \
+      native::gf2p8mulb_maskz<ARCH>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb_maskz<ARCH, 0>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb_maskz<ARCH, 0xa5>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineqb_maskz<ARCH, 0xff>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb_maskz<ARCH, 0>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb_maskz<ARCH, 0xa5>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native(), \
+      native::gf2p8affineinvqb_maskz<ARCH, 0xff>(native::predicate<sizeof(a) / sizeof(std::uint8_t), ARCH>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), ARCH>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), ARCH>::from_native(b)).to_native() \
     }; \
     __builtin_memcpy(merged.data(), merge_results, sizeof(merge_results)); \
     __builtin_memcpy(zeroed.data(), zero_results, sizeof(zero_results)); \

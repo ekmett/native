@@ -18,7 +18,7 @@ constexpr native::isa int16{native::x86_feature::avxvnniint16};
   extern "C" native_noinline native_target(features) \
   reg native_vnni_##family##_##operation##_##width##_plain( \
       reg acc, reg a, reg b) noexcept { \
-    return native::operation<requirement>(acc, a, b); \
+    return native::detail::x86_vnni::operation<requirement>(acc, a, b); \
   }
 
 #define NATIVE_VNNI_MASKED(operation, width, reg, mask, requirement, features) \
@@ -26,12 +26,12 @@ constexpr native::isa int16{native::x86_feature::avxvnniint16};
   extern "C" native_noinline native_target(features) \
   reg native_vnni_evex_##operation##_##width##_merge( \
       reg acc, unsigned k, reg a, reg b) noexcept { \
-    return native::mask_##operation<requirement>(acc, k, a, b); \
+    return native::detail::x86_vnni::mask_##operation<requirement>(acc, k, a, b); \
   } \
   extern "C" native_noinline native_target(features) \
   reg native_vnni_evex_##operation##_##width##_zero( \
       unsigned k, reg acc, reg a, reg b) noexcept { \
-    return native::maskz_##operation<requirement>(k, acc, a, b); \
+    return native::detail::x86_vnni::maskz_##operation<requirement>(k, acc, a, b); \
   }
 
 #define NATIVE_VNNI_CORE(operation) \

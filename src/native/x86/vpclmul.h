@@ -9,19 +9,9 @@
 #endif
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
-namespace native {
-/** \defgroup x86_vpclmul VPCLMULQDQ
- * Exact carry-less 64-by-64 multiplication within each 128-bit lane.
- * Imm8 bit 0 selects a's half and bit 4 selects b's half in every lane.
- * Other bits are ignored; the immediate must be in [0,255]. Each product
- * occupies its original 128-bit lane, with bit 127 zero. There are no
- * cross-lane products, carries, or polynomial reduction.
- * The 128-bit intrinsic needs PCLMUL and AVX, not the VPCLMULQDQ feature.
- * The 256-bit intrinsic needs VPCLMULQDQ and AVX, without AVX2 or AVX512VL.
- * The 512-bit intrinsic also needs AVX512F, without AVX512BW/DQ/VL.
- * Arch records requirements; callers separately enable and admit the target.
- * All forms are pure integer computations with no floating-point effects.
- * \{ */
+namespace native::detail::x86_vpclmul {
+// Internal register helpers for the native.x86.vpclmul module.
+
 
   /// Multiply selected halves of one 128-bit lane using PCLMUL and AVX.
   template<isa Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) &&
@@ -51,6 +41,6 @@ namespace native {
   template<isa Arch, unsigned Imm8, class A, class B>
   void vpclmulqdq(A, B) = delete;
 
-/// \}
+
 }
 #endif

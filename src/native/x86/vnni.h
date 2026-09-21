@@ -9,29 +9,9 @@
 #endif
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
-namespace native {
-/** \defgroup x86_vnni VNNI integer dot products
- * Each 32-bit accumulator lane receives the sum of four byte products or two
- * word products from the corresponding adjacent input group. Non-saturating
- * forms wrap modulo 2^32. Saturating forms clamp the complete sum, including
- * the accumulator, without first wrapping or clamping the product sum.
- * All saturation is signed except dpbuuds and dpwuuds, which use unsigned
- * accumulators and unsigned saturation. These register operations do not
- * change integer flags or floating-point status.
- *
- * Unmasked 128/256-bit core operations use AVX-VNNI when Arch contains
- * avxvnni; otherwise they require AVX512F, AVX512VL and AVX512VNNI.
- * 512-bit core operations require AVX512F and AVX512VNNI. Masked forms always
- * require those EVEX features, with AVX512VL for 128/256 bits.
- * INT8/INT16 extensions have only unmasked 128/256-bit forms and require
- * their own independent feature. Compiler prerequisite closure and CPU/OS
- * admission are separate from the exact instruction constraints below.
- *
- * Mask bit i selects 32-bit result lane i. Merge forms retain accumulator
- * lanes; zero forms clear inactive lanes. Bits above the lane count are
- * ignored. Callers must enable a compatible target and admit its CPU and OS
- * state requirements before execution. There is no runtime dispatch.
- * \{ */
+namespace native::detail::x86_vnni {
+// Internal register helpers for the native.x86.vnni module.
+
 
   // 128-bit core operations.
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, modulo 2^32. Uses AVX-VNNI.
@@ -601,6 +581,6 @@ namespace native {
     requires(!detail::vnni_registers<S, A, B>)
   void maskz_dpwssds(M, S, A, B) = delete;
   /// \endcond
-/// \}
+
 }
 #endif

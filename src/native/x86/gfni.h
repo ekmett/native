@@ -9,24 +9,9 @@
 #endif
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
-namespace native {
-/** \defgroup x86_gfni GFNI
- * Byte arithmetic modulo x^8 + x^4 + x^3 + x + 1 and binary affine maps.
- * Arch records instruction requirements; callers must separately enable and
- * admit a matching target. The raw register width selects the overload and
- * minimum target requirements.
- *
- * Each matrix operand contains one 8 by 8 binary matrix per 64-bit lane.
- * Output bit i uses matrix byte 7-i within that lane, with input bit j
- * multiplying bit j of that byte. Imm8 is XORed into every result byte.
- * Inverse-affine first takes the field inverse of each input byte (zero maps
- * to zero), then applies the matrix and Imm8; it does not invert the matrix.
- *
- * Mask bit i selects byte i. Merge forms retain src in inactive bytes;
- * zero forms clear them. LLVM's byte-mask intrinsics require AVX512BW;
- * narrower masked forms also require AVX512VL.
- * All operations depend only on their register arguments and have no side effects.
- * \{ */
+namespace native::detail::x86_gfni {
+// Internal register helpers for the native.x86.gfni module.
+
 
   // 128-bit registers.
   /// Multiply corresponding bytes in GF(2^8).
@@ -240,6 +225,6 @@ namespace native {
     return _mm512_maskz_gf2p8affineinv_epi64_epi8(k, a, matrix, Imm8);
   }
 
-/// \}
+
 }
 #endif

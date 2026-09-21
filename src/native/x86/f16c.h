@@ -11,30 +11,9 @@
 #endif
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
-namespace native {
-/** \defgroup x86_f16c F16C
- * Binary32 / IEEE binary16 conversions using VEX VCVTPS2PH and VCVTPH2PS.
- * Arch must contain f16c; its compiler prerequisite is AVX. Callers must enable
- * a matching target and admit CPU support and XMM/YMM OS state separately.
- * No AVX2 or AVX512FP16 instructions are required.
- *
- * Half operands and results contain representation bits, compatible with
- * fp16::to_bits()/from_bits(). Packed forms use intrinsic registers and can
- * cross the simd boundary with to_native()/from_native(). This family has no
- * dependency on native.simd or native.numerics.
- *
- * Imm8 accepts every byte, 0..255. Bit 2 selects MXCSR.RC; otherwise bits 1:0
- * select nearest-even (0), down (1), up (2), or toward zero (3). Bits 7:3 are
- * ignored by the instruction: in particular, bit 3 does NOT suppress exceptions.
- * Narrowing ignores FTZ and honors DAZ for binary32 subnormal inputs. Widening
- * ignores DAZ and does not raise a denormal exception for binary16 subnormals.
- * Signs of zero and infinity are preserved. NaNs retain their sign and high
- * payload bits and are quieted; signaling NaNs raise invalid.
- *
- * These operations retain architectural MXCSR status updates and unmasked
- * exceptions even if their result is discarded. They do not modify control
- * bits or masks. They are neither const nor pure, and are not constexpr.
- * \{ */
+namespace native::detail::x86_f16c {
+// Internal register helpers for the native.x86.f16c module.
+
 
   /// Convert four binary32 lanes to the low four half words, clearing the high four.
   template<isa Arch, unsigned Imm8, class V>
@@ -97,6 +76,6 @@ namespace native {
   float cvtsh_ss(std::uint16_t a) noexcept {
     return _mm_cvtss_f32(cvtph_ps<Arch, 4>(_mm_cvtsi32_si128(a)));
   }
-  /// \}
+
 }
 #endif

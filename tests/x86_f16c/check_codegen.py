@@ -73,6 +73,7 @@ for name, opcode, width, immediate in (
     ("widen4", "vcvtph2ps", 128, None), ("widen8", "vcvtph2ps", 256, None),
     ("discard_narrow1", "vcvtps2ph", 128, 8), ("discard_narrow4", "vcvtps2ph", 128, 255),
     ("discard_narrow8", "vcvtps2ph", 256, 7), ("discard_widen1", "vcvtph2ps", 128, None),
+    ("load_widen4", "vcvtph2ps", 128, None), ("discard_load_widen4", "vcvtph2ps", 128, None),
     ("discard_widen4", "vcvtph2ps", 128, None), ("discard_widen8", "vcvtph2ps", 256, None)):
     rows = instructions(name)
     matches = [row for row in rows if row[1] == opcode]

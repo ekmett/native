@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 # VNNI integer dot-product fixture
 
-The header, granular module, `native.x86` and `native` consumers compare each
+The granular module, `native.x86` and `native` consumers compare each
 admitted VNNI family with independent 64-bit scalar arithmetic. Directed
 signedness boundaries, accumulator extremes, cancellation, lane impulses,
 random inputs and complete mask sweeps cover wrapping and saturation. The
@@ -38,3 +38,8 @@ That mode builds the three public module consumers and inspects their objects.
 Move the whole installation before configuring a fresh consumer to test physical
 relocation. Compare installed file hashes before and after the consumer build;
 provider BMIs should be generated in the consumer build directory.
+
+The public vector calls use `native::simd` with exact element types, lane counts
+and architecture tags. Masked calls use `native::predicate` with the result lane count and tag.
+Private register probes and public module probes independently retain instruction
+and immediate checks; scalar oracles operate outside optional target scopes.

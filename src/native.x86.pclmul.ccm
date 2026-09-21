@@ -3,9 +3,5 @@ module;
 #include "native/x86/pclmul.h"
 export module native.x86.pclmul;
 export import native.x86.features;
-export namespace native {
-  /// \addtogroup x86_pclmul
-  /// \{
-  using ::native::pclmulqdq;
-  /// \}
-}
+export import native.simd;
+#include "native/x86/pclmul_body.h"

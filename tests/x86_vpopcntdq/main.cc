@@ -10,15 +10,12 @@
 #include <immintrin.h>
 #include <native/attributes.h>
 #include <native/targets.h>
-#if NATIVE_TEST_INTERFACE == 0
-#include <native/x86/vpopcntdq.h>
-import native.x86.features;
-#elif NATIVE_TEST_INTERFACE == 1
+#if NATIVE_TEST_INTERFACE == 1
 import native.x86.vpopcntdq;
 #elif NATIVE_TEST_INTERFACE == 2
 import native;
 #else
-#error Select the header, direct module or main hub test interface.
+#error Select the direct module or main hub test interface.
 #endif
 #include "checks.h"
 

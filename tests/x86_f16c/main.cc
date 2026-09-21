@@ -7,8 +7,8 @@ native_target("avx2,fma,f16c") native_noinline bool bridges() {
   constexpr auto A = native::avx2 & native::x86_feature::f16c;
   using V = native::simd<float, 8, A>;
   V input(1.5f);
-  auto half = native::cvtps_ph<A, 0>(input.to_native());
-  auto output = V::from_native(native::cvtph_ps<A, 8>(half));
+  auto half = native::cvtps_ph<A, 0>(input);
+  auto output = native::cvtph_ps<A, 8>(half);
   std::array<float, 8> lanes{};
   output.store(lanes.data());
   for (auto x : lanes) if (x != 1.5f) return false;
@@ -22,7 +22,7 @@ int main() {
   if (native::classify_isa(cpu, native::avx2 & native::x86_feature::f16c).admitted()) {
     f16c_fixture::mxcsr_guard guard;
     if (!bridges()) return 1;
-    std::puts("fp16 storage and simd native-value bridges passed");
+    std::puts("fp16 storage and typed simd conversions passed");
   } else std::puts("SKIP: AVX2 simd bridge unavailable");
   return 0;
 }

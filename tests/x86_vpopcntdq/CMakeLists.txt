@@ -28,8 +28,8 @@ function(native_vpopcntdq_disable_optional target)
   endif()
 endfunction()
 
-set(interface_number 0)
-set(interfaces header module hub)
+set(interface_number 1)
+set(interfaces module hub)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   # Installed consumers use the public modules and their relocated providers.
   set(interface_number 1)
@@ -44,11 +44,7 @@ foreach(interface IN LISTS interfaces)
   # Importers retain the provider baseline so all consumers share its BMI.
   # Textual probes below explicitly disable optional features.
   target_compile_definitions(${body} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
-  if(interface STREQUAL "hub")
-    set(provider native::native)
-  else()
-    set(provider native::minimal)
-  endif()
+  set(provider native::native)
   target_link_libraries(${body} PRIVATE ${provider})
   set_target_properties(${body} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
@@ -172,3 +168,48 @@ foreach(width IN ITEMS 128 256 512)
     endforeach()
   endforeach()
 endforeach()
+
+# Public instruction bindings must preserve the same opcodes and immediates.
+add_library(native_test_x86_vpopcntdq_codegen_public OBJECT codegen_public.cc)
+target_link_libraries(native_test_x86_vpopcntdq_codegen_public PRIVATE native::native)
+set_target_properties(native_test_x86_vpopcntdq_codegen_public PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_x86_vpopcntdq_codegen_public PRIVATE /O2)
+else()
+  target_compile_options(native_test_x86_vpopcntdq_codegen_public PRIVATE -O2)
+endif()
+add_test(NAME native.x86.vpopcntdq.codegen_public
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
+    --objdump "${NATIVE_VPOPCNTDQ_OBJDUMP}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/vpopcntdq-public-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:native_test_x86_vpopcntdq_codegen_public>
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.vpopcntdq.codegen_public PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;vpopcntdq")
+
+foreach(index RANGE 1 3)
+  set(target native_test_x86_vpopcntdq_reject_public_${index})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL reject_public.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  target_compile_definitions(${target} PRIVATE NATIVE_PUBLIC_REJECT=${index})
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.x86.vpopcntdq.reject_public_${index}
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_public_negative.py"
+      --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target ${target}
+      --config "$<CONFIG>"
+      --log "${CMAKE_CURRENT_BINARY_DIR}/reject-public-${index}-$<CONFIG>.log"
+      --diagnostic "requires target feature")
+  set_tests_properties(native.x86.vpopcntdq.reject_public_${index} PROPERTIES
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;modules;compile;negative;x86;vpopcntdq")
+endforeach()
+
+add_test(NAME native.x86.vpopcntdq.codegen_pairs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../x86_codegen_pairs.py"
+    --objdump "${NATIVE_VPOPCNTDQ_OBJDUMP}"
+    --raw $<TARGET_OBJECTS:native_test_x86_vpopcntdq_codegen>
+    --public $<TARGET_OBJECTS:native_test_x86_vpopcntdq_codegen_public>
+    --output "${CMAKE_CURRENT_BINARY_DIR}/vpopcntdq-paired-$<CONFIG>.txt"
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.vpopcntdq.codegen_pairs PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;vpopcntdq")

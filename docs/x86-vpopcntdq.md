@@ -2,12 +2,13 @@
 
 VPOPCNTDQ counts the set bits in each 32-bit or 64-bit integer lane.
 `import native.x86.vpopcntdq;` provides these operations through
-`native::minimal`; `native.x86` and `native` re-export them. The implementation
+`native::native`; `native.x86` and `native` re-export them. The implementation
 header is `native/x86/vpopcntdq.h`. Installed consumers import the modules;
 the package keeps implementation headers private for BMI regeneration.
 
-Every operation takes a `template<native::isa Arch>` argument and raw native
-integer registers. `Arch` must contain `avx512f` and `avx512vpopcntdq`;
+Every operation takes a `template<native::isa Arch>` argument and typed
+`native::simd` vectors. Use `target_features(...)` or `feature_closure(...)`
+to include register prerequisites in the tag. `Arch` must contain `avx512f` and `avx512vpopcntdq`;
 128-bit and 256-bit overloads also require `avx512vl`.
 
 | Operation | Result in each lane |
@@ -19,9 +20,10 @@ integer registers. `Arch` must contain `avx512f` and `avx512vpopcntdq`;
 | `maskz_vpopcntd<Arch>(mask, value)` | Count where the mask bit is set; otherwise zero |
 | `maskz_vpopcntq<Arch>(mask, value)` | Same zero rule for 64-bit lanes |
 
-All six names overload `__m128i`, `__m256i` and `__m512i`. Mask bit zero
-controls the lowest lane; excess mask bits are ignored. The 512-bit dword
-forms take `__mmask16`; all other masked forms take `__mmask8`. Counts retain
+The dword operations accept `simd<std::uint32_t,N,Arch>` with N = 4, 8 or 16;
+the qword operations accept `simd<std::uint64_t,N,Arch>` with N = 2, 4 or 8.
+Masks use `native::predicate<N,Arch>` for the corresponding lane count. Bit zero controls
+the lowest lane; constructing a mask clears bits above its logical lane count. Counts retain
 their lane width. Operations are `noexcept`, have no memory or flag effects,
 and carry constant-function and target attributes. The intrinsic definitions
 follow LLVM's [512-bit](https://clang.llvm.org/doxygen/avx512vpopcntdqintrin_8h_source.html)
@@ -29,7 +31,7 @@ and [VL](https://clang.llvm.org/doxygen/avx512vpopcntdqvlintrin_8h_source.html)
 interfaces.
 
 ```cpp
-#include <immintrin.h>
+#include <cstdint>
 #include <native/targets.h>
 import native.x86.vpopcntdq;
 
@@ -37,14 +39,14 @@ import native.x86.vpopcntdq;
 constexpr auto count_requirements = NATIVE_TARGET_ISA(count_lanes);
 
 NATIVE_TARGET_PUSH(count_lanes)
-void count_lanes(void const* input, void* output) {
-  auto bits = _mm512_loadu_si512(input);
+void count_lanes(std::uint32_t const* input, std::uint32_t* output) {
+  auto bits = native::simd<std::uint32_t,16,count_requirements>::load(input);
   auto counts = native::vpopcntd<count_requirements>(bits);
-  _mm512_storeu_si512(output, counts);
+  counts.store(output);
 }
 NATIVE_TARGET_POP()
 
-bool try_count_lanes(void const* input, void* output) {
+bool try_count_lanes(std::uint32_t const* input, std::uint32_t* output) {
   auto cpu = native::observe_x86_capabilities();
   if (!native::classify_isa(cpu, count_requirements,
                           NATIVE_TARGET_MINIMUM).admitted()) return false;
@@ -68,7 +70,7 @@ Admission requires observed and present CPU features plus readable XCR0 with
 XMM, YMM, opmask, upper ZMM and high ZMM state enabled (`(XCR0 & 0xe6) == 0xe6`).
 This also applies to VL forms. Missing CPU support or OS state prevents the call.
 
-`tests/x86_vpopcntdq` uses the header, granular module and hub. On admitted
+`tests/x86_vpopcntdq` uses the granular module and hub. On admitted
 hardware, a baseline scalar bit loop checks selected inputs, every one-hot bit,
 complements, lane order, masks and random vectors. Separate baseline tests cover
 metadata and admission using synthetic capability records. Compilation must

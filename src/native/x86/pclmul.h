@@ -9,16 +9,9 @@
 #endif
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
-namespace native {
-/** \defgroup x86_pclmul PCLMULQDQ
- * Exact multiplication of two binary polynomials of degree at most 63.
- * Bit i of an input is the coefficient of x^i. Addition is XOR, with no
- * carries or reduction; result bit 127 is always zero.
- * Imm8 bit 0 selects the high (1) or low (0) half of a, and bit 4 selects
- * the half of b. Other immediate bits are ignored. Imm8 must be in [0,255].
- * Arch records requirements; the caller must separately enable and admit its
- * target. These pure integer operations do not affect floating-point status.
- * \{ */
+namespace native::detail::x86_pclmul {
+// Internal register helpers for the native.x86.pclmul module.
+
 
   /// Multiply the selected 64-bit halves into one 128-bit polynomial product.
   /// Requires PCLMUL. An AVX-enabled caller may use the VEX encoding.
@@ -33,6 +26,6 @@ namespace native {
   template<isa Arch, unsigned Imm8, class A, class B>
   void pclmulqdq(A, B) = delete;
 
-/// \}
+
 }
 #endif

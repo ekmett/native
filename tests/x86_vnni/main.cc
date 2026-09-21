@@ -10,10 +10,7 @@
 #include <native/attributes.h>
 #include <native/targets.h>
 
-#if NATIVE_TEST_INTERFACE == 0
-#include <native/x86/vnni.h>
-import native.x86.features;
-#elif NATIVE_TEST_INTERFACE == 1
+#if NATIVE_TEST_INTERFACE == 1
 import native.x86.vnni;
 import native.x86.features;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -21,7 +18,7 @@ import native.x86;
 #elif NATIVE_TEST_INTERFACE == 3
 import native;
 #else
-#error Select the header, granular module, x86 umbrella or main hub interface.
+#error Select the granular module, x86 umbrella or main hub interface.
 #endif
 
 #include "checks.h"

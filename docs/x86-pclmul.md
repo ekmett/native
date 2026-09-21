@@ -1,13 +1,13 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 # Carry-less polynomial multiplication
 
-`native.x86.pclmul` exports `pclmulqdq<Arch, Imm8>` for `__m128i`.
-`native.x86.vpclmul` exports `vpclmulqdq<Arch, Imm8>` for `__m128i`,
-`__m256i` and `__m512i`. Both belong to `native::minimal` and are reexported
-by `native.x86` and `native`. Their implementation headers remain in the global
-module fragment. Include `<immintrin.h>` before importing when naming raw
-register types; use `native::simd::to_native()` and `from_native()` at the SIMD
-boundary.
+`native.x86.pclmul` exports `pclmulqdq<Arch, Imm8>` for
+`simd<std::uint64_t,2,Arch>`. `native.x86.vpclmul` exports
+`vpclmulqdq<Arch, Imm8>` for `simd<std::uint64_t,N,Arch>` with N = 2, 4 or 8.
+Both belong to `native::native`, import the SIMD provider, and are reexported
+by `native.x86` and `native`. Raw register helpers are implementation details.
+Use `target_features(...)` or `feature_closure(...)` for the architecture tag,
+including the register prerequisites.
 
 Each input bit is a coefficient of a polynomial over GF(2). The operation
 multiplies two selected 64-bit polynomials and returns their exact 128-bit
@@ -20,15 +20,15 @@ four independent products; there are no cross-128-bit-lane products.
 half. The four meaningful selectors are `0x00`, `0x01`, `0x10`, and `0x11`.
 Other bits are ignored, so `0xee` means the same as `0x00`. Out-of-range,
 overflowing and runtime immediates are rejected. Operands must have the exact
-raw integer register type and matching widths; floating registers are not
-implicitly reinterpreted.
+unsigned 64-bit element type, architecture tag and lane count. Floating-point
+vectors, raw registers and mixed tags are rejected.
 
-| Operation | Register | Required `Arch` bits | Function target |
+| Operation | Vector | Required `Arch` bits | Function target |
 | --- | --- | --- | --- |
-| `pclmulqdq` | `__m128i` | `pclmul` | `pclmul` |
-| `vpclmulqdq` | `__m128i` | `pclmul`, `avx` | `avx,pclmul` |
-| `vpclmulqdq` | `__m256i` | `vpclmulqdq`, `avx` | `avx,vpclmulqdq` |
-| `vpclmulqdq` | `__m512i` | `vpclmulqdq`, `avx512f` | `avx512f,vpclmulqdq` |
+| `pclmulqdq` | `simd<uint64_t,2,Arch>` | `pclmul` | `pclmul` |
+| `vpclmulqdq` | `simd<uint64_t,2,Arch>` | `pclmul`, `avx` | `avx,pclmul` |
+| `vpclmulqdq` | `simd<uint64_t,4,Arch>` | `vpclmulqdq`, `avx` | `avx,vpclmulqdq` |
+| `vpclmulqdq` | `simd<uint64_t,8,Arch>` | `vpclmulqdq`, `avx512f` | `avx512f,vpclmulqdq` |
 
 The 256-bit form needs neither AVX2 nor AVX-512. The 512-bit form needs no
 AVX512BW, AVX512DQ or AVX512VL. These instructions have no write-mask forms.
@@ -49,14 +49,14 @@ no instructions in the caller. All four overloads are pure integer operations
 and leave floating-point status unchanged.
 
 ```cpp
-#include <immintrin.h>
+#include <cstdint>
 #include <native/attributes.h>
 import native.x86.vpclmul;
 
-constexpr auto requirements = native::x86_feature::avx &
-                              native::x86_feature::vpclmulqdq;
+constexpr auto requirements = native::target_features("avx,vpclmulqdq");
+using polynomials = native::simd<std::uint64_t,4,requirements>;
 native_target("avx,vpclmulqdq")
-__m256i products(__m256i a, __m256i b) {
+polynomials products(polynomials a, polynomials b) {
   return native::vpclmulqdq<requirements, 0x10>(a, b);
 }
 // Enter products only after classify_isa(observe_x86_capabilities(),

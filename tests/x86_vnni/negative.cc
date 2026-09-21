@@ -1,65 +1,49 @@
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #if defined(NATIVE_VNNI_IMPORT)
-#include <immintrin.h>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include <cstdint>
+#include <type_traits>
 #include <native/attributes.h>
 import native.x86.vnni;
-#else
-#include <native/x86/vnni.h>
-#endif
 
 // CMake selects one operation per translation unit: target-mismatch diagnostics
 // stop code generation after the first error, so a combined source misses APIs.
-constexpr native::isa vex{native::x86_feature::avxvnni};
-constexpr auto evex = native::x86_feature::avx512f & native::x86_feature::avx512vnni;
-constexpr auto evexvl = evex & native::x86_feature::avx512vl;
-constexpr native::isa int8{native::x86_feature::avxvnniint8};
-constexpr native::isa int16{native::x86_feature::avxvnniint16};
+constexpr auto vex = native::feature_closure(native::isa{native::x86_feature::avxvnni});
+constexpr auto evex = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vnni);
+constexpr auto evexvl = native::feature_closure(evex & native::x86_feature::avx512vl);
+constexpr auto int8 = native::feature_closure(native::isa{native::x86_feature::avxvnniint8});
+constexpr auto int16 = native::feature_closure(native::isa{native::x86_feature::avxvnniint16});
 
-#if NATIVE_VNNI_WIDTH == 128
-using reg = __m128i;
-using float_reg = __m128;
-using mask = __mmask8;
-#elif NATIVE_VNNI_WIDTH == 256
-using reg = __m256i;
-using float_reg = __m256;
-using mask = __mmask8;
-#elif NATIVE_VNNI_WIDTH == 512
-using reg = __m512i;
-using float_reg = __m512;
-using mask = __mmask16;
-#else
-#error Select a VNNI register width
-#endif
+
 
 #if NATIVE_VNNI_REJECT == 1
 // The surrounding ISA cannot substitute for the independently required bit.
 #if NATIVE_VNNI_FAMILY == 1
-constexpr auto requirement = native::x86_feature::avx512f & native::x86_feature::avx512vl;
+constexpr auto requirement = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vl);
 #else
-constexpr native::isa requirement{native::x86_feature::avx2};
+constexpr auto requirement = native::feature_closure(native::isa{native::x86_feature::avx2});
 #endif
 #elif NATIVE_VNNI_REJECT == 2
-constexpr auto requirement = native::x86_feature::avx512vnni & native::x86_feature::avx512vl;
+constexpr auto requirement = native::feature_closure(native::x86_feature::avx512vnni & native::x86_feature::avx512vl);
 #elif NATIVE_VNNI_REJECT == 3
-constexpr auto requirement = evex;
+constexpr auto requirement = native::feature_closure(evex);
 #elif NATIVE_VNNI_REJECT == 10
-constexpr auto requirement = vex;
+constexpr auto requirement = native::feature_closure(vex);
 #elif NATIVE_VNNI_REJECT == 11
-constexpr auto requirement = vex & native::x86_feature::avx512f & native::x86_feature::avx512vl;
+constexpr auto requirement = native::feature_closure(vex & native::x86_feature::avx512f & native::x86_feature::avx512vl);
 #elif NATIVE_VNNI_REJECT == 12
 #if NATIVE_VNNI_FAMILY == 2
-constexpr auto requirement = int16;
+constexpr auto requirement = native::feature_closure(int16);
 #else
-constexpr auto requirement = int8;
+constexpr auto requirement = native::feature_closure(int8);
 #endif
 #elif NATIVE_VNNI_FAMILY == 0
-constexpr auto requirement = vex;
+constexpr auto requirement = native::feature_closure(vex);
 #elif NATIVE_VNNI_FAMILY == 1
-constexpr auto requirement = NATIVE_VNNI_WIDTH == 512 ? evex : evexvl;
+constexpr auto requirement = native::feature_closure(NATIVE_VNNI_WIDTH == 512 ? evex : evexvl);
 #elif NATIVE_VNNI_FAMILY == 2
-constexpr auto requirement = int8;
+constexpr auto requirement = native::feature_closure(int8);
 #elif NATIVE_VNNI_FAMILY == 3
-constexpr auto requirement = int16;
+constexpr auto requirement = native::feature_closure(int16);
 #else
 #error Select a VNNI instruction family
 #endif
@@ -95,33 +79,31 @@ constexpr auto requirement = int16;
 #define NATIVE_VNNI_CALL(acc, k, a, b) native::NATIVE_VNNI_FUNCTION<requirement>(acc, a, b)
 #endif
 
-#if NATIVE_VNNI_REJECT == 7
-using acc_type = float_reg;
-using a_type = float_reg;
-using b_type = float_reg;
-#elif NATIVE_VNNI_REJECT == 8
-using acc_type = reg;
-using a_type = float_reg;
-using b_type = reg;
-#elif NATIVE_VNNI_REJECT == 9
-using acc_type = reg;
-using a_type = __m128i;
-using b_type = reg;
-#elif NATIVE_VNNI_REJECT == 14
-using acc_type = float_reg;
-using a_type = reg;
-using b_type = reg;
-#elif NATIVE_VNNI_REJECT == 15
-using acc_type = reg;
-using a_type = reg;
-using b_type = float_reg;
+#define NATIVE_VNNI_NAME_(x) #x
+#define NATIVE_VNNI_NAME(x) NATIVE_VNNI_NAME_(x)
+constexpr char operation_name[]=NATIVE_VNNI_NAME(NATIVE_VNNI_OPERATION);
+constexpr bool word=operation_name[2]=='w';
+constexpr bool unsigned_a=operation_name[3]=='u', unsigned_b=operation_name[4]=='u';
+using scalar_a=std::conditional_t<word,
+  std::conditional_t<unsigned_a,std::uint16_t,std::int16_t>,
+  std::conditional_t<unsigned_a,std::uint8_t,std::int8_t>>;
+using scalar_b=std::conditional_t<word,
+  std::conditional_t<unsigned_b,std::uint16_t,std::int16_t>,
+  std::conditional_t<unsigned_b,std::uint8_t,std::int8_t>>;
+using accumulator=native::simd<std::conditional_t<unsigned_a && unsigned_b,std::uint32_t,std::int32_t>,NATIVE_VNNI_WIDTH/32,requirement>;
+using a_vector=native::simd<scalar_a,NATIVE_VNNI_WIDTH/(8*sizeof(scalar_a)),requirement>;
+using b_vector=native::simd<scalar_b,NATIVE_VNNI_WIDTH/(8*sizeof(scalar_b)),requirement>;
+using mask=native::predicate<NATIVE_VNNI_WIDTH/32,requirement>;
+#if NATIVE_VNNI_REJECT == 8
+using a_type=native::simd<float,NATIVE_VNNI_WIDTH/32,requirement>;
 #else
-using acc_type = reg;
-using a_type = reg;
-using b_type = reg;
+using a_type=a_vector;
 #endif
-
 native_noinline native_target(NATIVE_VNNI_CALLER)
-reg rejected(acc_type acc, mask k, a_type a, b_type b) noexcept {
+auto rejected(accumulator acc, mask k, a_type a, b_vector b) noexcept {
   return NATIVE_VNNI_CALL(acc, k, a, b);
 }
+
+#else
+#include "negative_raw.cc"
+#endif

@@ -9,19 +9,11 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   return()
 endif()
 
-set(f16c_interfaces header module umbrella main)
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  # Installed consumers use the public granular module and omnibus interface.
-  set(f16c_interfaces module umbrella main)
-endif()
+set(f16c_interfaces module umbrella main)
 foreach(interface IN LISTS f16c_interfaces)
   set(target native_test_x86_f16c_${interface})
   add_executable(${target} ${interface}.cc)
-  if(interface STREQUAL "main")
-    target_link_libraries(${target} PRIVATE native::native)
-  else()
-    target_link_libraries(${target} PRIVATE native::minimal)
-  endif()
+  target_link_libraries(${target} PRIVATE native::native)
   set_target_properties(${target} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(COMMAND native_link_clang_cl_asan)
@@ -35,7 +27,7 @@ endforeach()
 # Saved signal context makes unmasked exception flags observable on Linux x86-64.
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   add_executable(native_test_x86_f16c_traps traps.cc)
-  target_link_libraries(native_test_x86_f16c_traps PRIVATE native::minimal)
+  target_link_libraries(native_test_x86_f16c_traps PRIVATE native::native)
   set_target_properties(native_test_x86_f16c_traps PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   add_test(NAME native.x86.f16c.traps COMMAND native_test_x86_f16c_traps)
@@ -134,13 +126,10 @@ foreach(kind IN LISTS f16c_negative_names)
   elseif(kind STREQUAL "immediate_runtime")
     set(diagnostic "invalid explicitly-specified argument|non-type template argument is not a constant expression")
   else()
-    set(diagnostic "constraints not satisfied")
+    set(diagnostic "constraints not satisfied|call to deleted function")
   endif()
   foreach(interface IN ITEMS header module)
     if(interface STREQUAL "module")
-      if(NOT kind MATCHES "^(target|shape)" AND NOT kind STREQUAL "feature_scalar")
-        continue()
-      endif()
       set(suffix module_${kind})
     else()
       set(suffix ${kind})
@@ -150,7 +139,7 @@ foreach(kind IN LISTS f16c_negative_names)
     if(interface STREQUAL "module")
       # Imported templates must preserve target and exact-type requirements.
       # Keep the provider baseline when consuming its BMI.
-      target_link_libraries(${target} PRIVATE native::minimal)
+      target_link_libraries(${target} PRIVATE native::native)
       target_compile_definitions(${target} PRIVATE NATIVE_F16C_IMPORT=1)
       set_target_properties(${target} PROPERTIES
         CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
@@ -168,3 +157,33 @@ foreach(kind IN LISTS f16c_negative_names)
       RUN_SERIAL TRUE LABELS "host;compile;negative;baseline;x86;f16c" TIMEOUT 180)
   endforeach()
 endforeach()
+
+# Public instruction bindings must preserve the same opcodes and immediates.
+add_library(native_test_x86_f16c_codegen_public OBJECT codegen_public.cc)
+target_link_libraries(native_test_x86_f16c_codegen_public PRIVATE native::native)
+set_target_properties(native_test_x86_f16c_codegen_public PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_x86_f16c_codegen_public PRIVATE /O2)
+else()
+  target_compile_options(native_test_x86_f16c_codegen_public PRIVATE -O2)
+endif()
+add_test(NAME native.x86.f16c.codegen_public
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
+    --objdump "${NATIVE_F16C_OBJDUMP}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/f16c-public-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:native_test_x86_f16c_codegen_public>
+    $<TARGET_OBJECTS:native_test_x86_f16c_baseline>
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.f16c.codegen_public PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;f16c")
+
+add_test(NAME native.x86.f16c.codegen_pairs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../x86_codegen_pairs.py"
+    --objdump "${NATIVE_F16C_OBJDUMP}"
+    --raw $<TARGET_OBJECTS:native_test_x86_f16c_codegen>
+    --public $<TARGET_OBJECTS:native_test_x86_f16c_codegen_public>
+    --output "${CMAKE_CURRENT_BINARY_DIR}/f16c-paired-$<CONFIG>.txt"
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.f16c.codegen_pairs PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;f16c")

@@ -9,19 +9,11 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   return()
 endif()
 
-set(gfni_interfaces header module main)
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  # Installed consumers use the public granular module and omnibus interface.
-  set(gfni_interfaces module main)
-endif()
+set(gfni_interfaces module main)
 foreach(interface IN LISTS gfni_interfaces)
   set(target native_test_x86_gfni_${interface})
   add_executable(${target} ${interface}.cc)
-  if(interface STREQUAL "main")
-    target_link_libraries(${target} PRIVATE native::native)
-  else()
-    target_link_libraries(${target} PRIVATE native::minimal)
-  endif()
+  target_link_libraries(${target} PRIVATE native::native)
   set_target_properties(${target} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(COMMAND native_link_clang_cl_asan)
@@ -119,3 +111,49 @@ foreach(kind IN LISTS gfni_negative_names)
   set_tests_properties(native.x86.gfni.reject_${kind} PROPERTIES
     RUN_SERIAL TRUE LABELS "host;compile;negative;baseline;x86;gfni" TIMEOUT 180)
 endforeach()
+
+# Public instruction bindings must preserve the same opcodes and immediates.
+add_library(native_test_x86_gfni_codegen_public OBJECT codegen_public.cc)
+target_link_libraries(native_test_x86_gfni_codegen_public PRIVATE native::native)
+set_target_properties(native_test_x86_gfni_codegen_public PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_x86_gfni_codegen_public PRIVATE /O2)
+else()
+  target_compile_options(native_test_x86_gfni_codegen_public PRIVATE -O2)
+endif()
+add_test(NAME native.x86.gfni.codegen_public
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
+    --objdump "${NATIVE_GFNI_OBJDUMP}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/gfni-public-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:native_test_x86_gfni_codegen_public>
+    $<TARGET_OBJECTS:native_test_x86_gfni_baseline>
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.gfni.codegen_public PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;gfni")
+
+foreach(index RANGE 1 3)
+  set(target native_test_x86_gfni_reject_public_${index})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL reject_public.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  target_compile_definitions(${target} PRIVATE NATIVE_PUBLIC_REJECT=${index})
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  add_test(NAME native.x86.gfni.reject_public_${index}
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_negative.py"
+      --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target ${target}
+      --config "$<CONFIG>"
+      --log "${CMAKE_CURRENT_BINARY_DIR}/reject-public-${index}-$<CONFIG>.log"
+      --diagnostic "requires target feature")
+  set_tests_properties(native.x86.gfni.reject_public_${index} PROPERTIES
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;modules;compile;negative;x86;gfni")
+endforeach()
+
+add_test(NAME native.x86.gfni.codegen_pairs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../x86_codegen_pairs.py"
+    --objdump "${NATIVE_GFNI_OBJDUMP}"
+    --raw $<TARGET_OBJECTS:native_test_x86_gfni_codegen>
+    --public $<TARGET_OBJECTS:native_test_x86_gfni_codegen_public>
+    --output "${CMAKE_CURRENT_BINARY_DIR}/gfni-paired-$<CONFIG>.txt"
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.gfni.codegen_pairs PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;gfni")

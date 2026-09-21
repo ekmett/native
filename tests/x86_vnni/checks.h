@@ -3,66 +3,14 @@
 
 namespace vnni_fixture {
   using native::x86_feature;
-  constexpr native::isa core{x86_feature::avxvnni};
-  constexpr native::isa evex512 = x86_feature::avx512f & x86_feature::avx512vnni;
-  constexpr native::isa evexvl = evex512 & x86_feature::avx512vl;
-  constexpr native::isa int8{x86_feature::avxvnniint8};
-  constexpr native::isa int16{x86_feature::avxvnniint16};
+  constexpr auto core = native::feature_closure(native::isa{x86_feature::avxvnni});
+  constexpr native::isa evex512 = native::feature_closure(x86_feature::avx512f & x86_feature::avx512vnni);
+  constexpr native::isa evexvl = native::feature_closure(evex512 & x86_feature::avx512vl);
+  constexpr auto int8 = native::feature_closure(native::isa{x86_feature::avxvnniint8});
+  constexpr auto int16 = native::feature_closure(native::isa{x86_feature::avxvnniint16});
 
-  template<native::isa A, class V>
-  concept has_core = requires(V v) {
-    { native::dpbusd<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpbusds<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwssd<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwssds<A>(v, v, v) } noexcept -> std::same_as<V>;
-  };
-  template<native::isa A, class V, class K>
-  concept has_masks = requires(V v, K k) {
-    { native::mask_dpbusd<A>(v, k, v, v) } noexcept -> std::same_as<V>;
-    { native::mask_dpbusds<A>(v, k, v, v) } noexcept -> std::same_as<V>;
-    { native::mask_dpwssd<A>(v, k, v, v) } noexcept -> std::same_as<V>;
-    { native::mask_dpwssds<A>(v, k, v, v) } noexcept -> std::same_as<V>;
-    { native::maskz_dpbusd<A>(k, v, v, v) } noexcept -> std::same_as<V>;
-    { native::maskz_dpbusds<A>(k, v, v, v) } noexcept -> std::same_as<V>;
-    { native::maskz_dpwssd<A>(k, v, v, v) } noexcept -> std::same_as<V>;
-    { native::maskz_dpwssds<A>(k, v, v, v) } noexcept -> std::same_as<V>;
-  };
-  template<native::isa A, class V>
-  concept has_int8 = requires(V v) {
-    { native::dpbssd<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpbssds<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpbsud<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpbsuds<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpbuud<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpbuuds<A>(v, v, v) } noexcept -> std::same_as<V>;
-  };
-  template<native::isa A, class V>
-  concept has_int16 = requires(V v) {
-    { native::dpwsud<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwsuds<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwusd<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwusds<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwuud<A>(v, v, v) } noexcept -> std::same_as<V>;
-    { native::dpwuuds<A>(v, v, v) } noexcept -> std::same_as<V>;
-  };
 
-  static_assert(has_core<core, __m128i> && has_core<core, __m256i>);
-  static_assert(!has_core<core, __m512i>);
-  static_assert(has_core<evex512, __m512i>);
-  static_assert(has_core<evexvl, __m128i> && has_core<evexvl, __m256i>);
-  static_assert(has_masks<evex512, __m512i, __mmask16>);
-  static_assert(has_masks<evexvl, __m128i, __mmask8> && has_masks<evexvl, __m256i, __mmask8>);
-  static_assert(!has_masks<core, __m128i, __mmask8> && !has_masks<core, __m256i, __mmask8>);
-  static_assert(!has_core<evex512, __m128i> && !has_core<evex512, __m256i>);
-  static_assert(!has_core<native::isa(x86_feature::avx512vnni), __m512i>);
-  static_assert(!has_core<x86_feature::avx512vnni & x86_feature::avx512vl, __m128i>);
-  static_assert(!has_core<native::avx2, __m256i> && !has_core<native::avx512, __m512i>);
-  static_assert(!has_core<int8, __m128i> && !has_core<int16, __m128i>);
-  static_assert(has_int8<int8, __m128i> && has_int8<int8, __m256i>);
-  static_assert(has_int16<int16, __m128i> && has_int16<int16, __m256i>);
-  static_assert(!has_int8<int8, __m512i> && !has_int16<int16, __m512i>);
-  static_assert(!has_int8<core, __m128i> && !has_int16<core, __m128i>);
-  static_assert(!has_int8<int16, __m128i> && !has_int16<int8, __m128i>);
+#include "api_checks.h"
 
   enum class saturation { modulo, signed32, unsigned32 };
   struct operation {
@@ -180,8 +128,8 @@ namespace vnni_fixture {
     __builtin_memcpy(&a, input->a.data(), sizeof(V)); \
     __builtin_memcpy(&b, input->b.data(), sizeof(V))
 #define NATIVE_VNNI_CORE_RESULTS(V, A) \
-    V result[] = {native::dpbusd<A>(acc, a, b), native::dpbusds<A>(acc, a, b), \
-      native::dpwssd<A>(acc, a, b), native::dpwssds<A>(acc, a, b)}; \
+    V result[] = {native::dpbusd<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), A>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), A>::from_native(b)).to_native(), native::dpbusds<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), A>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), A>::from_native(b)).to_native(), \
+      native::dpwssd<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native(), native::dpwssds<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native()}; \
     __builtin_memcpy(plain, result, sizeof(result))
 #define NATIVE_VNNI_CORE(Name, V, N) \
   extern "C" native_noinline __attribute__((target("avxvnni"))) void Name( \
@@ -200,10 +148,10 @@ namespace vnni_fixture {
     NATIVE_VNNI_LOAD(V); \
     NATIVE_VNNI_CORE_RESULTS(V, A); \
     K k = static_cast<K>(bits); \
-    V merge[] = {native::mask_dpbusd<A>(acc, k, a, b), native::mask_dpbusds<A>(acc, k, a, b), \
-      native::mask_dpwssd<A>(acc, k, a, b), native::mask_dpwssds<A>(acc, k, a, b)}; \
-    V zero[] = {native::maskz_dpbusd<A>(k, acc, a, b), native::maskz_dpbusds<A>(k, acc, a, b), \
-      native::maskz_dpwssd<A>(k, acc, a, b), native::maskz_dpwssds<A>(k, acc, a, b)}; \
+    V merge[] = {native::mask_dpbusd<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), A>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), A>::from_native(b)).to_native(), native::mask_dpbusds<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), A>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), A>::from_native(b)).to_native(), \
+      native::mask_dpwssd<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native(), native::mask_dpwssds<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native()}; \
+    V zero[] = {native::maskz_dpbusd<A>(native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), A>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), A>::from_native(b)).to_native(), native::maskz_dpbusds<A>(native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), A>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), A>::from_native(b)).to_native(), \
+      native::maskz_dpwssd<A>(native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native(), native::maskz_dpwssds<A>(native::predicate<sizeof(acc) / sizeof(std::int32_t), A>::from_bitset(k), native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native()}; \
     __builtin_memcpy(merged, merge, sizeof(merge)); \
     __builtin_memcpy(zeroed, zero, sizeof(zero)); \
   }
@@ -217,9 +165,9 @@ namespace vnni_fixture {
   extern "C" native_noinline __attribute__((target("avxvnniint8"))) void Name( \
       inputs<N> const* input, outputs<N, 6>* plain, unsigned, outputs<N, 6>*, outputs<N, 6>*) { \
     NATIVE_VNNI_LOAD(V); \
-    V result[] = {native::dpbssd<int8>(acc, a, b), native::dpbssds<int8>(acc, a, b), \
-      native::dpbsud<int8>(acc, a, b), native::dpbsuds<int8>(acc, a, b), \
-      native::dpbuud<int8>(acc, a, b), native::dpbuuds<int8>(acc, a, b)}; \
+    V result[] = {native::dpbssd<int8>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int8>::from_native(acc), native::simd<std::int8_t, sizeof(a) / sizeof(std::int8_t), int8>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), int8>::from_native(b)).to_native(), native::dpbssds<int8>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int8>::from_native(acc), native::simd<std::int8_t, sizeof(a) / sizeof(std::int8_t), int8>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), int8>::from_native(b)).to_native(), \
+      native::dpbsud<int8>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int8>::from_native(acc), native::simd<std::int8_t, sizeof(a) / sizeof(std::int8_t), int8>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), int8>::from_native(b)).to_native(), native::dpbsuds<int8>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int8>::from_native(acc), native::simd<std::int8_t, sizeof(a) / sizeof(std::int8_t), int8>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), int8>::from_native(b)).to_native(), \
+      native::dpbuud<int8>(native::simd<std::uint32_t, sizeof(acc) / sizeof(std::uint32_t), int8>::from_native(acc), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), int8>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), int8>::from_native(b)).to_native(), native::dpbuuds<int8>(native::simd<std::uint32_t, sizeof(acc) / sizeof(std::uint32_t), int8>::from_native(acc), native::simd<std::uint8_t, sizeof(a) / sizeof(std::uint8_t), int8>::from_native(a), native::simd<std::uint8_t, sizeof(b) / sizeof(std::uint8_t), int8>::from_native(b)).to_native()}; \
     __builtin_memcpy(plain, result, sizeof(result)); \
   }
   NATIVE_VNNI_INT8(invoke_int8_128, __m128i, 16)
@@ -229,9 +177,9 @@ namespace vnni_fixture {
   extern "C" native_noinline __attribute__((target("avxvnniint16"))) void Name( \
       inputs<N> const* input, outputs<N, 6>* plain, unsigned, outputs<N, 6>*, outputs<N, 6>*) { \
     NATIVE_VNNI_LOAD(V); \
-    V result[] = {native::dpwsud<int16>(acc, a, b), native::dpwsuds<int16>(acc, a, b), \
-      native::dpwusd<int16>(acc, a, b), native::dpwusds<int16>(acc, a, b), \
-      native::dpwuud<int16>(acc, a, b), native::dpwuuds<int16>(acc, a, b)}; \
+    V result[] = {native::dpwsud<int16>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int16>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), int16>::from_native(a), native::simd<std::uint16_t, sizeof(b) / sizeof(std::uint16_t), int16>::from_native(b)).to_native(), native::dpwsuds<int16>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int16>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), int16>::from_native(a), native::simd<std::uint16_t, sizeof(b) / sizeof(std::uint16_t), int16>::from_native(b)).to_native(), \
+      native::dpwusd<int16>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int16>::from_native(acc), native::simd<std::uint16_t, sizeof(a) / sizeof(std::uint16_t), int16>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), int16>::from_native(b)).to_native(), native::dpwusds<int16>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int16>::from_native(acc), native::simd<std::uint16_t, sizeof(a) / sizeof(std::uint16_t), int16>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), int16>::from_native(b)).to_native(), \
+      native::dpwuud<int16>(native::simd<std::uint32_t, sizeof(acc) / sizeof(std::uint32_t), int16>::from_native(acc), native::simd<std::uint16_t, sizeof(a) / sizeof(std::uint16_t), int16>::from_native(a), native::simd<std::uint16_t, sizeof(b) / sizeof(std::uint16_t), int16>::from_native(b)).to_native(), native::dpwuuds<int16>(native::simd<std::uint32_t, sizeof(acc) / sizeof(std::uint32_t), int16>::from_native(acc), native::simd<std::uint16_t, sizeof(a) / sizeof(std::uint16_t), int16>::from_native(a), native::simd<std::uint16_t, sizeof(b) / sizeof(std::uint16_t), int16>::from_native(b)).to_native()}; \
     __builtin_memcpy(plain, result, sizeof(result)); \
   }
   NATIVE_VNNI_INT16(invoke_int16_128, __m128i, 16)

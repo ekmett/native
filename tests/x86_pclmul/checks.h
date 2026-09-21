@@ -2,13 +2,16 @@
 #pragma once
 namespace pclmul_fixture {
 using native::x86_feature;
-constexpr native::isa legacy{x86_feature::pclmul};
-constexpr auto vex128 = legacy & x86_feature::avx;
-constexpr auto vex256 = x86_feature::vpclmulqdq & x86_feature::avx;
-constexpr auto evex512 = x86_feature::vpclmulqdq & x86_feature::avx512f;
-static_assert(!vex256.has(x86_feature::pclmul));
+constexpr auto legacy = native::feature_closure(native::isa{x86_feature::pclmul});
+constexpr auto vex128 = native::feature_closure(legacy & x86_feature::avx);
+constexpr auto vex256 = native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx);
+constexpr auto evex512 = native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f);
+static_assert(vex256.has(x86_feature::pclmul)); // Compiler prerequisite closure.
 static_assert(!vex256.has(x86_feature::avx2));
 static_assert(!evex512.has(x86_feature::avx512vl));
+
+#include "api_checks.h"
+
 using word = std::uint64_t;
 template<std::size_t N> using words = std::array<word,N>;
 template<std::size_t N> struct inputs { words<N> a, b; };
@@ -39,7 +42,7 @@ void evaluate_legacy(inputs<2> const& in, outputs<2,sizeof...(I)>& out,
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
   ([&] native_target("pclmul") {
-    auto value=native::pclmulqdq<legacy,I>(a,b);
+    auto value=native::pclmulqdq<legacy,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), legacy>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), legacy>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }
@@ -52,7 +55,7 @@ void evaluate_vex128(inputs<2> const& in, outputs<2,sizeof...(I)>& out,
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
   ([&] native_target("avx,pclmul") {
-    auto value=native::vpclmulqdq<vex128,I>(a,b);
+    auto value=native::vpclmulqdq<vex128,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), vex128>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), vex128>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }
@@ -65,7 +68,7 @@ void evaluate_vex256(inputs<4> const& in, outputs<4,sizeof...(I)>& out,
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
   ([&] native_target("avx,vpclmulqdq") {
-    auto value=native::vpclmulqdq<vex256,I>(a,b);
+    auto value=native::vpclmulqdq<vex256,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), vex256>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), vex256>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }
@@ -78,7 +81,7 @@ void evaluate_evex512(inputs<8> const& in, outputs<8,sizeof...(I)>& out,
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
   ([&] native_target("avx512f,vpclmulqdq") {
-    auto value=native::vpclmulqdq<evex512,I>(a,b);
+    auto value=native::vpclmulqdq<evex512,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), evex512>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), evex512>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }

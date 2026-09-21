@@ -3,9 +3,5 @@ module;
 #include "native/x86/vpclmul.h"
 export module native.x86.vpclmul;
 export import native.x86.features;
-export namespace native {
-  /// \addtogroup x86_vpclmul
-  /// \{
-  using ::native::vpclmulqdq;
-  /// \}
-}
+export import native.simd;
+#include "native/x86/vpclmul_body.h"

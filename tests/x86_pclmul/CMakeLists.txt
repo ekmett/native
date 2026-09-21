@@ -9,19 +9,11 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   return()
 endif()
 
-set(pclmul_interfaces header module x86 main)
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-  # Installed consumers use the public granular module and omnibus interface.
-  set(pclmul_interfaces module x86 main)
-endif()
+set(pclmul_interfaces module x86 main)
 foreach(interface IN LISTS pclmul_interfaces)
   set(target native_test_x86_pclmul_${interface})
   add_executable(${target} ${interface}.cc)
-  if(interface STREQUAL "main")
-    target_link_libraries(${target} PRIVATE native::native)
-  else()
-    target_link_libraries(${target} PRIVATE native::minimal)
-  endif()
+  target_link_libraries(${target} PRIVATE native::native)
   set_target_properties(${target} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(COMMAND native_link_clang_cl_asan)
@@ -155,7 +147,7 @@ foreach(kind IN LISTS pclmul_negative_names)
     # These consumers must retain the same baseline options as their providers.
     set(target native_test_x86_pclmul_module_reject_${kind})
     add_library(${target} OBJECT EXCLUDE_FROM_ALL negative.cc)
-    target_link_libraries(${target} PRIVATE native::minimal)
+    target_link_libraries(${target} PRIVATE native::native)
     set_target_properties(${target} PROPERTIES
       CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
     target_compile_definitions(${target} PRIVATE NATIVE_PCLMUL_MODULE_NEGATIVE=1
@@ -170,3 +162,33 @@ foreach(kind IN LISTS pclmul_negative_names)
       RUN_SERIAL TRUE LABELS "host;compile;negative;modules;baseline;x86;pclmul" TIMEOUT 180)
   endif()
 endforeach()
+
+# Public instruction bindings must preserve the same opcodes and immediates.
+add_library(native_test_x86_pclmul_codegen_public OBJECT codegen_public.cc)
+target_link_libraries(native_test_x86_pclmul_codegen_public PRIVATE native::native)
+set_target_properties(native_test_x86_pclmul_codegen_public PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_x86_pclmul_codegen_public PRIVATE /O2)
+else()
+  target_compile_options(native_test_x86_pclmul_codegen_public PRIVATE -O2)
+endif()
+add_test(NAME native.x86.pclmul.codegen_public
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
+    --objdump "${NATIVE_PCLMUL_OBJDUMP}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/pclmul-public-$<CONFIG>.disassembly"
+    $<TARGET_OBJECTS:native_test_x86_pclmul_codegen_public>
+    $<TARGET_OBJECTS:native_test_x86_pclmul_baseline>
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.pclmul.codegen_public PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;pclmul")
+
+add_test(NAME native.x86.pclmul.codegen_pairs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../x86_codegen_pairs.py"
+    --objdump "${NATIVE_PCLMUL_OBJDUMP}"
+    --raw $<TARGET_OBJECTS:native_test_x86_pclmul_codegen>
+    --public $<TARGET_OBJECTS:native_test_x86_pclmul_codegen_public>
+    --output "${CMAKE_CURRENT_BINARY_DIR}/pclmul-paired-$<CONFIG>.txt"
+    COMMAND_EXPAND_LISTS)
+set_tests_properties(native.x86.pclmul.codegen_pairs PROPERTIES
+  LABELS "host;modules;codegen;baseline;x86;pclmul")

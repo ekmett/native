@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 # F16C fixture
 
-The normal baseline build runs header, granular module, x86 umbrella and main
+The normal baseline build runs granular module, x86 umbrella and main
 hub consumers. Every runtime entry checks F16C/AVX CPU support and XCR0 before
 calling targeted code. Missing support returns CTest skip code 77. MXCSR is
 saved and restored, including incoming exception masks and status bits.
@@ -48,3 +48,8 @@ leaving DE and UE ([AMD APM, volume 1, section 4.10.3](https://kib.kiev.ua/x86do
 The trap fixture requires each known vendor's exact flags. For an unknown
 vendor, only these two complete flag sets are accepted for that case. Every
 case still requires SIGFPE, and all other flag expectations remain exact.
+
+The public vector calls use `native::simd` with exact element types, lane counts
+and architecture tags. Masked calls use `native::predicate` with the result lane count and tag.
+Private register probes and public module probes independently retain instruction
+and immediate checks; scalar oracles operate outside optional target scopes.

@@ -3,12 +3,5 @@ module;
 #include "native/x86/f16c.h"
 export module native.x86.f16c;
 export import native.x86.features;
-export namespace native {
-  /// \addtogroup x86_f16c
-  /// \{
-  using ::native::cvtps_ph;
-  using ::native::cvtph_ps;
-  using ::native::cvtss_sh;
-  using ::native::cvtsh_ss;
-  /// \}
-}
+export import native.simd;
+#include "native/x86/f16c_body.h"
