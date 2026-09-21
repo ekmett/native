@@ -10,8 +10,7 @@ build/
 Testing
 *.trace
 *.perfetto-trace
-.ccache/*
-!.ccache/ccache.conf
+.ccache/
 .ipynb_checkpoints/
 tags
 nohup.out

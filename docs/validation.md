@@ -1,439 +1,151 @@
 # Validation
 
-The tests cover value semantics, memory boundaries, module identity and installed
-package consumption. Counts below belong to the configurations stated beside
-them; sanitizer, assembly and downstream results retain their separate scope.
+The maintained tests check value semantics, instruction behavior, compiler
+constraints and installed-package use. Start with the [build guide](../doc/building.md)
+and [test guide](https://github.com/ekmett/simd/blob/main/tests/README.md). CTest results, generated instruction
+sequences and numerical oracles establish different parts of the contract.
 
-These are checkpoint records. Entries preceding the single-hub migration retain
-their original per-ISA module layout and dependency pins; they do not describe
-the current package structure. The [build guide](../doc/building.md) and
-[target-list guide](omnibus.md) describe the shared baseline hub.
+## Running the checks
 
-The short-vector and named-swizzle checkpoint was exercised on Windows x86-64
-and an Apple M3 with upstream Clang 23.1.1, CMake 4.4.3 and Ninja. These are CPU
-and compiler checks; they do not establish GPU behavior or throughput.
+Configure a build for an ISA admitted by the test host, then build and run CTest:
 
-| Configuration | Result |
-| --- | --- |
-| Windows, AVX2 fixtures, both x86 module producers, PCH and ThinLTO | 28 tests passed with exceptions off; 28 with exceptions on |
-| Windows, relocated installed module package | 1 test passed for each exception configuration |
-| Windows, AVX-512 ordinary swizzles | Header and module consumers passed |
-| Windows, AVX2 and AVX-512 swizzles with AddressSanitizer | All four consumers passed |
-| M3, NEON, PCH and ThinLTO | 23 tests passed |
-| M3, relocated installed module package | 1 test passed |
-| M3, ordinary and AddressSanitizer memory fixtures | All four tests passed |
-| M3, AddressSanitizer named swizzles | Header and module consumers passed |
+```sh
+cmake --build build/core --parallel
+ctest --test-dir build/core --output-on-failure
+```
 
-The full Windows and M3 suites include the short-vector bitwise flush bridge and
-Apple SDK header coexistence tests. Source hashes were captured before and after
-each run. The separately retained focused x86 sanitizer and assembly checks used
-the same swizzle implementation; later changes added tests and the bit bridge.
+`NATIVE_TEST_ISA` selects the primary arithmetic profile. `NATIVE_PROFILES`
+selects additional profile fixtures; the module provider exposes the supported
+host implementations at the configured project minimum. Run separate builds
+for exception settings and sanitizers. `NATIVE_ENABLE_ASAN=ON` instruments host
+memory checks; use a separate build directory with IPO disabled for that run.
 
-## What the swizzle tests establish
+The [CI workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/build.yml) covers Linux x86-64 and ARM64,
+Windows x64 and ARM64, and macOS ARM64, with exceptions enabled and disabled.
+An optional-instruction test must admit the CPU and operating-system state
+before execution. Unsupported hardware is reported as a skip. A compile-only
+check or skipped runtime check does not establish native instruction behavior.
 
-`tests/core_regression/swizzle.cc` is compiled through both headers and modules.
-It covers logical two- and three-lane float, signed/unsigned 32-bit integer and
-mask vectors. It checks constexpr construction, unchanged physical layout,
-owning reads, overlapping writes, repeated-index read-only access, const/rvalue
-restrictions and exact bit transport. Partial and full loads/stores run against
-guarded page boundaries, including zero-length null access.
+## Values and memory
 
-Arithmetic is compared against the active lanes of physical four-lane vectors.
-`short_flush.cc` checks two- and three-lane register and array flushing in both
-CPU denormal modes. Signed subnormals become signed zero; every other supplied
-word, including NaN payloads, passes through unchanged. The operation leaves the
-floating-point environment untouched.
+The [core fixtures](https://github.com/ekmett/simd/blob/main/tests/core_regression/README.md) exercise construction,
+scalar/vector/wide consistency, integer wrapping, masks, bit transfers and
+floating-point boundary cases through headers and module imports.
 
-Inactive division lanes do not introduce floating-point exceptions. Unsupported
-mixed shapes and architectures are rejected at compile time.
+Short vectors and swizzles have checks for:
 
-`swizzle_codegen.cc` contains six externally visible probes. In optimized strict
-floating-point assembly, all six have no calls or stack references on AVX2,
-AVX-512 and NEON. Three-lane x86 transfers use masked loads/stores; NEON transfers
-use eight plus four bytes. Reversal and overlapping reversal compile identically.
-This inspection says nothing about unmeasured custom-element swizzle overhead.
+- Logical two- and three-lane access in padded native registers.
+- Guarded page boundaries, partial tails and zero-length null-pointer access.
+- Owning reads, overlapping writes, repeated read indices and rejected writes
+  through const values, temporaries or repeated indices.
+- Constant construction, physical layout and preservation of transported bits.
+- Exclusion of padding lanes from reductions and floating-point exceptions.
 
-## Numerical stability and downstream use
+The [instruction-storage fixtures](https://github.com/ekmett/simd/blob/main/tests/instruction_storage/README.md) cover
+register shapes used by individual extensions. They check type and alignment
+identity, logical memory bounds, register bit bridges, mask operations and
+rejection of unsupported arithmetic. Storage availability does not imply that
+all arithmetic operations exist for that type.
 
-The pre-change and post-change Windows raw header/module captures are identical:
-425,984 bytes, SHA-256
-`b6d62dcc229f4ed98945a1e916c79fa588a0266c1b4b91db668e3812549cc609`.
-The 3,072-byte architecture capture agrees between Windows, M3 and relocated
-consumers, SHA-256
-`92e940676561d462135e70a6acd50eaba0b879b5663fe7dfc5b8dc11878181a0`.
-These banks cover their recorded inputs, not every possible floating-point value.
+## Instructions and constant evaluation
 
-The independent FTZ library exercised the custom-element extension through its
-installed package: 24 Windows tests passed with exceptions disabled and enabled;
-15 M3 tests passed for each compatibility-alias policy. Its original
-2,208-word numerical capture remained identical across both hosts. Additional
-static-library consumers passed with PCH and ThinLTO for AVX2, AVX-512 and NEON.
-This validates actual downstream module linkage rather than only imports inside
-the producer project.
+Each instruction family has focused value oracles, feature constraints,
+immediate-operand checks and native execution tests. Public vector interfaces
+are tested with `simd` values, while scalar forms use their declared C++ types.
+Wrong widths, incompatible shapes and unsupported target scopes have actual
+compile-failure tests.
 
-Run the maintained suite with the build recipe in [building](../doc/building.md).
-Use `NATIVE_TEST_ISA` to select a native test profile and run AVX-512 tests only on
-an admitted CPU. Enable `NATIVE_ENABLE_ASAN` for sanitizer builds; use a separate
-build directory with IPO disabled when inspecting sanitizer behavior. The
-bounded M3 runner is `tests/neon/run.py`; the caller supplies any host resource
-gate and toolchain paths.
+Paired code-generation probes compare optimized public calls with raw intrinsic
+leaves. They check that wrappers add no instruction sequence, call or memory
+traffic. Separate runtime oracles check results and observable status flags;
+matching assembly alone is not a numerical or floating-point-environment test.
 
-## Binary wide math
+Constant-evaluation coverage uses `static_assert` with boundary cases and
+independent semantic oracles. Where an operation offers a below-feature
+polyfill, an immediate-only overload accepts constant inputs; a compile-failure
+fixture rejects runtime inputs. Feature-enabled runtime calls retain their
+native implementation. The [instruction guide](instructions.md) and individual
+family pages describe which operations provide this support.
 
-Generic `wide` forwards `atan2(y,x)` to an element library's array overload
-when available, otherwise to its element operation. Empty packs, ADL batch
-selection and exception specifications are part of the maintained tests.
-The Windows suite passes 29 tests with exceptions enabled plus the relocated
-consumer; M3 passes 24 tests plus the relocated consumer. The raw numerical
-captures above are unchanged. These checks used the same Clang 23.1.1 and
-CMake 4.4.3 toolchains as the original checkpoint.
+## Numerical contracts
 
-The downstream FTZ library additionally passed native log/log1p, tanh and atan2
-and separate sin/cos through arrays and wide packs. Its four common-width
-output packets contain 2,688,588 words and are byte-identical on AVX2, AVX-512
-and M3 NEON. This is evidence for those recorded graphs and inputs, not a
-universal floating-point or arbitrary libm guarantee.
+Scalar half-format tests cover every 16-bit representation, finite round trips,
+adjacent representable midpoints and their binary32 neighbors, overflow and
+numeric limits. Bit transport is checked separately from numerical conversion.
+The half storage types' integer rounding policy is independent of native half
+arithmetic and its floating-point controls.
 
-## Value utilities, directed rounding and combined packages
+Directed rounding checks include signed zeros, infinities, integer boundaries
+and all four standard rounding modes. Raw scaling fixtures exercise gradual
+and flush modes, including separate DAZ and FTZ controls on x86. Test harnesses
+save and restore the caller's floating-point environment.
 
-The recorded Windows value-utility and rounding configuration passes 35 core
-tests and one relocated installed consumer with exceptions enabled, PCH and ThinLTO. Both x86 module
-producers are built. Separate installed consumers also exercise AVX2 and
-AVX-512 against matching SIMD and FTZ packages.
+[Profile captures](https://github.com/ekmett/simd/blob/main/tests/isa_profiles/README.md) compare headers, module
+imports and admitted implementations on a finite bank. Independent references
+cover elementary operations; wide exponential results are also compared with
+the direct raw kernel. These comparisons do not establish equality for every
+floating-point input, arbitrary user element types or unrelated math libraries.
 
-Generic `wide` classification (`isfinite`, `isinf`, `isnan`, `signbit`) preserves
-the element operation's actual bool or mask result type. Homogeneous `copysign`
-preserves value types. Empty packs, throwing ADL operations and result
-construction are covered by the mapper's exception tests. Raw `floor`, `ceil`
-and `trunc` cover scalar, short and full vectors, arrays and wide values; an
-integer-word oracle checks signed zeros, infinities and integer boundaries
-under all four standard rounding modes. These operations select their own
-rounding direction. Ordinary x86 native-leaf assembly uses the fixed rounding
-instructions without function calls.
+`wide` tests check ADL and array-overload selection, empty packs, result types,
+exception specifications and construction. Custom element tests exercise the
+same extension interface used by downstream numerical libraries.
 
-The combined installed FTZ consumers pass four value-utility tests, two rounding
-tests and four policy-boundary tests, plus one third-static-library test per
-ISA. The latter consumers also use PCH and ThinLTO. These focused checks extend
-the earlier numerical checkpoint; they do not replace its packet results.
-That combined-package record covers Windows. A separate M3 installed FTZ run
-passes thirteen focused utility, rounding and policy tests plus one transitive
-consumer, using matching dependencies with exceptions enabled, PCH and ThinLTO.
-It extends the downstream utility coverage; the earlier large math packets
-retain their own qualification scope.
+## Modules and installed packages
 
-## NEON utilities and rounding — source `0c4c0ae`
+Module fixtures check type identity, baseline imports, explicit stronger tags,
+source-target variants and exported customization points. Default ISA arguments
+are checked against the owning module's compiler baseline. Changing an enclosing
+function target does not change that default. Frozen-BMI probes distinguish
+accepted imports from compiler rejection of incompatible target configurations.
 
-On Apple M3, source `0c4c0ae769cb45978c758a4a7eeb3d02fc06e54c` passes
-30 core tests and one relocated installed-package consumer with exceptions
-enabled, PCH and ThinLTO, using Clang 23.1.1 and CMake 4.4.3. Source hashes match
-before and after the run. The architecture capture remains
-`92e940676561d462135e70a6acd50eaba0b879b5663fe7dfc5b8dc11878181a0`
-in both producer and relocated consumer.
+Installed-package tests physically move the prefix, including to paths with
+spaces, before configuring consumers. They require the original prefix to be
+absent, reject source-tree implementation include paths and compare installed
+file hashes before and after consumer builds. Granular imports, the `native`
+umbrella and separate numerical imports are exercised through the package.
 
-The scalar and NEON directed-rounding fixtures perform 4,312,608 checks across
-header and module consumers under all four standard rounding modes. The suite
-also includes the generic wide value utilities. This run is ordinary CPU
-execution; the earlier sanitizer and assembly results keep their own scope.
-No GPU execution or throughput measurement is implied.
-
-The `0c4c0ae` run uses granular imports. The later omnibus has its own
-installed-consumer qualification below.
-
-## NEON omnibus — source `53d9a44`
-
-On the same Apple M3 and toolchain, source
-`53d9a44910b7f3e504e72e94ed7d01fe655764ad` passes 30 core tests,
-one granular relocated-package test and three omnibus consumer tests. The
-consumer tests cover archive-only linkage, baseline granular imports and
-`import native;` with NEON vectors. No tests were skipped.
-
-Exceptions and PCH are enabled. Native kernels use ThinLTO; baseline executables
-keep IPO disabled. All 215 source files and both tracked symlinks are unchanged.
-The granular architecture capture has the same SHA-256 recorded above, and the
-compiler logs contain no warnings or errors.
-
-This qualifies the configured NEON-only omnibus on ARM. It adds no GPU,
-sanitizer, throughput or mixed-architecture omnibus claim. The retained receipt
-archive has SHA-256
-`c7b4b20aaacc597fc86f166af41a09c275331963c5b0f1a3941706cde653448d`.
-
-## Linux x86-64 packages
-
-The Linux check uses Ubuntu 22.04, glibc 2.35 and an Intel Core i9-12900K with
-LLVM 23.1.1, its bundled libc++ 23, CMake 4.4.3 and Ninja 1.12.1. Exceptions,
-producer PCH and ThinLTO are enabled. Both AVX2 and AVX-512 module providers
-compile; this CPU admits AVX2 only.
-
-| Source and configuration | Result |
-| --- | --- |
-| `36db84d`, root suite, AVX2 runtime fixtures and both x86 providers | 34 tests passed; the separate AVX-512 execution test was excluded |
-| Exact `4255f00`, relocated combined-profile package | Two archive-only/baseline consumer tests passed; both native omnibus kernels compiled without execution |
-| Exact `4255f00`, relocated AVX2-only package | All three omnibus consumer tests passed, including native AVX2 execution |
-| `36db84d` mixed-profile installed consumer | Compiled; the AVX-512-required execution test returned the expected skip status 77 |
-| FTZ `3e2da97`, using the exact combined SIMD package | 23 AVX2 host tests and one relocated third-library consumer passed |
-
-The root-suite correction changes tests only. The original in-tree
-static-string fixture selected an AVX-512-flavored common BMI for its baseline
-translation units. It now takes module metadata from `native::common` and links
-the archive file through an explicit build dependency. Public package metadata
-and arithmetic sources are unchanged. The portable mixed-profile dispatcher
-also passes its focused clang-cl Windows check against the existing installed
-package; the CPU and OS admission conditions are unchanged.
-
-All three relocated prefixes retain identical installed-file hashes. Their old
-locations are absent, and the installed consumers use no production include or
-module source from the source checkout. Source hashes match after execution.
-The compatibility alias in this FTZ build selects manual policy; its dual-policy
-tests also execute `m32` under gradual/flush controls and admitted `h32` under
-flush controls. These are CPU/module checks, without Linux AVX-512 execution,
-GPU execution, sanitizer or performance claims.
+Compiler version, language mode, exception settings and standard-library
+configuration must agree across a module boundary. A successful source-tree
+build does not replace installed-consumer validation.
 
 ## Compiler cache
 
-Source `b6da508` plus the sccache workflow change was checked on macOS 15.5
-ARM64 with Clang 23.1.1, CMake 4.4.3, Ninja 1.12.1 and sccache 0.16.0.
-The Release producer enabled NEON, tests, PCH and IPO, with exceptions disabled
-and `CMAKE_CXX_COMPILER_LAUNCHER=sccache`. A separate local disk cache and server
-were used; this was not a GitHub Actions cache-service test.
+The compiler launcher expands recognized CMake module-map response files for
+sccache and preserves their effective arguments. Unknown or ambiguous syntax
+uses the compiler directly. Its tests cover whitespace, quoting, missing inputs,
+size limits, fallback behavior and compiler exit status.
 
-| Build | Launcher requests | Cache hits | Cache misses | Non-cacheable calls | CTest |
-| --- | --- | --- | --- | --- | --- |
-| Empty cache | 48 | 0 | 11 | 37 | 36/36 passed |
-| Clean rebuild, retained cache | 48 | 11 | 0 | 37 | 36/36 passed |
-
-The eleven cacheable requests comprised ten C++ compilations and one Clang PCH
-creation. All 37 bypasses reported `@`: the generated CMake module-map response
-files contain quoted paths, which the pinned sccache parser does not expand.
-Cache statistics exclude dependency scanning, linking and CMake-synthesized BMI
-commands that do not use the launcher. Both passes reported zero cache errors
-and zero compilation failures. The warm pass used the same source/build paths
-and a Ninja clean before rebuilding; it was not a no-op incremental build.
-
-Installation succeeded. The installed omnibus consumer, configured without a
-compiler launcher and with sccache absent from `PATH`, passed all three tests;
-installed CMake metadata contains no sccache dependency. PCH, ThinLTO, module
-sources and library code were unchanged.
-
-The workflow's YAML and Bash scripts were checked locally. Upstream release
-assets were verified to exist for Linux x86-64/ARM64, Windows x64/ARM64 and macOS
-ARM64. Native Windows/Linux execution and reuse between hosted workflow runs
-remain unverified by this check; each CI lane retains its own cache statistics.
-This initial check did not measure wall time or cache every module command;
-the follow-up below measures conservative module-map expansion.
-
-### Conservative module-map expansion
-
-The follow-up launcher was compared against plain sccache with the same source,
-macOS ARM64 toolchain, NEON configuration, PCH, IPO and two compiler jobs. Each
-variant used its own fresh build tree, local cache and server; the warm pass
-cleaned its outputs and reset statistics while retaining that variant's cache.
-
-| Launcher | Build | Hits / requests | Misses | Bypasses | Build wall time |
-| --- | --- | --- | --- | --- | --- |
-| Plain sccache | Cold | 0 / 48 | 11 | 37 | 14.03 s |
-| Plain sccache | Clean warm | 11 / 48 | 0 | 37 | 10.88 s |
-| Module-map expansion | Cold | 0 / 48 | 48 | 0 | 15.63 s |
-| Module-map expansion | Clean warm | 48 / 48 | 0 | 0 | 4.98 s |
-
-All four builds passed 36/36 CTests. Expanded maps enabled caching for all eight
-module producer commands and all 39 ordinary C++ commands, alongside the one
-PCH request. Both cold and warm passes reported zero cache errors. These
-statistics still exclude CMake-generated BMI commands without a launcher,
-dependency scanning and linking. Times measure only `cmake --build`, excluding
-configuration, cleaning and CTest. They are single local observations, not a
-repeated benchmark or a claim about hosted CI performance. The cold normalized
-build took longer than the plain cold build. Warm build time fell by 54.2%
-(10.88 s to 4.98 s), while cold time rose by 11.4% (14.03 s to 15.63 s).
-
-Seven focused launcher test methods cover accepted generated maps, preservation
-of argv and response-file contents, unknown/ambiguous syntax, all whitespace
-classes, quotes/escapes, nested response files, missing/non-ASCII files, size
-limits, Windows/clang-cl bypass, `E2BIG` fallback and propagation of compiler
-output and exit status. All 53 module maps from the earlier build also produced
-the same Clang 23 `-###` invocation with original response files and expanded
-arguments.
-
-An independent two-file Clang module fixture checked cache invalidation. The
-cold build missed twice and its unchanged warm rebuild hit twice. Changing a
-header used by the module and then changing its exported constant each forced
-both producer and unchanged importer to miss, and the executable observed the
-new values (1 to 2 to 3). A final unchanged rebuild hit twice and retained 3.
-Timestamp-only header/module changes also allowed cached module reuse with
-freshly compiled importers. All seven stages passed with zero cache errors and
-unchanged module-map SHA-256 hashes. This tests local cache correctness for
-those changes; hosted cache-service reuse and native Linux/Windows execution
-retain the limitations above.
-
-### Integration with current main
-
-After integrating upstream `7b44537` (including source-layout changes and the
-new scalar `scalef` regression), commit `b366eea` repeated the expanded-map check
-with the same toolchain and two compiler jobs. A fresh cache produced 49 misses
-in 15.80 s; a clean warm rebuild produced 49 hits in 5.12 s, with no bypasses or
-cache errors. Both builds passed all 37 CTests. This is another single local
-cold/warm pair, not a new comparison against plain sccache.
-
-The current package was installed, moved to a path containing a space, and
-consumed without a compiler launcher or sccache on `PATH`. Its public-header
-boundary test and all three omnibus consumer tests passed. Workflow validation
-retained all five platforms and both exception settings (ten configurations).
-
+Cache fixtures distinguish cold compilation, unchanged reuse and invalidation
+following changed module or header inputs. Fresh importers check the observable
+module result after each step. Cache statistics exclude commands that do not
+pass through the launcher; cache hits alone do not establish a faster build.
 
 ### PCH-dependent module invalidation
 
-The earlier unchanged-input cache checks did not establish PCH binary
-invalidation. SIMD CI run `35300325585`, job `105461412565`, subsequently
-restored a module recording a 19,198,904-byte PCH alongside a newly generated
-19,198,912-byte PCH; Clang correctly rejected the combination. The earlier
-two-file module fixture did not exercise this PCH dependency.
+Explicit PCH binaries are included in `SCCACHE_EXTRAFILES`, alongside existing
+entries. Unknown response-file or PCH syntax bypasses caching. Compiler module
+validation remains enabled.
 
-sccache 0.16.0 hashes explicit module inputs, but treats `-include-pch` only
-as a preprocessing argument. The launcher now appends explicit PCH binary
-inputs to `SCCACHE_EXTRAFILES`, retaining existing entries. Unknown response
-or PCH syntax runs the original compiler directly. No compiler validation is
-disabled; modules, PCH and IPO remain enabled.
-
-The hosted `test_sccache_pch.py` fixture checks cold and warm module builds,
-a rebuilt PCH whose bytes change while preprocessing stays equivalent,
-unchanged reuse afterward, and identical PCH bytes with a changed timestamp.
-Each stage compiles a fresh uncached importer so Clang validates the restored
-module against the actual PCH. The fixture uses its own local disk cache,
-empty configuration, and a short Unix-domain socket in a temporary directory.
-Its child environment excludes inherited sccache settings; the normal producer
-server and GitHub cache configuration remain untouched. The fixture retains
-its entries and counters across stages, asserts hit/miss deltas and zero cache
-read/write errors, and stops only its own server in a finally block. ThinLTO
-remains enabled. This is a required
-regression check, not a claim that the new hosted runs have already passed.
-It rebuilds the PCH directly and tests the PCH-consuming module cache key;
-cached PCH producer invalidation is unchanged and is not qualified by this
-fixture. The five fixture requests are isolated from the producer job's
-aggregate cache statistics; per-stage fixture statistics remain in artifacts.
-
-
-## Opt-in AVX512 BF16 checkpoint - 2026-09-18
-
-Windows x86-64 with clang-cl 23.1.1 exercised the optional
-`AVX2;AVX512;AVX512_BF16` package. Runtime CPUID/XCR0 admission succeeded:
-the native BF16 tests executed rather than reporting unsupported hardware.
-Compilation used two jobs and CTest ran serially.
-
-| Configuration | Result |
-| --- | --- |
-| Unchanged default profiles, exceptions off | 49/49 tests passed |
-| All three x86 profiles, exceptions on | 54/54 tests passed, including BF16 header/module compaction |
-| Installed BF16 granular/omnibus consumers with a PCH, exceptions on | 4/4 tests passed |
-| Opt-in focused producer, exceptions off, PCH and ThinLTO | 4/4 tests passed |
-| Same exceptions-off package physically relocated to a path with spaces | 4/4 BF16 consumer tests passed |
-| AddressSanitizer, exceptions on, baseline admission plus BF16 storage/instruction tests | 3/3 tests passed |
-| Installed scalar half storage, omnibus, and existing profile fixtures | 1/1, 4/4, and 2/2 tests passed |
-
-BF16 storage coverage exhausts all 65,536 representations and checks protected
-page boundaries for every partial length from zero to 32, including null at
-zero. The instruction check compares 4,112 lanes across 32 MXCSR states,
-covering specified accumulation order, nearest-even ties, input/output
-denormals, signed zeros, overflow, NaN priority and signaling NaNs. It requires
-unchanged MXCSR controls and exception flags. Ordinary object inspection finds
-one `vdpbf16ps` with no helper calls; sanitizer builds deliberately omit that
-assembly check. Installed-package checks retain one BMI per common module and
-the new profile, and baseline compiler guards reject optional ISA flag leakage.
-
-The existing Windows and Linux x64 CI jobs now run separate opt-in producers
-and relocated-package fixtures in both exception settings, covering clang-cl
-and the GNU-style Clang frontend. The original five-platform
-matrix and default package profiles remain unchanged. The new PowerShell
-commands were syntax-checked and executed locally with exceptions off; the
-Linux Bash commands were syntax-checked only. Hosted CI execution and native
-Linux results are not yet evidence from this checkpoint. Unsupported hosted CPUs
-may skip only the admitted native execution path (status 77).
-
-This checkpoint supplies one 32-lane BF16 storage shape and pairwise dot
-accumulation into 16 FP32 lanes. It does not qualify other CPU implementations,
-add FP16 arithmetic or ARM half profiles, change scalar half conversions, or
-close the broader native-half issue.
-
-At this historical checkpoint, the new CPUID subleaf fields were appended to
-preserve existing positional aggregate initializers, but grew the public
-`x86_capabilities` and `x86_admission` records and changed their binary layouts.
-Consumers passing or storing these records across compiled boundaries needed
-to rebuild together. The later shared ISA admission API replaces the
-per-platform result; see [the migration](omnibus.md).
-
-
-## Optional native NEON BF16 checkpoint
-
-The [NEON_BF16 fixture](../tests/neon_bf16/README.md) provides native eight-lane
-storage and four-lane BFDOT accumulation. Windows x64 LLVM 23.1.1 compiled the
-ARM64 provider, kernel, baseline admission driver, PCH and combined FP16/BF16
-omnibus with an ARMv8-A minimum. Instruction inspection and the minimum-feature
-check passed; ARM64 code did not execute on that x64 host. The unchanged default
-x86 profiles passed all 49 tests.
-
-On Apple M1/macOS 14.3, Clang 24 development revision `f471750e042c` compiled the
-combined NEON/FP16/BF16 package and physically relocated consumers. Source checks
-passed 52 tests and correctly skipped three BF16 native entries. The installed
-BF16 fixture passed five checks and skipped its native entry; FP16 passed six;
-omnibus passed baseline/archive checks and skipped three optional-union entries;
-half-storage passed shared-BMI validation and skipped optional-union entry.
-These are compilation, package, common-BMI, and unsupported-hardware admission
-results, not native BF16 execution. M1 does not implement BF16.
-
-The 2,048-case exact-rational corpus has 18,432 baseline/EBF16 expected values and
-326,497 generator selfchecks. An independent binary-search rounding review
-matched all 40,960 rounded intermediates. Neither software check establishes
-native hardware behavior. Hosted ARM CI now builds both independent optional
-profiles and executes BF16 only when OS capability admission succeeds.
-No production FTZ rounding policy or scalar half conversion changed.
+The PCH fixture changes PCH bytes while retaining equivalent preprocessing,
+checks reuse afterward, and also checks unchanged bytes with changed timestamps.
+Each step compiles a fresh importer so Clang checks the restored module against
+the actual PCH. The fixture uses its own cache and server and retains per-step
+hit/miss and error counters. Consumer PCH use remains optional.
 
 ## ISA value API tooling
 
-LLVM 23 on Windows cannot demangle the structural array non-type template
-arguments in source-variant symbols. The source-target checker recognizes the
-raw `??$source_kernel@` names. The separate variants link and execute in the
-focused check; the symbol-matching workaround does not alter their code.
-
-Feature properties repeated through module global fragments can trigger
-Clang's `-Wmodules-ambiguous-internal-linkage` at property use. Focused constexpr
-reads, writes and named-concept constraints pass. A small unrelated property
-example with two global fragments reproduces the warning. A single-owner experiment still warns
-when a consumer includes the header before importing the module. The library
-retains header interoperability and does not suppress the diagnostic.
-`A.has(native::x86_feature::fma)` avoids property syntax for feature checks when a
-consumer treats that warning as an error. These observations describe the
-tested cases, not a general guarantee about Clang's property implementation.
+Clang 23 can warn about repeated feature-property declarations from module
+global fragments with `-Wmodules-ambiguous-internal-linkage`. The library keeps
+header interoperability and does not suppress this diagnostic. Use
+`A.has(native::x86_feature::fma)` when treating that warning as an error.
 
 On Linux and macOS, Clang 23 cannot mangle a direct property expression in a
-function constraint such as `requires(A.avx2 && A.fma)`: it reports
-`cannot yet mangle PseudoObjectExpr expression`. Windows uses a different
-mangling scheme and accepts it. Use `requires(A.has(x86_feature::avx2 & x86_feature::fma))`
-or `target<A, ...>` in function constraints. A named concept can also contain
-property expressions. Ordinary constant-evaluated property reads and writes
-remain supported. The regression suite checks property constraints through a
-test-local concept and matching declarations/definitions using `has`.
+function constraint such as `requires(A.avx2 && A.fma)`. Use
+`requires(A.has(x86_feature::avx2 & x86_feature::fma))`, `target<A, ...>`, or a
+named concept containing the property expression. Ordinary constant-evaluated
+property reads and writes are supported. The tests cover named concepts and
+matching declarations and definitions using `has`.
 
-## Shared ISA admission and architecture modules
-
-The platform observers now live in `native.x86.features` and `native.arm.features`. Both expose the
-same value-based `classify_isa` and finite-list `with_isa` API; the duplicate
-fixed-profile classifiers are removed. Native observation definitions are
-unchanged. See [the migration](omnibus.md) for the
-module rename, result fields and rebuild requirement.
-
-LLVM 23.1.1 on macOS ARM passed 16 focused CTests, including native NEON FP16,
-BF16, source variants, code generation, negative compilation and the standalone
-ARM capability-module importer. The installed package was physically relocated;
-its six source-target/admission consumer checks also passed. Capability queries
-required normal host access: the sandbox denied sysctl and caused the initial
-native checks to skip, so those skipped runs are not native evidence.
-
-The renamed x86 module, its object, the standalone admission consumer's
-per-preset constexpr checks, and the real-observer consumer compiled for x86-64
-macOS. That is compilation evidence only; x86 runtime and the other operating
-systems still need their native checks. No new instruction features or ISA
-representation are introduced here.
-
-The CPU umbrella checkpoint also passes all 84 local ARM SIMD tests and all 21
-FTZ tests against the updated installed package. A fresh install, physically
-relocated before consumer configuration, passes seven source-target/admission
-checks including a consumer that imports only `native.features` and links only
-`native::common`. Hosted checks qualify the final module names separately.
+LLVM 23's Windows demangler does not decode the structural array template
+arguments in source-variant symbols. Code-generation checks recognize their
+mangled names directly; this affects symbol inspection rather than dispatch.

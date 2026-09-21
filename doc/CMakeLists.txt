@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024, 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
-find_package(Doxygen 1.18 REQUIRED)
+find_package(Doxygen 1.18 REQUIRED COMPONENTS doxygen dot)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(DOXYGEN_GENERATE_HTML YES)
 set(DOXYGEN_GENERATE_LATEX NO)
@@ -181,7 +181,11 @@ set(DOXYGEN_IMPLICIT_DIR_DOCS NO)
 set(DOXYGEN_MARKDOWN_ID_STYLE GITHUB)
 set(DOXYGEN_USE_MDFILE_AS_MAINPAGE "${docs_markdown_root}/README.md")
 set(DOXYGEN_STRIP_FROM_PATH "${docs_source_root}" "${docs_markdown_root}" "${PROJECT_SOURCE_DIR}")
-set(DOXYGEN_HAVE_DOT NO)
+set(DOXYGEN_HAVE_DOT YES)
+set(DOXYGEN_DOT_IMAGE_FORMAT svg)
+set(DOXYGEN_INTERACTIVE_SVG YES)
+set(DOXYGEN_DOT_GRAPH_MAX_NODES 100)
+set(DOXYGEN_CALLER_GRAPH YES)
 set(DOXYGEN_GENERATE_TREEVIEW YES)
 # Static menus avoid Doxygen 1.18 links to absent short-list/tilde sections.
 # API pages, alphabetical indices and the navigation tree remain available.
@@ -206,6 +210,14 @@ doxygen_add_docs(native_docs
   ${docs_markdown_inputs}
   WORKING_DIRECTORY "${docs_markdown_root}"
   COMMENT "Build native API documentation and examples")
+
+# Doxygen leaves renamed pages and graphs in place. Regenerate the published
+# directories together so removed declarations cannot leave stale destinations.
+add_custom_target(native_docs_clean
+  COMMAND "${CMAKE_COMMAND}" -E rm -rf
+    "${PROJECT_BINARY_DIR}/docs/html" "${PROJECT_BINARY_DIR}/docs/xml"
+  VERBATIM)
+add_dependencies(native_docs native_docs_clean)
 
 # Module summaries need aliases for Doxygen 1.18 crawler/navigation destinations.
 add_custom_command(TARGET native_docs POST_BUILD

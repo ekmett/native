@@ -6,14 +6,14 @@ unaligned memory, partial tails, scaling boundaries, special values and wide exp
 `reference.h` supplies an independent staged split-scale exponential oracle.
 Failure paths print a diagnostic and abort, including with exceptions disabled.
 
-The public shape is `native::simd<T,N,Arch>` with an explicit ISA value.
+The public shape is `native::simd<T,N,Arch>` with an ISA value; these tests choose it explicitly.
 Constructor tests supply lanes or arrays to the explicitly named vector type;
 comparison results must be exactly `V::mask`.
 
 Build from the repository root as described in [the test guide](../README.md).
 Each ISA needs a separate configuration. Non-NaN results and signed zeros compare
 exactly; numerical NaN comparisons ignore payload and sign. Raw scaling uses
-`NATIVE_RAW_SCALEB_FTZ_PROFILE` to select the previously observed hardware tininess
+`NATIVE_RAW_SCALEB_FTZ_PROFILE` to select the hardware tininess
 rule. Its tests cover gradual and flush modes, plus separate DAZ and FTZ on x86.
 This selection describes the raw instruction rather than repairing its result.
 

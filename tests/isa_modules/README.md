@@ -1,7 +1,6 @@
-# Historical per-ISA compiler fixture
+# Independent per-ISA compiler fixture
 
-This standalone compiler probe retains the layout used before the single-hub
-migration. Its local `native.avx2` and `native.avx512` modules are synthetic test
+This standalone compiler probe defines its own small test modules. Its local `native.avx2` and `native.avx512` modules are synthetic test
 definitions, not modules provided by the installed package. It is outside the
 root build and native package CI. For the current package contract, use the
 [installed hub consumer](../omnibus/README.md) and the

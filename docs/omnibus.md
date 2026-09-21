@@ -171,11 +171,11 @@ that needs explicit intrinsic interoperation, supported shapes expose
 the register representation without a numerical conversion. Intrinsics still
 require the same compiler target support as in ordinary Clang code.
 
-The arithmetic profiles retain their existing implicit register conversions.
+The arithmetic profiles provide implicit register conversions.
 Instruction-only storage shapes use the explicit bridges; their existence
 does not promise the arithmetic interface of a full profile.
 
-The hub already guards its intrinsic headers by CPU family. Use the same
+The hub guards its intrinsic headers by CPU family. Use the same
 boundary when including them yourself:
 
 ```cpp
@@ -197,16 +197,13 @@ BMI and one provider for each common module; target variants do not multiply
 them. Compiler, C++ dialect, exception mode and standard-library configuration
 must still agree. Consumer PCHs remain optional and belong to the consumer.
 
-Structural ISA value arguments replace the former architecture tag types. This
-changes template identity and symbol names in compiled interfaces. Rebuild BMIs
-and code that exchanges these vector types across a library boundary when updating;
-ordinary pointer/scalar entry interfaces keep their declared ABI.
+Structural ISA values are part of vector type identity and compiled symbol
+names. Build module providers and code exchanging these types with consistent
+configuration. Pointer and scalar entry interfaces follow their declared ABI.
 
-The CMake targets named `native::avx2`, `native::avx512` and the native-half profiles
-are compatibility aliases for `native::native`. The old ISA-specific module names are replaced by the
-hub import. `native_target_omnibus` is retained as a compatibility no-op.
-`native_target_profile` remains available for applications that explicitly want
-whole-translation-unit targeting; it is not needed for source target lists.
+Link `native::native` for the shared hub. `native_target_profile` applies
+whole-translation-unit targeting when an application needs it; source target
+lists specify their own function requirements.
 
 Project setup chooses `NATIVE_MINIMAL_COMPILE_OPTIONS`. Its empty default retains
 the toolchain's baseline. The process must satisfy that minimum before executing
@@ -220,7 +217,7 @@ name. When needed, define `NATIVE_TARGET_EXTRA_MINIMUM` before including
 `native::target_features("avx2,f16c")`. This adds to admission requirements;
 it does not change compiler flags or make startup safe below the project minimum.
 
-## Capability module migration
+## Capability modules
 
 Import `native.isa` for the shared feature/ISA vocabulary and admission interfaces
 alone. It is the sole module provider of those declarations. Import `native.features`
@@ -235,18 +232,14 @@ query results are diagnostics, not a second admission source. Standalone capabil
 they do not need the vector hub. The raw `cpuid` function and vendor query remain
 in `native.x86.features`, and waiting instructions remain in `native.x86.wait`.
 
-Replace `simd.cpu.x86` (or the older `simd.cpuid`) with `native.x86.features`, and
-`simd.cpu.arm` (or the older `simd.arm`) with `native.arm.features`.
-Use `native.features` for portable imports. The fixed `x86_profile`
-and `arm_profile` enums, their classifiers and per-platform admission records
-have been removed. Pass the existing ISA values to `classify_isa(cpu, avx2)` or
-`classify_isa(cpu, neon_fp16)`, or use a finite list with `with_isa` when selecting
-an implementation. An additional ISA minimum is admitted together with the
+Use `native.features` for portable imports. Pass ISA values to
+`classify_isa(cpu, avx2)` or `classify_isa(cpu, neon_fp16)`, or use a finite list
+with `with_isa` to select an implementation. An additional ISA minimum is admitted together with the
 requested features. Failed observations, stale bits and unknown requirements
 cannot authorize optional instructions.
 
-The shared result retains all `missing_features` and `missing_xcr0` bits.
+The shared result contains all `missing_features` and `missing_xcr0` bits.
 `reason()` returns the target spelling of the first unavailable feature, an
 OS-state description, or `"admitted"`. Unavailable features include both failed
 queries and observed absence; inspect the native snapshot when that distinction
-matters. Rebuild module producers and consumers together after this API change.
+matters.

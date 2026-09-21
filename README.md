@@ -124,8 +124,8 @@ it does not supply a WebAssembly SIMD implementation or load code automatically.
 [Compiled examples](tests/api/README.md) exercise the public API. The
 [validation record](docs/validation.md) distinguishes compilation, native
 execution and numerical checks; the [source guide](src/README.md) explains where
-definitions belong. Existing users can find the package and module migration
-notes in the [dispatch guide](docs/omnibus.md#native-intrinsics-and-packages).
+definitions belong. The [dispatch guide](docs/omnibus.md#native-intrinsics-and-packages)
+also covers intrinsic interoperation and package requirements.
 
 ## License and contact
 

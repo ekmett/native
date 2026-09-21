@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-"""Reject broken local links in generated HTML and Doxygen module navigation."""
+"""Reject broken page, graph and asset links in generated Doxygen output."""
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -22,13 +22,21 @@ class Page(HTMLParser):
         if tag == 'a':
             if attrs.get('name'):
                 self.ids.add(attrs['name'])
-            if attrs.get('href'):
-                self.links.append(attrs['href'])
+        attribute = {
+            'a': 'href', 'link': 'href', 'img': 'src', 'iframe': 'src',
+            'script': 'src', 'object': 'data', 'image': 'href',
+        }.get(tag)
+        if attribute and attrs.get(attribute):
+            self.links.append(attrs[attribute])
+        if attrs.get('xlink:href'):
+            self.links.append(attrs['xlink:href'])
 
 
 def check(root):
     root = root.resolve(strict=True)
-    pages = {p: Page(p.read_text(encoding='utf-8')) for p in root.rglob('*.html')}
+    html_paths = list(root.rglob('*.html'))
+    svg_paths = list(root.rglob('*.svg'))
+    pages = {p: Page(p.read_text(encoding='utf-8')) for p in html_paths + svg_paths}
     errors = []
     if root / 'index.html' not in pages:
         errors.append('The site index page is required.')
@@ -48,7 +56,8 @@ def check(root):
             errors.append(f'{source.relative_to(root)}: missing anchor {href}')
     for error in errors:
         print(error, file=sys.stderr)
-    print(f'{len(pages)} HTML pages; {len(links)} local/external links; {len(errors)} broken destinations')
+    print(f'{len(html_paths)} HTML pages; {len(svg_paths)} SVG images; '
+          f'{len(links)} local/external links; {len(errors)} broken destinations')
     return bool(errors)
 
 
