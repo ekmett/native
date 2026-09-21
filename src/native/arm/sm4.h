@@ -9,17 +9,17 @@
 #include <arm_neon.h>
 
 namespace native::detail::arm_sm4 {
-  template <isa<arm> Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::sm4))
-  native_nodiscard native_inline native_const native_target("sm4") uint32x4_t
-  sm4e(uint32x4_t a, uint32x4_t b) noexcept {
+  native_nodiscard native_inline native_const native_target("sm4") uint32x4_t sm4e(
+    uint32x4_t a, uint32x4_t b) noexcept {
     return vsm4eq_u32(a, b);
   }
 
-  template <isa<arm> Arch>
+  template<isa<arm> Arch>
     requires(Arch.has(arm_feature::sm4))
-  native_nodiscard native_inline native_const native_target("sm4") uint32x4_t
-  sm4ekey(uint32x4_t a, uint32x4_t b) noexcept {
+  native_nodiscard native_inline native_const native_target("sm4") uint32x4_t sm4ekey(
+    uint32x4_t a, uint32x4_t b) noexcept {
     return vsm4ekeyq_u32(a, b);
   }
 

@@ -7,7 +7,7 @@ namespace native::detail::arm_sm3_constant {
     return value ^ std::rotl(value, 15) ^ std::rotl(value, 23);
   }
 
-  template <class V> constexpr V sm3ss1(V a, V b, V c) noexcept {
+  template<class V> constexpr V sm3ss1(V a, V b, V c) noexcept {
     auto x = arm_constant::lanes(a);
     auto y = arm_constant::lanes(b);
     auto z = arm_constant::lanes(c);
@@ -15,7 +15,7 @@ namespace native::detail::arm_sm3_constant {
     return arm_constant::pack<V>(result);
   }
 
-  template <int Lane, bool Second, bool Late, class V>
+  template<int Lane, bool Second, bool Late, class V>
   constexpr V round(V state, V ss1, V words) noexcept {
     auto x = arm_constant::lanes(state);
     auto s = arm_constant::lanes(ss1)[3];
@@ -34,23 +34,23 @@ namespace native::detail::arm_sm3_constant {
     return arm_constant::pack<V>(result);
   }
 
-  template <int Lane, class V> constexpr V sm3tt1a(V a, V b, V c) noexcept {
+  template<int Lane, class V> constexpr V sm3tt1a(V a, V b, V c) noexcept {
     return round<Lane, false, false>(a, b, c);
   }
 
-  template <int Lane, class V> constexpr V sm3tt1b(V a, V b, V c) noexcept {
+  template<int Lane, class V> constexpr V sm3tt1b(V a, V b, V c) noexcept {
     return round<Lane, false, true>(a, b, c);
   }
 
-  template <int Lane, class V> constexpr V sm3tt2a(V a, V b, V c) noexcept {
+  template<int Lane, class V> constexpr V sm3tt2a(V a, V b, V c) noexcept {
     return round<Lane, true, false>(a, b, c);
   }
 
-  template <int Lane, class V> constexpr V sm3tt2b(V a, V b, V c) noexcept {
+  template<int Lane, class V> constexpr V sm3tt2b(V a, V b, V c) noexcept {
     return round<Lane, true, true>(a, b, c);
   }
 
-  template <class V> constexpr V sm3partw1(V a, V b, V c) noexcept {
+  template<class V> constexpr V sm3partw1(V a, V b, V c) noexcept {
     auto x = arm_constant::lanes(a);
     auto y = arm_constant::lanes(b);
     auto z = arm_constant::lanes(c);
@@ -61,7 +61,7 @@ namespace native::detail::arm_sm3_constant {
     return arm_constant::pack<V>(result);
   }
 
-  template <class V> constexpr V sm3partw2(V a, V b, V c) noexcept {
+  template<class V> constexpr V sm3partw2(V a, V b, V c) noexcept {
     auto x = arm_constant::lanes(a);
     auto y = arm_constant::lanes(b);
     auto z = arm_constant::lanes(c);
