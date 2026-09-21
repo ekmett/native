@@ -173,6 +173,26 @@
 #else
 #define NATIVE_DETAIL_MIN_AVX512VPOPCNTDQ (::native::isa{})
 #endif
+#ifdef __AVXVNNI__
+#define NATIVE_DETAIL_MIN_AVXVNNI (::native::isa(::native::x86_feature::avxvnni))
+#else
+#define NATIVE_DETAIL_MIN_AVXVNNI (::native::isa{})
+#endif
+#ifdef __AVX512VNNI__
+#define NATIVE_DETAIL_MIN_AVX512VNNI (::native::isa(::native::x86_feature::avx512vnni))
+#else
+#define NATIVE_DETAIL_MIN_AVX512VNNI (::native::isa{})
+#endif
+#ifdef __AVXVNNIINT8__
+#define NATIVE_DETAIL_MIN_AVXVNNIINT8 (::native::isa(::native::x86_feature::avxvnniint8))
+#else
+#define NATIVE_DETAIL_MIN_AVXVNNIINT8 (::native::isa{})
+#endif
+#ifdef __AVXVNNIINT16__
+#define NATIVE_DETAIL_MIN_AVXVNNIINT16 (::native::isa(::native::x86_feature::avxvnniint16))
+#else
+#define NATIVE_DETAIL_MIN_AVXVNNIINT16 (::native::isa{})
+#endif
 #ifdef __ARM_NEON
 #define NATIVE_DETAIL_MIN_NEON (::native::isa(::native::arm_feature::neon))
 #else
@@ -192,6 +212,11 @@
 #define NATIVE_DETAIL_MIN_AES (::native::isa(::native::x86_feature::aes))
 #else
 #define NATIVE_DETAIL_MIN_AES (::native::isa{})
+#endif
+#ifdef __VPCLMULQDQ__
+#define NATIVE_DETAIL_MIN_VPCLMULQDQ (::native::isa(::native::x86_feature::vpclmulqdq))
+#else
+#define NATIVE_DETAIL_MIN_VPCLMULQDQ (::native::isa{})
 #endif
 #ifdef __PCLMUL__
 #define NATIVE_DETAIL_MIN_PCLMUL (::native::isa(::native::x86_feature::pclmul))
@@ -316,11 +341,11 @@
 #endif
 
 #if defined(__SSE4A__) || defined(__XOP__) || defined(__FMA4__) || \
-    defined(__AVX512VBMI__) || defined(__AVX512VBMI2__) || defined(__AVX512VNNI__) || \
+    defined(__AVX512VBMI__) || defined(__AVX512VBMI2__) || \
     defined(__AVX512BITALG__) || defined(__AVX512VP2INTERSECT__) || \
-    defined(__VAES__) || defined(__VPCLMULQDQ__) || defined(__AVXVNNI__) || \
-    defined(__AVXIFMA__) || defined(__AVXNECONVERT__) || defined(__AVXVNNIINT8__) || \
-    defined(__AVXVNNIINT16__) || defined(__AMX_TILE__) || defined(__AMX_INT8__) || defined(__AMX_BF16__) || \
+    defined(__VAES__) || \
+    defined(__AVXIFMA__) || defined(__AVXNECONVERT__) || \
+    defined(__AMX_TILE__) || defined(__AMX_INT8__) || defined(__AMX_BF16__) || \
     defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SME)
 #define NATIVE_DETAIL_MIN_UNREGISTERED (::native::target_features("unregistered"))
 #else
@@ -342,8 +367,9 @@
   NATIVE_DETAIL_MIN_BMI1&NATIVE_DETAIL_MIN_BMI2&NATIVE_DETAIL_MIN_AVX512F&NATIVE_DETAIL_MIN_AVX512DQ& \
   NATIVE_DETAIL_MIN_AVX512BW&NATIVE_DETAIL_MIN_AVX512VL&NATIVE_DETAIL_MIN_AVX512BF16&NATIVE_DETAIL_MIN_AVX512FP16& \
   NATIVE_DETAIL_MIN_AVX512VPOPCNTDQ& \
+  NATIVE_DETAIL_MIN_AVXVNNI&NATIVE_DETAIL_MIN_AVX512VNNI&NATIVE_DETAIL_MIN_AVXVNNIINT8&NATIVE_DETAIL_MIN_AVXVNNIINT16& \
   NATIVE_DETAIL_MIN_NEON&NATIVE_DETAIL_MIN_NEON_FP16&NATIVE_DETAIL_MIN_NEON_BF16& \
-  NATIVE_DETAIL_MIN_AES&NATIVE_DETAIL_MIN_PCLMUL&NATIVE_DETAIL_MIN_CX16&NATIVE_DETAIL_MIN_AVX512CD& \
+  NATIVE_DETAIL_MIN_AES&NATIVE_DETAIL_MIN_PCLMUL&NATIVE_DETAIL_MIN_VPCLMULQDQ&NATIVE_DETAIL_MIN_CX16&NATIVE_DETAIL_MIN_AVX512CD& \
   NATIVE_DETAIL_MIN_AVX512IFMA&NATIVE_DETAIL_MIN_LZCNT&NATIVE_DETAIL_MIN_MOVBE&NATIVE_DETAIL_MIN_SAHF& \
   NATIVE_DETAIL_MIN_MWAITX&NATIVE_DETAIL_MIN_WAITPKG&NATIVE_DETAIL_MIN_CRC32&NATIVE_DETAIL_MIN_GFNI& \
   NATIVE_DETAIL_MIN_ARM_AES&NATIVE_DETAIL_MIN_ARM_SHA2&NATIVE_DETAIL_MIN_ARM_SHA3&NATIVE_DETAIL_MIN_ARM_CRC& \

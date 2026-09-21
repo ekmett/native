@@ -1,0 +1,11 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/x86/pclmul.h"
+export module native.x86.pclmul;
+export import native.x86.features;
+export namespace native {
+  /// \addtogroup x86_pclmul
+  /// \{
+  using ::native::pclmulqdq;
+  /// \}
+}

@@ -160,9 +160,14 @@ conversions. `native.x86.features` and `native.arm.features` observe the
 corresponding platform's capabilities. The x86-only `native.x86.wait` module
 provides waiting instructions, with target requirements for optional operations.
 
-The x86 integer instruction modules belong to `native::minimal`. Their
+The x86 instruction modules belong to `native::minimal`. Their
 implementation headers remain private; vendor intrinsic declarations stay in
 the global module fragment.
+
+[F16C](x86-f16c.md) adds scalar and packed binary32/binary16 conversions in
+`native.x86.f16c`, reexported by `native.x86`. The widening lane count selects
+the return width explicitly. Conversions retain MXCSR effects even when their
+results are unused.
 
 On AArch64, `native.arm` reexports `native.arm.dotprod`, `native.arm.rdm`,
 `native.arm.fp16fml`, `native.arm.fcma` and `native.arm.i8mm`.
@@ -390,12 +395,19 @@ for `native::classify_isa(cpu, requirements)` or `native::with_isa`.
 Architecture-specific observers remain available from their feature modules.
 On x86, `native.x86` also imports [BMI1](x86-bmi1.md), [BMI2](x86-bmi2.md),
 [POPCNT](x86-popcnt.md), [LZCNT](x86-lzcnt.md), [CRC32C](x86-crc32c.md),
-[GFNI](x86-gfni.md), [VPOPCNTDQ](x86-vpopcntdq.md) and wait operations;
+[GFNI](x86-gfni.md), [VPOPCNTDQ](x86-vpopcntdq.md), [F16C](x86-f16c.md),
+[PCLMULQDQ and VPCLMULQDQ](x86-pclmul.md),
+[VNNI integer dot products](x86-vnni.md) and wait operations;
 the feature-only umbrella does not import those operations. CRC32C has a
 scalar feature requirement independent of the SSE4.2 compiler bundle. GFNI
 requirements depend on the register width and masking mode. VPOPCNTDQ needs
 AVX512F and its own feature, with AVX512VL for 128- and 256-bit forms. Each
 family requires caller target attributes and CPU/OS admission before execution.
+The 256-bit VPCLMULQDQ form uses AVX without requiring AVX2 or AVX-512;
+512-bit products additionally require AVX512F.
+VNNI keeps AVX-VNNI, AVX512VNNI and the AVX-VNNI INT8/INT16 signedness
+extensions distinct. Its VEX 128/256-bit operations do not require AVX-512;
+the EVEX masks and 512-bit forms carry their own requirements.
 
 Native capability records contain `present` and `observed` typed sets:
 `feature_set<x86_feature>` or `feature_set<arm_feature>`. Admission requires each

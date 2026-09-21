@@ -15,7 +15,7 @@ namespace {
   static_assert(static_cast<unsigned>(x86_feature::popcnt) == 7);
   static_assert(static_cast<unsigned>(x86_feature::avx512f) == 14);
   static_assert(static_cast<unsigned>(x86_feature::waitpkg) == 29);
-  static_assert(native::x86_feature_count == static_cast<unsigned>(x86_feature::avx512vpopcntdq) + 1);
+  static_assert(native::x86_feature_count > static_cast<unsigned>(x86_feature::avx512vpopcntdq));
   static_assert(instruction != isa(x86_feature::popcnt));
   static_assert(!instruction.has(x86_feature::avx512f));
   static_assert(full_width == native::feature_closure(instruction));

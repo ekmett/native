@@ -16,7 +16,8 @@ namespace native {
     sse42, popcnt, avx, avx2, fma, f16c,
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
-    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq
+    avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq,
+    vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16
   };
   /// ARM instruction features and compiler bundles, using local bit indices.
   enum class arm_feature : std::uint64_t {
@@ -25,7 +26,7 @@ namespace native {
     jsconv, rcpc, pauth, i8mm
   };
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avx512vpopcntdq)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avxvnniint16)+1;
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::i8mm)+1;
 
@@ -241,9 +242,24 @@ namespace native {
     constexpr bool get_gfni() const noexcept { return get(x86_feature::gfni); }
     constexpr void set_gfni(bool value) noexcept { set(x86_feature::gfni,value); }
     __declspec(property(get=get_gfni,put=set_gfni)) bool gfni;
+    constexpr bool get_vpclmulqdq() const noexcept { return get(x86_feature::vpclmulqdq); }
+    constexpr void set_vpclmulqdq(bool value) noexcept { set(x86_feature::vpclmulqdq,value); }
+    __declspec(property(get=get_vpclmulqdq,put=set_vpclmulqdq)) bool vpclmulqdq;
     constexpr bool get_avx512vpopcntdq() const noexcept { return get(x86_feature::avx512vpopcntdq); }
     constexpr void set_avx512vpopcntdq(bool value) noexcept { set(x86_feature::avx512vpopcntdq,value); }
     __declspec(property(get=get_avx512vpopcntdq,put=set_avx512vpopcntdq)) bool avx512vpopcntdq;
+    constexpr bool get_avxvnni() const noexcept { return get(x86_feature::avxvnni); }
+    constexpr void set_avxvnni(bool value) noexcept { set(x86_feature::avxvnni,value); }
+    __declspec(property(get=get_avxvnni,put=set_avxvnni)) bool avxvnni;
+    constexpr bool get_avx512vnni() const noexcept { return get(x86_feature::avx512vnni); }
+    constexpr void set_avx512vnni(bool value) noexcept { set(x86_feature::avx512vnni,value); }
+    __declspec(property(get=get_avx512vnni,put=set_avx512vnni)) bool avx512vnni;
+    constexpr bool get_avxvnniint8() const noexcept { return get(x86_feature::avxvnniint8); }
+    constexpr void set_avxvnniint8(bool value) noexcept { set(x86_feature::avxvnniint8,value); }
+    __declspec(property(get=get_avxvnniint8,put=set_avxvnniint8)) bool avxvnniint8;
+    constexpr bool get_avxvnniint16() const noexcept { return get(x86_feature::avxvnniint16); }
+    constexpr void set_avxvnniint16(bool value) noexcept { set(x86_feature::avxvnniint16,value); }
+    __declspec(property(get=get_avxvnniint16,put=set_avxvnniint16)) bool avxvnniint16;
     constexpr bool get_arm_aes() const noexcept { return get(arm_feature::aes); }
     constexpr void set_arm_aes(bool value) noexcept { set(arm_feature::aes,value); }
     __declspec(property(get=get_arm_aes,put=set_arm_aes)) bool arm_aes;
@@ -340,7 +356,7 @@ namespace native {
       for(std::size_t i=0;i<a.flags.size();++i) a.flags[i]&=b.flags[i];
       return a;
     }
-    enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, extended1_ecx, arm };
+    enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, leaf7_1_edx, extended1_ecx, arm };
     struct feature_record {
       isa value;
       std::string_view spelling;
@@ -381,11 +397,16 @@ namespace native {
       {x86_feature::avx512bf16,"avx512bf16",isa(x86_feature::avx512bw),feature_register::leaf7_1_eax,5},
       {x86_feature::avx512fp16,"avx512fp16",isa(x86_feature::avx512bw),feature_register::leaf7_edx,23},
       {x86_feature::avx512vpopcntdq,"avx512vpopcntdq",isa(x86_feature::avx512f),feature_register::leaf7_ecx,14},
+      {x86_feature::avxvnni,"avxvnni",isa(x86_feature::avx2),feature_register::leaf7_1_eax,4},
+      {x86_feature::avx512vnni,"avx512vnni",isa(x86_feature::avx512f),feature_register::leaf7_ecx,11},
+      {x86_feature::avxvnniint8,"avxvnniint8",isa(x86_feature::avx2),feature_register::leaf7_1_edx,4},
+      {x86_feature::avxvnniint16,"avxvnniint16",isa(x86_feature::avx2),feature_register::leaf7_1_edx,10},
       {arm_feature::neon,"neon",{},feature_register::arm,0},
       {arm_feature::neon_fp16,"fullfp16",isa(arm_feature::neon),feature_register::arm,1},
       {arm_feature::neon_bf16,"bf16",isa(arm_feature::neon),feature_register::arm,2},
       {x86_feature::aes,"aes",isa(x86_feature::sse2),feature_register::leaf1_ecx,25},
       {x86_feature::pclmul,"pclmul",isa(x86_feature::sse2),feature_register::leaf1_ecx,1},
+      {x86_feature::vpclmulqdq,"vpclmulqdq",x86_feature::avx&x86_feature::pclmul,feature_register::leaf7_ecx,10},
       {x86_feature::cx16,"cx16",{},feature_register::leaf1_ecx,13},
       {x86_feature::avx512cd,"avx512cd",isa(x86_feature::avx512f),feature_register::leaf7_ebx,28},
       {x86_feature::avx512ifma,"avx512ifma",isa(x86_feature::avx512f),feature_register::leaf7_ebx,21},
@@ -540,6 +561,11 @@ namespace native {
           case feature_register::leaf7_edx: observed=cpu.max_basic_leaf>=7; word=cpu.leaf7_edx; break;
           case feature_register::leaf7_1_eax:
             observed=cpu.max_basic_leaf>=7 && cpu.max_leaf7_subleaf>=1; word=cpu.leaf7_1_eax; break;
+          case feature_register::leaf7_1_edx:
+            if constexpr(requires { cpu.leaf7_1_edx; }) {
+              observed=cpu.max_basic_leaf>=7 && cpu.max_leaf7_subleaf>=1; word=cpu.leaf7_1_edx;
+            }
+            break;
           case feature_register::extended1_ecx:
             if constexpr(requires { cpu.max_extended_leaf; cpu.extended1_ecx; }) {
               observed=cpu.max_extended_leaf>=0x80000001u; word=cpu.extended1_ecx;

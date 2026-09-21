@@ -89,7 +89,12 @@ namespace abi_lookup_test {
   static_assert(static_cast<unsigned>(x86_feature::crc32)==30);
   static_assert(static_cast<unsigned>(x86_feature::gfni)==31);
   static_assert(static_cast<unsigned>(x86_feature::avx512vpopcntdq)==32);
-  static_assert(x86_feature_count==33);
+  static_assert(static_cast<unsigned>(x86_feature::vpclmulqdq)==33);
+  static_assert(static_cast<unsigned>(x86_feature::avxvnni)==34);
+  static_assert(static_cast<unsigned>(x86_feature::avx512vnni)==35);
+  static_assert(static_cast<unsigned>(x86_feature::avxvnniint8)==36);
+  static_assert(static_cast<unsigned>(x86_feature::avxvnniint16)==37);
+  static_assert(x86_feature_count==38);
   static_assert([] {
     isa a=arm_feature::neon;
     a.crc32=true;

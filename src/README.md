@@ -36,7 +36,12 @@ for portable callers. The `native.x86.bmi1`, `native.x86.bmi2`,
 `native.x86.popcnt` and `native.x86.lzcnt` modules expose independently constrained
 integer instructions. `native.x86.crc32c` adds scalar Castagnoli updates;
 `native.x86.gfni` adds byte field arithmetic and affine maps;
-`native.x86.vpopcntdq` counts bits in 32- and 64-bit vector lanes. These modules
+`native.x86.pclmul` and `native.x86.vpclmul` multiply binary polynomials
+within 128-bit lanes;
+`native.x86.vpopcntdq` counts bits in 32- and 64-bit vector lanes;
+`native.x86.vnni` accumulates integer byte and word dot products;
+`native.x86.f16c` converts binary32 and binary16 values with architectural
+rounding and floating-point status effects. These modules
 belong to `native::minimal`, use raw scalar or intrinsic register types, and keep
 their implementation headers in the global module fragment. Each operation
 constrains `Arch` and carries its own function target attribute. Their Doxygen

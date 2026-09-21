@@ -82,7 +82,7 @@ custom element types and application dispatch.
 | `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
 | `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
 | `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `native.x86` | x86 feature detection, integer and byte operations, and wait utilities |
+| `native.x86` | x86 feature detection, raw instruction families and wait utilities |
 | `native.arm` | AArch64 feature detection, admission and independently targeted instruction families |
 | `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
@@ -90,7 +90,10 @@ custom element types and application dispatch.
 | `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
 | `native.x86.crc32c` | [Raw CRC32C updates](docs/x86-crc32c.md) for 8-, 16-, 32- and 64-bit operands |
 | `native.x86.gfni` | [GFNI byte operations](docs/x86-gfni.md): field multiplication, affine maps and inverse-affine maps |
+| `native.x86.pclmul`, `native.x86.vpclmul` | [Carry-less polynomial multiplication](docs/x86-pclmul.md) within 128-bit lanes |
+| `native.x86.f16c` | [Binary32 / binary16 conversions](docs/x86-f16c.md), scalar and packed four/eight lanes |
 | `native.x86.vpopcntdq` | [VPOPCNTDQ](docs/x86-vpopcntdq.md) for 32- and 64-bit lanes, including merge and zero masks |
+| `native.x86.vnni` | [VNNI integer dot products](docs/x86-vnni.md), including saturation, EVEX masks and INT8/INT16 signedness extensions |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
 | `native.arm.dotprod` | [Signed and unsigned byte dot products](docs/arm-dotprod.md) |
 | `native.arm.rdm` | [Rounding, saturating fixed-point multiply-add and multiply-subtract](docs/arm-rdm.md) |

@@ -198,7 +198,31 @@ int main() {
   if (native.raw.max_basic_leaf < 7 && (native.raw.leaf7_ebx || native.raw.leaf7_ecx || native.raw.leaf7_edx)) return 5;
   constexpr auto xsave = (1u<<26)|(1u<<27);
   if (native.xcr0_observed != (native.raw.max_basic_leaf >= 1 && (native.raw.leaf1_ecx & xsave) == xsave)) return 6;
-  if ((native.raw.max_basic_leaf < 7 || native.raw.max_leaf7_subleaf < 1) && native.raw.leaf7_1_eax) return 7;
+  if (native.raw.max_basic_leaf < 7 || native.raw.max_leaf7_subleaf < 1) {
+    if (native.raw.leaf7_1_eax || native.raw.leaf7_1_edx) return 7;
+  } else {
+    auto subleaf = native::cpuid(7, 1);
+    if (native.raw.leaf7_1_eax != std::uint32_t(subleaf.eax) ||
+        native.raw.leaf7_1_edx != std::uint32_t(subleaf.edx)) return 13;
+  }
+  bool leaf7_available = native.raw.max_basic_leaf >= 7;
+  bool subleaf1_available = leaf7_available && native.raw.max_leaf7_subleaf >= 1;
+  struct observed_bit {
+    native::x86_feature feature;
+    std::uint32_t word;
+    unsigned bit;
+    bool available;
+  };
+  for (auto entry : {
+      observed_bit{native::x86_feature::vpclmulqdq, native.raw.leaf7_ecx, 10, leaf7_available},
+      observed_bit{native::x86_feature::avxvnni, native.raw.leaf7_1_eax, 4, subleaf1_available},
+      observed_bit{native::x86_feature::avx512vnni, native.raw.leaf7_ecx, 11, leaf7_available},
+      observed_bit{native::x86_feature::avxvnniint8, native.raw.leaf7_1_edx, 4, subleaf1_available},
+      observed_bit{native::x86_feature::avxvnniint16, native.raw.leaf7_1_edx, 10, subleaf1_available}}) {
+    bool present = entry.available && (entry.word & (std::uint32_t{1} << entry.bit));
+    if (native.present.has(entry.feature) != present ||
+        native.observed.has(entry.feature) != entry.available) return 14;
+  }
   cpu = full; cpu.leaf7_1_eax = 0;
   if (std::strcmp(native::classify_isa(cpu, native::avx512_bf16).reason(), "avx512bf16")) return 8;
   cpu = full; cpu.leaf7_edx = 0;
