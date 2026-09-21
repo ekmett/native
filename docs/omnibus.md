@@ -165,10 +165,15 @@ presets are feature bundles; CPU-model bundles remain future work.
 
 ## Native intrinsics and packages
 
-Vector types retain implicit conversion to and from their native register
-representation. An attributed body can mix standard intrinsics with SIMD
-operations without explicit bridge calls. Those intrinsics still require the
-same target support as they would in ordinary Clang code.
+Instruction extensions take and return `simd` values directly. For an operation
+that needs explicit intrinsic interoperation, supported shapes expose
+`V::from_native(register_value)` and `value.to_native()`. These bridges copy
+the register representation without a numerical conversion. Intrinsics still
+require the same compiler target support as in ordinary Clang code.
+
+The arithmetic profiles retain their existing implicit register conversions.
+Instruction-only storage shapes use the explicit bridges; their existence
+does not promise the arithmetic interface of a full profile.
 
 The hub already guards its intrinsic headers by CPU family. Use the same
 boundary when including them yourself:
