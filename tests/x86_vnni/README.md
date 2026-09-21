@@ -17,6 +17,9 @@ these three checks for each instruction family, including EVEX mask forms, to
 verify the exported constraints and target attributes. Module consumers retain
 the provider's baseline compiler flags.
 
+Compiler-minimum probes recognize each VNNI extension and AVX-IFMA. A separate
+AMX-TILE probe checks that an unrepresented compiler feature rejects the minimum.
+
 Build with Clang 23, CMake 4.4, Ninja, libc++ and IPO disabled, then run:
 
 ```sh
