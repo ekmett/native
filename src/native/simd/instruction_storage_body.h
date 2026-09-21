@@ -39,6 +39,18 @@ export namespace native {
       }
     }();
 
+    template<std::size_t N,isa A> inline constexpr bool instruction_predicate_shape =
+      N>0 && N<=64 &&
+#if NATIVE_HOST_X86
+      A.has(x86_feature::sse2) && !((kernel_base<=A) &&
+        (N==1 || N==2 || N==3 || N==4 || N==8 || N==16 ||
+          ((N==32 || N==64) && A.has(x86_feature::avx512bw))));
+#elif NATIVE_HOST_NEON
+      (neon<=A);
+#else
+      false;
+#endif
+
     template<class T,std::size_t N,isa A>
       requires ordinary_simd_element<T> && instruction_storage_shape<T,N,A>
     struct value_traits<simd<T,N,A>> {
@@ -46,14 +58,12 @@ export namespace native {
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
-#if NATIVE_HOST_X86
-    template<std::size_t N,isa A> requires(N>0 && N<=64 && A.has(x86_feature::sse2) && !(avx2<=A))
+    template<std::size_t N,isa A> requires instruction_predicate_shape<N,A>
     struct value_traits<predicate<N,A>> {
       static constexpr isa value=A;
       static constexpr bool known=true;
       static constexpr bool aggregate_default=false;
     };
-#endif
 
     template<class T, std::size_t N> struct instruction_register {
 #if NATIVE_HOST_NEON
@@ -69,9 +79,8 @@ export namespace native {
     };
   }
 
-#if NATIVE_HOST_X86
-  /// Compact logical mask for register-only instruction shapes below the AVX2 kernel profile.
-  template<std::size_t N, isa A> requires(N>0 && N<=64 && A.has(x86_feature::sse2) && !(avx2<=A))
+  /// Compact logical mask for register-only instruction shapes.
+  template<std::size_t N, isa A> requires detail::instruction_predicate_shape<N,A>
   struct predicate<N,A> {
     static constexpr isa architecture=A;
     static constexpr std::size_t lanes=N;
@@ -85,37 +94,50 @@ export namespace native {
     static constexpr std::uint64_t active=[] { if constexpr(N==64) return ~std::uint64_t{}; else return (std::uint64_t{1}<<N)-1; }();
   public:
     /// Construct an empty mask.
-    constexpr predicate() noexcept=default;
+    native_inline constexpr predicate() noexcept=default;
     /// Broadcast one Boolean value to every logical lane.
-    explicit constexpr predicate(bool value) noexcept : value_(value?native_type(active):0) {}
+    explicit native_inline constexpr predicate(bool value) noexcept : value_(value?native_type(active):0) {}
     /// Read one bit per lane and clear bits above the logical lane count.
-    static constexpr predicate from_bits(std::uint64_t bits) noexcept { predicate p; p.value_=native_type(bits&active); return p; }
+    static native_inline constexpr predicate from_bits(std::uint64_t bits) noexcept { predicate p; p.value_=native_type(bits&active); return p; }
     /// Construct from the logical lane bitset.
-    static constexpr predicate from_bitset(std::uint64_t bits) noexcept { return from_bits(bits); }
+    static native_inline constexpr predicate from_bitset(std::uint64_t bits) noexcept { return from_bits(bits); }
     /// Adopt the compact representation, clearing unused bits.
-    static constexpr predicate from_native(native_type bits) noexcept { return from_bits(bits); }
+    static native_inline constexpr predicate from_native(native_type bits) noexcept { return from_bits(bits); }
     /// Return the compact implementation representation.
-    constexpr native_type to_native() const noexcept { return value_; }
+    native_inline constexpr native_type to_native() const noexcept { return value_; }
     /// Return one bit per logical lane.
-    constexpr std::uint64_t bits() const noexcept { return value_; }
+    native_inline constexpr std::uint64_t bits() const noexcept { return value_; }
     /// Return the logical lane bitset.
-    constexpr std::uint64_t to_bitset() const noexcept { return value_; }
+    native_inline constexpr std::uint64_t to_bitset() const noexcept { return value_; }
     /// Test whether any logical lane is set.
-    friend constexpr bool any(predicate p) noexcept { return p.value_!=0; }
+    friend native_inline constexpr bool any(predicate p) noexcept { return p.value_!=0; }
     /// Test whether every logical lane is set.
-    friend constexpr bool all(predicate p) noexcept { return p.value_==active; }
+    friend native_inline constexpr bool all(predicate p) noexcept { return p.value_==active; }
     /// Test whether every logical lane is clear.
-    friend constexpr bool none(predicate p) noexcept { return p.value_==0; }
+    friend native_inline constexpr bool none(predicate p) noexcept { return p.value_==0; }
     /// Complement logical lanes, leaving padding clear.
-    friend constexpr predicate operator~(predicate p) noexcept { return from_bits(~p.value_); }
+    friend native_inline constexpr predicate operator~(predicate p) noexcept { return from_bits(~p.value_); }
+    /// Complement each logical lane.
+    friend native_inline constexpr predicate operator!(predicate p) noexcept { return ~p; }
     /// Intersect the logical lane masks.
-    friend constexpr predicate operator&(predicate a,predicate b) noexcept { return from_bits(a.value_&b.value_); }
+    friend native_inline constexpr predicate operator&(predicate a,predicate b) noexcept { return from_bits(a.value_&b.value_); }
     /// Unite the logical lane masks.
-    friend constexpr predicate operator|(predicate a,predicate b) noexcept { return from_bits(a.value_|b.value_); }
+    friend native_inline constexpr predicate operator|(predicate a,predicate b) noexcept { return from_bits(a.value_|b.value_); }
     /// Toggle lanes present in exactly one operand.
-    friend constexpr predicate operator^(predicate a,predicate b) noexcept { return from_bits(a.value_^b.value_); }
+    friend native_inline constexpr predicate operator^(predicate a,predicate b) noexcept { return from_bits(a.value_^b.value_); }
+    /// Mark lanes whose truth values agree.
+    friend native_inline constexpr predicate operator==(predicate a,predicate b) noexcept { return ~(a^b); }
+    /// Mark lanes whose truth values differ.
+    friend native_inline constexpr predicate operator!=(predicate a,predicate b) noexcept { return a^b; }
+    /// Intersect with another mask in place.
+    native_inline constexpr predicate & operator&=(predicate b) noexcept { return *this=*this&b; }
+    /// Unite with another mask in place.
+    native_inline constexpr predicate & operator|=(predicate b) noexcept { return *this=*this|b; }
+    /// Toggle lanes present in another mask.
+    native_inline constexpr predicate & operator^=(predicate b) noexcept { return *this=*this^b; }
+    /// Choose each mask lane from a or b according to p.
+    friend native_inline constexpr predicate select(predicate p,predicate a,predicate b) noexcept { return (p&a)|(~p&b); }
   };
-#endif
 
   /// One register of representation-preserving instruction operands.
   /// This shape provides storage and transfer operations; arithmetic is supplied
@@ -150,6 +172,43 @@ export namespace native {
     /// Construct exactly N lanes from values of the element type.
     template<class... U> requires(sizeof...(U)==N && (std::same_as<U,T> && ...))
     native_inline simd(U... values) noexcept : simd(std::array<T,N>{values...}) {}
+#if NATIVE_HOST_X86
+    // Native vector arguments and returns must carry their register ABI even
+    // when an always-inline caller has already enabled that target.
+    /// Bridge to the implementation register without numerical conversion.
+    native_nodiscard native_inline native_target("sse2")
+    native_type to_native() const noexcept requires(sizeof(native_type)==16) { return value_; }
+    /// Adopt implementation bits and clear unused physical bytes.
+    native_nodiscard static native_inline native_target("sse2")
+    simd from_native(native_type value) noexcept requires(sizeof(native_type)==16) {
+      simd result;
+      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
+      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
+      return result;
+    }
+    /// Bridge to the implementation register without numerical conversion.
+    native_nodiscard native_inline native_target("avx")
+    native_type to_native() const noexcept requires(sizeof(native_type)==32) { return value_; }
+    /// Adopt implementation bits and clear unused physical bytes.
+    native_nodiscard static native_inline native_target("avx")
+    simd from_native(native_type value) noexcept requires(sizeof(native_type)==32) {
+      simd result;
+      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
+      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
+      return result;
+    }
+    /// Bridge to the implementation register without numerical conversion.
+    native_nodiscard native_inline native_target("avx512f")
+    native_type to_native() const noexcept requires(sizeof(native_type)==64) { return value_; }
+    /// Adopt implementation bits and clear unused physical bytes.
+    native_nodiscard static native_inline native_target("avx512f")
+    simd from_native(native_type value) noexcept requires(sizeof(native_type)==64) {
+      simd result;
+      if constexpr(sizeof(native_type)==sizeof(T)*N) result.value_=value;
+      else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
+      return result;
+    }
+#else
     /// Bridge to the implementation register without numerical conversion.
     native_nodiscard native_inline native_type to_native() const noexcept { return value_; }
     /// Adopt implementation bits and clear unused physical bytes.
@@ -159,6 +218,7 @@ export namespace native {
       else { result.value_={}; std::memcpy(&result.value_,&value,sizeof(T)*N); }
       return result;
     }
+#endif
     /// Read exactly N objects, without requiring register-width alignment.
     template<std::size_t Alignment=1>
     native_nodiscard static native_inline simd load_memory(T const * p) noexcept {
