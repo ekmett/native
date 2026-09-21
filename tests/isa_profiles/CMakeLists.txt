@@ -58,9 +58,15 @@ add_test(NAME native.profiles.capture COMMAND native_test_profiles all "${CMAKE_
 set_tests_properties(native.profiles.capture PROPERTIES SKIP_RETURN_CODE 77 LABELS "host;modules;profiles;exact" TIMEOUT 180)
 
 if(CMAKE_GENERATOR STREQUAL "Ninja")
+  set(profile_module_maps)
+  foreach(target IN ITEMS native_profile_avx2_header native_profile_avx2_import
+      native_profile_avx512_header native_profile_avx512_import native_profile_identity native_test_profiles)
+    list(APPEND profile_module_maps "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${target}.dir/CXXModules.json")
+  endforeach()
   add_test(NAME native.profiles.shared_bmi COMMAND "${CMAKE_COMMAND}"
     "-DBUILD_DIR=${PROJECT_BINARY_DIR}/src"
     "-DNINJA_FILE=${PROJECT_BINARY_DIR}/build.ninja"
+    "-DCONSUMER_MAPS=${profile_module_maps}"
     -P "${PROJECT_SOURCE_DIR}/tests/profile_package/check_bmi.cmake")
   set_tests_properties(native.profiles.shared_bmi PROPERTIES LABELS "host;modules;profiles")
 endif()
