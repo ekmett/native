@@ -226,8 +226,8 @@ namespace native {
     /// Divide corresponding logical lanes using the full-register operation.
     /// Inactive denominator lanes are set to one so padding does not introduce division by zero.
     native_nodiscard friend native_inline constexpr simd operator/(simd a,simd b) noexcept requires std::same_as<T,float> {
-      using M4=typename storage_type::vector_mask_type;
-      auto divisor=select(M4::from_bitset(lane_mask),b.to_storage(),storage_type(1.f));
+      auto padded=__builtin_shufflevector(b.value,native_type{1.f,1.f,1.f,1.f},0,1,N==3?2:4,4);
+      auto divisor=storage_type::from_native(std::bit_cast<typename storage_type::native_type>(padded));
       return clean(a.to_storage()/divisor);
     }
     /// Negate every logical lane; floating-point lanes change sign.

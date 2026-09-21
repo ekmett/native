@@ -28,31 +28,49 @@ namespace native {
     /// Store every logical lane; no extra alignment is required.
     native_inline constexpr void store(native_noescape float * p) const { store_memory<1>(p); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator+(simd a, simd b) { return simd(_mm_add_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
+      return simd(_mm_add_ps(a.value, b.value));
+    }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator-(simd a, simd b) { return simd(_mm_sub_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
+      return simd(_mm_sub_ps(a.value, b.value));
+    }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator*(simd a, simd b) { return simd(_mm_mul_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
+      return simd(_mm_mul_ps(a.value, b.value));
+    }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator/(simd a, simd b) { return simd(_mm_div_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
+      return simd(_mm_div_ps(a.value, b.value));
+    }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline native_const simd operator-(simd a) { return simd(_mm_xor_ps(a.value, _mm_set1_ps(-0.f))); }
+    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
+      return simd(_mm_xor_ps(a.value, _mm_set1_ps(-0.f)));
+    }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator<(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator>(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
       else
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator==(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
       else
@@ -60,18 +78,31 @@ namespace native {
     }
     /// Choose a where the canonical mask is true, otherwise b; both operands are evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline native_const simd select(M m,simd a,simd b) {
+    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+      if consteval { return ::native::detail::float_constant::select(m,a,b); }
       if constexpr(M::compact) return simd(_mm_mask_blend_ps(m.to_native(),b.value,a.value));
       else
         return simd(_mm_blendv_ps(b.value,a.value,_mm_castsi128_ps(m.to_native()))); }
     /// Compute a*b+c with one fused rounding per lane.
-    native_artificial native_nodiscard friend native_inline native_pure simd fma(simd a, simd b, simd c) { return simd(_mm_fmadd_ps(a.value, b.value, c.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
+      return simd(_mm_fmadd_ps(a.value, b.value, c.value));
+    }
     /// Compute the native square root in every lane.
-    native_artificial native_nodiscard friend native_inline native_pure simd sqrt(simd a) { return simd(_mm_sqrt_ps(a.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd sqrt(simd a) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
+      return simd(_mm_sqrt_ps(a.value));
+    }
     /// Round to an integral value, ties to even, independent of ambient direction.
-    native_artificial native_nodiscard friend native_inline native_const simd round_even(simd a) { return simd(_mm_round_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_const simd round_even(simd a) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
+      return simd(_mm_round_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    }
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline native_const simd normal_pow2(simd n) { return simd(_mm_castsi128_ps(_mm_slli_epi32(_mm_add_epi32(_mm_cvttps_epi32(n.value), _mm_set1_epi32(127)), 23))); }
+    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
+      return simd(_mm_castsi128_ps(_mm_slli_epi32(_mm_add_epi32(_mm_cvttps_epi32(n.value), _mm_set1_epi32(127)), 23)));
+    }
 
     template <std::size_t Alignment = 1>
     /// Load full lanes, assuming Alignment-byte pointer alignment.
@@ -141,19 +172,19 @@ namespace native {
     native_inline constexpr simd(X... x) noexcept((noexcept(static_cast<float>(x)) && ...)) : simd(loadu(std::array<float,4>{static_cast<float>(x)...}.data())) {}
 #endif
     /// Apply the corresponding lane-wise add operation in place and return *this.
-    native_inline simd & operator+=(simd b) noexcept { return *this=*this+b; }
+    native_inline constexpr simd & operator+=(simd b) noexcept { return *this=*this+b; }
     /// Apply the corresponding lane-wise subtract operation in place and return *this.
-    native_inline simd & operator-=(simd b) noexcept { return *this=*this-b; }
+    native_inline constexpr simd & operator-=(simd b) noexcept { return *this=*this-b; }
     /// Apply the corresponding lane-wise multiply operation in place and return *this.
-    native_inline simd & operator*=(simd b) noexcept { return *this=*this*b; }
+    native_inline constexpr simd & operator*=(simd b) noexcept { return *this=*this*b; }
     /// Apply the corresponding lane-wise divide operation in place and return *this.
-    native_inline simd & operator/=(simd b) noexcept { return *this=*this/b; }
+    native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
   };
 
   /// \ingroup vectors
@@ -184,31 +215,49 @@ namespace native {
     /// Store every logical lane; no extra alignment is required.
     native_inline constexpr void store(native_noescape float * p) const { store_memory<1>(p); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator+(simd a, simd b) { return simd(_mm256_add_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
+      return simd(_mm256_add_ps(a.value, b.value));
+    }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator-(simd a, simd b) { return simd(_mm256_sub_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
+      return simd(_mm256_sub_ps(a.value, b.value));
+    }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator*(simd a, simd b) { return simd(_mm256_mul_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
+      return simd(_mm256_mul_ps(a.value, b.value));
+    }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline native_pure simd operator/(simd a, simd b) { return simd(_mm256_div_ps(a.value, b.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
+      return simd(_mm256_div_ps(a.value, b.value));
+    }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline native_const simd operator-(simd a) { return simd(_mm256_xor_ps(a.value, _mm256_set1_ps(-0.f))); }
+    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
+      return simd(_mm256_xor_ps(a.value, _mm256_set1_ps(-0.f)));
+    }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator<(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator>(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
       else
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator==(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
       else
@@ -216,18 +265,31 @@ namespace native {
     }
     /// Choose a where the canonical mask is true, otherwise b; both operands are evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline native_const simd select(M m,simd a,simd b) {
+    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+      if consteval { return ::native::detail::float_constant::select(m,a,b); }
       if constexpr(M::compact) return simd(_mm256_mask_blend_ps(m.to_native(),b.value,a.value));
       else
         return simd(_mm256_blendv_ps(b.value,a.value,_mm256_castsi256_ps(m.to_native()))); }
     /// Compute a*b+c with one fused rounding per lane.
-    native_artificial native_nodiscard friend native_inline native_pure simd fma(simd a, simd b, simd c) { return simd(_mm256_fmadd_ps(a.value, b.value, c.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
+      return simd(_mm256_fmadd_ps(a.value, b.value, c.value));
+    }
     /// Compute the native square root in every lane.
-    native_artificial native_nodiscard friend native_inline native_pure simd sqrt(simd a) { return simd(_mm256_sqrt_ps(a.value)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_pure simd sqrt(simd a) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
+      return simd(_mm256_sqrt_ps(a.value));
+    }
     /// Round to an integral value, ties to even, independent of ambient direction.
-    native_artificial native_nodiscard friend native_inline native_const simd round_even(simd a) { return simd(_mm256_round_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC)); }
+    native_artificial native_nodiscard friend native_inline constexpr native_const simd round_even(simd a) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
+      return simd(_mm256_round_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    }
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline native_const simd normal_pow2(simd n) { return simd(_mm256_castsi256_ps(_mm256_slli_epi32(_mm256_add_epi32(_mm256_cvttps_epi32(n.value), _mm256_set1_epi32(127)), 23))); }
+    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+      if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
+      return simd(_mm256_castsi256_ps(_mm256_slli_epi32(_mm256_add_epi32(_mm256_cvttps_epi32(n.value), _mm256_set1_epi32(127)), 23)));
+    }
 
     template <std::size_t Alignment = 1>
     /// Load full lanes, assuming Alignment-byte pointer alignment.
@@ -297,19 +359,19 @@ namespace native {
     native_inline constexpr simd(X... x) noexcept((noexcept(static_cast<float>(x)) && ...)) : simd(loadu(std::array<float,8>{static_cast<float>(x)...}.data())) {}
 #endif
     /// Apply the corresponding lane-wise add operation in place and return *this.
-    native_inline simd & operator+=(simd b) noexcept { return *this=*this+b; }
+    native_inline constexpr simd & operator+=(simd b) noexcept { return *this=*this+b; }
     /// Apply the corresponding lane-wise subtract operation in place and return *this.
-    native_inline simd & operator-=(simd b) noexcept { return *this=*this-b; }
+    native_inline constexpr simd & operator-=(simd b) noexcept { return *this=*this-b; }
     /// Apply the corresponding lane-wise multiply operation in place and return *this.
-    native_inline simd & operator*=(simd b) noexcept { return *this=*this*b; }
+    native_inline constexpr simd & operator*=(simd b) noexcept { return *this=*this*b; }
     /// Apply the corresponding lane-wise divide operation in place and return *this.
-    native_inline simd & operator/=(simd b) noexcept { return *this=*this/b; }
+    native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
   };
 
 }

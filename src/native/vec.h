@@ -1,6 +1,7 @@
 #pragma once
 #include "native/config.h"
 #include "native/simd/common.h"
+#include "native/simd/float_constant.h"
 #include <algorithm>
 #include <array>
 #include <bit>

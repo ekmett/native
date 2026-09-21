@@ -261,6 +261,28 @@ preserve the input scalar, SIMD, array, or `native::wide` shape, including
 empty and one-element containers.
 These kernels support binary32 elements.
 
+Binary32 arithmetic, comparisons, selection, fused multiply-add, square root,
+rounding and exponent scaling support constant evaluation, including short
+vectors. The promoted exponential and trigonometric kernels evaluate their
+existing polynomial graphs with the same input bounds and approximation
+contracts. Scalar, array and empty-array forms retain their shapes.
+
+Constant evaluation uses round-to-nearest with ties to even and gradual
+underflow. Numerical arithmetic quiets signaling NaNs, preserves the selected NaN's sign
+and payload, and uses positive quiet NaN for invalid operations. Signaling NaNs
+are selected before quiet NaNs; otherwise operand order decides, with the
+addend first for FMA. An infinite-times-zero FMA product yields the canonical
+NaN even with a quiet NaN addend. `scaleb` retains its exceptional scaling rule:
+a quiet NaN scaled by positive or negative infinity becomes positive infinity
+or positive zero; a signaling NaN is quieted instead.
+Comparisons are ordered, while inequality is true for
+unordered operands. Negation and `abs` change only the sign bit; bit transport and selection preserve
+representations, including signaling NaNs.
+These computations do not read or change floating-point controls or exception
+flags. Runtime operations continue to use native instructions and the caller's
+environment; constant evaluation does not promise the runtime target's NaN
+precedence or status flags.
+
 Promotion owns its values. Demotion uses the original type to restore shape,
 while retaining transformed element types: a scalar comparison demotes to
 `bool`, whereas a SIMD comparison retains its mask. `wide::map` performs one

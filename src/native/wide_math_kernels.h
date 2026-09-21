@@ -13,7 +13,7 @@ namespace math {
 
     // Precondition: every lane is finite and |x| < 8192.
     template<trig_kind K, ::wide::pack P>
-    native_nodiscard native_inline auto trig(P const & original) noexcept {
+    native_nodiscard native_inline constexpr auto trig(P const & original) noexcept {
       auto const encoded = ::wide::bits(original);
       auto const c = [&](float value) { return ::wide::constant_like(original, value); };
       auto const i = [&](std::uint32_t value) { return ::wide::constant_like(encoded, value); };
@@ -57,7 +57,7 @@ namespace math {
 
     template<trig_kind K, ::wide::promotable T>
       requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-    native_nodiscard native_inline auto trig_result(T const & input) noexcept {
+    native_nodiscard native_inline constexpr auto trig_result(T const & input) noexcept {
       if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
         if constexpr (K == trig_kind::paired)
           return std::pair{std::remove_cvref_t<T>(input), std::remove_cvref_t<T>(input)};
@@ -71,23 +71,23 @@ namespace math {
 
   /// Sine in radians; finite binary32 lanes with |x| < 8192.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  native_nodiscard native_inline auto sin(T const & input) noexcept {
+  native_nodiscard native_inline constexpr auto sin(T const & input) noexcept {
     return detail::trig_result<detail::trig_kind::sine>(input);
   }
   /// Cosine in radians; finite binary32 lanes with |x| < 8192.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  native_nodiscard native_inline auto cos(T const & input) noexcept {
+  native_nodiscard native_inline constexpr auto cos(T const & input) noexcept {
     return detail::trig_result<detail::trig_kind::cosine>(input);
   }
   /// Paired sine/cosine sharing one reducer; each result retains the input shape.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  native_nodiscard native_inline auto sincos(T const & input) noexcept {
+  native_nodiscard native_inline constexpr auto sincos(T const & input) noexcept {
     return detail::trig_result<detail::trig_kind::paired>(input);
   }
 
   /// Replace subnormal binary32 lanes with signed zero without changing FP controls.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  native_nodiscard native_inline auto flush_to_zero(T const & input) noexcept {
+  native_nodiscard native_inline constexpr auto flush_to_zero(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
       return std::remove_cvref_t<T>(input);
     else {
@@ -104,7 +104,7 @@ namespace math {
   // These primitives retain their native leaf semantics inside one wide stage.
 #define NATIVE_PROMOTED_UNARY(name) \
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>) \
-  native_nodiscard native_inline auto name(T const & input) noexcept { \
+  native_nodiscard native_inline constexpr auto name(T const & input) noexcept { \
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) \
       return std::remove_cvref_t<T>(input); \
     else return ::wide::demote<T>(::wide::name(::wide::promote(input))); \
