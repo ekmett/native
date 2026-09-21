@@ -38,7 +38,8 @@ endif()
 foreach(interface IN LISTS interfaces)
   set(target native_test_x86_vpopcntdq_${interface})
   add_executable(${target} main.cc)
-  native_vpopcntdq_disable_optional(${target})
+  # Importers retain the provider baseline so all consumers share its BMI.
+  # Textual probes below explicitly disable optional features.
   target_compile_definitions(${target} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
   if(interface STREQUAL "hub")
     target_link_libraries(${target} PRIVATE native::native)
