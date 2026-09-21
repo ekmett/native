@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
+#include <native/attributes.h>
 #include <native/isa.h>
 #include <native/targets.h>
 
@@ -96,7 +97,7 @@ namespace {
   static_assert(feature_admission());
 }
 
-extern "C" bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t state) noexcept {
+extern "C" native_noinline bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t state) noexcept {
   snapshot cpu;
   cpu.leaf7_ecx = feature_bits;
   cpu.xcr0 = state;
@@ -104,6 +105,11 @@ extern "C" bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t 
 }
 
 int main() {
+  // Runtime inputs keep the inspected classifier on the executable's call path.
+  volatile std::uint32_t feature_bits = 1u << 9;
+  volatile std::uint64_t state = 0xe6;
   return state_admission(hardware) && state_admission(vex128) &&
-    state_admission(vex256) && state_admission(evex512) && feature_admission() ? 0 : 1;
+    state_admission(vex256) && state_admission(evex512) && feature_admission() &&
+    native_vaes_admission(feature_bits, state) && !native_vaes_admission(0, state) &&
+    !native_vaes_admission(feature_bits, 0) ? 0 : 1;
 }
