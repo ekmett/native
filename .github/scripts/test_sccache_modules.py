@@ -19,7 +19,6 @@ def main():
     parser.add_argument('--compiler', required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--cmake', default='cmake')
-    parser.add_argument('--sccache', default='sccache')
     parser.add_argument('--launcher', type=Path,
                         default=Path(__file__).with_name('sccache_launcher.py'))
     parser.add_argument('--cmake-arg', action='append', default=[])
@@ -54,11 +53,13 @@ set_target_properties(consumer ordinary PROPERTIES CXX_COMPILER_LAUNCHER "${TEST
         port = address.getsockname()[1]
     config = root / 'sccache.toml'
     config.write_text('')
-    environment.update(SCCACHE_CONF=str(config), SCCACHE_DIR=str(root / 'cache'),
+    environment.update(SCCACHE_CONF=str(config), SCCACHE_CACHED_CONF=str(root / 'cached-config'),
+                       SCCACHE_DIR=str(root / 'cache'),
                        SCCACHE_SERVER_PORT=str(port), SCCACHE_IDLE_TIMEOUT='0',
                        SCCACHE_ERROR_LOG=str(root / 'sccache.log'))
     compiler = shutil.which(args.compiler) or args.compiler
-    cache = shutil.which(args.sccache) or args.sccache
+    # Resolve the same PATH entry that the compiler launcher invokes.
+    cache = shutil.which('sccache') or 'sccache'
     observations = []
 
     def run(command, **options):

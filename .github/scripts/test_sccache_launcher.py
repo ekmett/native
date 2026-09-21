@@ -115,13 +115,6 @@ class LauncherTests(PosixLauncherTests):
                             execute.assert_called_once_with(compiler, arguments)
                             self.assertEqual(os.environ['SCCACHE_EXTRAFILES'], '/existing/file')
 
-    def test_windows_keeps_direct_cache_routing_and_original_argv(self):
-        arguments = ['clang-cl.exe', *self.arguments[1:]]
-        with patch.object(launcher.os, 'name', 'nt'):
-            with patch.object(launcher.os, 'execvp') as execute:
-                launcher.main(arguments)
-                execute.assert_called_once_with('sccache', ['sccache', *arguments])
-
     def test_unchanged_invocation_does_not_retry_e2big(self):
         for compiler in ['clang++', 'c++']:
             arguments = [compiler, '-c', 'source with space.cc']
@@ -179,6 +172,93 @@ class LauncherTests(PosixLauncherTests):
         self.assertEqual(result.returncode, 19)
         self.assertEqual(result.stderr, 'compiler diagnostic\n')
         self.assertEqual(json.loads(result.stdout), launcher.normalize(self.arguments))
+
+
+class WindowsLauncherTests(unittest.TestCase):
+    def setUp(self):
+        platform = SimpleNamespace(**vars(os))
+        platform.name = 'nt'
+        patcher = patch.object(launcher, 'os', platform)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.arguments = [r'C:\LLVM tools\bin\clang-cl.exe', '/nologo', '/c',
+                          'source with space.cc', '/Fooutput with space.obj',
+                          '/O2', '/fp:strict', '-std:c++latest']
+
+    def check_route(self, arguments, cached):
+        with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': r'C:\existing file'}):
+            with patch.object(launcher.os, 'execvp') as execute:
+                launcher.main(arguments)
+                expected = ['sccache', *arguments] if cached else arguments
+                execute.assert_called_once_with(expected[0], expected)
+                self.assertEqual(os.environ['SCCACHE_EXTRAFILES'], r'C:\existing file')
+
+    def test_ordinary_clang_cl_compilations_remain_cached(self):
+        for compiler in [self.arguments[0], 'clang-cl', 'clang-cl-23.exe',
+                         'C:/LLVM tools/bin/CLANG-CL.EXE']:
+            with self.subTest(compiler=compiler):
+                self.check_route([compiler, *self.arguments[1:]], True)
+
+    def test_opaque_response_files_bypass_without_reading_or_expanding(self):
+        for response in [r'@C:\module maps\main.cc.obj.modmap', '@missing.modmap',
+                         '@unknown.rsp', '@"with spaces.rsp"',
+                         r'/clang:@C:\module maps\nested.rsp',
+                         '-clang:@nested.modmap', '-Xclang=@nested.rsp']:
+            with self.subTest(response=response):
+                with patch.object(launcher, 'Path', side_effect=AssertionError('unexpected read')):
+                    self.check_route([*self.arguments, response], False)
+
+    def test_raw_and_forwarded_module_flags_bypass(self):
+        flags = ['-fmodule-file=native.isa=C:/module files/native.isa.pcm',
+                 '-fmodule-output=output.pcm', '-fprebuilt-module-path=C:/modules',
+                 '-fmodule-map-file=module.modulemap', '-fmodules',
+                 '-fimplicit-modules', '-fno-implicit-modules',
+                 '-emit-module-interface', '--precompile']
+        for flag in flags:
+            for forwarded in [[flag], ['/clang:' + flag], ['-clang:' + flag],
+                              ['-Xclang', flag], ['-Xclang=' + flag]]:
+                with self.subTest(flags=forwarded):
+                    self.check_route([*self.arguments, *forwarded], False)
+        for flags in [['-x', 'c++-module'], ['/clang:-x', '/clang:c++-module'],
+                      ['-xc++-module'], ['/interface'], ['/internalPartition'],
+                      ['/ifcOutput', 'module.ifc'], ['/reference', 'native=module.ifc'],
+                      ['/headerUnit:quote', 'header=module.ifc'], ['/exportHeader'],
+                      ['/stdIfcDir', 'modules'], ['/experimental:module']]:
+            with self.subTest(flags=flags):
+                self.check_route([*self.arguments, *flags], False)
+
+    def test_pch_and_module_inputs_bypass(self):
+        for flags in [['/FpC:/PCH files/prefix.pch'], ['/Yuprefix.h'], ['/Ycprefix.h'],
+                      ['-include-pch', 'prefix.pch'], ['/clang:-include-pch', 'prefix.pch'],
+                      ['-Xclang', '-include-pch', '-Xclang', 'prefix.pch'],
+                      ['-include-pth', 'prefix.pth'], ['-x', 'c++-header']]:
+            with self.subTest(flags=flags):
+                self.check_route([*self.arguments, *flags], False)
+        for suffix in ['ccm', 'cppm', 'cxxm', 'c++m', 'ixx', 'mpp', 'mxx',
+                       'pcm', 'bmi', 'ifc', 'pch', 'pth']:
+            with self.subTest(suffix=suffix):
+                self.check_route([*self.arguments, 'source with space.' + suffix.upper()], False)
+
+    def test_unknown_compilers_bypass(self):
+        for compiler in ['cl.exe', 'clang++.exe', 'compiler-alias.exe']:
+            self.check_route([compiler, *self.arguments[1:]], False)
+
+
+class DirectExecutionTests(unittest.TestCase):
+    def test_real_bypass_preserves_exit_output_arguments_and_environment(self):
+        # Python is deliberately outside the supported compiler names. This
+        # exercises the direct exec path on Windows as well as POSIX hosts.
+        child = ('import json, os, sys; '
+                 'print(json.dumps([sys.argv[1:], os.environ.get("SCCACHE_EXTRAFILES")])); '
+                 'print("compiler diagnostic", file=sys.stderr); sys.exit(19)')
+        arguments = ['with space', 'quoted"value', r'C:\module files\input.cc']
+        environment = {**os.environ, 'SCCACHE_EXTRAFILES': 'existing value'}
+        result = subprocess.run([sys.executable, launcher.__file__, sys.executable,
+                                 '-c', child, *arguments], env=environment,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 19)
+        self.assertEqual(result.stderr, 'compiler diagnostic\n')
+        self.assertEqual(json.loads(result.stdout), [arguments, 'existing value'])
 
 
 class PchTests(PosixLauncherTests):

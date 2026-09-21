@@ -110,10 +110,15 @@ build does not replace installed-consumer validation.
 
 ## Compiler cache
 
-The compiler launcher expands recognized CMake module-map response files for
-sccache and preserves their effective arguments. Unknown or ambiguous syntax
-uses the compiler directly. Its tests cover whitespace, quoting, missing inputs,
-size limits, fallback behavior and compiler exit status.
+On POSIX hosts, the compiler launcher expands recognized CMake module-map
+response files for sccache and preserves their effective arguments. Unknown or
+ambiguous syntax uses the compiler directly.
+
+Windows clang-cl module providers and importers, PCH commands, and commands with
+response files use the compiler directly with unchanged arguments. sccache 0.16
+does not hash BMI contents for raw clang-cl module-file flags. Ordinary clang-cl
+compilations remain cached. Launcher tests cover both platforms, including
+whitespace, quoting, missing inputs, fallback behavior and compiler exit status.
 
 Cache fixtures distinguish cold compilation, unchanged reuse and invalidation
 following changed module or header inputs. Fresh importers check the observable
@@ -122,9 +127,9 @@ pass through the launcher; cache hits alone do not establish a faster build.
 
 ### PCH-dependent module invalidation
 
-Explicit PCH binaries are included in `SCCACHE_EXTRAFILES`, alongside existing
-entries. Unknown response-file or PCH syntax bypasses caching. Compiler module
-validation remains enabled.
+On POSIX hosts, explicit PCH binaries are included in `SCCACHE_EXTRAFILES`,
+alongside existing entries. Unknown response-file or PCH syntax bypasses caching.
+Compiler module validation remains enabled.
 
 The PCH fixture changes PCH bytes while retaining equivalent preprocessing,
 checks reuse afterward, and also checks unchanged bytes with changed timestamps.
