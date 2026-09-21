@@ -146,16 +146,22 @@ export namespace native {
     return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), value.to_native()));
   }
   // Reject implicit register conversions, mixed tags and wrong element types.
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void vpopcntd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void mask_vpopcntd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void maskz_vpopcntd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void vpopcntq(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void mask_vpopcntq(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void maskz_vpopcntq(Args...) = delete;
 

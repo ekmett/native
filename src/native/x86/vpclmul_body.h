@@ -39,6 +39,7 @@ export namespace native {
   }
 
   // Reject implicit register conversions, mixed tags and wrong element types.
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void vpclmulqdq(Args...) = delete;
 

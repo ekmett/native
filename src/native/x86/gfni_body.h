@@ -232,22 +232,31 @@ export namespace native {
   }
 
   // Reject implicit register conversions, mixed tags and wrong element types.
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void gf2p8mulb(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void gf2p8affineqb(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void gf2p8affineinvqb(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void gf2p8mulb_mask(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void gf2p8mulb_maskz(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void gf2p8affineqb_mask(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void gf2p8affineqb_maskz(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void gf2p8affineinvqb_mask(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class... Args>
   void gf2p8affineinvqb_maskz(Args...) = delete;
 

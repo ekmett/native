@@ -76,7 +76,9 @@ export namespace native {
     return detail::x86_f16c::cvtsh_ss<Arch>(a);
   }
 
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Imm8, class V> void cvtps_ph(V) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, unsigned Lanes, class V> void cvtph_ps(V) = delete;
   /// \}
 }

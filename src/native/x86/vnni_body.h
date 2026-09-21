@@ -528,52 +528,76 @@ export namespace native {
   }
 
   // Reject implicit register conversions, mixed tags and wrong element types.
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbusd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void mask_dpbusd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void maskz_dpbusd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbusds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void mask_dpbusds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void maskz_dpbusds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwssd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void mask_dpwssd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void maskz_dpwssd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwssds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void mask_dpwssds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void maskz_dpwssds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbssd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbssds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbsud(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbsuds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbuud(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpbuuds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwsud(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwsuds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwusd(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwusds(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwuud(Args...) = delete;
+  /// Reject unsupported signatures, including implicit raw-register conversions.
   template<isa Arch, class... Args>
   void dpwuuds(Args...) = delete;
 
