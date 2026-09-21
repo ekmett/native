@@ -2,7 +2,6 @@
 module;
 #include "native/isa_import.h"
 #include "native/x86/avx512cd.h"
-#include "native/x86/avx512cd_constant.h"
 export module native.x86.avx512cd;
 export import native.x86.features;
 export import native.simd;

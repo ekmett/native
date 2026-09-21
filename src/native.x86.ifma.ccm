@@ -3,7 +3,6 @@ module;
 
 #include "native/isa_import.h"
 #include "native/x86/ifma.h"
-#include "native/x86/ifma_constant.h"
 
 export module native.x86.ifma;
 export import native.x86.features;

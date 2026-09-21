@@ -3,7 +3,6 @@ module;
 
 #include "native/isa_import.h"
 #include "native/wasm/relaxed.h"
-#include "native/wasm/relaxed_constant.h"
 
 export module native.wasm.relaxed;
 export import native.wasm.features;

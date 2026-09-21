@@ -3,7 +3,6 @@ module;
 
 #include "native/isa_import.h"
 #include "native/x86/sha.h"
-#include "native/x86/sha_constant.h"
 
 export module native.x86.sha;
 export import native.x86.features;

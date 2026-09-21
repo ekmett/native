@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
-#include "native/arm/sm4_constant.h"
 #include "native/arm/sm4.h"
 #include "native/targets.h"
 export module native.arm.sm4;
