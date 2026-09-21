@@ -5,6 +5,14 @@
 for the IEEE polynomial and `crc32c` for the Castagnoli polynomial. Both return
 an unsigned 32-bit accumulator and require `arm_feature::crc`.
 
+Imported scalar calls may omit `Arch`, as in `crc32c(crc, word)`. The default
+is captured from `NATIVE_BASELINE` when `native.arm.crc` is compiled, and the call
+participates only if that baseline contains CRC. A target scope in the importing
+file does not change the captured default; use an explicit ISA as below for an
+optional instruction leaf. Standalone `native/arm/crc.h` calls keep explicit ISA
+arguments so different translation-unit flags cannot give the same declaration
+different defaults.
+
 Each update consumes the operand's bits from least to most significant. The
 reflected polynomials are `0xedb88320` and `0x82f63b78` respectively. The functions
 apply neither an initial nor a final complement. To obtain the usual checksum

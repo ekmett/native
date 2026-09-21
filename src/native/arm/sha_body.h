@@ -38,8 +38,8 @@ export namespace native {
     return simd<std::uint32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::uint32_t, 4, Arch>::native_type, result));
   }
 
-  /// Rotate a SHA-1 state word right by two bits.
-  template<isa Arch> requires(Arch.has(arm_feature::sha1))
+  /// Rotate a SHA-1 state word right by two bits; Arch defaults to the module baseline.
+  template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::sha1))
   native_nodiscard native_inline native_const native_target("sha2")
   std::uint32_t sha1h(std::uint32_t a) noexcept {
     auto result = detail::arm_sha::sha1h<Arch>(a);
@@ -281,7 +281,7 @@ export namespace native {
   template<isa Arch, class... T> void sha1m(T...) = delete;
 
   /// Reject unsupported argument shapes or unavailable instruction features.
-  template<isa Arch, class... T> void sha1h(T...) = delete;
+  template<isa Arch=NATIVE_BASELINE, class... T> void sha1h(T...) = delete;
 
   /// Reject unsupported argument shapes or unavailable instruction features.
   template<isa Arch, class... T> void sha1su0(T...) = delete;

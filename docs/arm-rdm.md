@@ -7,6 +7,14 @@ and `native` hubs re-export them.
 
 Scalar operations use ordinary C++ integers. Vector operands and results use
 `native::simd<T, N, Arch>`, including the vector source of a scalar lane operation.
+Scalar `sqrdmlah(a,b,c)` and `sqrdmlsh(a,b,c)` calls may omit `Arch` when the
+owning module's `NATIVE_BASELINE` contains RDM. This default is captured at module
+compilation; an importing function's target attribute does not change it. An
+explicit ISA remains available for optional target leaves. Clang 23 reports
+`__ARM_FEATURE_QRDMX` for an Armv8.1-A baseline, but not for `armv8-a+rdm`
+alone; the latter therefore requires an explicit ISA with the current macro-based
+baseline snapshot. Vector forms continue to deduce `Arch` from their operands,
+and lane forms retain `<Arch, Lane>` order.
 Every vector operand shares the operation's `Arch`. Each add/subtract operation has
 eighteen overloads: six shapes, each with an ordinary form and two selectable
 right-hand vector widths.

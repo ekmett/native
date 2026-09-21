@@ -1,0 +1,86 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+cmake_minimum_required(VERSION 4.4)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_arm_scalar_defaults_consumer LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+  enable_testing()
+endif()
+if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  return()
+endif()
+function(arm_scalar_baseline target present)
+  target_link_libraries(${target} PRIVATE native::native)
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(present)
+    # Clang exposes QRDMX through the architecture macro, not +rdm alone.
+    # Disable LSE explicitly so this fixture needs only the named instructions.
+    set(arch armv8.1-a+nolse+crc+aes+sha2+rdm)
+  else()
+    set(arch armv8-a+nocrc+noaes+nosha2+nordm)
+  endif()
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /O2 /clang:-mcpu=generic /clang:-march=${arch})
+  else()
+    target_compile_options(${target} PRIVATE -O2 -mcpu=generic -march=${arch})
+  endif()
+endfunction()
+foreach(present RANGE 0 1)
+  set(target native_test_arm_scalar_defaults_${present})
+  add_executable(${target} availability.cc)
+  arm_scalar_baseline(${target} ${present})
+  target_compile_definitions(${target} PRIVATE NATIVE_ARM_DEFAULT_PRESENT=${present})
+  if(COMMAND native_link_clang_cl_asan)
+    native_link_clang_cl_asan(${target})
+  endif()
+  add_test(NAME native.arm.scalar_defaults.baseline_${present} COMMAND ${target})
+  set_tests_properties(native.arm.scalar_defaults.baseline_${present} PROPERTIES LABELS "host;arm;modules;baseline")
+endforeach()
+add_executable(native_test_arm_scalar_defaults_runtime run.cc)
+arm_scalar_baseline(native_test_arm_scalar_defaults_runtime 1)
+if(COMMAND native_link_clang_cl_asan)
+  native_link_clang_cl_asan(native_test_arm_scalar_defaults_runtime)
+endif()
+add_test(NAME native.arm.scalar_defaults.runtime COMMAND native_test_arm_scalar_defaults_runtime)
+set_tests_properties(native.arm.scalar_defaults.runtime PROPERTIES SKIP_RETURN_CODE 77 LABELS "host;arm;modules;baseline")
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  return()
+endif()
+
+foreach(present RANGE 0 1)
+  add_library(native_arm_scalar_header_${present} OBJECT header.cc)
+  arm_scalar_baseline(native_arm_scalar_header_${present} ${present})
+  # No import: the ordinary header deliberately retains explicit ISA arguments.
+  set_target_properties(native_arm_scalar_header_${present} PROPERTIES CXX_SCAN_FOR_MODULES OFF)
+endforeach()
+add_library(native_arm_scalar_defaults_codegen OBJECT codegen.cc)
+arm_scalar_baseline(native_arm_scalar_defaults_codegen 1)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+get_filename_component(compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+find_program(arm_scalar_objdump NAMES llvm-objdump HINTS "${compiler_dir}" REQUIRED)
+add_test(NAME native.arm.scalar_defaults.codegen COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py" --objdump "${arm_scalar_objdump}"
+  --output "${CMAKE_CURRENT_BINARY_DIR}/defaults-$<CONFIG>.disassembly"
+  $<TARGET_OBJECTS:native_arm_scalar_defaults_codegen> COMMAND_EXPAND_LISTS)
+set_tests_properties(native.arm.scalar_defaults.codegen PROPERTIES LABELS "host;arm;modules;codegen")
+
+foreach(kind RANGE 0 7)
+  set(target native_arm_scalar_defaults_reject_${kind})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL reject.cc)
+  if(kind LESS 4)
+    arm_scalar_baseline(${target} 0)
+  else()
+    arm_scalar_baseline(${target} 1)
+  endif()
+  target_compile_definitions(${target} PRIVATE NATIVE_ARM_DEFAULT_REJECT=${kind})
+  add_test(NAME native.arm.scalar_defaults.reject_${kind} COMMAND "${Python3_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py" --cmake "${CMAKE_COMMAND}"
+    --build "${CMAKE_BINARY_DIR}" --target "${target}" --config "$<CONFIG>"
+    --diagnostic "deleted function|no matching function"
+    --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-$<CONFIG>.log")
+  set_tests_properties(native.arm.scalar_defaults.reject_${kind} PROPERTIES
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;arm;modules;negative")
+endforeach()
+add_test(NAME native.arm.scalar_defaults.provider_capture COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check_provider.py" --build "${CMAKE_BINARY_DIR}"
+  --output "${CMAKE_CURRENT_BINARY_DIR}/provider-$<CONFIG>" --config "$<CONFIG>")
+set_tests_properties(native.arm.scalar_defaults.provider_capture PROPERTIES LABELS "host;arm;modules;baseline")

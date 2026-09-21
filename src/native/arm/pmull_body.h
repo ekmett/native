@@ -12,7 +12,8 @@ export namespace native {
   /// \{
 
   /// Multiply two degree-at-most-63 polynomials over GF(2), returning all 128 coefficients.
-  template<isa Arch> requires(Arch.has(arm_feature::pmull))
+  /// Arch defaults to the owning module's baseline, and is preserved in the result.
+  template<isa Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::pmull))
   native_nodiscard native_inline native_const native_target("aes")
   simd<std::uint64_t, 2, Arch> pmull(std::uint64_t a, std::uint64_t b) noexcept {
     auto result = detail::arm_pmull::pmull<Arch>(a, b);
@@ -47,7 +48,7 @@ export namespace native {
 
   // Require exact semantic shapes and a consistent feature tag.
   /// Reject unsupported argument shapes or unavailable instruction features.
-  template<isa Arch, class... T> void pmull(T...) = delete;
+  template<isa Arch=NATIVE_BASELINE, class... T> void pmull(T...) = delete;
 
   /// Reject unsupported argument shapes or unavailable instruction features.
   template<isa Arch, class... T> void pmull2(T...) = delete;

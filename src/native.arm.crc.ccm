@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/arm/crc.h"
+#include "native/targets.h"
+#include "native/arm/detail/crc_defaults.h"
 export module native.arm.crc;
 export import native.arm.features;
 export namespace native {

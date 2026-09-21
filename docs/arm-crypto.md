@@ -5,6 +5,12 @@ Advanced SIMD instructions. They are also exported by `native.arm` and `native`.
 The vector arguments and results use `simd<T,N,Arch>`, preserving the same
 feature tag throughout each operation. Scalar SHA-1 and polynomial operands
 use C++ integer types. Each module reexports `native.simd`.
+The scalar `sha1h(word)` and scalar-input `pmull(a,b)` forms may omit `Arch`.
+Their defaults are captured from `NATIVE_BASELINE` by the owning module, and
+remain constrained by SHA-1 or PMULL respectively. The polynomial result keeps
+that exact default tag in `simd<std::uint64_t,2,Arch>`. An importing target scope
+does not change a module's default; optional instruction leaves can still give
+an explicit ISA. Vector arguments continue to deduce their own `Arch`.
 They perform integer operations without changing FPCR, FPSR or NZCV.
 
 These operations do not implement a cipher mode, key expansion, message padding,

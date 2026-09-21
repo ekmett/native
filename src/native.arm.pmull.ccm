@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/arm/pmull.h"
+#include "native/targets.h"
 export module native.arm.pmull;
 export import native.arm.features;
 export import native.simd;
