@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+#include "simd_adapter.h"
+#include "simd_contract.h"
 namespace i8mm_fixture {
   constexpr auto feature=native::isa(native::arm_feature::i8mm);
   static_assert(native::feature_closure(feature)==(feature&native::neon));
@@ -7,12 +9,12 @@ namespace i8mm_fixture {
   static_assert(std::uint64_t(native::arm_feature::pauth)==14);
   static_assert(std::uint64_t(native::arm_feature::i8mm)==15);
   template<native::isa A> concept accepts=requires(int32x4_t c,int8x16_t a) {
-    native::smmla<A>(c,a,a);
+    i8mm_api::smmla<A>(c,a,a);
   };
   static_assert(accepts<feature> && !accepts<native::neon>);
   static_assert(!accepts<native::isa(native::arm_feature::dotprod)>);
   template<unsigned L> concept accepts_lane=requires(int32x4_t c,uint8x16_t a,int8x8_t b) {
-    native::usdot_lane<feature,L>(c,a,b);
+    i8mm_api::usdot_lane<feature,L>(c,a,b);
   };
   static_assert(accepts_lane<1> && !accepts_lane<2> && !accepts_lane<~0u>);
 
@@ -27,14 +29,14 @@ namespace i8mm_fixture {
   }
   template<unsigned L,class C,class A,class B>
   __attribute__((target("i8mm"))) bool lanes(C c,A a,B b) {
-    auto us=native::usdot_lane<feature,L>(c,a,b);
+    auto us=i8mm_api::usdot_lane<feature,L>(c,a,b);
     for(unsigned j=0;j<sizeof(C)/4;++j)
       if(std::uint32_t(us[j])!=dot(std::uint32_t(c[j]),a,b,j,L)) return false;
     return true;
   }
   template<unsigned L,class C,class A,class B>
   __attribute__((target("i8mm"))) bool signed_lanes(C c,A a,B b) {
-    auto su=native::sudot_lane<feature,L>(c,a,b);
+    auto su=i8mm_api::sudot_lane<feature,L>(c,a,b);
     for(unsigned j=0;j<sizeof(C)/4;++j)
       if(std::uint32_t(su[j])!=dot(std::uint32_t(c[j]),a,b,j,L)) return false;
     return true;
@@ -42,14 +44,14 @@ namespace i8mm_fixture {
   __attribute__((target("i8mm"),noinline)) bool check(int32x4_t c,int8x16_t a,int8x16_t b) {
     auto au=__builtin_bit_cast(uint8x16_t,a),bu=__builtin_bit_cast(uint8x16_t,b);
     auto cu=__builtin_bit_cast(uint32x4_t,c);
-    auto s=native::smmla<feature>(c,a,b);
-    auto u=native::ummla<feature>(cu,au,bu);
-    auto us=native::usmmla<feature>(c,au,b);
-    auto d=native::usdot<feature>(c,au,b);
+    auto s=i8mm_api::smmla<feature>(c,a,b);
+    auto u=i8mm_api::ummla<feature>(cu,au,bu);
+    auto us=i8mm_api::usmmla<feature>(c,au,b);
+    auto d=i8mm_api::usdot<feature>(c,au,b);
     int32x2_t c2{c[0],c[1]};
     int8x8_t a8{},b8{};uint8x8_t au8{},bu8{};
     for(unsigned j=0;j<8;++j) { a8[j]=a[j]; b8[j]=b[j]; au8[j]=au[j]; bu8[j]=bu[j]; }
-    auto d2=native::usdot<feature>(c2,au8,b8);
+    auto d2=i8mm_api::usdot<feature>(c2,au8,b8);
     for(unsigned j=0;j<4;++j) {
       if(std::uint32_t(s[j])!=matrix(cu[j],a,b,j/2,j%2) ||
          u[j]!=matrix(cu[j],au,bu,j/2,j%2) ||

@@ -4,12 +4,7 @@ module;
 #include "native/arm/dotprod.h"
 export module native.arm.dotprod;
 export import native.arm.features;
-export namespace native {
-  /// \addtogroup arm_dotprod
-  /// \{
-  using ::native::sdot;
-  using ::native::udot;
-  using ::native::sdot_lane;
-  using ::native::udot_lane;
-  /// \}
+export import native.simd;
+export {
+#include "native/arm/dotprod_simd.h"
 }

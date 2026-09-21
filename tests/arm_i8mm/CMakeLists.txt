@@ -9,7 +9,7 @@ if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   return()
 endif()
 
-set(suites header module main)
+set(suites arm_hub module main)
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   # Installed consumers use public modules, not private implementation headers.
   set(suites module main)
@@ -17,11 +17,7 @@ endif()
 foreach(suite IN LISTS suites)
   set(target native_test_arm_i8mm_${suite})
   add_executable(${target} ${suite}.cc)
-  if(suite STREQUAL "main")
-    target_link_libraries(${target} PRIVATE native::native)
-  else()
-    target_link_libraries(${target} PRIVATE native::minimal)
-  endif()
+  target_link_libraries(${target} PRIVATE native::native)
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(COMMAND native_link_clang_cl_asan)
     native_link_clang_cl_asan(${target})
@@ -47,7 +43,7 @@ foreach(kind IN ITEMS codegen minimum no_feature no_target bad_lane)
     if(kind STREQUAL "no_target")
       set(diagnostic "requires target feature|target specific option mismatch")
     else()
-      set(diagnostic "constraints not satisfied|no matching function")
+      set(diagnostic "deleted function|constraints not satisfied|no matching function")
     endif()
     add_test(NAME native.arm.i8mm.reject_${kind} COMMAND "${Python3_EXECUTABLE}"
       "${PROJECT_SOURCE_DIR}/tests/source_targets/check_negative.py" --cmake "${CMAKE_COMMAND}"
@@ -55,9 +51,9 @@ foreach(kind IN ITEMS codegen minimum no_feature no_target bad_lane)
       --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-$<CONFIG>.log" --diagnostic "${diagnostic}")
     set_tests_properties(native.arm.i8mm.reject_${kind} PROPERTIES RUN_SERIAL TRUE LABELS "host;i8mm;negative")
   endif()
-  target_link_libraries(native_test_arm_i8mm_${kind} PRIVATE native::headers)
+  target_link_libraries(native_test_arm_i8mm_${kind} PRIVATE native::native)
   target_compile_features(native_test_arm_i8mm_${kind} PRIVATE cxx_std_26)
-  set_target_properties(native_test_arm_i8mm_${kind} PROPERTIES CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
+  set_target_properties(native_test_arm_i8mm_${kind} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(kind STREQUAL "minimum")
     set(arch_flag -march=armv8-a+i8mm)
   else()
@@ -74,3 +70,11 @@ add_test(NAME native.arm.i8mm.codegen COMMAND "${Python3_EXECUTABLE}"
   --output "${CMAKE_CURRENT_BINARY_DIR}/i8mm-$<CONFIG>.disassembly"
   $<TARGET_OBJECTS:native_test_arm_i8mm_codegen> COMMAND_EXPAND_LISTS)
 set_tests_properties(native.arm.i8mm.codegen PROPERTIES LABELS "host;i8mm;codegen")
+
+add_test(NAME native.arm.i8mm.zero_overhead
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/../arm_dotprod/check_equivalence.py"
+    --objdump "${i8mm_objdump}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/public-raw-$<CONFIG>.json"
+    $<TARGET_OBJECTS:native_test_arm_i8mm_codegen> COMMAND_EXPAND_LISTS)
+set_tests_properties(native.arm.i8mm.zero_overhead PROPERTIES
+  LABELS "host;arm;i8mm;codegen")

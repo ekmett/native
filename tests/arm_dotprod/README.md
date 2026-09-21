@@ -1,11 +1,11 @@
 # DotProd instruction fixture
 
-The header, `native.arm.dotprod` and `native` variants run the same exact checks
+The `native.arm.dotprod`, `native.arm` and `native` variants run the same exact checks
 for twelve SDOT/UDOT overloads and every immediate lane. Each of the four base
 shapes uses 2,048 directed/edge/random input sets. The oracle multiplies scalar
 bytes and accumulates as `uint32_t`, explicitly checking signed and unsigned
-wraparound. Compile-time checks reject absent/unrelated features and invalid
-lanes, and synthetic observations reject unavailable or unobserved capabilities.
+wraparound. Direct public type checks reject raw registers and mixed architectures.
+Compile-time checks reject absent/unrelated features and invalid lanes, and synthetic observations reject unavailable or unobserved capabilities.
 
 Runtime entry requires `observe_arm_capabilities()` and `classify_isa()` to admit
 both DotProd and the translation-unit minimum; unavailable observations return
@@ -24,6 +24,10 @@ building the family targets. This directory also configures as a standalone
 installed consumer with `native_DIR` set to the package: that mode exercises the
 granular and omnibus modules, without private implementation headers.
 
-Qualification: Clang 23.1.1/CMake 4.4.3 on AArch64 macOS passed all five tests with
+Qualification: Clang 23.1.1/CMake 4.4.3 on AArch64 macOS passed all six tests with
 actual runtime execution. Other operating systems and big-endian execution are
 not newly qualified. See [the API](../../docs/arm-dotprod.md).
+
+The zero-overhead test compares paired public `simd` and raw-helper leaves under
+the same target and calling context. It requires identical full instruction
+sequences, including register moves and memory traffic.

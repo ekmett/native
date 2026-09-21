@@ -1,25 +1,24 @@
 # ARM complex arithmetic
 
 FCMA operates on complex numbers stored as adjacent `(real,imaginary)`
-elements in NEON registers. Import `native.arm.fcma`, `native.arm`, or `native`
+lanes in `native::simd<T, N, Arch>`. Import `native.arm.fcma`, `native.arm`, or `native`
 for `fcadd<Arch,Rotation>`, `fcmla<Arch,Rotation>`, and
-`fcmla_lane<Arch,Rotation,Lane>`. Source-tree header consumers can include
-`<native/arm/fcma.h>`; installed consumers use the named modules. The
-`native::simd` native-register conversions supply inputs and accept results.
+`fcmla_lane<Arch,Rotation,Lane>`. All operands and results share their element
+type and `Arch`. Raw NEON registers are private implementation details.
 
-| Register shape | Complex pairs | Required feature bits |
+| Vector shape | Complex pairs | Required feature bits |
 | --- | --- | --- |
-| `float32x2_t` | 1 | `complxnum` |
-| `float32x4_t` | 2 | `complxnum` |
-| `float64x2_t` | 1 | `complxnum` |
-| `float16x4_t` | 2 | `complxnum` and `neon_fp16` |
-| `float16x8_t` | 4 | `complxnum` and `neon_fp16` |
+| `simd<float, 2, Arch>` | 1 | `complxnum` |
+| `simd<float, 4, Arch>` | 2 | `complxnum` |
+| `simd<double, 2, Arch>` | 1 | `complxnum` |
+| `simd<fp16, 4, Arch>` | 2 | `complxnum` and `neon_fp16` |
+| `simd<fp16, 8, Arch>` | 4 | `complxnum` and `neon_fp16` |
 
 The feature is FEAT_FCMA. Runtime admission adds the compiler prerequisites,
 including baseline NEON. FP32/FP64 calls target `"complxnum"`; FP16 calls target
 `"complxnum,fullfp16"`. FHM, BF16 and FP16 alone do not supply FCMA. Missing
-features and invalid immediates are rejected even when Clang could implicitly
-convert the operands to a same-size NEON type of another element format.
+features, incompatible element types or architectures, raw register arguments,
+and invalid immediates are rejected at compile time.
 
 For one pair `a=(ar,ai)` and `b=(br,bi)`, `fcadd` permits rotations 90 and 270:
 
@@ -57,7 +56,6 @@ Compile the caller for its target and check CPU support before entering it.
 An import or template argument alone does neither:
 
 ```cpp
-#include <arm_neon.h>
 #include <native/targets.h>
 import native.arm.fcma;
 
@@ -66,10 +64,10 @@ constexpr auto complex_isa = NATIVE_TARGET_ISA(complex_float);
 
 NATIVE_TARGET_PUSH(complex_float)
 void complex_float(float* output, float const* a, float const* b) noexcept {
-  auto va = vld1q_f32(a), vb = vld1q_f32(b);
-  auto partial = native::fcmla<complex_isa, 0>(vdupq_n_f32(0), va, vb);
-  auto result = native::fcmla<complex_isa, 90>(partial, va, vb);
-  vst1q_f32(output, result);
+  using vector = native::simd<float, 4, complex_isa>;
+  auto va = vector::load_memory(a), vb = vector::load_memory(b);
+  auto partial = native::fcmla<complex_isa, 0>(vector(0.0f), va, vb);
+  native::fcmla<complex_isa, 90>(partial, va, vb).store_memory(output);
 }
 NATIVE_TARGET_POP()
 
@@ -95,10 +93,10 @@ The operations carry neither `pure` nor `const`. A shared private helper handles
 Clang's different 64-bit and 128-bit big-endian asm register coercions, including
 bytes within each floating element.
 
-`tests/arm_fcma` runs through the header, granular module and main module on
+`tests/arm_fcma` runs through the granular module and main module on
 Apple M3 with Clang 23. It compares all five formats, every rotation and every
 indexed pair with scalar arithmetic under all four rounding modes. It also
-checks conversions to and from `native::simd`, unchanged FPCR, sticky FPSR, and
+checks exact public `simd` types, unchanged FPCR, sticky FPSR, and
 invalid-operation effects with used and discarded results. The FP32/FP64
 reference uses `std::fma`; the half-precision cases use bounded dyadic values
 whose binary64 expressions are exact, followed by one half conversion. These
@@ -112,6 +110,12 @@ includes FP16. Twenty-eight big-endian compiler memory mappings check byte and
 pair selection symbolically, including ACLE vector controls. Native big-endian
 execution remains untested. Standalone CMake consumers exercise the
 installed granular and main modules.
+
+Paired assembly checks compare the public `simd` call with its private native
+helper under identical target attributes and register signatures. The complete
+instruction sequences must match, including moves, loads, stores and calls.
+This checks abstraction overhead in the tested leaf contexts; it is not a
+benchmark or a guarantee about surrounding application code.
 
 See the [Arm Neon complex-operation reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#complex-operations-from-armv83-a)
 and the [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).

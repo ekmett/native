@@ -3,12 +3,9 @@
 `fmlal<Arch>(acc,a,b)` adds binary16 products directly to binary32 accumulators;
 `fmlsl` subtracts them. Import `native.arm.fp16fml`, `native.arm`, or `native`
 for these operations, their upper-half forms `fmlal2` and `fmlsl2`, and the
-corresponding `_lane` forms. Source-tree header consumers can include
-`<native/arm/fp16fml.h>`; installed consumers use the named modules.
-
-Each overload accepts and returns raw NEON registers. Use the `native::simd`
-native-register conversions with types such as `simd<fp16,8,neon_fp16>` for
-inputs and `simd<float,4,neon>` for results.
+corresponding `_lane` forms. Accumulators and results use
+`native::simd<float, N, Arch>`; inputs use `native::simd<native::fp16, M, Arch>`.
+Every operand shares `Arch`. Raw NEON registers are private implementation details.
 
 For a result with `N` lanes, the inputs have `2*N` half lanes. The unsuffixed
 instructions select lanes `[0,N)`, and the `2` variants select `[N,2*N)`. Each
@@ -18,10 +15,10 @@ BF16 arithmetic have different feature requirements and numerical contracts.
 
 | Operation shape | Accumulator/result | Multiplicands | Selected lanes |
 | --- | --- | --- | --- |
-| `fmlal`, `fmlsl` | `float32x2_t` | `float16x4_t` | 0–1 |
-| `fmlal2`, `fmlsl2` | `float32x2_t` | `float16x4_t` | 2–3 |
-| `fmlal`, `fmlsl` | `float32x4_t` | `float16x8_t` | 0–3 |
-| `fmlal2`, `fmlsl2` | `float32x4_t` | `float16x8_t` | 4–7 |
+| `fmlal`, `fmlsl` | `simd<float, 2, Arch>` | `simd<fp16, 4, Arch>` | 0–1 |
+| `fmlal2`, `fmlsl2` | `simd<float, 2, Arch>` | `simd<fp16, 4, Arch>` | 2–3 |
+| `fmlal`, `fmlsl` | `simd<float, 4, Arch>` | `simd<fp16, 8, Arch>` | 0–3 |
+| `fmlal2`, `fmlsl2` | `simd<float, 4, Arch>` | `simd<fp16, 8, Arch>` | 4–7 |
 
 Every `_lane<Arch,Lane>(acc,a,b)` form selects the same lanes of `a` and broadcasts
 one scalar half from `b`. The source `b` may have four or eight half lanes;
@@ -36,7 +33,6 @@ caller for the matching target and check its requirements before entering it;
 importing the module does neither:
 
 ```cpp
-#include <arm_neon.h>
 #include <native/targets.h>
 import native.arm.fp16fml;
 
@@ -44,9 +40,11 @@ import native.arm.fp16fml;
 constexpr auto widen_isa = NATIVE_TARGET_ISA(widen);
 
 NATIVE_TARGET_PUSH(widen)
-void widen(float* output, __fp16 const* a, __fp16 const* b) noexcept {
-  auto result = native::fmlal<widen_isa>(vdupq_n_f32(0), vld1q_f16(a), vld1q_f16(b));
-  vst1q_f32(output, result);
+void widen(float* output, native::fp16 const* a, native::fp16 const* b) noexcept {
+  using input = native::simd<native::fp16, 8, widen_isa>;
+  using result = native::simd<float, 4, widen_isa>;
+  native::fmlal<widen_isa>(result(0.0f), input::load_memory(a),
+    input::load_memory(b)).store_memory(output);
 }
 NATIVE_TARGET_POP()
 
@@ -73,8 +71,7 @@ barrier also orders surrounding memory-based floating-environment operations;
 it is not a general CPU memory fence. The implementation normalizes Clang's
 big-endian register coercion separately for 64-bit and 128-bit vectors.
 
-`tests/arm_fp16fml` checks the header, granular and main modules, conversions
-through `native::simd`, missing or unobserved features, and invalid lanes.
+`tests/arm_fp16fml` checks the granular and main modules, exact public `simd` types, missing or unobserved features, and invalid lanes.
 Native execution on Apple M3 with Clang 23 checks all vector and indexed shapes
 against scalar `std::fma`, all four rounding modes, signed zeros, a subnormal
 input, unchanged FPCR, sticky flags, and invalid-operation effects with both
@@ -86,6 +83,12 @@ Thirty-two big-endian cross-compiled memory mappings verify input bytes, lane
 selection and stored results symbolically, with ACLE vector controls. They do
 not execute big-endian hardware. Standalone CMake consumers exercise the
 installed granular and main modules.
+
+Paired assembly checks compare the public `simd` call with its private native
+helper under identical target attributes and register signatures. The complete
+instruction sequences must match, including moves, loads, stores and calls.
+This checks abstraction overhead in the tested leaf contexts; it is not a
+benchmark or a guarantee about surrounding application code.
 
 The API follows the FHM entries in the
 [Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#fp16-armv84-a)
