@@ -21,9 +21,8 @@ foreach(suite IN ITEMS main math platform)
   set_tests_properties(native.cutover.${suite} PROPERTIES LABELS "host;modules;baseline;cutover")
 endforeach()
 
-# Compile the README's actual import/using-namespace example on its stated ISA.
-# The executable does not invoke AVX2, so it remains safe on a baseline runner.
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
+# Compile the README's complete example, including its runtime admission check.
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64|aarch64|arm64|ARM64)$")
   set(readme "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md")
   set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${readme}")
   file(READ "${readme}" readme_text)
@@ -31,7 +30,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
   if(NOT readme_example)
     message(FATAL_ERROR "Cannot find the README C++ example")
   endif()
-  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/readme.cc" "${CMAKE_MATCH_1}\nint main() {}\n")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/readme.cc" "${CMAKE_MATCH_1}\n")
   add_executable(native_test_cutover_readme "${CMAKE_CURRENT_BINARY_DIR}/readme.cc")
   target_link_libraries(native_test_cutover_readme PRIVATE native::native)
   set_target_properties(native_test_cutover_readme PROPERTIES
