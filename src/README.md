@@ -41,15 +41,15 @@ within 128-bit lanes;
 `native.x86.vpopcntdq` counts bits in 32- and 64-bit vector lanes;
 `native.x86.vnni` accumulates integer byte and word dot products;
 `native.x86.f16c` converts binary32 and binary16 values with architectural
-rounding and floating-point status effects. These modules
-belong to `native::minimal`, use raw scalar or intrinsic register types, and keep
-their implementation headers in the global module fragment. Each operation
-constrains `Arch` and carries its own function target attribute. Their Doxygen
-groups use the corresponding feature names.
+rounding and floating-point status effects. Vector instruction modules belong to
+`native::native` and import `native.simd`. Their public operands and results use
+`simd<T,N,Arch>`, with ordinary C++ values for scalar operations and associated
+masks for masked operations. Intrinsic registers occur only in private helpers
+in the global module fragment. Each operation constrains `Arch` and retains its
+own function target attribute.
 `native.arm.dotprod`, `native.arm.rdm`, `native.arm.fp16fml`,
-`native.arm.fcma` and `native.arm.i8mm` follow the same ownership model for
-independent AArch64 instruction families. Their raw-register interfaces use
-`simd::to_native()` and `simd::from_native()` at the SIMD boundary.
+`native.arm.fcma` and `native.arm.i8mm` follow the same arrangement. Scalar
+instruction utilities and feature detection remain in `native::minimal`.
 `native.x86.wait` supplies wait operations. The main hub does not re-export
 `native.math`; numerical consumers import it explicitly.
 

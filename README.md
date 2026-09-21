@@ -82,7 +82,7 @@ custom element types and application dispatch.
 | `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
 | `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
 | `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `native.x86` | x86 feature detection, raw instruction families and wait utilities |
+| `native.x86` | x86 feature detection, instruction families and wait utilities |
 | `native.arm` | AArch64 feature detection, admission and independently targeted instruction families |
 | `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
@@ -174,8 +174,10 @@ instruction contracts: [AVX-512 FP16](tests/avx512_fp16/README.md),
 Check their requirements at the call boundary, as for the other optional
 instructions.
 
-`native::native` owns the hub and links `native::minimal`, which supplies the
-common utilities and ABI. `native::common` is an alias for `native::minimal`;
+`native::native` owns the hub and vector instruction modules. Vector operations
+take and return `simd<T,N,Arch>`; scalar operations use ordinary C++ values.
+It links `native::minimal`, which supplies capability detection, scalar instruction
+utilities and the common ABI. `native::common` is an alias for `native::minimal`;
 linking either propagates its configured minimum to consumers. Old profile
 target names are aliases to the hub. The former
 `simd.avx2`, `simd.avx512` and native-half modules are replaced by `import native;`.

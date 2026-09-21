@@ -162,9 +162,11 @@ conversions. `native.x86.features` and `native.arm.features` observe the
 corresponding platform's capabilities. The x86-only `native.x86.wait` module
 provides waiting instructions, with target requirements for optional operations.
 
-The x86 instruction modules belong to `native::minimal`. Their
-implementation headers remain private; vendor intrinsic declarations stay in
-the global module fragment.
+Vector instruction modules belong to `native::native` and import `native.simd`.
+They use `simd<T,N,Arch>` for vector operands and results, and `mask<simd<...>>`
+for masks. Scalar operations keep ordinary C++ parameter and result types.
+The implementation headers and intrinsic registers remain private. Capability
+detection and scalar instruction utilities belong to `native::minimal`.
 
 [F16C](x86-f16c.md) adds scalar and packed binary32/binary16 conversions in
 `native.x86.f16c`, reexported by `native.x86`. The widening lane count selects
@@ -174,9 +176,9 @@ results are unused.
 On AArch64, `native.arm` reexports `native.arm.dotprod`, `native.arm.rdm`,
 `native.arm.fp16fml`, `native.arm.fcma`, `native.arm.i8mm`, `native.arm.bf16`, `native.arm.crc`,
 `native.arm.aes`, `native.arm.pmull` and `native.arm.sha`.
-These modules also belong to `native::minimal` and use raw native operands,
-without requiring `native.simd`. Each operation takes an explicit `isa` template
-argument and has its own compiler target requirement. Check the corresponding
+These vector interfaces use the same `simd` types and link target as the x86
+interfaces. The scalar CRC module remains in `native::minimal`. Each operation
+records its `isa` requirements and has its own compiler target requirement. Check the corresponding
 features with `classify_isa` before calling a function compiled for that target;
 the import itself neither enables instructions nor dispatches at runtime.
 
