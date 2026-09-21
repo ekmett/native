@@ -11,7 +11,7 @@
 
 #include <type_traits>
 
-using library_vector = native::vec<float,3,NATIVE_APPLE_TEST_ARCH>;
+using library_vector = native::simd<float,3,NATIVE_APPLE_TEST_ARCH>;
 using sdk_vector = simd::float3;
 static_assert(sizeof(library_vector) == 16);
 static_assert(sizeof(sdk_vector) == 16);

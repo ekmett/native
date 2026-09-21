@@ -14,8 +14,8 @@ controls visibility; the template arguments control overload resolution and ABI.
 Using an AVX2 vector in an AVX-512 function keeps its original
 mask representation and type identity.
 
-`native::simd` aliases the underlying `native::vec` class template; extension
-specializations continue to name `native::vec`.
+`native::simd` is the class template itself. Extension specializations and
+template-template arguments name `native::simd` directly.
 
 Choose the ISA explicitly when constructing a vector:
 
@@ -69,8 +69,8 @@ Padding does not participate in comparison-mask reductions.
 ```cpp
 using V = native::simd<float,3,native::avx2>;
 V position{1.f,2.f,3.f};
-auto pair = position.xy;       // vec<float,2,avx2>
-auto saved = position.xyz;     // an independent vec<float,3,avx2>
+auto pair = position.xy;       // simd<float,2,avx2>
+auto saved = position.xyz;     // an independent simd<float,3,avx2>
 position.xyz = position.zyx;   // snapshot the right side, then scatter
 position.x = 4.f;              // a single component has element type float
 ```
@@ -159,7 +159,7 @@ observation. Optional wait functions have their own target requirements.
 
 `simd_traits<T>` identifies a custom element's raw storage type.
 `simd_customization<T,Raw,Self>` supplies its value semantics. The common
-`vec` specialization instantiates that customization for the selected raw register.
+`simd` specialization instantiates that customization for the selected raw register.
 Existing raw float/integer/mask specializations remain direct implementations.
 
 An extension must define the arithmetic semantics of its custom element.

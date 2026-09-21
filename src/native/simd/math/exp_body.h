@@ -45,13 +45,13 @@ namespace native {
    * \snippet api.cc exponential
    */
   template<bool Flush = false, std::size_t L, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline native_pure vec<float,L,Arch> exp(vec<float,L,Arch> input) noexcept {
+  native_nodiscard native_inline native_pure simd<float,L,Arch> exp(simd<float,L,Arch> input) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
   /// \ingroup vector_math
   /// Evaluate exp stage by stage across independent registers; N may be zero.
   template<bool Flush = false, std::size_t L, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline std::array<vec<float,L,Arch>,N> exp(std::array<vec<float,L,Arch>,N> const & input) noexcept {
+  native_nodiscard native_inline std::array<simd<float,L,Arch>,N> exp(std::array<simd<float,L,Arch>,N> const & input) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
   // A tag argument avoids confusing this policy with register-width template
@@ -59,14 +59,14 @@ namespace native {
   /// \ingroup vector_math
   /// Select the same exp cutoff through a bool_constant tag for dependent calls.
   template<bool Flush, std::size_t L, std::size_t N, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline std::array<vec<float,L,Arch>,N> exp(
-      std::array<vec<float,L,Arch>,N> const & input, std::bool_constant<Flush>) noexcept {
+  native_nodiscard native_inline std::array<simd<float,L,Arch>,N> exp(
+      std::array<simd<float,L,Arch>,N> const & input, std::bool_constant<Flush>) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
   /// \ingroup vector_math
   /// Select the same exp cutoff through a bool_constant tag for dependent calls.
   template<bool Flush, std::size_t L, ::native::isa Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline vec<float,L,Arch> exp(vec<float,L,Arch> input, std::bool_constant<Flush>) noexcept {
+  native_nodiscard native_inline simd<float,L,Arch> exp(simd<float,L,Arch> input, std::bool_constant<Flush>) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
   }
 }

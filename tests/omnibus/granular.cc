@@ -18,6 +18,6 @@ import native;
 constexpr auto Arch = native::neon;
 #endif
 extern "C" void granular_kernel(float const *input,float *output) {
-  using V=native::vec<float,4,Arch>;
+  using V=native::simd<float,4,Arch>;
   native::store_simd(output,fma(native::load_simd<V>(input),V(2.f),V(1.f)));
 }

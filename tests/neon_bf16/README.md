@@ -7,13 +7,13 @@ variants in one translation unit, or keep a separate targeted kernel as this
 fixture does. Each common module retains one provider. FP16 and BF16 can be
 used independently without raising every importer's ISA requirements.
 
-`vec<bf16,8,neon_bf16>` stores one native 128-bit register. Construction,
+`simd<bf16,8,neon_bf16>` stores one native 128-bit register. Construction,
 load/store, native and unsigned bit bridges, and partial loads/stores preserve
 all 65,536 representations including signaling NaNs and subnormals. Partial
 operations touch exactly the requested prefix (0 through 8); zero-length calls
 accept null pointers. The mask alias is eight full 16-bit lanes. There is no
 BF16 elementwise arithmetic, comparison, conversion, division or square root.
-`dot2(a,b,c)` returns `vec<float,4,neon_bf16>`: destination lane i combines source
+`dot2(a,b,c)` returns `simd<float,4,neon_bf16>`: destination lane i combines source
 lanes 2*i and 2*i+1, then accumulates c[i]. Native bridges do not convert numbers.
 
 ## Native arithmetic contract

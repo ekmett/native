@@ -16,7 +16,7 @@ namespace {
   void check(bool value) { if (!value) std::abort(); }
 
   template <class T, std::size_t N> void test() {
-    using V = native::vec<T,N,test_arch>;
+    using V = native::simd<T,N,test_arch>;
     std::array<T,N> source{}, actual{};
     for (unsigned round = 0; round < 259; ++round) {
       for (unsigned i = 0; i < N; ++i)

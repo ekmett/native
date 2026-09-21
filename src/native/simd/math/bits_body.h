@@ -3,9 +3,9 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   namespace detail {
     template<class V> struct fp32_bit_bridge;
     template<std::size_t N, ::native::isa Arch>
-      requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename ::native::vec<float,N,Arch>::bits_type; }
-    struct fp32_bit_bridge<::native::vec<float,N,Arch>> {
-      using value_type=::native::vec<float,N,Arch>;
+      requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename ::native::simd<float,N,Arch>::bits_type; }
+    struct fp32_bit_bridge<::native::simd<float,N,Arch>> {
+      using value_type=::native::simd<float,N,Arch>;
       using bits_type=typename value_type::bits_type;
       static native_inline bits_type encode(value_type x) noexcept { return x.bits(); }
       static native_inline value_type decode(bits_type x) noexcept { return value_type::from_bits(x); }

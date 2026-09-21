@@ -3,8 +3,8 @@
 #include <concepts>
 import native;
 template<std::size_t N> constexpr bool shape() {
-  using B=native::vec<native::bf16,N,native::avx512_bf16>;
-  using F=native::vec<float,N/2,native::avx512_bf16>;
+  using B=native::simd<native::bf16,N,native::avx512_bf16>;
+  using F=native::simd<float,N/2,native::avx512_bf16>;
   static_assert(sizeof(B)==2*N);
   static_assert(std::same_as<decltype(native::dot2(B{},B{},F{})),F>);
   return true;

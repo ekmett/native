@@ -176,9 +176,9 @@ additional target scope:
 
 ```cpp
 template<isa A>
-  requires(A.has(arm_feature::neon) && requires { sizeof(vec<float, 4, A>); })
+  requires(A.has(arm_feature::neon) && requires { sizeof(simd<float, 4, A>); })
 void double16(float * out, float const * in) {
-  using V = vec<float, 4, A>;
+  using V = simd<float, 4, A>;
   for (unsigned i = 0; i < 16; i += 4) {
     auto x = V::load(in + i);
     (x + x).store(out + i);

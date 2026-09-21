@@ -7,7 +7,7 @@ These header and module consumers compile at the configured project minimum.
 Native calls receive explicit source target scopes and execute only after CPU/OS
 admission. Empty floating, integer, mask and nested packs cover every existing
 x86 or ARM constructor family. The original failing case is default/value
-construction of `wide<vec<float,1,avx512>,0>` followed by public exp at a weaker
+construction of `wide<simd<float,1,avx512>,0>` followed by public exp at a weaker
 translation-unit target.
 
 MSVC's `array<T,0>` contains a dummy element. Its implicit default constructor

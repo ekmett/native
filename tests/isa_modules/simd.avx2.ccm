@@ -6,7 +6,7 @@ module;
 export module native.avx2;
 export import fixture.engine;
 export namespace native {
- using ::native::vec;
+ using ::native::simd;
  using ::native::avx2;
  using ::native::avx2_lanes;
 }

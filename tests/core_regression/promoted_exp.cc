@@ -21,7 +21,7 @@ import native.math;
 #include <native/wide_math.h>
 #endif
 
-using scalar = native::vec<float, 1, native::scalar>;
+using scalar = native::simd<float, 1, native::scalar>;
 using scalar_mask = typename scalar::mask_type;
 using scalar_pack = std::array<scalar, 1>;
 
@@ -91,7 +91,7 @@ static_assert(!can_fma<float, scalar, scalar_pair>);
 static_assert(!can_fma<scalar_pair, std::array<scalar, 1>, scalar>);
 static_assert(!can_fma<scalar_pair, std::tuple<scalar, scalar>, scalar>);
 static_assert(!can_fma<scalar_pair, scalar, std::array<scalar, 3>>);
-static_assert(!can_fma<scalar_pair, native::vec<double, 1, native::scalar>, scalar>);
+static_assert(!can_fma<scalar_pair, native::simd<double, 1, native::scalar>, scalar>);
 
 static void require(bool value, char const * message) {
   if (!value) {
@@ -325,25 +325,25 @@ int main() {
     samples<false, scalar>(words);
     samples<true, scalar>(words);
 #if defined(__AVX2__)
-    check_fma_broadcasts<native::vec<float, 2, native::avx2>>();
-    check_fma_broadcasts<native::vec<float, 3, native::avx2>>();
-    check_fma_broadcasts<native::vec<float, 8, native::avx2>>();
-    samples<false, native::vec<float, 2, native::avx2>>(words);
-    samples<true, native::vec<float, 2, native::avx2>>(words);
-    samples<false, native::vec<float, 3, native::avx2>>(words);
-    samples<true, native::vec<float, 3, native::avx2>>(words);
-    samples<false, native::vec<float, 8, native::avx2>>(words);
-    samples<true, native::vec<float, 8, native::avx2>>(words);
+    check_fma_broadcasts<native::simd<float, 2, native::avx2>>();
+    check_fma_broadcasts<native::simd<float, 3, native::avx2>>();
+    check_fma_broadcasts<native::simd<float, 8, native::avx2>>();
+    samples<false, native::simd<float, 2, native::avx2>>(words);
+    samples<true, native::simd<float, 2, native::avx2>>(words);
+    samples<false, native::simd<float, 3, native::avx2>>(words);
+    samples<true, native::simd<float, 3, native::avx2>>(words);
+    samples<false, native::simd<float, 8, native::avx2>>(words);
+    samples<true, native::simd<float, 8, native::avx2>>(words);
 #elif defined(__ARM_NEON)
-    check_fma_broadcasts<native::vec<float, 2, native::neon>>();
-    check_fma_broadcasts<native::vec<float, 3, native::neon>>();
-    check_fma_broadcasts<native::vec<float, 4, native::neon>>();
-    samples<false, native::vec<float, 2, native::neon>>(words);
-    samples<true, native::vec<float, 2, native::neon>>(words);
-    samples<false, native::vec<float, 3, native::neon>>(words);
-    samples<true, native::vec<float, 3, native::neon>>(words);
-    samples<false, native::vec<float, 4, native::neon>>(words);
-    samples<true, native::vec<float, 4, native::neon>>(words);
+    check_fma_broadcasts<native::simd<float, 2, native::neon>>();
+    check_fma_broadcasts<native::simd<float, 3, native::neon>>();
+    check_fma_broadcasts<native::simd<float, 4, native::neon>>();
+    samples<false, native::simd<float, 2, native::neon>>(words);
+    samples<true, native::simd<float, 2, native::neon>>(words);
+    samples<false, native::simd<float, 3, native::neon>>(words);
+    samples<true, native::simd<float, 3, native::neon>>(words);
+    samples<false, native::simd<float, 4, native::neon>>(words);
+    samples<true, native::simd<float, 4, native::neon>>(words);
 #endif
     require(scope.controls_match(), "promoted exp changed FP controls");
   }

@@ -2,8 +2,8 @@ namespace native {
 namespace detail {
 #ifdef NATIVE_ARCH_REQUIRES
   template<class T, std::size_t N, ::native::isa Arch, std::size_t L> requires NATIVE_ARCH_REQUIRES(Arch)
-  struct register_memory<vec<T,N,Arch>,L> {
-    using V=vec<T,N,Arch>;
+  struct register_memory<simd<T,N,Arch>,L> {
+    using V=simd<T,N,Arch>;
     static constexpr std::size_t lanes = L;
     native_nodiscard static native_inline native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept {
       alignas(64) std::array<float, L> a; a.fill(fill);
@@ -19,17 +19,17 @@ namespace detail {
 
 }
   template<simd_custom_element T, std::size_t N, isa Arch> requires NATIVE_COMMON_ARCH(Arch)
-  struct native_empty_bases vec<T,N,Arch> : simd_customization<T,
-      vec<typename simd_traits<T>::storage_type,N,Arch>,vec<T,N,Arch>>, detail::swizzle_access<T,N,Arch> {
-    using base = simd_customization<T,vec<typename simd_traits<T>::storage_type,N,Arch>,vec<T,N,Arch>>;
+  struct native_empty_bases simd<T,N,Arch> : simd_customization<T,
+      simd<typename simd_traits<T>::storage_type,N,Arch>,simd<T,N,Arch>>, detail::swizzle_access<T,N,Arch> {
+    using base = simd_customization<T,simd<typename simd_traits<T>::storage_type,N,Arch>,simd<T,N,Arch>>;
     using base::base;
     /// Default-construct the element customization; its initialization contract is retained.
-    native_inline constexpr vec() = default;
+    native_inline constexpr simd() = default;
     static constexpr isa architecture=Arch;
-    using mask = typename vec<typename simd_traits<T>::storage_type,N,Arch>::mask;
+    using mask = typename simd<typename simd_traits<T>::storage_type,N,Arch>::mask;
     using mask_type = mask;
     using predicate_type = predicate<N,Arch>;
-    template<class U> using rebind = vec<U,N,Arch>;
+    template<class U> using rebind = simd<U,N,Arch>;
   };
   /// \ingroup vector_memory
   /// Load all `V::lanes` elements using the element's memory customization.

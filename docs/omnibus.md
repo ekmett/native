@@ -87,7 +87,7 @@ void double16(float * out, float const * in) = delete;
 NATIVE_TARGET_PUSH(avx512)
 template<isa A> requires(target<A, avx512, avx2> == 0)
 void double16(float * out, float const * in) {
-  using V = vec<float, 16, avx512>;
+  using V = simd<float, 16, avx512>;
   auto x = V::load(in);
   (x + x).store(out);
 }
@@ -96,7 +96,7 @@ NATIVE_TARGET_POP()
 NATIVE_TARGET_PUSH(avx2)
 template<isa A> requires(target<A, avx512, avx2> == 1)
 void double16(float * out, float const * in) {
-  using V = vec<float, 8, avx2>;
+  using V = simd<float, 8, avx2>;
   for (unsigned i = 0; i < 16; i += 8) {
     auto x = V::load(in + i);
     (x + x).store(out + i);
@@ -108,7 +108,7 @@ NATIVE_TARGET_POP()
 NATIVE_TARGET_PUSH(neon)
 template<isa A> requires(A.has(arm_feature::neon))
 void double16(float * out, float const * in) {
-  using V = vec<float, 4, neon>;
+  using V = simd<float, 4, neon>;
   for (unsigned i = 0; i < 16; i += 4) {
     auto x = V::load(in + i);
     (x + x).store(out + i);

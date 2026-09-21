@@ -19,7 +19,7 @@ constexpr auto test_architecture = native::avx2;
 __attribute__((target("avx2,fma"),noinline))
 #endif
 bool vector_operation(float value) {
-  using V = native::vec<float,4,test_architecture>;
+  using V = native::simd<float,4,test_architecture>;
   float input[4]{value,2.f,3.f,4.f}, output[4]{};
   auto a = V::load(input);
   (a+a).store(output);

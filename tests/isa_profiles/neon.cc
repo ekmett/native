@@ -9,14 +9,14 @@ import native.scalar;
 #include "support/fp_environment.h"
 import native;
 
-static_assert(!std::is_same_v<native::vec<float,1,native::scalar>,native::vec<float,1,native::neon>>);
-static_assert(sizeof(native::vec<float,4,native::neon>) == 16);
-static_assert(sizeof(native::vec<std::uint8_t,16,native::neon>) == 16);
-static_assert(std::is_same_v<decltype(native::vec<float,4,native::neon>{1.f,2.f,3.f,4.f}),native::vec<float,4,native::neon>>);
-static_assert(std::is_same_v<decltype(native::vec<float,4,native::neon>{} < native::vec<float,4,native::neon>{}),native::vec<float,4,native::neon>::mask>);
-static_assert(!native::vec<float,4,native::neon>::mask::compact);
-template<native::isa Arch> struct family { using value = native::vec<float,4,Arch>; };
-static_assert(std::is_same_v<family<native::neon>::value,native::vec<float,4,native::neon>>);
+static_assert(!std::is_same_v<native::simd<float,1,native::scalar>,native::simd<float,1,native::neon>>);
+static_assert(sizeof(native::simd<float,4,native::neon>) == 16);
+static_assert(sizeof(native::simd<std::uint8_t,16,native::neon>) == 16);
+static_assert(std::is_same_v<decltype(native::simd<float,4,native::neon>{1.f,2.f,3.f,4.f}),native::simd<float,4,native::neon>>);
+static_assert(std::is_same_v<decltype(native::simd<float,4,native::neon>{} < native::simd<float,4,native::neon>{}),native::simd<float,4,native::neon>::mask>);
+static_assert(!native::simd<float,4,native::neon>::mask::compact);
+template<native::isa Arch> struct family { using value = native::simd<float,4,Arch>; };
+static_assert(std::is_same_v<family<native::neon>::value,native::simd<float,4,native::neon>>);
 extern "C" std::size_t profile_neon_header(std::uint32_t *, std::size_t);
 extern "C" std::size_t profile_neon_import(std::uint32_t *, std::size_t);
 

@@ -11,29 +11,30 @@ does not enable its instructions in the caller.
 `native::simd<T,N,Arch>` describes one register; `native::wide<V,M>` describes a
 pack of registers. Element type, lane count and ISA remain explicit, so an
 algorithm can use short vectors, native widths and independent instruction
-chains without changing its arithmetic. `native::vec` is the underlying class
-template and remains available for extension specializations.
+chains without changing its arithmetic. `native::simd` is the class template;
+extension specializations name it directly.
 
 ```cpp
 #include <native/targets.h>
 import native;
+using namespace native;
 
 NATIVE_TARGET_PUSH(avx2)
 void arithmetic(float * output) {
-  using V = native::simd<float, 8, native::avx2>;
+  using V = simd<float, 8, avx2>;
   using M = V::mask;
 
   V x(2.f), y(3.f);
   M active = x < y;
   auto z = select(active, fma(x, y, V(1.f)), x);
   z.store(output);
-
-  native::wide<V, 12> batch(x);  // 96 values in twelve registers
 }
 NATIVE_TARGET_POP()
 ```
 
-Call the function after checking that the CPU admits `native::avx2`.
+This example targets x86 AVX2. Call it after checking that the CPU admits
+`avx2`; importing the module does not establish that precondition. The following
+snippets use the same `using namespace native;` directive.
 
 The ISA value is part of the type. `native::avx2`, `native::avx512`, `native::neon` and
 `native::scalar` are `constexpr isa` presets; operations have no runtime dispatch.
@@ -43,12 +44,12 @@ An AVX-512 profile can also use 128-bit and 256-bit registers. Comparisons retur
 Feature requirements compose with `&` and compare by inclusion:
 
 ```cpp
-constexpr native::isa needs = native::x86_feature::avx2 & native::x86_feature::fma;
-static_assert(needs.has(native::x86_feature::fma));
-static_assert(needs <= native::avx2);
-static_assert(native::target<native::avx2, native::avx512, native::avx2> == 1);
+constexpr isa needs = x86_feature::avx2 & x86_feature::fma;
+static_assert(needs.has(x86_feature::fma));
+static_assert(needs <= avx2);
+static_assert(target<avx2, avx512, avx2> == 1);
 
-auto requirements = native::avx2;
+auto requirements = avx2;
 requirements.f16c = true;
 ```
 
@@ -62,7 +63,7 @@ Named swizzles return owning values and support overlapping assignment:
 
 ```cpp
 // Inside an AVX2-targeted function, as above:
-using V3 = native::simd<float, 3, native::avx2>;
+using V3 = simd<float, 3, avx2>;
 V3 position{1.f, 2.f, 3.f};
 auto saved = position.xy;
 position.xyz = position.zyx;
@@ -89,7 +90,7 @@ custom element types and application dispatch.
 | `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
 | `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
-| `native.scalar` | `vec<T,1,scalar>`, baseline scalar operations and extension declarations |
+| `native.scalar` | `simd<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |
 | `native.numerics` | fp16/bf16 storage, conversions and scalar numerical utilities |
 | `native.types`, `native.memory`, `native.static_string` | Type, memory and string utilities |
@@ -99,8 +100,10 @@ The hub exposes the common vector template, ISA values and `wide`. Import
 `native.math` explicitly for `math::exp`, `math::sin`, `math::cos`, `math::sincos`
 and their batch forms. Generic math
 uses argument-dependent lookup, so an element library can supply its own
-arithmetic and batched kernels. The downstream FTZ library
-uses that extension for reproducible binary32 arithmetic. SIMD itself leaves
+arithmetic and batched kernels. The separately versioned FTZ library uses that
+extension for reproducible binary32 arithmetic. Downstream packages need matching
+`native` imports and package versions; earlier `simd` packages are not
+interchangeable with this one. Native arithmetic leaves
 the floating-point environment under application control.
 
 ## Build and consume
@@ -171,7 +174,9 @@ Using `isa.h` without modules requires C++20; the host modules require C++26.
 The configuration and attribute headers impose no new C++ language mode.
 
 The cutover changes module names, the C++ namespace, public header prefixes,
-target macros and CMake package names from `simd` to `native`. Rebuild BMIs and
+target macros and CMake package names from `simd` to `native`. The register class
+template is now `native::simd`; the former `native::vec` class name is removed.
+Update extension specializations as well as ordinary uses. Rebuild BMIs and
 all code that exchanges vector types across library boundaries. The GitHub
 repository remains `ekmett/simd`.
 

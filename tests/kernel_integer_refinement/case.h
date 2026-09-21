@@ -4,7 +4,7 @@
 namespace integer_test::INTEGER_CASE_NAME {
   constexpr auto arch = NATIVE_TARGET_ISA(INTEGER_CASE_NAME);
   template<class T, std::size_t N> bool integer_shape() {
-    using V = native::vec<T,N,arch>;
+    using V = native::simd<T,N,arch>;
     static_assert(std::same_as<decltype(native::popcount(std::declval<V>())),V>);
     static_assert(noexcept(native::popcount(std::declval<V>())));
     std::array<T,N> input{}, actual{};
@@ -56,8 +56,8 @@ namespace integer_test::INTEGER_CASE_NAME {
     return true;
   }
   template<class To,class From,std::size_t N> bool packing_shape() {
-    using V=native::vec<From,N,arch>;
-    using R=native::vec<To,2*N,arch>;
+    using V=native::simd<From,N,arch>;
+    using R=native::simd<To,2*N,arch>;
     static_assert(std::same_as<decltype(native::narrow_concat<To>(std::declval<V>(),std::declval<V>())),R>);
     static_assert(noexcept(native::narrow_concat<To>(std::declval<V>(),std::declval<V>())));
     std::array<From,N> a{},b{};

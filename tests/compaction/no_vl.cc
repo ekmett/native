@@ -8,7 +8,7 @@ constexpr auto partial_arch = native::feature_closure(native::avx2 & native::x86
 static_assert(!partial_arch.has(native::x86_feature::avx512vl));
 static_assert(!partial_arch.has(native::x86_feature::avx512bw));
 template<std::size_t N> bool check() {
-  using V=native::vec<std::uint32_t,N,partial_arch>;
+  using V=native::simd<std::uint32_t,N,partial_arch>;
   std::array<std::uint32_t,N> input{},out{},expected{};
   for(std::size_t lane=0;lane<N;++lane) input[lane]=std::uint32_t(lane+100);
   auto value=V::load(input.data());

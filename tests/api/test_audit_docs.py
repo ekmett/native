@@ -51,7 +51,7 @@ class AuditTests(unittest.TestCase):
             ('utilities', 'group', 'utilities', [
                 member('one', 'native::floor', 'Round down.'),
                 member('hidden', 'native::detail::implementation'),
-                member('private', 'native::vec::helper', prot='private'),
+                member('private', 'native::simd::helper', prot='private'),
                 member('friend_type', 'native::static_c_string', kind='friend', arguments=''),
                 member('friend_call', 'native::static_c_string::operator==', 'Compare identities.', kind='friend'),
             ]),

@@ -4,6 +4,7 @@
 #include <concepts>
 #include <cstdint>
 import native;
+using namespace native;
 
 #if !NATIVE_MINIMAL_HAS_AVX2 && defined(__AVX2__)
 #error Importing native must not raise the configured minimum to AVX2
@@ -14,8 +15,14 @@ import native;
 
 static_assert(native::isa(native::x86_feature::bmi2).has(native::x86_feature::bmi2));
 static_assert(native::isa(native::arm_feature::neon).has(native::arm_feature::neon));
-static_assert(std::same_as<native::simd<float, 1, native::scalar>,
-                           native::vec<float, 1, native::scalar>>);
+// A public alias cannot be specialized. This checks that simd is the primary
+// class template, including when reached through the omnibus module.
+struct extension_element {};
+template<> struct native::simd<extension_element, 1, native::scalar> {
+  using value_type = extension_element;
+};
+static_assert(std::same_as<native::simd<extension_element, 1, native::scalar>::value_type,
+                           extension_element>);
 
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_TARGET_cutover_bmi2 "bmi2"
@@ -39,7 +46,7 @@ NATIVE_TARGET_POP()
 #endif
 
 int main() {
-  native::simd<float, 1, native::scalar> x(2.f);
+  simd<float, 1, scalar> x(2.f);
   float result = 0.f;
   native::store_simd(&result, x + x);
   if (result != 4.f) return 1;

@@ -86,7 +86,6 @@ export namespace native {
   using ::native::operator>>=;
 
   using ::native::wide;
-  using ::native::vec;
   using ::native::simd;
   using ::native::predicate;
   using ::native::scalar;

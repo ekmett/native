@@ -166,7 +166,7 @@ namespace native {
    * Named swizzles return owning values; repeated destinations cannot be assigned.
    * \snippet api.cc swizzles
    */
-  template<class T, std::size_t N, isa Arch> struct vec;
+  template<class T, std::size_t N, isa Arch> struct simd;
   /// \ingroup masks
   /// A compact predicate for a shape supported by the selected architecture.
   /// Bit `i` describes lane `i`; bits above the logical lane count are cleared.
@@ -175,9 +175,9 @@ namespace native {
   /// \ingroup masks
   /// Use the vector's selected full-vector or compact comparison mask.
   template<class T, std::size_t N, isa Arch>
-    requires requires { typename vec<T, N, Arch>::mask_type; }
-  struct mask_traits<vec<T, N, Arch>> {
-    using type = typename vec<T, N, Arch>::mask_type;
+    requires requires { typename simd<T, N, Arch>::mask_type; }
+  struct mask_traits<simd<T, N, Arch>> {
+    using type = typename simd<T, N, Arch>::mask_type;
   };
 
   /// \ingroup masks
@@ -196,82 +196,82 @@ namespace native {
   // Native-register conversions must not make different architectures mix.
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator+(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator+(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator-(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator-(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator*(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator*(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator/(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator/(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator%(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator%(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator&(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator&(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator|(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator|(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator^(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator^(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator<<(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator<<(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator>>(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator>>(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator==(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator==(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator!=(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator!=(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator<(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator<(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator<=(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator<=(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator>(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator>(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator>=(vec<T,N,A>,vec<U,M,B>) = delete;
+  void operator>=(simd<T,N,A>,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator+=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator+=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator-=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator-=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator*=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator*=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator/=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator/=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator%=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator%=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator&=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator&=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator|=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator|=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator^=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator^=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator<<=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator<<=(simd<T,N,A> &,simd<U,M,B>) = delete;
   /// Reject mixed architectures and mismatched short-vector widths before native conversions can participate.
   template<class T,class U,std::size_t N,std::size_t M,isa A,isa B> requires(A!=B || (N!=M && (N==2 || N==3 || M==2 || M==3)))
-  void operator>>=(vec<T,N,A> &,vec<U,M,B>) = delete;
+  void operator>>=(simd<T,N,A> &,simd<U,M,B>) = delete;
 
   /// \ingroup vector_memory
   /// Requested access policy. Streaming currently uses ordinary memory access.

@@ -25,7 +25,7 @@ FP16 and both. The half-tagged FP32 cases use only corresponding raw BW/VL or NE
 Custom wrappers retain their declared architecture and are exercised in each raw
 scope. Extra half-tag cases test built-in values, whose internal traits narrow the
 requirements; derived and unrelated custom domains remain conservative. Cross-Arch, lane-width and pack-extent
-mismatches are negative requires checks. The header checks pair<vec&,int>
+mismatches are negative requires checks. The header checks pair<simd&,int>
 requirement recursion. Native half arithmetic has separate production fixtures.
 
 Rounding adapters floor/ceil/trunc intentionally use per-element ADL; the fixture

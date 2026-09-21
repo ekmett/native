@@ -2,7 +2,7 @@
 #include <cstddef>
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-// Select a test architecture without changing the public vec primary.
+// Select a test architecture without changing the public simd primary.
 #if !defined(NATIVE_TEST_PROFILE)
 #if defined(__AVX512F__)
 #define NATIVE_TEST_PROFILE 512
@@ -58,4 +58,4 @@ namespace test_backend = native::detail::scalar_backend;
 #endif
 #endif
 
-template<class T,std::size_t N> using test_vec = native::vec<T,N,test_arch>;
+template<class T,std::size_t N> using test_vec = native::simd<T,N,test_arch>;

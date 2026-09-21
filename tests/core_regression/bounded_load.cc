@@ -28,7 +28,7 @@ namespace {
     ~pages() { munmap(base, page * 3); }
   };
   template<class T, std::size_t N> void check(pages &memory) {
-    using V = native::vec<T,N,test_arch>;
+    using V = native::simd<T,N,test_arch>;
     std::array<T,N> input{}, output{};
     for (std::size_t i=0;i<N;++i) input[i]=T(~std::uint64_t(0) - i * 0x12345678u);
     for (T fill : {T(0), T(1), T(~T(0))}) {

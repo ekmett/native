@@ -50,7 +50,7 @@ import native.arm.features;
       auto moved=std::move(valued); \
       return copied.registers.empty() && moved.registers.empty(); \
     }; \
-    using V=native::vec<float,1,A>; \
+    using V=native::simd<float,1,A>; \
     auto positive=[]<std::size_t N>() { \
       native::wide<V,N> defaulted; \
       native::wide<V,N> valued{}; \
@@ -65,11 +65,11 @@ import native.arm.features;
     auto result=native::exp(input); \
     return positive.template operator()<1>() && positive.template operator()<3>() && \
       result.registers.empty() && empty.template operator()<V>() && \
-      empty.template operator()<native::vec<float,2,A>>() && \
-      empty.template operator()<native::vec<float,3,A>>() && \
-      empty.template operator()<native::vec<float,4,A>>() && \
-      empty.template operator()<native::vec<float,width,A>>() && \
-      empty.template operator()<native::vec<native::uint32_t,1,A>>() && \
+      empty.template operator()<native::simd<float,2,A>>() && \
+      empty.template operator()<native::simd<float,3,A>>() && \
+      empty.template operator()<native::simd<float,4,A>>() && \
+      empty.template operator()<native::simd<float,width,A>>() && \
+      empty.template operator()<native::simd<native::uint32_t,1,A>>() && \
       empty.template operator()<typename V::mask>() && \
       empty.template operator()<native::wide<V,0>>(); \
   } \

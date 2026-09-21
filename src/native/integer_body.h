@@ -7,13 +7,13 @@ namespace native {
   /// Both element types must describe supported shapes with equal physical native storage sizes.
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (sizeof(From) * N % sizeof(To) == 0 && requires {
-      typename vec<From,N,Arch>::native_type;
-      typename vec<To,sizeof(From)*N/sizeof(To),Arch>::native_type;
-    } && sizeof(typename vec<From,N,Arch>::native_type) ==
-      sizeof(typename vec<To,sizeof(From)*N/sizeof(To),Arch>::native_type))
-  native_nodiscard native_inline native_const auto reinterpret_bits(vec<From,N,Arch> value) noexcept
-      -> vec<To,sizeof(From)*N/sizeof(To),Arch> {
-    using result = vec<To,sizeof(From)*N/sizeof(To),Arch>;
+      typename simd<From,N,Arch>::native_type;
+      typename simd<To,sizeof(From)*N/sizeof(To),Arch>::native_type;
+    } && sizeof(typename simd<From,N,Arch>::native_type) ==
+      sizeof(typename simd<To,sizeof(From)*N/sizeof(To),Arch>::native_type))
+  native_nodiscard native_inline native_const auto reinterpret_bits(simd<From,N,Arch> value) noexcept
+      -> simd<To,sizeof(From)*N/sizeof(To),Arch> {
+    using result = simd<To,sizeof(From)*N/sizeof(To),Arch>;
     // Keep native vectors in this target scope: the standard-library wrapper
     // can otherwise impose its baseline vector return ABI on SysV hosts.
     return result::from_native(__builtin_bit_cast(typename result::native_type,value.to_native()));
@@ -23,11 +23,11 @@ namespace native {
   /// The result contains half as many lanes; full-register inputs keep their width.
   template <simd_integer_element T, std::size_t N, ::native::isa Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T) <= 4 && N > 1 && N % 2 == 0 &&
-      requires { typename vec<T,N,Arch>::native_type; })
-  native_nodiscard native_inline native_const auto pairwise_add_widened(vec<T,N,Arch> value) noexcept {
+      requires { typename simd<T,N,Arch>::native_type; })
+  native_nodiscard native_inline native_const auto pairwise_add_widened(simd<T,N,Arch> value) noexcept {
     using U = std::conditional_t<sizeof(T)==1,std::uint16_t,
               std::conditional_t<sizeof(T)==2,std::uint32_t,std::uint64_t>>;
-    using result = vec<U,N/2,Arch>;
+    using result = simd<U,N/2,Arch>;
     if constexpr (sizeof(T)==4 && N==2) {
       // A logical two-lane input has four physical lanes. Only the live pair
       // contributes to the scalar result, regardless of padding bits.
@@ -65,9 +65,9 @@ namespace native {
   /// Count set bits independently in each unsigned integer lane.
   /// Byte populations use CNT on NEON and register nibble tables on x86.
   template <simd_integer_element T, std::size_t N, ::native::isa Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && requires { typename vec<T,N,Arch>::native_type; })
-  native_nodiscard native_inline native_const vec<T,N,Arch> popcount(vec<T,N,Arch> value) noexcept {
-    using result = vec<T,N,Arch>;
+    requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && requires { typename simd<T,N,Arch>::native_type; })
+  native_nodiscard native_inline native_const simd<T,N,Arch> popcount(simd<T,N,Arch> value) noexcept {
+    using result = simd<T,N,Arch>;
     if constexpr (N==1) return result(T(std::popcount(value.to_native())));
     else if constexpr (sizeof(T)==4 && (N==2 || N==3))
       return result::from_storage(popcount(value.to_storage()));
@@ -127,8 +127,8 @@ namespace native {
   /// Reduction widens before adding: it never wraps at the input lane width.
   template <simd_integer_element T, std::size_t N, ::native::isa Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T)<=4 &&
-      requires { typename vec<T,N,Arch>::native_type; })
-  native_nodiscard native_inline native_const std::uint64_t reduce_add_widened(vec<T,N,Arch> value) noexcept {
+      requires { typename simd<T,N,Arch>::native_type; })
+  native_nodiscard native_inline native_const std::uint64_t reduce_add_widened(simd<T,N,Arch> value) noexcept {
     if constexpr (N==1) return value.to_native();
     else if constexpr (sizeof(T)==4 && (N==2 || N==3)) {
       auto lanes = value.to_native();

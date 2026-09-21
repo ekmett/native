@@ -44,7 +44,7 @@ import native;
   }
 #else
 #define DOUBLE_STEP(name,tag,lanes) \
-  using V=native::vec<float,lanes,tag>; \
+  using V=native::simd<float,lanes,tag>; \
   for(unsigned i=0;i<32;i+=2*lanes) { \
     native::wide<V,2> value{V::load(input+i),V::load(input+i+lanes)}; \
     value=value+value; \
@@ -83,7 +83,7 @@ int scalar_result(int);
 
 // Ordinary baseline code in the same TU as every attributed native variant.
 bool scalar_path() {
-  using V=native::vec<float,1,native::scalar>;
+  using V=native::simd<float,1,native::scalar>;
   native::wide<V,2> value{V(3.f),V(-4.f)};
   value=value+value;
   float output[2]{};

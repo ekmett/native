@@ -10,14 +10,14 @@
 #include "../../src/native/isa.h"
 
 namespace native {
-  template<class T,std::size_t N,isa Arch> struct vec;
+  template<class T,std::size_t N,isa Arch> struct simd;
 }
 namespace fixture {
   // One ordinary definition, instantiated in each selected-ISA translation unit.
   // There is no source reinclusion or namespace rewriting in consumer code.
   template<native::isa Arch, std::size_t Lanes>
   struct engine {
-    using value_type = native::vec<float,Lanes,Arch>;
+    using value_type = native::simd<float,Lanes,Arch>;
 
     static inline __attribute__((always_inline)) void run(
       float const * a, float const * b, float * output) {

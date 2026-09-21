@@ -12,8 +12,8 @@
 #include "support/guarded_pages.h"
 #include "../half_storage/native_bridge.h"
 import native;
-template<std::size_t N> using bf16_vector = native::vec<native::bf16,N,native::avx512_bf16>;
-template<std::size_t N> using float_vector = native::vec<float,N/2,native::avx512_bf16>;
+template<std::size_t N> using bf16_vector = native::simd<native::bf16,N,native::avx512_bf16>;
+template<std::size_t N> using float_vector = native::simd<float,N/2,native::avx512_bf16>;
 template<class V> concept addable = requires(V a) { a+a; };
 template<std::size_t N> constexpr bool shape() {
   using B = bf16_vector<N>;
@@ -22,7 +22,7 @@ template<std::size_t N> constexpr bool shape() {
   static_assert(native::test::bf16_storage_only<B>);
   static_assert(sizeof(B) == 2*N && alignof(B) == 2*N && std::is_trivially_copyable_v<B>);
   static_assert(sizeof(native::bf16) == 2 && B::mask::compact && B::lanes == N);
-  static_assert(std::same_as<decltype(native::vec<native::bf16,N,native::avx512_bf16>(std::array<native::bf16,N>{})),B>);
+  static_assert(std::same_as<decltype(native::simd<native::bf16,N,native::avx512_bf16>(std::array<native::bf16,N>{})),B>);
   static_assert(std::same_as<decltype(native::dot2(B{},B{},F{})),F>);
   static_assert(noexcept(native::dot2(B{},B{},F{})) && !addable<B>);
   return true;
@@ -43,7 +43,7 @@ extern "C" native_noinline void bf16_dot2(std::uint16_t const * a, std::uint16_t
 }
 
 template<std::size_t... I> auto lane_construction(std::index_sequence<I...>) {
-  return native::vec<native::bf16,sizeof...(I),native::avx512_bf16>(native::bf16::from_bits(std::uint16_t(I))...);
+  return native::simd<native::bf16,sizeof...(I),native::avx512_bf16>(native::bf16::from_bits(std::uint16_t(I))...);
 }
 template<std::size_t N> bool storage() {
   using B = bf16_vector<N>;

@@ -8,10 +8,10 @@ import native;
 #if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__)))
 #error Common consumer must not inherit AVX-512 ISA flags
 #endif
-static_assert(sizeof(native::vec<float,1,native::scalar>)==sizeof(float));
+static_assert(sizeof(native::simd<float,1,native::scalar>)==sizeof(float));
 static_assert(std::same_as<decltype(native::wide{1,2}),native::wide<int,2>>);
 int main() {
-  native::vec<float,1,native::scalar> x(2.f);
+  native::simd<float,1,native::scalar> x(2.f);
   float value=0.f;
   native::store_simd(&value,x+x);
   if(value!=4.f) return 1;
