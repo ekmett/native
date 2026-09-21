@@ -130,6 +130,9 @@ Alignment policies are caller promises. Use `load_simd_partial<V>(p,count,fill)`
 and `store_simd_partial(p,value,count)` for tails. Only the requested logical
 lanes are accessed; the load supplies `fill` for the rest. The streaming policy
 currently uses ordinary accesses, so it carries no non-temporal-store guarantee.
+The count must not exceed the logical lane count. Clang diagnoses a count it can
+prove too large at the call site, including through module imports. Dynamic
+counts remain a caller precondition; this diagnostic adds no runtime check.
 
 ## Short vectors and swizzles
 
