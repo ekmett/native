@@ -23,8 +23,7 @@ __m128i native_vpconflictd_128_merge(__m128i source, __mmask8 mask, __m128i valu
   return native::mask_vpconflictd<cdvl>(
     vector_type::from_native(source),
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -32,8 +31,7 @@ __m128i native_vpconflictd_128_zero(__mmask8 mask, __m128i value) noexcept {
   using vector_type = native::simd<std::uint32_t, 4, cdvl>;
   return native::maskz_vpconflictd<cdvl>(
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -48,8 +46,7 @@ __m128i native_vplzcntd_128_merge(__m128i source, __mmask8 mask, __m128i value) 
   return native::mask_vplzcntd<cdvl>(
     vector_type::from_native(source),
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -57,8 +54,7 @@ __m128i native_vplzcntd_128_zero(__mmask8 mask, __m128i value) noexcept {
   using vector_type = native::simd<std::uint32_t, 4, cdvl>;
   return native::maskz_vplzcntd<cdvl>(
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -73,8 +69,7 @@ __m128i native_vpconflictq_128_merge(__m128i source, __mmask8 mask, __m128i valu
   return native::mask_vpconflictq<cdvl>(
     vector_type::from_native(source),
     native::predicate<2, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -82,8 +77,7 @@ __m128i native_vpconflictq_128_zero(__mmask8 mask, __m128i value) noexcept {
   using vector_type = native::simd<std::uint64_t, 2, cdvl>;
   return native::maskz_vpconflictq<cdvl>(
     native::predicate<2, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -98,8 +92,7 @@ __m128i native_vplzcntq_128_merge(__m128i source, __mmask8 mask, __m128i value) 
   return native::mask_vplzcntq<cdvl>(
     vector_type::from_native(source),
     native::predicate<2, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -107,8 +100,7 @@ __m128i native_vplzcntq_128_zero(__mmask8 mask, __m128i value) noexcept {
   using vector_type = native::simd<std::uint64_t, 2, cdvl>;
   return native::maskz_vplzcntq<cdvl>(
     native::predicate<2, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -123,8 +115,7 @@ __m256i native_vpconflictd_256_merge(__m256i source, __mmask8 mask, __m256i valu
   return native::mask_vpconflictd<cdvl>(
     vector_type::from_native(source),
     native::predicate<8, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -132,8 +123,7 @@ __m256i native_vpconflictd_256_zero(__mmask8 mask, __m256i value) noexcept {
   using vector_type = native::simd<std::uint32_t, 8, cdvl>;
   return native::maskz_vpconflictd<cdvl>(
     native::predicate<8, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -148,8 +138,7 @@ __m256i native_vplzcntd_256_merge(__m256i source, __mmask8 mask, __m256i value) 
   return native::mask_vplzcntd<cdvl>(
     vector_type::from_native(source),
     native::predicate<8, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -157,8 +146,7 @@ __m256i native_vplzcntd_256_zero(__mmask8 mask, __m256i value) noexcept {
   using vector_type = native::simd<std::uint32_t, 8, cdvl>;
   return native::maskz_vplzcntd<cdvl>(
     native::predicate<8, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -173,8 +161,7 @@ __m256i native_vpconflictq_256_merge(__m256i source, __mmask8 mask, __m256i valu
   return native::mask_vpconflictq<cdvl>(
     vector_type::from_native(source),
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -182,8 +169,7 @@ __m256i native_vpconflictq_256_zero(__mmask8 mask, __m256i value) noexcept {
   using vector_type = native::simd<std::uint64_t, 4, cdvl>;
   return native::maskz_vpconflictq<cdvl>(
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -198,8 +184,7 @@ __m256i native_vplzcntq_256_merge(__m256i source, __mmask8 mask, __m256i value) 
   return native::mask_vplzcntq<cdvl>(
     vector_type::from_native(source),
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd,avx512vl")
@@ -207,8 +192,7 @@ __m256i native_vplzcntq_256_zero(__mmask8 mask, __m256i value) noexcept {
   using vector_type = native::simd<std::uint64_t, 4, cdvl>;
   return native::maskz_vplzcntq<cdvl>(
     native::predicate<4, cdvl>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -223,8 +207,7 @@ __m512i native_vpconflictd_512_merge(__m512i source, __mmask16 mask, __m512i val
   return native::mask_vpconflictd<cd512>(
     vector_type::from_native(source),
     native::predicate<16, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -232,8 +215,7 @@ __m512i native_vpconflictd_512_zero(__mmask16 mask, __m512i value) noexcept {
   using vector_type = native::simd<std::uint32_t, 16, cd512>;
   return native::maskz_vpconflictd<cd512>(
     native::predicate<16, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -248,8 +230,7 @@ __m512i native_vplzcntd_512_merge(__m512i source, __mmask16 mask, __m512i value)
   return native::mask_vplzcntd<cd512>(
     vector_type::from_native(source),
     native::predicate<16, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -257,8 +238,7 @@ __m512i native_vplzcntd_512_zero(__mmask16 mask, __m512i value) noexcept {
   using vector_type = native::simd<std::uint32_t, 16, cd512>;
   return native::maskz_vplzcntd<cd512>(
     native::predicate<16, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -273,8 +253,7 @@ __m512i native_vpconflictq_512_merge(__m512i source, __mmask8 mask, __m512i valu
   return native::mask_vpconflictq<cd512>(
     vector_type::from_native(source),
     native::predicate<8, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -282,8 +261,7 @@ __m512i native_vpconflictq_512_zero(__mmask8 mask, __m512i value) noexcept {
   using vector_type = native::simd<std::uint64_t, 8, cd512>;
   return native::maskz_vpconflictq<cd512>(
     native::predicate<8, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -298,8 +276,7 @@ __m512i native_vplzcntq_512_merge(__m512i source, __mmask8 mask, __m512i value) 
   return native::mask_vplzcntq<cd512>(
     vector_type::from_native(source),
     native::predicate<8, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline native_target("avx512f,avx512cd")
@@ -307,8 +284,7 @@ __m512i native_vplzcntq_512_zero(__mmask8 mask, __m512i value) noexcept {
   using vector_type = native::simd<std::uint64_t, 8, cd512>;
   return native::maskz_vplzcntq<cd512>(
     native::predicate<8, cd512>::from_bitset(mask),
-    vector_type::from_native(value)
-  ).to_native();
+    vector_type::from_native(value)).to_native();
 }
 
 extern "C" native_noinline unsigned long long

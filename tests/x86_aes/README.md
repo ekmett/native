@@ -18,9 +18,6 @@ cmake --build build --target native_test_x86_aes_module native_test_x86_aes_main
 ctest --test-dir build -R '^native\.x86\.aes\.' --output-on-failure
 ```
 
-The scoped style checkpoint compiles with LLVM 23.1.1 for x86-64 macOS, and
-both CTests pass under Rosetta on an ARM64 host.
-
 These checks do not yet include instruction disassembly, raw/public codegen
 comparison, or separately compiled caller-target and weak-feature runtime
 rejections. A cross-build or translated execution does not establish native
