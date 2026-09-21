@@ -83,12 +83,15 @@ custom element types and application dispatch.
 | `native.math` | Optional promoted exponential, trigonometric and other numerical kernels |
 | `native.isa` | Shared feature sets, ISA values, target metadata and admission interfaces |
 | `native.features` | Shared feature/ISA vocabulary and native CPU utilities, without vector operations |
-| `native.x86` | x86 feature detection, bit operations and wait utilities |
+| `native.x86` | x86 feature detection, integer and byte operations, and wait utilities |
 | `native.arm` | AArch64 feature detection and admission |
 | `native.x86.bmi1` | [BMI1 bit operations](docs/x86-bmi1.md), including defined zero-input TZCNT |
 | `native.x86.bmi2` | [BMI2 bit operations](docs/x86-bmi2.md): deposit/extract, zero high bits, widening multiply, shifts and immediate rotate |
 | `native.x86.popcnt` | [POPCNT](docs/x86-popcnt.md) for 16-, 32- and 64-bit values, with its own feature requirement |
 | `native.x86.lzcnt` | [LZCNT](docs/x86-lzcnt.md) for 16-, 32- and 64-bit values, including defined zero-input counts |
+| `native.x86.crc32c` | [Raw CRC32C updates](docs/x86-crc32c.md) for 8-, 16-, 32- and 64-bit operands |
+| `native.x86.gfni` | [GFNI byte operations](docs/x86-gfni.md): field multiplication, affine maps and inverse-affine maps |
+| `native.x86.vpopcntdq` | [VPOPCNTDQ](docs/x86-vpopcntdq.md) for 32- and 64-bit lanes, including merge and zero masks |
 | `native.arm.features` | AArch64 OS capability observation and shared ISA admission |
 | `native.scalar` | `simd<T,1,scalar>`, baseline scalar operations and extension declarations |
 | `native.wide` | Generic `wide<V,M>`, pointwise operations and array-kernel forwarding |

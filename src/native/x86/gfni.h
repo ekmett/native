@@ -6,7 +6,9 @@
 #include "native/isa.h"
 #if NATIVE_HOST_X86
 #include <immintrin.h>
+#endif
 
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 namespace native {
 /** \defgroup x86_gfni GFNI
  * Byte arithmetic modulo x^8 + x^4 + x^3 + x + 1 and binary affine maps.

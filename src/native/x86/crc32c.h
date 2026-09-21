@@ -7,7 +7,9 @@
 #include <cstdint>
 #if NATIVE_HOST_X86
 #include <immintrin.h>
+#endif
 
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 namespace native {
 /** \defgroup x86_crc32c CRC32C
  * Raw Castagnoli CRC updates requiring CPUID leaf 1 ECX bit 20.

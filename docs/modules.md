@@ -154,6 +154,10 @@ Common string, type, memory and numerical utilities retain independent named
 modules with one provider each. `native.numerics` owns fp16/bf16 storage and scalar
 conversions. `native.x86.features` and `native.x86.wait` are x86-only; `native.arm.features` supplies Arm
 observation. Optional wait functions have their own target requirements.
+The x86 integer instruction modules belong to `native::minimal`; their
+implementation headers remain private and their vendor intrinsic declarations
+stay in the global module fragment. Importing them does not enable optional
+instructions in the caller.
 
 ## Extending the element type
 
@@ -364,8 +368,13 @@ and OS-state checks determine which requirements the host can execute.
 for `native::classify_isa(cpu, requirements)` or `native::with_isa`.
 Architecture-specific observers remain available from their feature modules.
 On x86, `native.x86` also imports [BMI1](x86-bmi1.md), [BMI2](x86-bmi2.md),
-[POPCNT](x86-popcnt.md), [LZCNT](x86-lzcnt.md) and wait operations; the feature-only
-umbrella does not import those operations.
+[POPCNT](x86-popcnt.md), [LZCNT](x86-lzcnt.md), [CRC32C](x86-crc32c.md),
+[GFNI](x86-gfni.md), [VPOPCNTDQ](x86-vpopcntdq.md) and wait operations;
+the feature-only umbrella does not import those operations. CRC32C has a
+scalar feature requirement independent of the SSE4.2 compiler bundle. GFNI
+requirements depend on the register width and masking mode. VPOPCNTDQ needs
+AVX512F and its own feature, with AVX512VL for 128- and 256-bit forms. Each
+family requires caller target attributes and CPU/OS admission before execution.
 
 Native capability records contain `present` and `observed` typed sets:
 `feature_set<x86_feature>` or `feature_set<arm_feature>`. Admission requires each

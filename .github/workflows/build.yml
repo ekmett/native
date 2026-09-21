@@ -258,6 +258,12 @@ jobs:
             build/core/tests/source_targets/*.disassembly
             build/source_targets/*.disassembly
             build/core/tests/source_targets/reject-*.log
+            build/core/tests/x86_gfni/*.disassembly
+            build/core/tests/x86_gfni/*reject*.log
+            build/x86_gfni/*.disassembly
+            build/core/tests/x86_vpopcntdq/*.disassembly
+            build/core/tests/x86_vpopcntdq/reject-*.log
+            build/x86_vpopcntdq/*.disassembly
             build/core/tests/x86_crc32c/*.disassembly
             build/core/tests/x86_crc32c/reject-*.log
             build/x86_crc32c/*.disassembly

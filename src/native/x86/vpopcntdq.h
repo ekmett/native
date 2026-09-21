@@ -6,7 +6,9 @@
 #include "native/isa.h"
 #if NATIVE_HOST_X86
 #include <immintrin.h>
+#endif
 
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 namespace native {
 /** \defgroup x86_vpopcntdq VPOPCNTDQ
  * Population counts of independent 32-bit and 64-bit integer lanes.
