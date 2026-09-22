@@ -95,7 +95,7 @@ without imposing a timing threshold on shared runners.
 
 ## Hosted NEON observation
 
-The [Linux ARM job](https://github.com/ekmett/simd/actions/runs/35305098483/job/105475557603)
+The [Linux ARM job](https://github.com/ekmett/native/actions/runs/35305098483/job/105475557603)
 used Clang 23.1.2 on Neoverse-N2 with exceptions OFF. Its four-lane uint32_t
 benchmark uses the same seven-pair procedure. Median ns/block:
 

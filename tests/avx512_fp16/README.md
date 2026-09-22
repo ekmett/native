@@ -46,7 +46,7 @@ unchanged; this is not an RTZ-policy implementation.
 
 The native fixture checks every 16-bit storage encoding, null zero-length tails
 and every tail length 0 through 32 against inaccessible guard pages. The
-independent [rational/integer oracle](https://github.com/ekmett/simd/blob/main/tests/neon_fp16/generate_reference.py) supplies 2,304
+independent [rational/integer oracle](https://github.com/ekmett/native/blob/main/tests/neon_fp16/generate_reference.py) supplies 2,304
 cases: special values, signed boundary witnesses, stratified finite values, FMA
 cancellation and deterministic random representations. This fixture uses only
 the oracle's gradual-underflow rows, remapping RNE/RUP/RDN/RTZ to MXCSR's order.

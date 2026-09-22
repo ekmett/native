@@ -149,5 +149,5 @@ also covers intrinsic interoperation and package requirements.
 See [LICENSE.md](LICENSE.md) for the dual BSD-2-Clause/Apache-2.0 license and
 individual source notices for retained upstream terms.
 
-Contributions and bug reports are welcome through [GitHub](https://github.com/ekmett/simd).
+Contributions and bug reports are welcome through [GitHub](https://github.com/ekmett/native).
 Edward Kmett can also be reached as `ekmett` on Libera Chat and `@kmett` on Twitter/X.

@@ -16,7 +16,7 @@ seen in [LICENSE.md](LICENSE.md).
 ## Exceptions
 
 Exceptions can be granted in exceptional circumstances, but explicit consent of the primary author, Edward Kmett,
-is required for any pull-request or patch supplied to the primary repository at https://github.com/ekmett/simd.git
+is required for any pull-request or patch supplied to the primary repository at https://github.com/ekmett/native.git
 that restricts these licensing terms.
 
 In particular limitations may make sense for concrete assets that form part of the distribution, but not the final

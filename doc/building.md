@@ -124,7 +124,7 @@ without that argument for an uncached new tree, or set
 `-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear an existing tree's launcher.
 
 On Linux and macOS, CI places the small
-[module-map launcher](https://github.com/ekmett/simd/blob/main/.github/scripts/sccache_launcher.py) before sccache.
+[module-map launcher](https://github.com/ekmett/native/blob/main/.github/scripts/sccache_launcher.py) before sccache.
 CMake quotes paths in its `.modmap` response files, while sccache 0.16.0's
 [response-file reader](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/gcc.rs)
 bypasses any quoted response file with reason `@`. The launcher recognizes only
@@ -152,7 +152,7 @@ inside a cached module. Unknown or missing PCH inputs bypass caching.
 
 POSIX CI runs `test_sccache_launcher.py` and the real PCH/module warm-cache
 fixture `test_sccache_pch.py`. Compiler validation remains enabled. See the
-[validation boundary](https://github.com/ekmett/simd/blob/main/docs/validation.md#pch-dependent-module-invalidation)
+[validation boundary](https://github.com/ekmett/native/blob/main/docs/validation.md#pch-dependent-module-invalidation)
 for the cache invalidation checks.
 
 To opt into the same launcher locally, replace the plain sccache configure
@@ -180,7 +180,7 @@ To check local reuse, build and run CTest, record the statistics, run
 and run CTest again. An incremental build with no work does not exercise the
 cache. Use the same source/build paths and compiler; changed paths, compiler
 contents or flags can prevent hits. See the cache checks in
-[validation](https://github.com/ekmett/simd/blob/main/docs/validation.md#compiler-cache).
+[validation](https://github.com/ekmett/native/blob/main/docs/validation.md#compiler-cache).
 
 ## Toolchain recipes and CI
 
@@ -245,7 +245,7 @@ The Documentation workflow builds this reference for relevant pull-request and
 `main` changes without enabling a C++ compiler. It checks callable descriptions, module
 navigation, and local page and fragment links, and retains HTML and diagnostics
 as an Actions artifact. Successful `main` builds publish the same HTML to
-[GitHub Pages](https://ekmett.github.io/simd/). Pull requests do not deploy.
+[GitHub Pages](https://ekmett.github.io/native/). Pull requests do not deploy.
 
 Run the generated-site checks locally with:
 

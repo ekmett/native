@@ -2,7 +2,7 @@
 
 The maintained tests check value semantics, instruction behavior, compiler
 constraints and installed-package use. Start with the [build guide](../doc/building.md)
-and [test guide](https://github.com/ekmett/simd/blob/main/tests/README.md). CTest results, generated instruction
+and [test guide](https://github.com/ekmett/native/blob/main/tests/README.md). CTest results, generated instruction
 sequences and numerical oracles establish different parts of the contract.
 
 ## Running the checks
@@ -21,7 +21,7 @@ for exception settings and sanitizers. `NATIVE_ENABLE_ASAN=ON` instruments host
 memory checks; use a separate build directory with IPO disabled for that run.
 
 Routine validation runs locally. For relevant pull-request changes, the
-[native CI workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/build.yml)
+[native CI workflow](https://github.com/ekmett/native/blob/main/.github/workflows/build.yml)
 runs Linux ARM64 and Windows ARM64 with exceptions enabled. Both jobs retain
 the complete source tests and physically relocated package checks. Changes to
 source, tests, CMake configuration, CI tooling or the compiled README example
@@ -43,7 +43,7 @@ An optional-instruction test must admit the CPU and operating-system state
 before execution. Unsupported hardware is reported as a skip. A compile-only
 check or skipped runtime check does not establish native instruction behavior.
 
-The separate [WebAssembly workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/wasm.yml)
+The separate [WebAssembly workflow](https://github.com/ekmett/native/blob/main/.github/workflows/wasm.yml)
 runs only by manual dispatch. It checks SIMD128 and relaxed SIMD on x86-64 and
 ARM64 hosts, including relocated consumers and compiler-minimum boundaries.
 Paired probes compare compiled Wasm
@@ -61,7 +61,7 @@ day, while HTML and diagnostics are retained for three days.
 
 ## Values and memory
 
-The [core fixtures](https://github.com/ekmett/simd/blob/main/tests/core_regression/README.md) exercise construction,
+The [core fixtures](https://github.com/ekmett/native/blob/main/tests/core_regression/README.md) exercise construction,
 scalar/vector/wide consistency, integer wrapping, masks, bit transfers and
 floating-point boundary cases through headers and module imports.
 
@@ -74,7 +74,7 @@ Short vectors and swizzles have checks for:
 - Constant construction, physical layout and preservation of transported bits.
 - Exclusion of padding lanes from reductions and floating-point exceptions.
 
-The [instruction-storage fixtures](https://github.com/ekmett/simd/blob/main/tests/instruction_storage/README.md) cover
+The [instruction-storage fixtures](https://github.com/ekmett/native/blob/main/tests/instruction_storage/README.md) cover
 register shapes used by individual extensions. They check type and alignment
 identity, logical memory bounds, register bit bridges, mask operations and
 rejection of unsupported arithmetic. Storage availability does not imply that
@@ -120,7 +120,7 @@ and all four standard rounding modes. Raw scaling fixtures exercise gradual
 and flush modes, including separate DAZ and FTZ controls on x86. Test harnesses
 save and restore the caller's floating-point environment.
 
-[Profile captures](https://github.com/ekmett/simd/blob/main/tests/isa_profiles/README.md) compare headers, module
+[Profile captures](https://github.com/ekmett/native/blob/main/tests/isa_profiles/README.md) compare headers, module
 imports and admitted implementations on a finite bank. Independent references
 cover elementary operations; wide exponential results are also compared with
 the direct raw kernel. These comparisons do not establish equality for every
