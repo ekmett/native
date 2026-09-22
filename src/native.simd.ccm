@@ -838,7 +838,7 @@ export namespace native {
 #elif NATIVE_HOST_X86
         if constexpr(!A.has(x86_feature::sse2)) return false;
         if constexpr(std::same_as<T,fp16>) return N==4 || N==8;
-        if constexpr(std::same_as<T,bf16>) return false;
+        if constexpr(std::same_as<T,bf16>) return N==4 || (N==8 && !(avx512_bf16<=A));
         if constexpr(bytes==8) return simd_integer_element<T> && sizeof(T)<4;
         if constexpr(bytes==16 || bytes==32) {
           if constexpr(bytes==32 && !A.has(x86_feature::avx)) return false;
@@ -975,6 +975,60 @@ export namespace native {
   private:
     native_type value_;
   public:
+    // Clang may accept a storage record mixed with a builtin vector even
+    // without a native conversion operator. Reject half arithmetic explicitly.
+#define NATIVE_INSTRUCTION_HALF_REJECT_BINARY(OP) \
+    /** Reject elementwise arithmetic on half instruction storage. */ \
+    friend void operator OP(simd,simd) \
+      requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete; \
+    /** Reject mixed operands instead of selecting vector builtins. */ \
+    template<class U> requires((std::same_as<T,fp16> || std::same_as<T,bf16>) && \
+      !std::same_as<std::remove_cvref_t<U>,simd>) \
+    friend void operator OP(simd,U) = delete; \
+    /** Reject mixed operands instead of selecting vector builtins. */ \
+    template<class U> requires((std::same_as<T,fp16> || std::same_as<T,bf16>) && \
+      !std::same_as<std::remove_cvref_t<U>,simd>) \
+    friend void operator OP(U,simd) = delete;
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(+)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(-)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(*)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(/)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(%)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(&)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(|)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(^)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(<<)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(>>)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(==)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(!=)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(<)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(<=)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(>)
+    NATIVE_INSTRUCTION_HALF_REJECT_BINARY(>=)
+#undef NATIVE_INSTRUCTION_HALF_REJECT_BINARY
+#define NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(OP) \
+    /** Reject compound arithmetic on half instruction storage. */ \
+    template<class U> requires(std::same_as<T,fp16> || std::same_as<T,bf16>) \
+    void operator OP(U) = delete;
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(+=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(-=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(*=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(/=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(%=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(&=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(|=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(^=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(<<=)
+    NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(>>=)
+#undef NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN
+    /// Reject unary arithmetic on half instruction storage.
+    friend void operator+(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    /// Reject unary arithmetic on half instruction storage.
+    friend void operator-(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    /// Use bits() for explicit bitwise operations on half representations.
+    friend void operator~(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    /// Half storage does not define a predicate conversion.
+    friend void operator!(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
     /// Default initialization leaves storage unspecified; braces zero it.
     constexpr simd() noexcept=default;
     /// Copy each lane's representation; unused physical bytes are zero.

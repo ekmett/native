@@ -65,6 +65,11 @@ saturating narrowing, signed multiply-high and per-lane variable shifts with
 rounding and saturation variants. They require `arm_feature::neon`; operations
 that saturate preserve their sticky FPSR.QC effects, including discarded results.
 
+[AVX-NE-CONVERT](x86-avxneconvert.md) supplies all fourteen binary16/BF16
+memory-widening and binary32-to-BF16 narrowing forms, without floating-point
+exceptions or MXCSR dependence. Public inputs and outputs retain typed SIMD
+storage, with explicit interleaved memory extents.
+
 [F16C](x86-f16c.md) converts between binary32 and IEEE binary16 on x86. It does
 not supply half-precision arithmetic. Its immediate controls rounding, and
 conversion may update MXCSR or trap according to the caller's exception masks.

@@ -1,0 +1,253 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/config.h"
+#include "native/attributes.h"
+#include <array>
+#include <bit>
+#include <cstdint>
+#include <immintrin.h>
+export module native.x86.avxneconvert;
+export import native.x86.features;
+export import native.simd;
+
+namespace native::detail::x86_neconvert {
+  template<class T> constexpr std::uint32_t widen(T value) noexcept {
+    if constexpr (std::same_as<T, bf16>)
+      return std::uint32_t(value.to_bits()) << 16;
+    else
+      return std::bit_cast<std::uint32_t>(static_cast<float>(value));
+  }
+  template<isa<x86> A, std::size_t N, unsigned Stride, unsigned Offset, class T>
+  consteval simd<float, N, A> widen_memory(T const * source) noexcept {
+    // Validate the complete instruction memory operand during constant evaluation.
+    if constexpr (Stride == 2) {
+      auto last = source[2 * N - 1].to_bits();
+      (void)last;
+    }
+    std::array<float, N> result{};
+    for (std::size_t i = 0; i < N; ++i)
+      result[i] = std::bit_cast<float>(widen(source[Stride * i + Offset]));
+    return simd<float, N, A>::load(result.data());
+  }
+  template<isa<x86> A, std::size_t N>
+  consteval simd<bf16, N, A> narrow(simd<float, N, A> input) noexcept {
+    std::array<float, N> values{};
+    input.store(values.data());
+    std::array<std::uint16_t, N> result{};
+    for (std::size_t i = 0; i < N; ++i) {
+      auto bits = std::bit_cast<std::uint32_t>(values[i]);
+      auto magnitude = bits & 0x7fffffffu;
+      if (magnitude < 0x00800000u)
+        result[i] = std::uint16_t((bits >> 16) & 0x8000u);
+      else if (magnitude > 0x7f800000u)
+        result[i] = std::uint16_t((bits >> 16) | 0x0040u);
+      else
+        result[i] = std::uint16_t((bits + 0x7fffu + ((bits >> 16) & 1u)) >> 16);
+    }
+    return simd<bf16, N, A>::load_bits(result.data());
+  }
+} // namespace native::detail::x86_neconvert
+
+export namespace native {
+  /// \defgroup x86_avxneconvert AVX-NE-CONVERT
+  /// Binary16/BF16 memory widening and binary32-to-BF16 narrowing, with no FP exceptions.
+  /// Runtime calls require AVX-NE-CONVERT, AVX, matching compiler targets and OS vector state.
+  /// Constant-only overloads are available for weaker ISA tags with the required storage.
+  /// BF16 widening preserves every representation, including subnormals and signaling NaNs.
+  /// FP16 widening is exact for finite inputs and quiets NaNs; narrowing uses RNE, DAZ and FTZ.
+  /// MXCSR is neither consulted nor updated by these instructions.
+  /// \{
+
+  /// Read one BF16 object and broadcast its binary32 representation.
+  /// N is 4 or 8. The nonnull pointer needs only the element's natural alignment.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline native_target(
+      "avxneconvert") constexpr simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
+    if consteval {
+      return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
+    } else {
+      if constexpr (N == 4)
+        return simd<float, N, Arch>::from_native(_mm_bcstnebf16_ps(source));
+      else
+        return simd<float, N, Arch>::from_native(_mm256_bcstnebf16_ps(source));
+    }
+  }
+
+  /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+  native_nodiscard consteval simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
+  }
+
+  /// Read one binary16 object, widen to binary32 and broadcast.
+  /// N is 4 or 8. The nonnull pointer needs only the element's natural alignment.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline native_target(
+      "avxneconvert") constexpr simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
+    if consteval {
+      return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
+    } else {
+      if constexpr (N == 4)
+        return simd<float, N, Arch>::from_native(_mm_bcstnesh_ps(source));
+      else
+        return simd<float, N, Arch>::from_native(_mm256_bcstnesh_ps(source));
+    }
+  }
+
+  /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+  native_nodiscard consteval simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
+  }
+
+  /// Read 2*N BF16 objects and widen the even-indexed elements.
+  /// N is 4 or 8. The nonnull pointer needs only the element's natural alignment.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline native_target(
+      "avxneconvert") constexpr simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
+    if consteval {
+      return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
+    } else {
+      if constexpr (N == 4)
+        return simd<float, N, Arch>::from_native(
+            _mm_cvtneebf16_ps(reinterpret_cast<__m128bh const *>(source)));
+      else
+        return simd<float, N, Arch>::from_native(
+            _mm256_cvtneebf16_ps(reinterpret_cast<__m256bh const *>(source)));
+    }
+  }
+
+  /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+  native_nodiscard consteval simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
+  }
+
+  /// Read 2*N binary16 objects and widen the even-indexed elements.
+  /// N is 4 or 8. The nonnull pointer needs only the element's natural alignment.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline native_target(
+      "avxneconvert") constexpr simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
+    if consteval {
+      return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
+    } else {
+      if constexpr (N == 4)
+        return simd<float, N, Arch>::from_native(
+            _mm_cvtneeph_ps(reinterpret_cast<__m128h const *>(source)));
+      else
+        return simd<float, N, Arch>::from_native(
+            _mm256_cvtneeph_ps(reinterpret_cast<__m256h const *>(source)));
+    }
+  }
+
+  /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+  native_nodiscard consteval simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
+  }
+
+  /// Read 2*N BF16 objects and widen the odd-indexed elements.
+  /// N is 4 or 8. The nonnull pointer needs only the element's natural alignment.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline native_target(
+      "avxneconvert") constexpr simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
+    if consteval {
+      return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
+    } else {
+      if constexpr (N == 4)
+        return simd<float, N, Arch>::from_native(
+            _mm_cvtneobf16_ps(reinterpret_cast<__m128bh const *>(source)));
+      else
+        return simd<float, N, Arch>::from_native(
+            _mm256_cvtneobf16_ps(reinterpret_cast<__m256bh const *>(source)));
+    }
+  }
+
+  /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+  native_nodiscard consteval simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
+  }
+
+  /// Read 2*N binary16 objects and widen the odd-indexed elements.
+  /// N is 4 or 8. The nonnull pointer needs only the element's natural alignment.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline native_target(
+      "avxneconvert") constexpr simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
+    if consteval {
+      return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
+    } else {
+      if constexpr (N == 4)
+        return simd<float, N, Arch>::from_native(
+            _mm_cvtneoph_ps(reinterpret_cast<__m128h const *>(source)));
+      else
+        return simd<float, N, Arch>::from_native(
+            _mm256_cvtneoph_ps(reinterpret_cast<__m256h const *>(source)));
+    }
+  }
+
+  /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+  native_nodiscard consteval simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
+  }
+
+  /// Round N binary32 lanes to BF16 using nearest-even; N is 4 or 8.
+  /// The four-lane result has four logical BF16 lanes and zero upper register bits.
+  template<isa<x86> Arch, std::size_t N>
+    requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
+             (N == 4 || N == 8))
+  native_nodiscard native_inline
+  native_target("avxneconvert") constexpr simd<bf16, N, Arch> cvtneps_bf16(
+      simd<float, N, Arch> input) noexcept {
+    if consteval {
+      return detail::x86_neconvert::narrow(input);
+    } else {
+      using R = simd<bf16, N, Arch>;
+      // Copy the complete register representation. An existing AVX512_BF16
+      // storage specialization may attach stronger targets to its named bridge.
+      if constexpr (N == 4)
+        return std::bit_cast<R>(_mm_cvtneps_avx_pbh(input.to_native()));
+      else
+        return std::bit_cast<R>(_mm256_cvtneps_avx_pbh(input.to_native()));
+    }
+  }
+
+  /// Constant-only narrowing when AVX-NE-CONVERT or AVX is absent.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) &&
+             requires {
+               sizeof(simd<float, N, Arch>);
+               sizeof(simd<bf16, N, Arch>);
+             })
+  native_nodiscard consteval simd<bf16, N, Arch> cvtneps_bf16(simd<float, N, Arch> input) noexcept {
+    return detail::x86_neconvert::narrow(input);
+  }
+  /// \}
+} // namespace native
