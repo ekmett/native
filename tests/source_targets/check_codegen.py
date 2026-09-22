@@ -20,10 +20,13 @@ def function_bodies(text):
     return [(int(functions[i],16),functions[i+1],functions[i+2])
         for i in range(1,len(functions),3)]
 
-def source_kernel(name):
+def source_kernel(name, prefix):
     # LLVM's Microsoft demangler does not yet decode structural array NTTPs.
     # Match the exact raw template name, excluding helper functions and thunks.
-    return bool(re.search(r'\bsource_kernel[<(]',name) or name.startswith('??$source_kernel@'))
+    return bool(re.search(r'\b'+prefix+r'[<(]',name) or name.startswith('??$'+prefix+'@'))
+
+def source_variant(name):
+    return any(source_kernel(name,prefix) for prefix in ('source_kernel','source_superset'))
 
 kernels=[]
 objects=re.split(r'(?m)^.+:\s+file format ([^\n]+)$',r.stdout)
@@ -41,15 +44,17 @@ for i in range(1,len(objects),2):
                 bodies[sections[j],address]=body
         symbols=re.findall(r'(?m)^([0-9a-f]+)\s+[gw]\s+F\s+(\S+)\s+([^\n]+)$',sections[0])
         for address,section,name in symbols:
-            if not source_kernel(name): continue
+            if not source_variant(name): continue
             body=bodies.get((section,int(address,16)))
             if body is None or not re.search(r'(?m)^\s*[0-9a-f]+:',body):
                 raise SystemExit('Source variant has no disassembled body: '+name)
             kernels.append((name,body))
     else:
         kernels.extend((name,body) for address,name,body in function_bodies(contents)
-            if source_kernel(name))
-if len(kernels)!=3: raise SystemExit(f'Expected precisely three source variants, found {len(kernels)}')
+            if source_variant(name))
+for prefix in ('source_kernel','source_superset'):
+    count=sum(source_kernel(name,prefix) for name,body in kernels)
+    if count!=3: raise SystemExit(f'Expected precisely three {prefix} variants, found {count}')
 for name,body in kernels:
     if not re.search(r'\bvaddps\b|\bfadd(?:\s+v\d+\.4s|\.4s\s+v\d+)',body):
         raise SystemExit('Source variant has no native packed addition: '+name)
@@ -68,4 +73,4 @@ else:
     for name,body in kernels:
         if re.search(r'\b(?:callq?|bl)\s',body):
             raise SystemExit('Source variant unexpectedly contains a helper call: '+name)
-    print('Exactly three selected variants contain native vector additions without helper calls.')
+    print('Three exact and three superset-selected variants contain native vector additions without helper calls.')

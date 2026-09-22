@@ -54,8 +54,11 @@ run('arm-windows-object',[*arm_flags,'-c',
 macros_source=out/'metadata-macros.cc'
 macros_source.write_text(
     '#include "'+(source/'macros.cc').as_posix()+'"\n'
-    '#define INSTANTIATE_TARGET(name, ...) template void source_kernel<NATIVE_TARGET_ISA(name)>(float *, float const *);\n'
-    'SELECTED_TARGETS(INSTANTIATE_TARGET)\n',encoding='utf-8')
+    '#define INSTANTIATE_TARGET(unused, name) template void source_kernel<NATIVE_TARGET_ISA(name)>(float *, float const *);\n'
+    'NATIVE_DETAIL_TARGET_MAP(INSTANTIATE_TARGET,unused,SELECTED_TARGETS)\n'
+    '#undef INSTANTIATE_TARGET\n'
+    '#define INSTANTIATE_TARGET(unused, name) template void source_superset<NATIVE_TARGET_ISA(name)&extra_feature>(float *, float const *);\n'
+    'NATIVE_DETAIL_TARGET_MAP(INSTANTIATE_TARGET,unused,SELECTED_TARGETS)\n',encoding='utf-8')
 run('macros-ir',[*consumer,'-S','-emit-llvm',macros_source,'-o',out/'macros.ll'])
 run('macros-assembly',[*consumer,'-S',macros_source,'-o',out/'macros.s'])
 run('macros-object',[*consumer,'-c',macros_source,'-o',out/'macros.obj'])
@@ -83,6 +86,11 @@ definitions=re.findall(r'^define[^\n]+@[^\n]*source_kernel[^\n]+',ir,re.M)
 assert len(definitions)==3,definitions
 attributes=dict(re.findall(r'^attributes #(\d+) = \{([^\n]+)\}',ir,re.M))
 kernel_attributes=[attributes[re.search(r'#(\d+)',line).group(1)] for line in definitions]
+superset_definitions=re.findall(r'^define[^\n]+@[^\n]*source_superset[^\n]+',ir,re.M)
+assert len(superset_definitions)==3,superset_definitions
+superset_attributes=[attributes[re.search(r'#(\d+)',line).group(1)] for line in superset_definitions]
+assert sorted(superset_attributes)==sorted(kernel_attributes)
+assert all('+gfni' not in x for x in superset_attributes)
 assert sum('+avx512f' in x for x in kernel_attributes)==1
 assert sum('+f16c' in x for x in kernel_attributes)==2
 assert sum('+bmi2' in x for x in kernel_attributes)==1
@@ -94,6 +102,7 @@ assembly=(out/'macros.s').read_text()
 assert re.search(r'vaddps[^\n]*ymm',assembly)
 assert re.search(r'vaddps[^\n]*zmm',assembly)
 (out/'receipt.json').write_text(json.dumps({'commands':records,'source_kernel_definitions':definitions,
-    'selected_target_attributes':kernel_attributes,'after_scope_attributes':after_attributes,
+    'selected_target_attributes':kernel_attributes,'superset_target_attributes':superset_attributes,
+    'after_scope_attributes':after_attributes,
     'passed':True},indent=2),encoding='utf-8')
-print('Metadata module, synthetic admission, three exact source variants, ordinary/ASan object codegen and negative registry passed.')
+print('Metadata module, synthetic admission, three exact and three superset source variants, ordinary/ASan object codegen and negative registry passed.')

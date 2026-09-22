@@ -52,18 +52,72 @@
   NATIVE_DETAIL_TARGET_CAT(NATIVE_DETAIL_TARGET_PUSH_,NATIVE_DETAIL_TARGET_IS_SCALAR(name))(name)
 #define NATIVE_TARGET_POP() NATIVE_DETAIL_TARGET_PRAGMA(clang attribute native_source_target.pop)
 
-// A list uses X(name, ...), forwarding its extra arguments to X:
-//   #define targets(X,...) X(avx512,__VA_ARGS__) X(avx2,__VA_ARGS__)
-// A reusable body owns the complete function declaration and definition:
-//   #define body(name,ISA) template<::native::isa<> A> requires(A==ISA) void name(float * p) { /* ... */ }
-//   NATIVE_TARGET_VARIANTS(kernel,targets,body)
-// Each chosen ISA constrains a distinct function template. List feature sets
-// must be unique. Definitions need normal C++ ODR rules.
-#define NATIVE_DETAIL_TARGET_EMIT(tag,name,body) \
+/*
+Context-aware adaptation of BAD_MAP in
+https://github.com/ekmett/bad/blob/main/include/bad/macros.hh
+Copyright (C) 2012 William Swanson, 2021 Edward Kmett.
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Except as contained in this notice, the names of the authors or their
+institutions shall not be used in advertising or otherwise to promote the sale,
+use or other dealings in this Software without prior written authorization from
+the authors.
+*/
+#define NATIVE_DETAIL_TARGET_EVAL0(...) __VA_ARGS__
+#define NATIVE_DETAIL_TARGET_EVAL1(...) NATIVE_DETAIL_TARGET_EVAL0(NATIVE_DETAIL_TARGET_EVAL0(NATIVE_DETAIL_TARGET_EVAL0(__VA_ARGS__)))
+#define NATIVE_DETAIL_TARGET_EVAL2(...) NATIVE_DETAIL_TARGET_EVAL1(NATIVE_DETAIL_TARGET_EVAL1(NATIVE_DETAIL_TARGET_EVAL1(__VA_ARGS__)))
+#define NATIVE_DETAIL_TARGET_EVAL3(...) NATIVE_DETAIL_TARGET_EVAL2(NATIVE_DETAIL_TARGET_EVAL2(NATIVE_DETAIL_TARGET_EVAL2(__VA_ARGS__)))
+#define NATIVE_DETAIL_TARGET_EVAL4(...) NATIVE_DETAIL_TARGET_EVAL3(NATIVE_DETAIL_TARGET_EVAL3(NATIVE_DETAIL_TARGET_EVAL3(__VA_ARGS__)))
+#define NATIVE_DETAIL_TARGET_EVAL(...) NATIVE_DETAIL_TARGET_EVAL4(NATIVE_DETAIL_TARGET_EVAL4(NATIVE_DETAIL_TARGET_EVAL4(__VA_ARGS__)))
+#define NATIVE_DETAIL_TARGET_MAP_END(...)
+#define NATIVE_DETAIL_TARGET_MAP_OUT
+#define NATIVE_DETAIL_TARGET_MAP_GET_END2() 0, NATIVE_DETAIL_TARGET_MAP_END
+#define NATIVE_DETAIL_TARGET_MAP_GET_END1(...) NATIVE_DETAIL_TARGET_MAP_GET_END2
+#define NATIVE_DETAIL_TARGET_MAP_GET_END(...) NATIVE_DETAIL_TARGET_MAP_GET_END1
+#define NATIVE_DETAIL_TARGET_MAP_NEXT0(test, next, ...) next NATIVE_DETAIL_TARGET_MAP_OUT
+#define NATIVE_DETAIL_TARGET_MAP_NEXT1(test, next) NATIVE_DETAIL_TARGET_MAP_NEXT0(test, next, 0)
+#define NATIVE_DETAIL_TARGET_MAP_NEXT(test, next) NATIVE_DETAIL_TARGET_MAP_NEXT1(NATIVE_DETAIL_TARGET_MAP_GET_END test, next)
+#define NATIVE_DETAIL_TARGET_MAP0(f,c,x,peek,...) f(c,x) NATIVE_DETAIL_TARGET_MAP_NEXT(peek,NATIVE_DETAIL_TARGET_MAP1)(f,c,peek,__VA_ARGS__)
+#define NATIVE_DETAIL_TARGET_MAP1(f,c,x,peek,...) f(c,x) NATIVE_DETAIL_TARGET_MAP_NEXT(peek,NATIVE_DETAIL_TARGET_MAP0)(f,c,peek,__VA_ARGS__)
+#define NATIVE_DETAIL_TARGET_MAP(f,c,...) __VA_OPT__(NATIVE_DETAIL_TARGET_EVAL(NATIVE_DETAIL_TARGET_MAP1(f,c,__VA_ARGS__,()()(),()()(),()()(),0)))
+
+#define NATIVE_DETAIL_TARGET_UNPACK(...) __VA_ARGS__
+#define NATIVE_DETAIL_TARGET_ISA_ARG(unused,tag) ,NATIVE_TARGET_ISA(tag)
+
+// A list is a comma-separated sequence of registered target names:
+//   #define targets avx512,avx2
+// body(name,ISA,...) receives the selected ISA followed by the full ISA pack.
+// Use target<A,__VA_ARGS__> == target<ISA,__VA_ARGS__> for disjoint overloads.
+// Keep local register types and instruction requirements within ISA, even when
+// A carries more features. Definitions need normal C++ ODR rules.
+// Expand the complete choice pack before mapping bodies, keeping the two uses
+// of the mapper separate during preprocessor rescanning.
+#define NATIVE_TARGET_VARIANTS(name,body,...) NATIVE_DETAIL_TARGET_VARIANTS(name,body,__VA_ARGS__)
+#define NATIVE_DETAIL_TARGET_VARIANTS(name,body,...) \
+  NATIVE_DETAIL_TARGET_EMIT_ALL(name,body, \
+    (NATIVE_DETAIL_TARGET_MAP(NATIVE_DETAIL_TARGET_ISA_ARG,unused,__VA_ARGS__)),__VA_ARGS__)
+#define NATIVE_DETAIL_TARGET_EMIT_ALL(name,body,choices,...) \
+  NATIVE_DETAIL_TARGET_MAP(NATIVE_DETAIL_TARGET_EMIT,(name,body,choices),__VA_ARGS__)
+#define NATIVE_DETAIL_TARGET_EMIT(context,tag) \
+  NATIVE_DETAIL_TARGET_EMIT_EXPAND(tag,NATIVE_DETAIL_TARGET_UNPACK context)
+#define NATIVE_DETAIL_TARGET_EMIT_EXPAND(...) NATIVE_DETAIL_TARGET_EMIT_IMPL(__VA_ARGS__)
+#define NATIVE_DETAIL_TARGET_EMIT_IMPL(tag,name,body,choices) \
   NATIVE_TARGET_PUSH(tag) \
-  body(name,NATIVE_TARGET_ISA(tag)) \
+  NATIVE_DETAIL_TARGET_EMIT_BODY(body,name,NATIVE_TARGET_ISA(tag) NATIVE_DETAIL_TARGET_UNPACK choices) \
   NATIVE_TARGET_POP()
-#define NATIVE_TARGET_VARIANTS(name,list,body) list(NATIVE_DETAIL_TARGET_EMIT,name,body)
+#define NATIVE_DETAIL_TARGET_EMIT_BODY(body,...) body(__VA_ARGS__)
 
 // Snapshot inherited translation-unit features separately from the requested
 // ISA value. A target attribute adds features; it does not erase the project
@@ -469,6 +523,8 @@
   NATIVE_BASELINE&NATIVE_DETAIL_MIN_NEON_FP16&NATIVE_DETAIL_MIN_ARM_SIMD_EXTRAS& \
   NATIVE_DETAIL_MIN_ARM_JSCVT&NATIVE_DETAIL_MIN_UNREGISTERED))
 
-#define NATIVE_DETAIL_TARGET_LIST(tag,...) \
+// Admission follows the same order as the compile-time choice pack.
+#define NATIVE_DETAIL_TARGET_LIST(unused,tag) \
   +::native::isa_list<::native::target_entry{NATIVE_TARGET_ISA(tag),NATIVE_TARGET_MINIMUM}>{}
-#define NATIVE_TARGET_LIST(list) (::native::isa_list<>{} list(NATIVE_DETAIL_TARGET_LIST,unused))
+#define NATIVE_TARGET_LIST(...) \
+  (::native::isa_list<>{} NATIVE_DETAIL_TARGET_MAP(NATIVE_DETAIL_TARGET_LIST,unused,__VA_ARGS__))

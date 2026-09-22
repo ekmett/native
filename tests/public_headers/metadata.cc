@@ -25,10 +25,16 @@ template<native::isa<> A> requires(A == NATIVE_TARGET_ISA(scalar))
 constexpr int repeated() { return 7; }
 static_assert(repeated<native::scalar>() == 7);
 
-#define METADATA_TARGETS(X, ...) X(scalar, __VA_ARGS__)
-#define METADATA_BODY(name, arch) \
-  template<native::isa<> A> requires(A == arch) \
+#define METADATA_ALIAS scalar
+#define METADATA_TARGETS METADATA_ALIAS
+#define METADATA_DECLARE(name, arch, ...) \
+  template<native::isa<> A> requires(native::target<A,__VA_ARGS__> == native::target<arch,__VA_ARGS__>) \
+  int name(int value);
+#define METADATA_VARIANTS(name, body, ...) NATIVE_TARGET_VARIANTS(name, body, __VA_ARGS__)
+METADATA_VARIANTS(increment, METADATA_DECLARE, METADATA_TARGETS)
+#define METADATA_BODY(name, arch, ...) \
+  template<native::isa<> A> requires(native::target<A,__VA_ARGS__> == native::target<arch,__VA_ARGS__>) \
   int name(int value) { return value + 1; }
-NATIVE_TARGET_VARIANTS(increment, METADATA_TARGETS, METADATA_BODY)
+NATIVE_TARGET_VARIANTS(increment, METADATA_BODY, METADATA_TARGETS)
 
 int main() { return increment<native::scalar>(41) == 42 ? 0 : 1; }

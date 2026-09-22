@@ -15,37 +15,50 @@ target_link_libraries(example PRIVATE native::native)
 ## Generate only the variants you need
 
 This x86 example compiles two constrained function templates in one translation
-unit. The reusable body receives the function name and the exact ISA value.
+unit. The reusable body receives the function name, the variant's ISA value and
+the full ordered ISA pack through `__VA_ARGS__`.
 Each expansion is inside a matching Clang target scope.
 
 ```cpp
 #include <native/targets.h>
 import native;
 
-#define MY_TARGETS(X, ...) X(avx512, __VA_ARGS__) X(avx2, __VA_ARGS__)
-#define DOUBLE_BODY(name, ISA)                                         \
-  template<native::isa<> A> requires(A == ISA)                              \
-  void name(float const * input, float * output) {                     \
-    using V = native::simd<float, 4, A>;                                   \
+#define DOUBLE_BODY(name, ISA, ...)                                      \
+  template<native::isa<> A>                                              \
+    requires(native::target<A, __VA_ARGS__> ==                            \
+             native::target<ISA, __VA_ARGS__>)                           \
+  void name(float const * input, float * output) {                        \
+    using V = native::simd<float, 4, ISA>;                                \
     auto x = native::load_simd<V>(input);                                 \
     native::store_simd(output, x + x);                                    \
   }
 
-NATIVE_TARGET_VARIANTS(double_four, MY_TARGETS, DOUBLE_BODY)
+NATIVE_TARGET_VARIANTS(double_four, DOUBLE_BODY, avx512, avx2)
 
 bool run(float const * input, float * output) {
   auto cpu = native::observe_cpu();
-  return native::with_isa(NATIVE_TARGET_LIST(MY_TARGETS), cpu, [&]<native::isa<> A> {
+  return native::with_isa(NATIVE_TARGET_LIST(avx512, avx2), cpu, [&]<native::isa<> A> {
     double_four<A>(input, output);
   });
 }
 
 #undef DOUBLE_BODY
-#undef MY_TARGETS
 ```
 
-List order is selection order. `with_isa` invokes `callback.operator()<A>()`
-once for the first admitted entry, or returns `false` without calling it if none
+To reuse a list, define `#define MY_TARGETS avx512, avx2` and pass `MY_TARGETS`
+as the target arguments to either macro.
+
+List order is selection order, with stronger requirements before weaker ones.
+The macro supplies the same complete choice pack to every overload. Comparing
+the caller's selection with the variant's selection admits additional features
+without making the overloads ambiguous. The body uses `ISA` for its local SIMD
+types: `A` may carry features beyond the body's compiler target scope.
+
+Expand `NATIVE_TARGET_LIST` outside generated bodies; the preprocessor mapper
+does not support recursive expansion from its own callback.
+
+`with_isa` invokes `callback.operator()<A>()` once for the first admitted entry,
+or returns `false` without calling it if none
 qualifies. On AArch64 use the NEON presets; `observe_cpu()` uses the platform's
 capability observer.
 
@@ -135,12 +148,35 @@ declaration order](abi-lookup.md).
 
 ## Choose feature sets
 
-Presets are family-typed `isa` values with compiler prerequisites included. To
-register another source name, give it one target feature literal:
+Each token in a target list names a macro in `<native/targets.h>`. The built-in
+names used above resolve to these feature strings:
+
+| List token | Macro | Feature string |
+| --- | --- | --- |
+| `avx2` | `NATIVE_TARGET_avx2` | `"avx2,fma"` |
+| `avx512` | `NATIVE_TARGET_avx512` | `"avx2,fma,avx512f,avx512dq,avx512bw,avx512vl"` |
+
+`NATIVE_TARGET_STRING(tag)` expands that macro to its string literal. Both
+compiler targeting and feature selection start from this same literal:
+
+- `NATIVE_TARGET_PUSH(tag)` supplies it to Clang's `target(...)` attribute for
+  the generated functions.
+- `NATIVE_TARGET_ISA(tag)` parses it with `target_features`, producing a
+  family-typed `isa` value with compiler prerequisites included. The variant
+  generator passes that value as `ISA` and maps the entire list into the ISA
+  pack received as `__VA_ARGS__`.
+
+For the example above, the body therefore compares
+`target<A, NATIVE_TARGET_ISA(avx512), NATIVE_TARGET_ISA(avx2)>` with the same
+selection for its own `ISA`. `target<>` selects the first feature set contained
+in its argument. The runtime admission list uses those same parsed values,
+plus the inherited translation-unit minimum.
+
+To register another source name, give it one target feature literal:
 
 ```cpp
 #define NATIVE_TARGET_avx2_half "avx2,fma,f16c"
-#define MY_TARGETS(X, ...) X(avx2_half, __VA_ARGS__) X(avx2, __VA_ARGS__)
+#define MY_TARGETS avx2_half, avx2
 static_assert(NATIVE_TARGET_ISA(avx2_half).f16c);
 ```
 

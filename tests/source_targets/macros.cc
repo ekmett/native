@@ -16,11 +16,30 @@ import native;
 
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define NATIVE_TARGET_custom "neon,fullfp16,bf16"
-#define SELECTED_TARGETS(X,...) X(neon,__VA_ARGS__) X(neon_fp16,__VA_ARGS__) X(custom,__VA_ARGS__)
+#define SELECTED_TARGETS custom,neon_fp16,neon
+template<native::isa<> A> constexpr int selected_target=
+  native::target<A,NATIVE_TARGET_ISA(custom),native::neon_fp16,native::neon>;
+constexpr auto extra_feature=native::arm_feature::dotprod;
 #else
 #define NATIVE_TARGET_custom "avx2,fma,bmi2,f16c"
-#define SELECTED_TARGETS(X,...) X(avx512,__VA_ARGS__) X(avx2,__VA_ARGS__) X(custom,__VA_ARGS__)
+#define SELECTED_TARGETS avx512,custom,avx2
+template<native::isa<> A> constexpr int selected_target=
+  native::target<A,native::avx512,NATIVE_TARGET_ISA(custom),native::avx2>;
+constexpr auto extra_feature=native::x86_feature::gfni;
 #endif
+
+#define CHECK_SELECTION(unused,tag) \
+  static_assert(selected_target<NATIVE_TARGET_ISA(tag)> >= 0); \
+  static_assert(selected_target<NATIVE_TARGET_ISA(tag)&extra_feature> == selected_target<NATIVE_TARGET_ISA(tag)>);
+NATIVE_DETAIL_TARGET_MAP(CHECK_SELECTION,unused,SELECTED_TARGETS)
+#undef CHECK_SELECTION
+static_assert(selected_target<native::scalar> == -1);
+
+#define DOUBLE_DECLARE(name,tag,...) \
+  template<native::isa<> A> requires(native::target<A,__VA_ARGS__> == native::target<tag,__VA_ARGS__>) \
+  void name(float * output,float const * input);
+NATIVE_TARGET_VARIANTS(source_kernel,DOUBLE_DECLARE,SELECTED_TARGETS)
+#undef DOUBLE_DECLARE
 
 // Both arguments and result cross the implicit native-register bridge. This
 // helper belongs to the generated body and receives exactly its target scope.
@@ -58,21 +77,31 @@ import native;
 #else
 #define NATIVE_FIXTURE_LANES(tag) ((tag).has(native::x86_feature::avx512f)?16:8)
 #endif
-#define DOUBLE_BODY(name,tag) \
-  template<native::isa<> A,class V> requires(A == tag) \
+#define DOUBLE_BODY(name,tag,...) \
+  template<native::isa<> A,class V> requires(native::target<A,__VA_ARGS__> == native::target<tag,__VA_ARGS__>) \
   __attribute__((always_inline)) inline V name##_native(V value) { \
     NATIVE_DOUBLE(value) \
   } \
-  template<native::isa<> A> requires(A == tag) \
+  template<native::isa<> A> requires(native::target<A,__VA_ARGS__> == native::target<tag,__VA_ARGS__>) \
   __attribute__((noinline)) void name(float * output,float const * input) { \
     constexpr unsigned lanes=NATIVE_FIXTURE_LANES(tag); \
     DOUBLE_STEP(name,tag,lanes) \
   }
-NATIVE_TARGET_VARIANTS(source_kernel,SELECTED_TARGETS,DOUBLE_BODY)
+NATIVE_TARGET_VARIANTS(source_kernel,DOUBLE_BODY,SELECTED_TARGETS)
+#if defined(__aarch64__) || defined(_M_ARM64)
+NATIVE_TARGET_VARIANTS(source_superset,DOUBLE_BODY,custom,neon_fp16,neon)
+#else
+NATIVE_TARGET_VARIANTS(source_superset,DOUBLE_BODY,avx512,custom,avx2)
+#endif
 #undef DOUBLE_BODY
 #undef NATIVE_FIXTURE_LANES
 #undef DOUBLE_STEP
 #undef NATIVE_DOUBLE
+
+template<native::isa<> A> concept has_source_kernel=requires {
+  source_kernel<A>(nullptr,nullptr);
+};
+static_assert(!has_source_kernel<native::scalar>);
 
 // The target scope must end at the body, leaving later declarations ordinary.
 extern "C" __attribute__((noinline)) float source_after_scope(float x) { return x+x; }
@@ -112,17 +141,19 @@ int main() {
   };
   auto clear=[&] { for(float & value:output) value=0; };
   unsigned expected=0,executed=0,skipped=0,index=0;
-#define RUN_EACH(name,...) \
+#define RUN_EACH(unused,name) \
   ++index; \
   if(native::classify_isa(cpu,NATIVE_TARGET_ISA(name),NATIVE_TARGET_MINIMUM).admitted()) { \
     if(!expected) expected=index; \
     clear();source_kernel<NATIVE_TARGET_ISA(name)>(output,input); \
     if(!correct()) return 2; \
+    clear();source_superset<NATIVE_TARGET_ISA(name)&extra_feature>(output,input); \
+    if(!correct()) return 6; \
     ++executed;std::printf("source target %s: executed\n",#name); \
   } else { \
     ++skipped;std::printf("source target %s: skipped (not admitted)\n",#name); \
   }
-  SELECTED_TARGETS(RUN_EACH)
+  NATIVE_DETAIL_TARGET_MAP(RUN_EACH,unused,SELECTED_TARGETS)
 #undef RUN_EACH
   unsigned calls=0;
   native::isa<> selected_features{};
@@ -135,9 +166,9 @@ int main() {
   if(!selected) return 77; // Scalar ran; this host admits no selected native body.
   if(!correct()) return 4;
   index=0;
-#define CHECK_ORDER(name,...) \
+#define CHECK_ORDER(unused,name) \
   if(++index==expected && selected_features!=NATIVE_TARGET_ISA(name)) return 5;
-  SELECTED_TARGETS(CHECK_ORDER)
+  NATIVE_DETAIL_TARGET_MAP(CHECK_ORDER,unused,SELECTED_TARGETS)
 #undef CHECK_ORDER
   std::printf("scalar path passed; %u variants executed, %u skipped; ordered dispatch passed\n",executed,skipped);
   return 0;

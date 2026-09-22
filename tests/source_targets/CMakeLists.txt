@@ -56,11 +56,21 @@ add_test(NAME native.source_targets.codegen COMMAND "${Python3_EXECUTABLE}"
   --output "${CMAKE_CURRENT_BINARY_DIR}/variants-$<CONFIG>.disassembly"
   $<TARGET_OBJECTS:native_source_variants> COMMAND_EXPAND_LISTS)
 
-foreach(kind IN ITEMS invalid foreign no_target)
-  add_library(native_source_reject_${kind} OBJECT EXCLUDE_FROM_ALL ${kind}.cc)
+foreach(kind IN ITEMS invalid foreign no_target duplicate shadowed)
+  if(kind STREQUAL "duplicate" OR kind STREQUAL "shadowed")
+    set(reject_source invalid_order.cc)
+  else()
+    set(reject_source ${kind}.cc)
+  endif()
+  add_library(native_source_reject_${kind} OBJECT EXCLUDE_FROM_ALL ${reject_source})
   target_link_libraries(native_source_reject_${kind} PRIVATE native::native)
+  if(kind STREQUAL "duplicate")
+    target_compile_definitions(native_source_reject_${kind} PRIVATE NATIVE_TARGET_DUPLICATE=1)
+  endif()
   if(kind STREQUAL "invalid" OR kind STREQUAL "foreign")
     set(diagnostic "source target contains an unregistered ISA feature")
+  elseif(kind STREQUAL "duplicate" OR kind STREQUAL "shadowed")
+    set(diagnostic "a later target is shadowed by an earlier one")
   else()
     set(diagnostic "requires target feature|target specific option mismatch")
   endif()
@@ -72,6 +82,7 @@ foreach(kind IN ITEMS invalid foreign no_target)
 endforeach()
 set_tests_properties(native.source_targets.metadata native.source_targets.native
   native.source_targets.codegen native.source_targets.reject_invalid native.source_targets.reject_foreign native.source_targets.reject_no_target
+  native.source_targets.reject_duplicate native.source_targets.reject_shadowed
   PROPERTIES LABELS "host;modules;source_targets" TIMEOUT 180)
 
 # Import only the capability module; admission must not require the SIMD hub.
