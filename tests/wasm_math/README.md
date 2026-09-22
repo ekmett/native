@@ -48,7 +48,7 @@ cmake -S . -B build-wasm -G Ninja \
   -DNATIVE_TEST_ISA=WASM_SIMD128 -DNATIVE_ENABLE_IPO=OFF \
   -DNATIVE_ENABLE_PCH=OFF -DNATIVE_WASM_WASMTIME=/path/to/wasmtime \
   -DNATIVE_WASM_OBJDUMP=/path/to/wasi-sdk/bin/llvm-objdump
-cmake --build build-wasm --parallel 2
+cmake --build build-wasm --parallel
 ctest --test-dir build-wasm -LE engine-conformance --output-on-failure
 cmake --install build-wasm --prefix "$PWD/build-wasm/stage"
 cmake -S tests/wasm_math -B build-wasm-consumer -G Ninja \
@@ -56,7 +56,7 @@ cmake -S tests/wasm_math -B build-wasm-consumer -G Ninja \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$PWD/build-wasm/stage" \
   -DNATIVE_WASM_WASMTIME=/path/to/wasmtime \
   -DNATIVE_WASM_OBJDUMP=/path/to/wasi-sdk/bin/llvm-objdump
-cmake --build build-wasm-consumer --parallel 2
+cmake --build build-wasm-consumer --parallel
 ctest --test-dir build-wasm-consumer --output-on-failure
 ```
 
