@@ -20,20 +20,44 @@ host implementations at the configured project minimum. Run separate builds
 for exception settings and sanitizers. `NATIVE_ENABLE_ASAN=ON` instruments host
 memory checks; use a separate build directory with IPO disabled for that run.
 
-The [CI workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/build.yml) covers Linux x86-64 and ARM64,
-Windows x64 and ARM64, and macOS ARM64, with exceptions enabled and disabled.
+Routine validation runs locally. For relevant pull-request changes, the
+[native CI workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/build.yml)
+runs Linux ARM64 and Windows ARM64 with exceptions enabled. Both jobs retain
+the complete source tests and physically relocated package checks. Changes to
+source, tests, CMake configuration, CI tooling or the compiled README example
+trigger these jobs; source and test Markdown alone does not. Native CI does not
+repeat automatically after a merge.
+
+Use **Run workflow** on **C++26 modules** for the full ten-job qualification:
+Linux x86-64 and ARM64, Windows x64 and ARM64, and macOS ARM64, each with
+exceptions enabled and disabled. Routine PR checks therefore do not establish
+x86, macOS or exception-disabled coverage for that revision; qualify those
+locally or request the full workflow when needed.
+
+Superseded PR runs are canceled. A new manual run cancels an older manual run
+on the same ref, while manual qualification remains separate from PR checks.
+Diagnostic artifacts expire after three days; retain any evidence needed
+longer before it expires.
+
 An optional-instruction test must admit the CPU and operating-system state
 before execution. Unsupported hardware is reported as a skip. A compile-only
 check or skipped runtime check does not establish native instruction behavior.
 
 The separate [WebAssembly workflow](https://github.com/ekmett/simd/blob/main/.github/workflows/wasm.yml)
-checks SIMD128 and relaxed SIMD on x86-64 and ARM64 hosts, including relocated
-consumers and compiler-minimum boundaries. Paired probes compare compiled Wasm
+runs only by manual dispatch. It checks SIMD128 and relaxed SIMD on x86-64 and
+ARM64 hosts, including relocated consumers and compiler-minimum boundaries.
+Paired probes compare compiled Wasm
 bytecode; they do not measure engine JIT machine code or execution overhead.
 Separate raw-engine jobs verify the built modules' source revision and hashes
 before testing Node and Wasmtime. Known conformance discrepancies remain ordinary
 failures, as described in the [relaxed SIMD checks](../tests/wasm_relaxed/README.md);
 passing library checks does not establish full engine conformance.
+New manual Wasm runs cancel older runs on the same ref. Library and engine
+artifacts share the three-day retention limit.
+
+Documentation checks run for relevant PR and main changes. Successful main
+builds still publish GitHub Pages; the deployment artifact expires after one
+day, while HTML and diagnostics are retained for three days.
 
 ## Values and memory
 

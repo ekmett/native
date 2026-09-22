@@ -190,7 +190,10 @@ are available. Keep the compiler resource directory, standard-library headers
 and linker consistent with that installation. `CMAKE_PREFIX_PATH` points to
 installed library packages, not to a producer's build directory.
 
-The CI workflow configures Ninja directly, builds the providers with IPO and
+The [CI policy](../docs/validation.md#running-the-checks) uses Linux ARM64 and
+Windows ARM64 for relevant pull requests. Manual dispatch runs the full ten-job
+matrix, including x86, macOS and exception-disabled configurations. The workflow
+configures Ninja directly, builds the providers with IPO and
 without PCHs, exercises consumer-owned PCHs in relocated fixtures, runs CTest,
 and checks installation. It selects AVX2 tests on Linux and Windows x86-64 runners and NEON
 on Linux, macOS and Windows ARM64 runners; the hub includes every implemented host ISA family. The
@@ -238,8 +241,8 @@ public callable documentation; it rejects missing descriptions and empty input.
 The [example project](../tests/api/README.md) compiles the snippets against an
 installed package. Generation alone does not compile examples or qualify an ISA.
 
-The Documentation workflow builds this reference for pull requests and `main`
-without enabling a C++ compiler. It checks callable descriptions, module
+The Documentation workflow builds this reference for relevant pull-request and
+`main` changes without enabling a C++ compiler. It checks callable descriptions, module
 navigation, and local page and fragment links, and retains HTML and diagnostics
 as an Actions artifact. Successful `main` builds publish the same HTML to
 [GitHub Pages](https://ekmett.github.io/simd/). Pull requests do not deploy.

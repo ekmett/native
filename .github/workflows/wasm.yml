@@ -1,13 +1,14 @@
 name: WebAssembly modules
 
 on:
-  push:
-    branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: wasm-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   library:
@@ -152,6 +153,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wasm-raw-modules-${{ matrix.platform.name }}
+          retention-days: 3
           if-no-files-found: error
           path: build/raw-engine/
       - name: Retain Wasm artifacts and validation logs
@@ -159,6 +161,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wasm-library-${{ matrix.platform.name }}
+          retention-days: 3
           if-no-files-found: ignore
           path: |
             build/wasm-environment.log
@@ -247,6 +250,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wasm-engine-${{ matrix.platform.name }}
+          retention-days: 3
           if-no-files-found: ignore
           path: |
             build/raw-engine/

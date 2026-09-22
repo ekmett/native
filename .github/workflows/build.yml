@@ -1,13 +1,27 @@
 name: C++26 modules
 
 on:
-  push:
-    branches: [main]
   pull_request:
+    paths:
+      - '.github/workflows/build.yml'
+      - '.github/actions/**'
+      - '.github/scripts/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'etc/cmake/**'
+      - 'src/**'
+      - 'tests/**'
+      - '!src/**/*.md'
+      - '!tests/**/*.md'
+      - 'README.md'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: native-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,28 +37,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        exceptions: ['ON', 'OFF']
-        platform:
-          - name: Linux LLVM 23 / AVX2
-            runner: ubuntu-24.04
-            profile: AVX2
-            profiles: AVX2;AVX512;AVX512_BF16;AVX512_FP16
-          - name: Windows x64 LLVM 23 / AVX2
-            runner: windows-2025
-            profile: AVX2
-            profiles: AVX2;AVX512;AVX512_BF16;AVX512_FP16
-          - name: Windows ARM64 LLVM 23 / NEON
-            runner: windows-11-arm
-            profile: NEON
-            profiles: NEON;NEON_FP16;NEON_BF16
-          - name: Linux ARM64 LLVM 23 / NEON
-            runner: ubuntu-24.04-arm
-            profile: NEON
-            profiles: NEON;NEON_FP16;NEON_BF16
-          - name: macOS LLVM 23 / NEON
-            runner: macos-15
-            profile: NEON
-            profiles: NEON;NEON_FP16;NEON_BF16
+        # Routine PR checks use two ARM hosts. Manual dispatch qualifies all ten configurations.
+        exceptions: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
+        platform: >-
+          ${{ fromJSON(github.event_name == 'workflow_dispatch' &&
+          '[{"name":"Linux LLVM 23 / AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Windows x64 LLVM 23 / AVX2","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"macOS LLVM 23 / NEON","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
+          '[{"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -252,6 +255,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: logs-${{ matrix.platform.runner }}-${{ matrix.platform.profile }}-exceptions-${{ matrix.exceptions }}
+          retention-days: 3
           if-no-files-found: ignore
           path: |
             build/environment.log
