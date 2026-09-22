@@ -64,10 +64,8 @@ multiply-add instruction. No such instruction is claimed by the baseline API.
 Unsigned 64-bit comparisons/min/max and reductions use explicit compositions.
 The integer popcount operation composes byte counts for wider lanes.
 `wide<simd<T,N,A>,R>` construction and element arithmetic use the SIMD128 target
-scope, including empty packs. The `native::math::exp` approximation is currently
-unavailable for SIMD128 values and packs: its backend FMA and exponent-scaling
-graph has not been implemented and numerically qualified. No scalar or library
-call fallback is selected for that API.
+scope, including empty packs. Import `native.math` for the
+[promoted exponential and trigonometric kernels](#promoted-binary32-math).
 
 ## Floating-point and constant semantics
 
@@ -121,7 +119,7 @@ Tests do not enable engine feature flags.
 values, arrays and `native::wide` batches. `native::math` provides equivalent
 Wasm overloads. These kernels require only `simd128`; `relaxed_simd` does not
 change their arithmetic. SIMD128 lacks FMA, so each polynomial multiply and add
-rounds separately. The existing scalar, x86 and ARM fused graph stays distinct.
+rounds separately. Scalar, x86 and ARM kernels use fused multiply-add stages.
 Wasm constant evaluation uses the same separate-rounding graph as execution.
 
 Exponential preserves NaNs, returns positive infinity on overflow and positive
@@ -132,5 +130,5 @@ feature dispatch or scalar lane/libm fallback occurs inside these kernels.
 
 The [math fixture](../tests/wasm_math/README.md) qualifies public/module and
 installed-consumer forms, accuracy samples, constant/runtime agreement, and
-call-free vector bytecode. General-purpose SIMD128 FMA and exponent-scaling
-operations remain outside this addition.
+call-free vector bytecode. The public API does not provide general-purpose
+SIMD128 FMA or exponent-scaling operations.

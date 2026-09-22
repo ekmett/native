@@ -119,8 +119,9 @@ Import `native.math` separately for promoted numerical kernels such as
 `math::exp` and `math::sincos`. Their domains and batching behavior are described
 in the [value guide](docs/modules.md#promoted-math-batches). Floating-point
 controls remain under application ownership. Wasm SIMD128 promoted kernels use
-separately rounded multiply/add stages; x86 and ARM retain fused stages. The separate FTZ package builds
-reproducible binary32 arithmetic on this library's element extension.
+separately rounded multiply/add stages; x86 and ARM use fused stages. The separate
+FTZ package builds reproducible binary32 arithmetic on this library's element
+extension.
 
 The [WebAssembly backend](docs/wasm-simd.md) supplies 128-bit integer, float and
 double vectors through `native.simd`, `native.wasm` and `native`. It includes
