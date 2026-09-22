@@ -70,14 +70,16 @@ padded two-word storage. The 128-bit inline-assembly boundary reverses the compl
 register byte order; 64-bit operands already have the ACLE representation.
 This is cross-compiled layout evidence, not execution on a big-endian host.
 
-The big-endian runtime interface excludes two-lane 64-bit `sqadd`, `uqadd`,
-`sqsub`, `uqsub`, and all eight variable-shift operations. They remain available
-in constant evaluation, including when `Arch` contains NEON. LLVM 23 emits five
-extra register-permutation instructions for each of these twelve forms compared
-with the equivalent ACLE leaf that retains its QC effect. Runtime calls to these
-shapes fail to compile instead of adding that cost. The remaining 110 forms stay
-runtime-eligible; no scalar runtime replacement or spilled implementation is used.
-The constraint tests include the actual public header in a small test module with
-the big-endian predefine and the host's storage ABI. They check twelve rejections,
-constant evaluation, and other-width positives; the separate cross-compiled
-register test supplies the big-endian ABI evidence.
+On big-endian AArch64, two-lane 64-bit `sqadd`, `uqadd`, `sqsub`, `uqsub`,
+and all eight variable-shift operations are available with a documented exception
+to the zero-overhead guarantee. LLVM 23 emits five extra register-permutation
+instructions for each of these twelve forms compared with the equivalent ACLE
+leaf that retains its QC effect. These are register operations, with no scalar
+fallback or extra memory accesses. Little-endian targets do not incur this cost.
+
+The big-endian compiler check validates all 122 shapes and records the extra
+instruction counts, rejecting additional overhead beyond these known permutations.
+It also verifies the resulting register bits and sticky QC effects against ACLE;
+this remains compiler evidence rather than big-endian hardware execution.
+Public shape checks cover constant and runtime participation of the twelve forms,
+other vector widths and scalar forms.

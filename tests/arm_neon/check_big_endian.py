@@ -5,8 +5,8 @@
 Compile exact production instruction and storage-bridge bodies freestanding.
 The ACLE leaf retains its result through side-effecting asm, so its call cannot
 be deleted when discarded; the tested noinline leaf still executes its QC update.
-Report instruction costs separately; public 64x2 restrictions do not hide the
-private lowering under investigation.
+Report the documented 64x2 register-permutation overhead separately from
+semantic correctness; these runtime shapes remain available.
 Only standard type/sequence declarations and attributes are supplied locally;
 no target sysroot or differently configured named-module provider is needed.
 Interpret emitted register permutations symbolically. Arithmetic results retain
@@ -177,7 +177,10 @@ for record in records:
     affected = record['return'] in ('int64x2_t', 'uint64x2_t')
     if not affected:
         assert len(native_body) <= len(reference_body), ('extra instructions', record['name'])
-    costs.append({'name': record['name'], 'runtime_eligible': not affected,
+    if affected:
+        assert len(native_body) - len(reference_body) <= 5, ('increased permutation cost', record['name'])
+    costs.append({'name': record['name'], 'runtime_eligible': True,
+                  'zero_overhead': len(native_body) <= len(reference_body),
                   'native': native_body, 'raw_qc': reference_body,
                   'extra_instructions': len(native_body) - len(reference_body)})
     expected = execute(functions['reference_' + record['name']], record)

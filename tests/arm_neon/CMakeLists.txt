@@ -64,25 +64,8 @@ add_test(NAME native.arm.neon.big_endian_codegen COMMAND "${Python3_EXECUTABLE}"
   --output-dir "${CMAKE_CURRENT_BINARY_DIR}/big-endian")
 set_tests_properties(native.arm.neon.big_endian_codegen PROPERTIES LABELS "arm;neon;codegen;big-endian")
 
-add_library(native_test_arm_neon_endian STATIC)
-target_sources(native_test_arm_neon_endian PUBLIC FILE_SET CXX_MODULES FILES endian.ccm)
-target_link_libraries(native_test_arm_neon_endian PUBLIC native::native)
-add_executable(native_test_arm_neon_endian_positive endian.cc)
-target_link_libraries(native_test_arm_neon_endian_positive PRIVATE native_test_arm_neon_endian)
-set_target_properties(native_test_arm_neon_endian_positive PROPERTIES CXX_SCAN_FOR_MODULES ON)
-add_test(NAME native.arm.neon.endian_constraints COMMAND native_test_arm_neon_endian_positive)
-set_tests_properties(native.arm.neon.endian_constraints PROPERTIES LABELS "arm;neon;constexpr;big-endian")
-foreach(op RANGE 0 11)
-  set(target native_test_arm_neon_endian_reject_${op})
-  add_library(${target} OBJECT EXCLUDE_FROM_ALL endian.cc)
-  target_link_libraries(${target} PRIVATE native_test_arm_neon_endian)
-  target_compile_definitions(${target} PRIVATE NATIVE_NEON_ENDIAN_REJECT=${op})
-  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
-  add_test(NAME native.arm.neon.endian_reject_${op} COMMAND "${Python3_EXECUTABLE}"
-    "${CMAKE_CURRENT_SOURCE_DIR}/../arm_fp16fml/check_negative.py"
-    --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
-    --config "$<CONFIG>" --diagnostic "call to consteval function.*not a constant expression"
-    --log "${CMAKE_CURRENT_BINARY_DIR}/endian-reject-${op}-$<CONFIG>.log")
-  set_tests_properties(native.arm.neon.endian_reject_${op} PROPERTIES
-    LABELS "arm;neon;negative;big-endian" RUN_SERIAL TRUE)
-endforeach()
+add_executable(native_test_arm_neon_shapes shapes.cc)
+target_link_libraries(native_test_arm_neon_shapes PRIVATE native::native)
+set_target_properties(native_test_arm_neon_shapes PROPERTIES CXX_SCAN_FOR_MODULES ON)
+add_test(NAME native.arm.neon.shapes COMMAND native_test_arm_neon_shapes)
+set_tests_properties(native.arm.neon.shapes PROPERTIES LABELS "arm;neon;constexpr")
