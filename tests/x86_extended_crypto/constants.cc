@@ -6,6 +6,7 @@ import native.x86.sha512;
 import native.x86.sm3;
 import native.x86.sm4;
 #include "checks.h"
+#include "seeded.h"
 using namespace native;
 static_assert(checks::sha512_abc<target_features<x86>("sha512")>());
 static_assert(checks::sha512_abc<target_features<x86>("avx2")>());
