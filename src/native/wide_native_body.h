@@ -44,6 +44,43 @@ namespace wide::detail {
       return fma(a, b, c);
 #endif
     }
+#if NATIVE_HOST_X86
+    // Exp only needs a normal power-of-two field, or zero. CVTT returns the
+    // signed indefinite integer for NaN/out-of-range inputs; MAX maps it and
+    // negative fields to zero without testing the floating-point input.
+    static inline constexpr V exp_factor(V biased) noexcept {
+      if consteval {
+        auto words=::native::detail::float_constant::words(biased);
+        for(auto & word:words) {
+          auto const magnitude=word & 0x7fffffffu;
+          auto const integer=magnitude>=0x4f000000u ? INT32_MIN :
+            ::native::detail::float_constant::fcvtzs(word);
+          word=std::uint32_t(integer>0 ? integer : 0)<<23;
+        }
+        return V::load_bits(words.data());
+      } else {
+        if constexpr(V::lanes==1) {
+          auto const integer=_mm_cvttss_si32(_mm_set_ss(biased.to_native()));
+          return V::from_bits(std::uint32_t(integer>0 ? integer : 0)<<23);
+        } else if constexpr(V::lanes==2 || V::lanes==3) {
+          // Zero input padding converts to zero and stays zero after the shift.
+          V result;
+          result.value=__builtin_bit_cast(typename V::native_type,
+            native_ops<typename V::storage_type>::exp_factor(biased.to_storage()).to_native());
+          return result;
+        }
+#if NATIVE_HAS_AVX2
+        else if constexpr(V::lanes==4) {
+          auto const integer=_mm_max_epi32(_mm_cvttps_epi32(biased.to_native()),_mm_setzero_si128());
+          return V::from_native(_mm_castsi128_ps(_mm_slli_epi32(integer,23)));
+        } else if constexpr(V::lanes==8) {
+          auto const integer=_mm256_max_epi32(_mm256_cvttps_epi32(biased.to_native()),_mm256_setzero_si256());
+          return V::from_native(_mm256_castsi256_ps(_mm256_slli_epi32(integer,23)));
+        }
+#endif
+      }
+    }
+#endif
     template<class M>
     static inline constexpr auto exp_scale(M in_range, V replacement, V y, V n) noexcept {
 #if NATIVE_HAS_AVX512F
@@ -58,6 +95,8 @@ namespace wide::detail {
         // the arithmetic chain and select the completed result below.
         auto const biased = ::native::fcvtzu(n + V(127.f));
         auto const result = y * V::from_bits(biased.template left<23>());
+#elif NATIVE_HOST_X86
+        auto const result = y * exp_factor(n + V(127.f));
 #else
         // This is exp's bounded reconstruction, not a scaling instruction.
         // Finite n within exp's output range is integral in [-150,128].

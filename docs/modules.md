@@ -279,16 +279,20 @@ flags select zero or infinity at the finish rather than clamping the input.
 Inputs at or above `88.3762664794921875f` return positive infinity. This deliberately
 gives up the last finite interval below true binary32 exp overflow.
 
-ARM constructs one power-of-two factor and applies one multiplication. The
-defined `fcvtzu` conversion maps a negative biased exponent or NaN to zero,
-so NaN polynomial values propagate without a NaN check or operand masks.
-Subnormal accuracy is not guaranteed: ARM returns zero when the reduced exponent
-is at most -127, and the caller's FP controls can flush other tiny results.
+ARM and x86 software reconstruction construct one power-of-two factor and apply
+one multiplication. ARM's defined `fcvtzu` conversion maps a negative biased
+exponent or NaN to zero. AVX2 uses `VCVTTPS2DQ`, clamps the signed integer to zero
+with `VPMAXSD`, then shifts it into the exponent field. NaN polynomial values
+propagate through the multiplication without a NaN check or operand masks.
+Subnormal accuracy is not guaranteed: these paths return zero when the reduced
+exponent is at most -127, and the caller's FP controls can flush other tiny results.
 `Flush=true` requests the earlier cutoff at `-87.33654022216796875f` on every
-backend. AVX2, Wasm and other scalar profiles retain their two-factor
-reconstruction; AVX-512 uses native scaling where the width and features admit
-it. These internal exp steps do not supply a public software scaling operation;
-NaN payloads are unspecified.
+backend. AVX-512 uses one masked `VSCALEFPS` where the width and features admit
+it, retaining the instruction's subnormal behavior. Wasm retains two-factor
+reconstruction. These internal exp steps do not supply a public software scaling
+operation; NaN payloads are unspecified. Range selection does not suppress
+exceptions from intermediate operations, and FP exception flags can differ
+between backends.
 Trig retains the finite `|x| < 8192` domain, coefficients, quadrant selection and
 signed-zero behavior. [The Wasm math fixture](../tests/wasm_math/README.md) checks
 these distinct rounding semantics and sampled error budgets; it is not an

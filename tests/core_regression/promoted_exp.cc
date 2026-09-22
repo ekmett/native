@@ -21,6 +21,8 @@ import native.math;
 #include <native/wide_math.h>
 #endif
 
+#include "support/exp_scaling.h"
+
 using scalar = native::simd<float, 1, native::scalar>;
 using scalar_mask = typename scalar::mask_type;
 using scalar_pack = std::array<scalar, 1>;
@@ -118,17 +120,17 @@ static void check_word(float input, float actual, float expected) {
 
 // Independent scalar form of wide_exp.cc's historical split-scale graph. It
 // remains available to an import consumer without using hidden native names.
-template<bool Flush> static float reference(float x) {
+template<bool Flush, class V = scalar> static float reference(float x) {
   if (std::isnan(x)) return x;
   if (x < (Flush ? -87.33654022216796875f : -104.f)) return 0.f;
   // The general exp contract intentionally overflows at its first n=128 input.
   if (x >= 88.3762664794921875f) return std::bit_cast<float>(0x7f800000u);
   float r = x > 88.72283935546875f ? 88.72283935546875f : x;
   float n = std::nearbyint(r * 1.4426950408889634f);
-#if defined(__aarch64__) || defined(_M_ARM64)
-  // ARM's single normal factor collapses exactly this band to positive zero.
-  if (n <= -127.f) return 0.f;
-#endif
+  // Software scaling collapses exactly this band; native VSCALEF keeps its
+  // existing subnormal results. Everywhere else retain the independent graph.
+  if constexpr (native::test::exp_uses_single_factor<V>)
+    if (n <= -127.f) return 0.f;
   r = std::fma(n, -0x1.62e400p-1f, r);
   r = std::fma(n, -0x1.7f7d1cp-20f, r);
   float y = std::fma(r, 0x1.a1d714d7b1510dp-13f, 0x1.6da756e670ea6p-10f);
@@ -149,7 +151,7 @@ template<bool Flush, class V> static void check_vector(V actual, std::array<floa
   std::array<float, V::lanes> output{};
   actual.storeu(output.data());
   for (std::size_t lane = 0; lane < V::lanes; ++lane)
-    check_word(input[lane], output[lane], reference<Flush>(input[lane]));
+    check_word(input[lane], output[lane], reference<Flush, V>(input[lane]));
 }
 
 static void shapes_and_masks() {

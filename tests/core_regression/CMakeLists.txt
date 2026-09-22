@@ -240,3 +240,23 @@ if(COMMAND native_link_clang_cl_asan)
   native_link_clang_cl_asan(native_test_wide_batch)
   native_link_clang_cl_asan(native_test_wide_value)
 endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
+  add_library(native_test_exp_scaling_codegen OBJECT exp_scaling_codegen.cc)
+  target_link_libraries(native_test_exp_scaling_codegen PRIVATE native::native)
+  set_target_properties(native_test_exp_scaling_codegen PROPERTIES
+    CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(native_test_exp_scaling_codegen PRIVATE /O2)
+  else()
+    target_compile_options(native_test_exp_scaling_codegen PRIVATE -O2 -fno-fast-math)
+  endif()
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  get_filename_component(exp_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+  find_program(exp_objdump NAMES llvm-objdump HINTS "${exp_compiler_dir}" REQUIRED)
+  add_test(NAME native.exp.scaling.codegen COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/check_exp_scaling.py" --objdump "${exp_objdump}"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/exp-scaling-$<CONFIG>.json"
+    $<TARGET_OBJECTS:native_test_exp_scaling_codegen> COMMAND_EXPAND_LISTS)
+  set_tests_properties(native.exp.scaling.codegen PROPERTIES LABELS "x86;math;modules;codegen")
+endif()

@@ -1,6 +1,7 @@
 #include "support/failure.h"
 #include "support/profile.h"
 #include "support/fp_environment.h"
+#include "support/exp_scaling.h"
 // Independent staged split-scale exponential reference. Separate names allow
 // this graph to coexist with the pack/native-scale implementation.
 import native.wide;
@@ -36,11 +37,10 @@ namespace exp_before {
         // Split scaling handles n=128 and subnormal results with normal factors.
         ((a.r = min(max(a.n, V(-126)), V(127))), ...);
         ((a.y = (a.y * normal_pow2(a.n - a.r)) * normal_pow2(a.r)), ...);
-#if defined(__aarch64__) || defined(_M_ARM64)
-        // ARM's single normal factor is zero for n <= -127. Preserve the
-        // independent historical graph everywhere outside that exact band.
-        ((a.y = select((a.n <= V(-127)) & (a.x == a.x), V(0.f), a.y)), ...);
-#endif
+        // Only software scaling collapses n <= -127. Preserve the independent
+        // historical graph everywhere else, including native VSCALEF shapes.
+        if constexpr (native::test::exp_uses_single_factor<V>)
+          ((a.y = select((a.n <= V(-127)) & (a.x == a.x), V(0.f), a.y)), ...);
         // General exp explicitly permits infinity from the first n=128 input.
         ((a.y = select(a.x >= V(88.3762664794921875f),
           V(std::numeric_limits<float>::infinity()), a.y)), ...);

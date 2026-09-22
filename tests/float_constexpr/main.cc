@@ -96,6 +96,14 @@ namespace fixture {
     store_simd_partial(static_cast<float*>(nullptr),filled,0);
     auto empty=::math::sincos(std::array<V,0>{});
     if(!empty.first.empty() || !::math::exp(std::array<V,0>{}).empty()) return false;
+    // Exp's exponent conversion must remain defined even though every lane
+    // reaches it before the final range selection.
+    for(auto word:{0x7f800001u,0x7fc12345u,0xff800001u,0xffc12345u})
+      if((bits(::math::exp(V::from_bits(word)))[0]&0x7fffffffu)<=0x7f800000u) return false;
+    for(auto word:{0x7f800000u,0x7f7fffffu})
+      if(bits(::math::exp(V::from_bits(word)))[0]!=0x7f800000u) return false;
+    for(auto word:{0xff800000u,0xff7fffffu})
+      if(bits(::math::exp(V::from_bits(word)))[0]!=0) return false;
     return expected<V>.size()==16 && math_expected<V>.size()==4;
   }
   template<std::size_t N> auto oracle(input<N> const& in) {
