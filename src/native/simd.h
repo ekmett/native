@@ -1,6 +1,7 @@
 #pragma once
 #include "native/config.h"
 #include "native/simd/common.h"
+#include "native/targets.h"
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "native/detail/constexpr_float.h"
 #include <tuple>
@@ -19,6 +20,26 @@ namespace native::detail::float_constant {
   constexpr std::uint32_t floor(std::uint32_t a) noexcept {return cf::round_integral_bits<f32>(a,cf::rounding::downward);}
   constexpr std::uint32_t ceil(std::uint32_t a) noexcept {return cf::round_integral_bits<f32>(a,cf::rounding::upward);}
   constexpr std::uint32_t trunc(std::uint32_t a) noexcept {return cf::round_integral_bits<f32>(a,cf::rounding::toward_zero);}
+  constexpr std::int32_t fcvtzs(std::uint32_t bits) noexcept {
+    auto const magnitude = bits & 0x7fffffffu;
+    if (magnitude > 0x7f800000u) return 0;
+    if (magnitude >= 0x4f000000u)
+      return (bits >> 31) ? INT32_MIN : INT32_MAX;
+    if (magnitude < 0x3f800000u) return 0;
+    auto const exponent = int(magnitude >> 23) - 127;
+    auto const significand = (magnitude & 0x007fffffu) | 0x00800000u;
+    auto const value = std::int32_t(exponent < 23
+      ? significand >> (23 - exponent) : significand << (exponent - 23));
+    return (bits >> 31) ? -value : value;
+  }
+  constexpr std::uint32_t fcvtzu(std::uint32_t bits) noexcept {
+    auto const magnitude = bits & 0x7fffffffu;
+    if ((bits >> 31) || magnitude > 0x7f800000u || magnitude < 0x3f800000u) return 0;
+    if (magnitude >= 0x4f800000u) return UINT32_MAX;
+    auto const exponent = int(magnitude >> 23) - 127;
+    auto const significand = (magnitude & 0x007fffffu) | 0x00800000u;
+    return exponent < 23 ? significand >> (23 - exponent) : significand << (exponent - 23);
+  }
   constexpr std::uint32_t power_of_two(std::uint32_t a) noexcept {return std::uint32_t(int(std::bit_cast<float>(a))+127)<<23;}
   constexpr bool less(std::uint32_t a,std::uint32_t b) noexcept {return cf::less_bits<f32>(a,b);}
   constexpr bool equal(std::uint32_t a,std::uint32_t b) noexcept {return cf::equal_bits<f32>(a,b);}
@@ -83,6 +104,7 @@ namespace native::detail::float_constant {
 #endif
 #if NATIVE_HOST_NEON
 #include <arm_neon.h>
+#include "native/arm/detail/register_order.h"
 #endif
 #define NATIVE_BACKEND_BODY "native/simd/simd_family.h"
 #include "native/simd/for_each_backend.h"
@@ -278,9 +300,28 @@ namespace native::detail::neon_fp16_backend {
   native_inline float16x8_t sqrt_half(float16x8_t a) noexcept { return vsqrtq_f16(a); }
   native_inline float16x8_t neg_half(float16x8_t a) noexcept { return vnegq_f16(a); }
   native_inline float16x8_t fma_half(float16x8_t a, float16x8_t b, float16x8_t c) noexcept { return vfmaq_f16(c,a,b); }
-  native_inline uint8x16_t eq_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vceqq_f16(a,b)); }
-  native_inline uint8x16_t lt_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vcltq_f16(a,b)); }
-  native_inline uint8x16_t le_half(float16x8_t a, float16x8_t b) noexcept { return vreinterpretq_u8_u16(vcleq_f16(a,b)); }
+  // Keep comparisons vectorized under strict FP flags and retain native status effects.
+  native_inline uint8x16_t eq_half(float16x8_t a, float16x8_t b) noexcept {
+    a=arm_register_order(a);
+    b=arm_register_order(b);
+    uint16x8_t bits;
+    asm volatile("fcmeq %0.8h, %1.8h, %2.8h" : "=w"(bits) : "w"(a), "w"(b) : "memory");
+    return vreinterpretq_u8_u16(arm_register_order(bits));
+  }
+  native_inline uint8x16_t lt_half(float16x8_t a, float16x8_t b) noexcept {
+    a=arm_register_order(a);
+    b=arm_register_order(b);
+    uint16x8_t bits;
+    asm volatile("fcmgt %0.8h, %1.8h, %2.8h" : "=w"(bits) : "w"(b), "w"(a) : "memory");
+    return vreinterpretq_u8_u16(arm_register_order(bits));
+  }
+  native_inline uint8x16_t le_half(float16x8_t a, float16x8_t b) noexcept {
+    a=arm_register_order(a);
+    b=arm_register_order(b);
+    uint16x8_t bits;
+    asm volatile("fcmge %0.8h, %1.8h, %2.8h" : "=w"(bits) : "w"(b), "w"(a) : "memory");
+    return vreinterpretq_u8_u16(arm_register_order(bits));
+  }
   native_inline float16x8_t select_half(uint8x16_t m, float16x8_t a, float16x8_t b) noexcept {
     return vbslq_f16(vreinterpretq_u16_u8(m),a,b);
   }

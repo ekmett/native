@@ -121,8 +121,14 @@ static void check_word(float input, float actual, float expected) {
 template<bool Flush> static float reference(float x) {
   if (std::isnan(x)) return x;
   if (x < (Flush ? -87.33654022216796875f : -104.f)) return 0.f;
+  // The general exp contract intentionally overflows at its first n=128 input.
+  if (x >= 88.3762664794921875f) return std::bit_cast<float>(0x7f800000u);
   float r = x > 88.72283935546875f ? 88.72283935546875f : x;
   float n = std::nearbyint(r * 1.4426950408889634f);
+#if defined(__aarch64__) || defined(_M_ARM64)
+  // ARM's single normal factor collapses exactly this band to positive zero.
+  if (n <= -127.f) return 0.f;
+#endif
   r = std::fma(n, -0x1.62e400p-1f, r);
   r = std::fma(n, -0x1.7f7d1cp-20f, r);
   float y = std::fma(r, 0x1.a1d714d7b1510dp-13f, 0x1.6da756e670ea6p-10f);
@@ -306,8 +312,9 @@ int main() {
   std::vector<std::uint32_t> words{0u, 0x80000000u, 1u, 0x80000001u,
     0x007fffffu, 0x807fffffu, 0x00800000u, 0x80800000u,
     0x7f7fffffu, 0xff7fffffu, 0x7f800000u, 0xff800000u,
-    0x7fc12345u, 0xffc12345u, 0x7f800001u, 0xff800001u};
-  for (auto boundary : {0xc2aeac50u, 0xc2d00000u, 0x42b17218u})
+    0x7fc12345u, 0xffc12345u, 0x7f800001u, 0xff800001u, 0x43320000u};
+  // c2af5dc3 is the first negative input with n=-127; 42b0c0a6 first has n=128.
+  for (auto boundary : {0xc2aeac50u, 0xc2af5dc3u, 0xc2d00000u, 0x42b0c0a6u, 0x42b17218u})
     for (int offset = -128; offset <= 128; ++offset)
       words.push_back(boundary + static_cast<std::uint32_t>(offset));
   std::uint32_t seed = 0x379bae12u;

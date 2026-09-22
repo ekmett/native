@@ -1,4 +1,4 @@
-# NEON integer instructions
+# NEON integer instructions and conversions
 
 `import native.arm.neon;`, `import native.arm;` and `import native;` expose typed
 NEON integer instructions on AArch64. Operands use `native::simd<T,N,Arch>`;
@@ -9,6 +9,8 @@ instruction modules.
 
 | Operations | Shapes and behavior |
 |---|---|
+| `fcvtzs` | Binary32 to signed 32-bit integer, truncating toward zero; ordinary `float` and `simd<float,N,Arch>` with 1–4 lanes |
+| `fcvtzu` | The corresponding unsigned conversion; NaNs and negative inputs produce zero, positive overflow produces `UINT32_MAX` |
 | `sqadd`, `uqadd`, `sqsub`, `uqsub` | Saturating signed/unsigned addition and subtraction; 8-, 16-, 32- and 64-bit lanes in 64 or 128 logical bits |
 | `sqxtn`, `uqxtn`, `sqxtun` | Saturating signed-to-signed, unsigned-to-unsigned and signed-to-unsigned narrowing; 128 input bits become 64 output bits, with 16→8, 32→16 or 64→32-bit lanes |
 | `sqxtn_high`, `uqxtn_high`, `sqxtun_high` | Preserve a 64-bit low argument and append the narrowed source above it, producing 128 bits |
@@ -23,6 +25,43 @@ Counts are not reduced modulo the element width. Arithmetic right shifts extend
 the sign, logical right shifts insert zero, and rounding adds one when the most
 significant discarded bit was set. Excessive shifts retain the architectural
 zero/sign-extension, rounding and saturation behavior.
+
+`fcvtzs` returns `std::int32_t` for a
+scalar float, or `simd<std::int32_t,N,Arch>` for a vector. NaNs produce zero;
+positive overflow and positive infinity produce `INT32_MAX`, while negative
+overflow and negative infinity produce `INT32_MIN`. Fractional inputs truncate
+toward zero independently of the rounding mode. Unlike an ordinary C++ cast,
+the instruction has defined results for every binary32 encoding.
+
+Both conversion names are exported by `native.simd`. The scalar overload
+defaults its architecture to the compiler baseline; a one-lane vector also
+accepts the scalar architecture. Multi-lane forms require
+NEON. Runtime calls use `vcvts_s32_f32` for scalar storage and
+`vcvtq_s32_f32` for a four-lane register (`vcvts_u32_f32` and `vcvtq_u32_f32`
+for unsigned results), including the existing padded two-
+and three-lane shapes. The wrapper adds no comparisons, branches or memory
+operations. Floating-point status effects belong to the executed instruction;
+constant evaluation computes the same integer result without accessing status.
+The separate `convert<std::int32_t>` operation retains its finite,
+representable-input precondition.
+
+Binary32 vector comparisons use `FCMEQ`, `FCMGT` and `FCMGE` directly, including
+under `-frounding-math`. Binary16 comparisons use the corresponding eight-lane
+instructions. `!=` complements equality; `<` and `<=` reverse the operands of
+`>` and `>=`. NaNs compare unordered, signed zeros compare equal, and the active
+FPCR denormal controls apply. Equality raises invalid for signaling NaNs;
+ordered inequalities also raise invalid for quiet NaNs. Existing sticky FPSR
+flags are retained, including when the comparison result is discarded. There
+are no status-register reads, writes or CPU fences around the comparison.
+Constant evaluation computes the mask without accessing machine status.
+Two- and three-lane binary32 masks retain their zero-padding normalization.
+
+On little-endian AArch64 a full register comparison adds no instructions beyond
+the comparison itself (`!=` also inverts its result). Big-endian Clang 23 needs
+six additional register-permutation instructions around these floating-point
+assembly wrappers compared with ACLE. That is an exception to zero overhead;
+the wrapper does not add loads, stores or scalar comparisons. The endian result
+is checked by cross-compilation, not execution on a big-endian machine.
 
 For multiply-high, compute the doubled full product and take its high half;
 the rounded form adds half a unit before truncating. The minimum-times-minimum

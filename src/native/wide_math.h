@@ -123,17 +123,17 @@ namespace wide::detail {
   };
   struct exp_scale {
     template<class M,class V>
-    native_inline constexpr auto operator()(M const & m,V const & a,V const & n) const {
-      return native_ops<V>::exp_scale(m,a,n);
+    native_inline constexpr auto operator()(M const & m,V const & replacement,V const & a,V const & n) const {
+      return native_ops<V>::exp_scale(m,replacement,a,n);
     }
   };
   template<class P,class Q,class R> requires liftable<polynomial_madd,P,Q,R>
   native_inline constexpr auto madd(P const & a,Q const & b,R const & c) noexcept {
     return lift(polynomial_madd{},a,b,c);
   }
-  template<class M,class P,class Q> requires liftable<exp_scale,M,P,Q>
-  native_inline constexpr auto scale_exp(M const & active,P const & y,Q const & n) noexcept {
-    return lift(exp_scale{},active,y,n);
+  template<class M,class P,class Q> requires liftable<exp_scale,M,P,P,Q>
+  native_inline constexpr auto scale_exp(M const & in_range,P const & replacement,P const & y,Q const & n) noexcept {
+    return lift(exp_scale{},in_range,replacement,y,n);
   }
   struct scale {
     template<class M,class V> requires requires(M m,V a) { masked_scaleb_zero(m,a,a); }
@@ -289,8 +289,15 @@ namespace math {
     native_nodiscard native_inline constexpr auto exp_reduced(std::array<V, N> const & x) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(x, value); };
       auto const active = ::wide::mask_not(::wide::cmp_lt(x, c(Flush ? -87.33654022216796875f : -104.f)));
-      // Keep x second: the ordered minimum preserves NaNs.
-      auto r = ::wide::min(c(88.72283935546875f), x);
+      // Classify independently; range flags are consumed only at the finish.
+      // Unordered comparisons leave NaNs on the arithmetic propagation path.
+      // Compare with the last binary32 input before n=128. Strict comparison
+      // keeps NaNs on the arithmetic path and needs only one lane comparison.
+      auto const overflow = ::wide::cmp_gt(x, c(88.37625885009765625f));
+      auto const in_range = ::wide::bit_and(active, ::wide::mask_not(overflow));
+      auto const replacement = ::wide::select(overflow,
+        c(std::bit_cast<float>(0x7f800000u)), c(0.f));
+      auto r = x;
       auto const n = ::wide::round_even(::wide::mul(r, c(1.4426950408889634f)));
       r = ::wide::detail::madd(n, c(-0x1.62e400p-1f), r);
       r = ::wide::detail::madd(n, c(-0x1.7f7d1cp-20f), r);
@@ -303,7 +310,7 @@ namespace math {
       auto const one = c(1.f);
       y = ::wide::detail::madd(r, y, one);
       y = ::wide::detail::madd(r, y, one);
-      return std::tuple{active, y, n};
+      return std::tuple{in_range, replacement, y, n};
     }
   }
 
@@ -317,8 +324,8 @@ namespace math {
       return std::remove_cvref_t<T>(input);
     } else {
       auto const x = ::wide::promote(input);
-      auto const [active, y, n] = detail::exp_reduced<Flush>(x);
-      return ::wide::demote<T>(::wide::detail::scale_exp(active, y, n));
+      auto const [in_range, replacement, y, n] = detail::exp_reduced<Flush>(x);
+      return ::wide::demote<T>(::wide::detail::scale_exp(in_range, replacement, y, n));
     }
   }
 }

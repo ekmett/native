@@ -143,6 +143,8 @@ static float madd(float a,float b,float c) {
 }
 static float exp_reference(float x,bool flush) {
   if (x < (flush ? -87.33654022216796875f : -104.f)) return 0.f;
+  // Keep the independent nonfused graph below the accepted early-overflow edge.
+  if (x >= 88.3762664794921875f) return std::numeric_limits<float>::infinity();
   float r=88.72283935546875f < x ? 88.72283935546875f : x;
   float n=std::nearbyint(r*1.4426950408889634f);
   r=madd(n,-0x1.62e400p-1f,r); r=madd(n,-0x1.7f7d1cp-20f,r);
@@ -176,10 +178,10 @@ __attribute__((target("simd128"),noinline)) static int run() {
     vector::load(runtime_input.data()+8)};
   shapes(shape_input); require(empty_shapes(),"empty shapes"); require(exp_corners(),"exp corners");
 
-  std::vector<float> exp_bank{0.f,-0.f,INFINITY,-INFINITY,NAN,
+  std::vector<float> exp_bank{0.f,-0.f,INFINITY,-INFINITY,NAN,178.f,
     std::bit_cast<float>(0x7f800001u),std::bit_cast<float>(0xffc12345u),
     std::numeric_limits<float>::max(),-std::numeric_limits<float>::max(),0x1p-149f,-0x1p-149f};
-  for(float x:{-104.f,-103.97208404541015625f,-87.33654022216796875f,88.72283935546875f}) neighbors(exp_bank,x);
+  for(float x:{-104.f,-103.97208404541015625f,-87.33654022216796875f,88.3762664794921875f,88.72283935546875f}) neighbors(exp_bank,x);
   std::vector<float> trig_bank{0.f,-0.f,0x1p-149f,-0x1p-149f,0x1.fffffcp-127f,-0x1.fffffcp-127f,
     8191.99951171875f,-8191.99951171875f};
   for(unsigned k=1;k<10430;++k) {
@@ -205,7 +207,8 @@ __attribute__((target("simd128"),noinline)) static int run() {
       exact(e[i],exp_reference(x[i],false)); exact(f[i],exp_reference(x[i],true));
       float expected=float(std::exp(double(x[i])));
       if(std::isnan(expected)) require(std::isnan(e[i]),"exp NaN");
-      else if(std::isinf(expected)) require(std::isinf(e[i]) && e[i]>0,"exp overflow/infinity");
+      else if(x[i]>=88.3762664794921875f || std::isinf(expected))
+        require(std::isinf(e[i]) && e[i]>0,"exp overflow/infinity");
       else {
         max_exp_ulp=std::max(max_exp_ulp,distance(e[i],expected));
         require(distance(e[i],expected)<=2,"exp exceeds 2 ULP");

@@ -119,6 +119,10 @@ export namespace native {
   using ::native::simd_mask_element;
   using ::native::flush_to_zero;
   using ::native::convert;
+#if NATIVE_HOST_NEON
+  using ::native::fcvtzs;
+  using ::native::fcvtzu;
+#endif
   using ::native::reinterpret_bits;
   using ::native::popcount;
   using ::native::pairwise_add_widened;

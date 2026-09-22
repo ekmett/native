@@ -60,10 +60,13 @@ are not exposed.
 
 ## Conversions, fixed-point and complex arithmetic
 
-[Base NEON integer instructions](arm-neon.md) provide saturating add/subtract,
+[Base NEON instructions](arm-neon.md) provide `fcvtzs` and `fcvtzu` conversion with
+defined NaN and saturation results, as well as saturating add/subtract,
 saturating narrowing, signed multiply-high and per-lane variable shifts with
-rounding and saturation variants. They require `arm_feature::neon`; operations
-that saturate preserve their sticky FPSR.QC effects, including discarded results.
+rounding and saturation variants. Vector forms require `arm_feature::neon`.
+Saturating integer arithmetic preserves its sticky FPSR.QC effects,
+including discarded results. Floating-to-integer conversions have their own
+floating-point exception effects rather than setting QC.
 
 [AVX-NE-CONVERT](x86-avxneconvert.md) supplies all fourteen binary16/BF16
 memory-widening and binary32-to-BF16 narrowing forms, without floating-point

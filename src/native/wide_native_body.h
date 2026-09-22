@@ -45,25 +45,33 @@ namespace wide::detail {
 #endif
     }
     template<class M>
-    static inline constexpr auto exp_scale(M active, V y, V n) noexcept {
+    static inline constexpr auto exp_scale(M in_range, V replacement, V y, V n) noexcept {
 #if NATIVE_HAS_AVX512F
       if constexpr (V::lanes == 1 || V::lanes == 16 || (NATIVE_HAS_AVX512VL && V::lanes > 1))
-        return masked_scaleb_zero(active, y, n);
+        return masked_scaleb(in_range, replacement, y, n);
       else
 #endif
       {
+#if NATIVE_HOST_NEON
+        // The biased field is unsigned: FCVTZU maps underflow and NaN to zero
+        // without a compare. NaN y survives the multiply. Range flags stay off
+        // the arithmetic chain and select the completed result below.
+        auto const biased = ::native::fcvtzu(n + V(127.f));
+        auto const result = y * V::from_bits(biased.template left<23>());
+#else
         // This is exp's bounded reconstruction, not a scaling instruction.
-        // Active finite n is integral in [-150,128], with y near exp's reduced
-        // argument. Split the biased exponent into two normal powers of two:
+        // Finite n within exp's output range is integral in [-150,128].
+        // Split the biased exponent into two normal powers of two:
         // the first product is exact and normal; only the second can underflow.
-        // NaN y propagates, but its exponent must not enter an integer cast.
-        n = select(active & (n == n), n, V(0.f));
-        y = select(active, y, V(0.f));
+        // Other scalar backends still use a C++ cast with a finite precondition.
+        n = select(in_range & (n == n), n, V(0.f));
         auto const biased = trig_integer(n + V(254.f));
         auto const first = biased.template right<1>();
         auto const second = biased - first;
-        return (y * V::from_bits(first.template left<23>())) *
+        auto const result = (y * V::from_bits(first.template left<23>())) *
           V::from_bits(second.template left<23>());
+#endif
+        return select(in_range, result, replacement);
       }
     }
     static inline constexpr auto scale_all(V a,V n) noexcept { return scaleb(a,n); }
@@ -83,11 +91,15 @@ namespace wide::detail {
     template<class T>
     static inline constexpr auto mask_words(V a) noexcept { return ::native::mask_bits<T>(a); }
 
-    // These conversions serve the bounded nonnegative math reducers.
-    // Its integer values are below INT32_MAX, matching the original signed
-    // native conversion instructions; this is not a general uint32 conversion.
+    // Math reducers retain the signed conversion's bits in unsigned storage
+    // for exponent fields and shifts. ARM uses the defined FCVTZS instruction;
+    // the other scalar/constant paths require a bounded nonnegative input.
     static inline constexpr auto trig_integer(V a) noexcept {
       using I=typename V::template rebind<std::uint32_t>;
+#if NATIVE_HOST_NEON
+      return I::from_native(__builtin_bit_cast(typename I::native_type,
+        ::native::fcvtzs(a).to_native()));
+#else
       if consteval {
         std::array<float,V::lanes> x{};std::array<std::uint32_t,V::lanes> y{};a.store(x.data());
         for(std::size_t i=0;i<V::lanes;++i) y[i]=static_cast<std::uint32_t>(x[i]);
@@ -103,12 +115,9 @@ namespace wide::detail {
 #if NATIVE_HAS_AVX512F
       else if constexpr (V::lanes==16) return I::from_native(_mm512_cvttps_epi32(a.value));
 #endif
-#if NATIVE_HAS_ARM_NEON
-      else if constexpr (V::lanes==4)
-        return I::from_native(vreinterpretq_u8_s32(vcvtq_s32_f32(a.value)));
-#endif
 #if NATIVE_HAS_WASM_SIMD128
       else if constexpr (V::lanes==4) return ::native::trunc_sat<std::uint32_t>(a);
+#endif
 #endif
     }
     static inline constexpr auto trig_float(V a) noexcept {

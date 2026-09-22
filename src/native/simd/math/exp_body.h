@@ -5,14 +5,15 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   native_nodiscard native_flatten native_inline constexpr native_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
     if constexpr (N == 0) return input;
     else {
-      auto const [masks, values, exponents] =
+      auto const [masks, replacements, values, exponents] =
         ::math::detail::exp_reduced<Flush>(::wide::promote(input));
-      auto const & [...active] = masks;
+      auto const & [...in_range] = masks;
+      auto const & [...replacement] = replacements;
       auto const & [...y] = values;
       auto const & [...n] = exponents;
       // Finish in this entry's target scope: the generic scaling bridge can
       // exceed Clang's inline-cost budget for AVX-512 without VL.
-      return {{::wide::detail::native_ops<V>::exp_scale(active, y, n)...}};
+      return {{::wide::detail::native_ops<V>::exp_scale(in_range, replacement, y, n)...}};
     }
   }
   template<bool Flush = false, float_register V>

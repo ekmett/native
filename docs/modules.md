@@ -273,12 +273,22 @@ ARM and scalar graphs retain FMA; cross-architecture bitwise equality is not a
 contract for these approximations. Neither public `fma` nor `wide::fma` acquires
 a nonfused Wasm implementation.
 
-Exp retains the degree-seven polynomial, nearest-integer reduction, cutoff
-policy, NaN/infinity classes and gradual underflow. Its internal reconstruction
-uses balanced normal power-of-two factors on ARM, AVX2, Wasm and scalar profiles,
-so tiny results round only at the final multiplication. AVX-512 uses native
-scaling where the vector width and features admit it. This bounded exp stage
-does not supply a public software scaling operation; NaN payloads are unspecified.
+Exp uses a degree-seven polynomial and nearest-even range reduction. Range
+comparisons run independently of that arithmetic: lower-cutoff and overflow
+flags select zero or infinity at the finish rather than clamping the input.
+Inputs at or above `88.3762664794921875f` return positive infinity. This deliberately
+gives up the last finite interval below true binary32 exp overflow.
+
+ARM constructs one power-of-two factor and applies one multiplication. The
+defined `fcvtzu` conversion maps a negative biased exponent or NaN to zero,
+so NaN polynomial values propagate without a NaN check or operand masks.
+Subnormal accuracy is not guaranteed: ARM returns zero when the reduced exponent
+is at most -127, and the caller's FP controls can flush other tiny results.
+`Flush=true` requests the earlier cutoff at `-87.33654022216796875f` on every
+backend. AVX2, Wasm and other scalar profiles retain their two-factor
+reconstruction; AVX-512 uses native scaling where the width and features admit
+it. These internal exp steps do not supply a public software scaling operation;
+NaN payloads are unspecified.
 Trig retains the finite `|x| < 8192` domain, coefficients, quadrant selection and
 signed-zero behavior. [The Wasm math fixture](../tests/wasm_math/README.md) checks
 these distinct rounding semantics and sampled error budgets; it is not an

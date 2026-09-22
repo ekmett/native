@@ -16,6 +16,40 @@ set_target_properties(native_test_arm_neon_participation PROPERTIES CXX_SCAN_FOR
 add_test(NAME native.arm.neon.participation COMMAND native_test_arm_neon_participation)
 set_tests_properties(native.arm.neon.participation PROPERTIES SKIP_RETURN_CODE 77 LABELS "arm;neon;modules")
 
+foreach(kind IN ITEMS header import)
+  set(target native_test_arm_conversions_${kind})
+  add_executable(${target} conversions.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
+  if(kind STREQUAL "header")
+    target_compile_definitions(${target} PRIVATE NATIVE_CONVERSION_HEADER=1)
+  endif()
+  add_test(NAME native.arm.neon.conversions.${kind} COMMAND ${target})
+  set_tests_properties(native.arm.neon.conversions.${kind} PROPERTIES
+    SKIP_RETURN_CODE 77 LABELS "arm;neon;modules;constexpr;math")
+endforeach()
+
+foreach(kind IN ITEMS header import)
+  set(target native_test_arm_comparisons_${kind})
+  add_executable(${target} comparisons.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  set_target_properties(${target} PROPERTIES
+    CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+  if(kind STREQUAL "header")
+    target_compile_definitions(${target} PRIVATE NATIVE_COMPARISON_HEADER=1)
+  endif()
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /O2 /fp:strict)
+  else()
+    target_compile_options(${target} PRIVATE
+      -O2 -Wall -Wextra -Werror -fno-fast-math -ffp-contract=off -frounding-math)
+  endif()
+  add_test(NAME native.arm.neon.comparisons.${kind} COMMAND ${target})
+  set_tests_properties(native.arm.neon.comparisons.${kind} PROPERTIES
+    SKIP_RETURN_CODE 77 LABELS "arm;neon;modules;constexpr;rounding;exact")
+endforeach()
+
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
@@ -30,11 +64,65 @@ set_target_properties(native_test_arm_neon_codegen PROPERTIES CXX_SCAN_FOR_MODUL
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(neon_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
 find_program(neon_objdump NAMES llvm-objdump HINTS "${neon_compiler_dir}" REQUIRED)
+foreach(kind IN ITEMS header import)
+  foreach(policy IN ITEMS ordinary rounding)
+    set(target native_test_arm_comparisons_codegen_${kind}_${policy})
+    add_library(${target} OBJECT comparisons_codegen.cc)
+    target_link_libraries(${target} PRIVATE native::native)
+    set_target_properties(${target} PROPERTIES
+      CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+    if(kind STREQUAL "header")
+      target_compile_definitions(${target} PRIVATE NATIVE_COMPARISON_HEADER=1)
+    endif()
+    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+      target_compile_options(${target} PRIVATE /O2)
+      if(policy STREQUAL "rounding")
+        target_compile_options(${target} PRIVATE /fp:strict)
+      else()
+        target_compile_options(${target} PRIVATE /fp:precise)
+      endif()
+    else()
+      target_compile_options(${target} PRIVATE -O2 -fno-fast-math -ffp-contract=off)
+      if(policy STREQUAL "rounding")
+        target_compile_options(${target} PRIVATE -frounding-math)
+      else()
+        target_compile_options(${target} PRIVATE -fno-rounding-math)
+      endif()
+    endif()
+    set(comparison_half_args)
+    if(kind STREQUAL "import")
+      list(APPEND comparison_half_args --half)
+    endif()
+    add_test(NAME native.arm.neon.comparisons.codegen.${kind}.${policy}
+      COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_comparisons.py"
+      --objdump "${neon_objdump}"
+      --output "${CMAKE_CURRENT_BINARY_DIR}/comparisons-${kind}-${policy}-$<CONFIG>.json"
+      ${comparison_half_args} $<TARGET_OBJECTS:${target}> COMMAND_EXPAND_LISTS)
+    set_tests_properties(native.arm.neon.comparisons.codegen.${kind}.${policy} PROPERTIES
+      LABELS "arm;neon;modules;codegen;rounding")
+  endforeach()
+endforeach()
+
 add_test(NAME native.arm.neon.codegen COMMAND "${Python3_EXECUTABLE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../arm_dotprod/check_equivalence.py"
   --objdump "${neon_objdump}" --output "${CMAKE_CURRENT_BINARY_DIR}/paired-$<CONFIG>.json"
   $<TARGET_OBJECTS:native_test_arm_neon_codegen> COMMAND_EXPAND_LISTS)
 set_tests_properties(native.arm.neon.codegen PROPERTIES LABELS "arm;neon;codegen")
+
+add_library(native_test_arm_conversions_codegen OBJECT conversions_codegen.cc)
+target_link_libraries(native_test_arm_conversions_codegen PRIVATE native::native)
+set_target_properties(native_test_arm_conversions_codegen PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_arm_conversions_codegen PRIVATE /O2)
+else()
+  target_compile_options(native_test_arm_conversions_codegen PRIVATE -O2)
+endif()
+add_test(NAME native.arm.neon.conversions.codegen COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../arm_dotprod/check_equivalence.py"
+  --objdump "${neon_objdump}" --output "${CMAKE_CURRENT_BINARY_DIR}/conversions-$<CONFIG>.json"
+  $<TARGET_OBJECTS:native_test_arm_conversions_codegen> COMMAND_EXPAND_LISTS)
+set_tests_properties(native.arm.neon.conversions.codegen PROPERTIES LABELS "arm;neon;codegen")
 
 foreach(kind IN ITEMS feature target shape)
   set(target native_test_arm_neon_reject_${kind})

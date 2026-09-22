@@ -36,6 +36,14 @@ namespace exp_before {
         // Split scaling handles n=128 and subnormal results with normal factors.
         ((a.r = min(max(a.n, V(-126)), V(127))), ...);
         ((a.y = (a.y * normal_pow2(a.n - a.r)) * normal_pow2(a.r)), ...);
+#if defined(__aarch64__) || defined(_M_ARM64)
+        // ARM's single normal factor is zero for n <= -127. Preserve the
+        // independent historical graph everywhere outside that exact band.
+        ((a.y = select((a.n <= V(-127)) & (a.x == a.x), V(0.f), a.y)), ...);
+#endif
+        // General exp explicitly permits infinity from the first n=128 input.
+        ((a.y = select(a.x >= V(88.3762664794921875f),
+          V(std::numeric_limits<float>::infinity()), a.y)), ...);
         return {{a.y...}};
       }
     };
@@ -48,7 +56,7 @@ namespace exp_before {
     };
   }
   // Sollya degree 7, tools/sollya_exp.sollya; coefficients round to FP32.
-  // Gradual underflow follows the caller's FP environment; no FTZ/DAZ changes.
+  // Apply the accepted range policy after the historical graph; no FP control changes.
   // Each dependency stage expands across independent register chains.
   template<float_register V, std::size_t N>
   native_nodiscard native_inline native_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
@@ -108,9 +116,9 @@ template<class V> void check(std::vector<unsigned> const & input) {
   }
 }
 int main() {
-  std::vector<unsigned> words{0,0x80000000u,0x7f800000u,0xff800000u,0x7fc00000u,0x7f800001u,0xff800001u,0xffffffffu};
+  std::vector<unsigned> words{0,0x80000000u,0x7f800000u,0xff800000u,0x7fc00000u,0x7f800001u,0xff800001u,0xffffffffu,0x43320000u};
   for(unsigned e=0;e<256;++e)for(unsigned f:{0u,1u,0x003fffffu,0x007ffffeu,0x007fffffu})for(unsigned s:{0u,0x80000000u})words.push_back(s|(e<<23)|f);
-  for(unsigned c:{0xc2aeac50u,0xc2d00000u,0x42b17218u})for(int d=-4096;d<=4096;++d)words.push_back(c+unsigned(d));
+  for(unsigned c:{0xc2aeac50u,0xc2af5dc3u,0xc2d00000u,0x42b0c0a6u,0x42b17218u})for(int d=-4096;d<=4096;++d)words.push_back(c+unsigned(d));
   for(unsigned b=0xc2aeac40u;b<0xc2d00010u;++b) words.push_back(b);
   unsigned random=0x379bae12u; for(unsigned i=0;i<1000000;++i){random^=random<<13;random^=random>>17;random^=random<<5;words.push_back(random);}
   auto saved=native::test::read_fp_state();

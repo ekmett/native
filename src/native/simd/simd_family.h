@@ -4158,20 +4158,30 @@ namespace native {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
       return simd(vnegq_f32(a.value));
     }
+    // Clang's ACLE comparisons become scalar constrained fcmp under
+    // -frounding-math. Keep the vector instruction and its FPCR/FPSR effects;
+    // the memory clobber orders environment accesses without a CPU fence.
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
-      if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
-      return mask_type::unsafe_from_native(vreinterpretq_u8_u32(vcltq_f32(a.value,b.value)));
+    native_nodiscard friend native_inline constexpr mask_type operator<(simd a, simd b) {
+      return b>a;
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr mask_type operator>(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
-      return mask_type::unsafe_from_native(vreinterpretq_u8_u32(vcgtq_f32(a.value,b.value)));
+      auto x=::native::detail::arm_register_order(a.value);
+      auto y=::native::detail::arm_register_order(b.value);
+      uint32x4_t bits;
+      asm volatile("fcmgt %0.4s, %1.4s, %2.4s" : "=w"(bits) : "w"(x), "w"(y) : "memory");
+      return mask_type::unsafe_from_native(vreinterpretq_u8_u32(::native::detail::arm_register_order(bits)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+    native_nodiscard friend native_inline constexpr mask_type operator==(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
-      return mask_type::unsafe_from_native(vreinterpretq_u8_u32(vceqq_f32(a.value,b.value)));
+      auto x=::native::detail::arm_register_order(a.value);
+      auto y=::native::detail::arm_register_order(b.value);
+      uint32x4_t bits;
+      asm volatile("fcmeq %0.4s, %1.4s, %2.4s" : "=w"(bits) : "w"(x), "w"(y) : "memory");
+      return mask_type::unsafe_from_native(vreinterpretq_u8_u32(::native::detail::arm_register_order(bits)));
     }
     /// Choose a in true mask lanes and b in false lanes; both values are already evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
@@ -4264,11 +4274,22 @@ namespace native {
     /// Apply the corresponding lane-wise divide operation in place and return *this.
     native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    native_nodiscard friend native_inline constexpr mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    native_nodiscard friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept { return b>=a; }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    native_nodiscard friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept {
+      if consteval {
+        return ::native::detail::float_constant::compare([](auto x,auto y) {
+          return ::native::detail::float_constant::less(y,x) || ::native::detail::float_constant::equal(x,y);
+        },a,b);
+      }
+      auto x=::native::detail::arm_register_order(a.value);
+      auto y=::native::detail::arm_register_order(b.value);
+      uint32x4_t bits;
+      asm volatile("fcmge %0.4s, %1.4s, %2.4s" : "=w"(bits) : "w"(x), "w"(y) : "memory");
+      return mask_type::unsafe_from_native(vreinterpretq_u8_u32(::native::detail::arm_register_order(bits)));
+    }
   };
 #endif
   namespace detail::NATIVE_BACKEND {
@@ -4432,6 +4453,84 @@ namespace native {
     return simd<float,N,Arch>::from_bits(a.bits() & typename simd<float,N,Arch>::bits_type(0x7fffffffu));
   }
 
+#if NATIVE_HOST_NEON
+  /// \ingroup vector_math
+  /// AArch64 FCVTZS: truncate binary32 lanes to signed 32-bit integers.
+  /// NaNs produce zero; overflow saturates to INT32_MIN or INT32_MAX.
+  /// Runtime conversion retains the instruction's floating-point status effects.
+  template<std::size_t N, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
+  native_nodiscard native_inline constexpr simd<std::int32_t,N,Arch>
+  fcvtzs(simd<float,N,Arch> x) noexcept {
+    using I = simd<std::int32_t,N,Arch>;
+    if consteval {
+      std::array<float,N> values{};
+      std::array<std::int32_t,N> result{};
+      x.store(values.data());
+      for (std::size_t i = 0; i < N; ++i)
+        result[i] = detail::float_constant::fcvtzs(std::bit_cast<std::uint32_t>(values[i]));
+      return I::load(result.data());
+    } else {
+      if constexpr (N == 1) return I(vcvts_s32_f32(x.value));
+      else if constexpr (N == 2 || N == 3) {
+        // Short float padding is zero, and conversion preserves that invariant.
+        I result;
+        result.value = __builtin_bit_cast(typename I::native_type,
+          fcvtzs(x.to_storage()).to_native());
+        return result;
+      }
+#if NATIVE_HAS_ARM_NEON
+      else if constexpr (N == 4)
+        return I::from_native(vreinterpretq_u8_s32(vcvtq_s32_f32(x.value)));
+#endif
+    }
+  }
+
+  /// Scalar AArch64 FCVTZS, with the same defined NaN and saturation results.
+  template<::native::isa<> Arch = NATIVE_BASELINE, class T>
+    requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,float>
+  native_nodiscard native_inline constexpr std::int32_t fcvtzs(T x) noexcept {
+    return fcvtzs(simd<float,1,Arch>(x)).value;
+  }
+
+  /// \ingroup vector_math
+  /// AArch64 FCVTZU: truncate binary32 lanes to unsigned 32-bit integers.
+  /// NaNs and negative inputs produce zero; positive overflow saturates to UINT32_MAX.
+  template<std::size_t N, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
+  native_nodiscard native_inline constexpr simd<std::uint32_t,N,Arch>
+  fcvtzu(simd<float,N,Arch> x) noexcept {
+    using I = simd<std::uint32_t,N,Arch>;
+    if consteval {
+      std::array<float,N> values{};
+      std::array<std::uint32_t,N> result{};
+      x.store(values.data());
+      for (std::size_t i = 0; i < N; ++i)
+        result[i] = detail::float_constant::fcvtzu(std::bit_cast<std::uint32_t>(values[i]));
+      return I::load(result.data());
+    } else {
+      if constexpr (N == 1) return I(vcvts_u32_f32(x.value));
+      else if constexpr (N == 2 || N == 3) {
+        I result;
+        result.value = __builtin_bit_cast(typename I::native_type,
+          fcvtzu(x.to_storage()).to_native());
+        return result;
+      }
+#if NATIVE_HAS_ARM_NEON
+      else if constexpr (N == 4)
+        return I::from_native(vreinterpretq_u8_u32(vcvtq_u32_f32(x.value)));
+#endif
+    }
+  }
+
+  /// Scalar AArch64 FCVTZU, with the same defined NaN and saturation results.
+  template<::native::isa<> Arch = NATIVE_BASELINE, class T>
+    requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,float>
+  native_nodiscard native_inline constexpr std::uint32_t fcvtzu(T x) noexcept {
+    return fcvtzu(simd<float,1,Arch>(x)).value;
+  }
+#endif
+
   // Truncating float-to-integer conversion requires a representable result.
   /// \ingroup vector_math
   /// Convert floats to signed 32-bit integers by truncation toward zero.
@@ -4577,8 +4676,8 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
     std::same_as<typename V::value_type,float> && ::NATIVE_BACKEND_NAMESPACE::float_shape<V::lanes> && (::native::abi_lookup<V::architecture,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
   // Ordered comparison: second operand wins on equality or unordered, including
   // signed zero and NaNs, identically on each architecture.
-  template<float_register V> native_nodiscard native_inline constexpr native_const V min(V a, V b) { return select(a < b, a, b); }
-  template<float_register V> native_nodiscard native_inline constexpr native_const V max(V a, V b) { return select(a > b, a, b); }
+  template<float_register V> native_nodiscard native_inline constexpr V min(V a, V b) { return select(a < b, a, b); }
+  template<float_register V> native_nodiscard native_inline constexpr V max(V a, V b) { return select(a > b, a, b); }
   template<float_register V> native_nodiscard native_inline native_pure float reduce_add(V v) {
     std::array<float, V::lanes> a; v.storeu(a.data()); float sum = 0;
     for (float x : a) sum += x; // Increasing lane order, FP32.
@@ -4865,9 +4964,9 @@ namespace native {
     /// Return a mask whose lanes are true where `a > b` holds.
     native_nodiscard friend native_inline constexpr mask_type operator>(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()>b.to_storage()); }
     /// Return a mask whose lanes are true where `a <= b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return (a<b)|(a==b); }
+    native_nodiscard friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()<=b.to_storage()); }
     /// Return a mask whose lanes are true where `a >= b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return (a>b)|(a==b); }
+    native_nodiscard friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()>=b.to_storage()); }
     /// Choose a in true mask lanes and b in false lanes; both values are already evaluated.
     template<class M> requires(std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
     native_nodiscard friend native_inline constexpr simd select(M mask,simd a,simd b) noexcept {
