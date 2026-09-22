@@ -14,7 +14,7 @@ foreach(width IN ITEMS 8 16 32)
     set(register xmm)
     set(wider_register "[yz]mm")
   endif()
-  execute_process(COMMAND "${OBJDUMP}" -d --no-show-raw-insn "--disassemble-symbols=${symbol}" "${OBJECT}"
+  execute_process(COMMAND "${OBJDUMP}" -d --no-show-raw-insn "--disassemble-symbols=${SYMBOL_PREFIX}${symbol}" "${OBJECT}"
     RESULT_VARIABLE status OUTPUT_VARIABLE assembly ERROR_VARIABLE errors)
   if(NOT status EQUAL 0)
     message(FATAL_ERROR "objdump failed: ${errors}")

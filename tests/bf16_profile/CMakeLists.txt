@@ -51,6 +51,7 @@ get_target_property(bf16_usage_options native::minimal INTERFACE_COMPILE_OPTIONS
 if(NATIVE_BF16_OBJDUMP AND NOT bf16_usage_options MATCHES "sanitize=address")
   add_test(NAME native.bf16.codegen COMMAND "${CMAKE_COMMAND}"
     "-DOBJDUMP=${NATIVE_BF16_OBJDUMP}" "-DOBJECT=$<TARGET_OBJECTS:native_bf16_kernel>"
+    "-DSYMBOL_PREFIX=$<$<PLATFORM_ID:Darwin>:_>"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/codegen.cmake")
   set_tests_properties(native.bf16.codegen PROPERTIES LABELS "host;modules;bf16;codegen")
 endif()
