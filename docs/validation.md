@@ -49,9 +49,12 @@ ARM64 hosts, including relocated consumers and compiler-minimum boundaries.
 Paired probes compare compiled Wasm
 bytecode; they do not measure engine JIT machine code or execution overhead.
 Separate raw-engine jobs verify the built modules' source revision and hashes
-before testing Node and Wasmtime. Known conformance discrepancies remain ordinary
-failures, as described in the [relaxed SIMD checks](../tests/wasm_relaxed/README.md);
-passing library checks does not establish full engine conformance.
+before testing Node and Wasmtime. Engine conformance probes are advisory: failures
+produce warnings and job summaries, with full test results retained as artifacts.
+They do not fail the workflow or block library qualification. Setup and provenance
+checks remain gating. The [relaxed SIMD checks](../tests/wasm_relaxed/README.md)
+document the known discrepancies; passing library checks does not establish full
+engine conformance.
 New manual Wasm runs cancel older runs on the same ref. Library and engine
 artifacts share the three-day retention limit.
 

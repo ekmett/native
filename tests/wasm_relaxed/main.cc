@@ -277,7 +277,7 @@ namespace wasm_relaxed_test {
       wasm_v128_store(raw_added.data(), wasm_i32x4_relaxed_dot_i8x16_i7x16_add(
         av.to_native(), bv.to_native(), accumulator::load(c.data()).to_native()));
       check(output == raw_output && added == raw_added, "raw/public dot agreement", trial, 0);
-      // The separate raw-engine gate checks full-bit operand conformance and the
+      // The separate raw-engine probe checks full-bit operand conformance and the
       // globally fixed interpretation, including the overflowing signed pair.
       if (trial != 0 && trial < 512) {
         std::array<std::int16_t, 8> pairs{};
@@ -310,5 +310,5 @@ int main() {
     std::printf("%u relaxed SIMD conformance failures\n", failures);
     return 1;
   }
-  std::puts("All 20 relaxed SIMD wrappers pass; full-bit dot engine conformance is a separate gate");
+  std::puts("All 20 relaxed SIMD wrappers pass; full-bit dot engine conformance is advisory");
 }

@@ -8,7 +8,7 @@ cmake -S tests/wasm_relaxed -B build-consumer -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE=/path/to/wasi-sdk/share/cmake/wasi-sdk-p1.cmake \
   -DCMAKE_PREFIX_PATH=/path/to/native-install
 cmake --build build-consumer --parallel
-ctest --test-dir build-consumer --output-on-failure
+ctest --test-dir build-consumer -LE engine-conformance --output-on-failure
 ```
 
 Node must admit SIMD128 and relaxed SIMD. Validation failure is a test failure,
@@ -39,28 +39,30 @@ not a skip. The fixture runs these checks:
   Diagnostics remain in `reject-*.log`; disassembly remains in `codegen.log`.
 - `engine.dot` is a standalone raw-intrinsic executable with no native library or
   module dependency. It checks the current specification's globally fixed,
-  saturating interpretation on two full-bit dot inputs. It is a conformance gate,
-  with no expected-failure or skip annotation.
+  saturating interpretation on two full-bit dot inputs. It is an advisory
+  conformance probe; its oracle still reports disagreements as failures.
 - `engine.laneselect` independently checks raw lane-selection instructions against
   one fixed bit-selection or whole-lane interpretation shared by all four widths,
   lanes and calls. Its partial mask checks remain strict even when a wrapper
   matches the raw instruction.
 
 When `NATIVE_WASM_WASMTIME` names a Wasmtime executable, CTest also runs the
-wrapper/property executable and both raw engine gates there, then both raw gates
+wrapper/property executable and both raw engine probes there, then both raw probes
 with Wasmtime's deterministic relaxed-SIMD option. The raw executables accept
 `--deterministic` to require parameter zero: signed, saturated dot pairs and bit
 selection. This argument changes the oracle; it does not configure the engine.
 
-CI reports **Library qualification** and **Raw engine conformance** as separate
+CI reports **Library qualification** and **Advisory engine conformance** as separate
 checks on each host. Library qualification runs the source tests, exact opcode
 comparisons, relocated consumers and compiler-minimum checks. The raw-engine
 job consumes the two raw modules from that same build, verifies their source
-revision and SHA256 digests, then runs all six conformance gates under Node 24
-and the same verified Wasmtime release. Both checks retain ordinary failure
-semantics and upload their logs; known engine failures are not suppressed.
+revision and SHA256 digests, then runs all six conformance probes under Node 24
+and the same verified Wasmtime release. Probe failures produce a warning and
+job summary, with test output and JUnit results retained as artifacts. They do
+not fail the workflow or block library qualification. Setup, provenance checks
+and library tests remain gating.
 
-The raw-module artifact contains `dot.wasm` and `laneselect.wasm`. Its gates can
+The raw-module artifact contains `dot.wasm` and `laneselect.wasm`. Its probes can
 also be run without rebuilding the library or installing a WASI compiler:
 
 ```sh
@@ -70,7 +72,10 @@ ctest --test-dir build-engine --no-tests=error --output-on-failure
 ```
 
 This test project requires both Node and Wasmtime and shares its six test
-registrations with the source and installed-consumer fixtures.
+registrations with the source and installed-consumer fixtures. These tests carry
+the `engine-conformance` and `advisory` labels. A direct CTest invocation still
+returns failure when a probe disagrees with the oracle; the CI test step makes
+that result non-gating. Use `-LE engine-conformance` for library qualification.
 
 ## Raw-engine conformance discrepancies
 

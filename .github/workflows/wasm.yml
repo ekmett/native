@@ -180,7 +180,7 @@ jobs:
             build/wasm_boundaries/boundaries/
 
   engine:
-    name: Raw engine conformance / Node 24 + Wasmtime 49 / ${{ matrix.platform.name }}
+    name: Advisory engine conformance / Node 24 + Wasmtime 49 / ${{ matrix.platform.name }}
     needs: library
     if: ${{ !cancelled() && needs.library.result != 'skipped' }}
     runs-on: ${{ matrix.platform.runner }}
@@ -238,13 +238,28 @@ jobs:
             node --version
             wasmtime --version
           } | tee build/wasm-engine-environment.log
-      - name: Check all six raw engine conformance gates
+      - name: Configure raw engine conformance probes
         run: |
           cmake -S tests/wasm_relaxed/engine -B build/engine \
             "-DNATIVE_WASM_ENGINE_MODULE_DIR=$GITHUB_WORKSPACE/build/raw-engine"
           ctest --test-dir build/engine --show-only=json-v1 > build/wasm-engine-tests.json
+      - name: Run advisory raw engine conformance probes
+        id: conformance
+        continue-on-error: true
+        run: |
           ctest --test-dir build/engine --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/wasm-engine-tests.xml"
+      - name: Note engine conformance discrepancies
+        if: ${{ !cancelled() && steps.conformance.outcome == 'failure' }}
+        run: |
+          echo "::warning::Raw relaxed-SIMD engine conformance probes failed; these results are advisory."
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Relaxed-SIMD engine conformance (advisory)
+
+          Raw engine probes reported failures. They do not block library qualification or fail this workflow.
+          The test output, JUnit report and raw modules are retained in this job's artifacts.
+          See the [documented discrepancies](https://github.com/ekmett/native/blob/$GITHUB_SHA/tests/wasm_relaxed/README.md#raw-engine-conformance-discrepancies).
+          EOF
       - name: Retain raw engine modules and conformance logs
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

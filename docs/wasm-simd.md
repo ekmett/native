@@ -103,7 +103,7 @@ cmake -S . -B build-wasm -G Ninja \
   -DNATIVE_TEST_ISA=WASM_SIMD128 -DNATIVE_PROFILES=WASM_SIMD128 \
   -DCMAKE_BUILD_TYPE=Release
 cmake --build build-wasm
-ctest --test-dir build-wasm --output-on-failure
+ctest --test-dir build-wasm -LE engine-conformance --output-on-failure
 ```
 
 The SIMD128 tests compile constant assertions, execute seeded integer,

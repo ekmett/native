@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-# Shared by source/package tests and the artifact-only CI conformance job.
+# Shared by source/package tests and the advisory artifact-only CI job.
 function(native_add_wasm_engine_tests dot_module laneselect_module)
   add_test(NAME native.wasm.relaxed.engine.dot COMMAND "${NATIVE_WASM_NODE}"
     "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run.mjs" "${dot_module}")
@@ -7,7 +7,7 @@ function(native_add_wasm_engine_tests dot_module laneselect_module)
     "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/run.mjs" "${laneselect_module}")
   set_tests_properties(native.wasm.relaxed.engine.dot
     native.wasm.relaxed.engine.laneselect PROPERTIES
-    LABELS "wasm;engine-conformance;relaxed_simd")
+    LABELS "wasm;engine-conformance;advisory;relaxed_simd")
 
   if(NATIVE_WASM_WASMTIME)
     add_test(NAME native.wasm.relaxed.wasmtime.dot_engine COMMAND "${NATIVE_WASM_WASMTIME}"
@@ -24,6 +24,6 @@ function(native_add_wasm_engine_tests dot_module laneselect_module)
       native.wasm.relaxed.wasmtime.dot_deterministic
       native.wasm.relaxed.wasmtime.laneselect_engine
       native.wasm.relaxed.wasmtime.laneselect_deterministic PROPERTIES
-      LABELS "wasm;wasmtime;engine-conformance;relaxed_simd")
+      LABELS "wasm;wasmtime;engine-conformance;advisory;relaxed_simd")
   endif()
 endfunction()

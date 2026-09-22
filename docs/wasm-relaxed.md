@@ -65,8 +65,9 @@ engine/specification disagreements
 in tested runtimes. Seven-bit second operands avoid the dot ambiguity, and
 canonical zero/all-one masks have exact lane-selection semantics.
 
-CI reports library qualification and raw-engine conformance independently.
-Raw probes use the same built modules and retain ordinary test failures.
+CI reports library qualification and advisory raw-engine conformance independently.
+Raw probes use the same built modules. Their failures are recorded in warnings,
+job summaries and artifacts, and do not fail the workflow or block qualification.
 The public wrappers inherit the documented engine deviations on affected inputs;
 passing the library checks does not establish full runtime specification
 conformance on those engines.
