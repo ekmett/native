@@ -102,7 +102,7 @@ namespace abi_lookup_test {
   static_assert(static_cast<unsigned>(x86_feature::vaes)==42);
   static_assert(static_cast<unsigned>(x86_feature::avxifma)==43);
   static_assert(static_cast<unsigned>(x86_feature::adx)==44);
-  static_assert(x86_feature_count==45);
+  static_assert(x86_feature_count==49);
   static_assert([] {
     isa<x86> a{};
     a.crc32=true;
