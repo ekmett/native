@@ -1,0 +1,55 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/config.h"
+#include "native/attributes.h"
+#include "native/targets.h"
+#include <bit>
+#include <cstdint>
+
+export module native.arm.jscvt;
+export import native.arm.features;
+
+namespace native::detail {
+  constexpr std::int32_t jcvt_constant(double value) noexcept {
+    auto bits = std::bit_cast<std::uint64_t>(value);
+    auto exponent = unsigned((bits >> 52) & 0x7ff);
+    // NaNs, infinities, zeros and magnitudes below one all convert to zero.
+    if (exponent == 0x7ff || exponent < 1023) return 0;
+    int shift = int(exponent) - 1023 - 52;
+    if (shift >= 32) return 0;
+    auto significand = (bits & 0x000fffffffffffffULL) | 0x0010000000000000ULL;
+    auto result = shift >= 0 ? std::uint32_t(significand) << shift
+                            : std::uint32_t(significand >> -shift);
+    if (bits >> 63) result = std::uint32_t(0) - result;
+    return std::bit_cast<std::int32_t>(result);
+  }
+}
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  /// \defgroup arm_jscvt ARM Javascript conversion
+  /// Convert binary64 to a signed word by truncating and reducing modulo 2^32.
+  /// NaNs, infinities and signed zeros convert to zero. Runtime calls use the
+  /// current floating-point environment; constant evaluation has no FP effects.
+  /// \{
+
+  /// Convert a double using FJCVTZS; requires the jsconv feature and matching compiler target.
+  template<isa<arm> Arch = NATIVE_BASELINE> requires(Arch.has(arm_feature::jsconv))
+  native_nodiscard native_inline native_target("jsconv") constexpr std::int32_t
+  jcvt(double value) noexcept {
+    if consteval {
+      return detail::jcvt_constant(value);
+    } else {
+      return __builtin_arm_jcvt(value);
+    }
+  }
+
+  /// Evaluate constant inputs when the architecture does not permit FJCVTZS.
+  template<isa<arm> Arch = NATIVE_BASELINE> requires(!Arch.has(arm_feature::jsconv))
+  native_nodiscard consteval std::int32_t jcvt(double value) noexcept {
+    return detail::jcvt_constant(value);
+  }
+  /// \}
+}
+#endif

@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+cmake_minimum_required(VERSION 4.4)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_arm_jscvt_consumer LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+  enable_testing()
+endif()
+foreach(interface RANGE 0 2)
+  set(target native_test_arm_jscvt_${interface})
+  add_executable(${target} main.cc)
+  target_compile_definitions(${target} PRIVATE NATIVE_TEST_INTERFACE=${interface})
+  if(interface EQUAL 0)
+    target_link_libraries(${target} PRIVATE native::minimal)
+  else()
+    target_link_libraries(${target} PRIVATE native::native)
+  endif()
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
+  add_test(NAME native.arm.jscvt.${interface} COMMAND ${target})
+  set_tests_properties(native.arm.jscvt.${interface} PROPERTIES SKIP_RETURN_CODE 77
+    LABELS "arm;jscvt;modules;constexpr")
+endforeach()
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  return()
+endif()
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+get_filename_component(compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+find_program(jscvt_objdump NAMES llvm-objdump HINTS "${compiler_dir}" REQUIRED)
+add_library(native_test_arm_jscvt_codegen OBJECT codegen.cc)
+target_link_libraries(native_test_arm_jscvt_codegen PRIVATE native::minimal)
+set_target_properties(native_test_arm_jscvt_codegen PROPERTIES CXX_SCAN_FOR_MODULES ON
+  INTERPROCEDURAL_OPTIMIZATION FALSE)
+add_test(NAME native.arm.jscvt.codegen COMMAND "${Python3_EXECUTABLE}"
+  "${PROJECT_SOURCE_DIR}/tests/arm_dotprod/check_equivalence.py"
+  --objdump "${jscvt_objdump}" --output "${CMAKE_CURRENT_BINARY_DIR}/paired-$<CONFIG>.json"
+  $<TARGET_OBJECTS:native_test_arm_jscvt_codegen> COMMAND_EXPAND_LISTS)
+set_tests_properties(native.arm.jscvt.codegen PROPERTIES LABELS "arm;jscvt;codegen")
+foreach(weak RANGE 0 1)
+  set(target native_test_arm_jscvt_negative_${weak})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL negative.cc)
+  target_link_libraries(${target} PRIVATE native::minimal)
+  target_compile_definitions(${target} PRIVATE NATIVE_TEST_WEAK=${weak})
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /clang:-mcpu=generic /clang:-march=armv8-a)
+  else()
+    target_compile_options(${target} PRIVATE -mcpu=generic -march=armv8-a)
+  endif()
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
+  if(weak)
+    set(diagnostic "call to consteval function.*not a constant expression")
+  else()
+    set(diagnostic "requires target feature.*jsconv|requires target feature.*jscvt|target specific option mismatch")
+  endif()
+  add_test(NAME native.arm.jscvt.reject_${weak} COMMAND "${Python3_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/tests/arm_fp16fml/check_negative.py"
+    --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
+    --config "$<CONFIG>" --diagnostic "${diagnostic}"
+    --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${weak}-$<CONFIG>.log")
+  set_tests_properties(native.arm.jscvt.reject_${weak} PROPERTIES
+    LABELS "arm;jscvt;negative" RUN_SERIAL TRUE)
+endforeach()

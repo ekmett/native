@@ -69,6 +69,10 @@ that saturate preserve their sticky FPSR.QC effects, including discarded results
 not supply half-precision arithmetic. Its immediate controls rounding, and
 conversion may update MXCSR or trap according to the caller's exception masks.
 
+[ARM JSCVT](arm-jscvt.md) converts a scalar double to a signed 32-bit word
+with truncation and modular wrap, including defined results for infinities and
+NaNs. It requires `jsconv` independently of vector arithmetic.
+
 On AArch64, [FHM](arm-fp16fml.md) multiplies FP16 inputs and accumulates directly
 into FP32 with one fused rounding per result. [RDM](arm-rdm.md) combines a
 fixed-point product and accumulator before rounding and saturation; saturation
