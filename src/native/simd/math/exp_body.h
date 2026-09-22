@@ -12,7 +12,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
       auto const & [...n] = exponents;
       // Finish in this entry's target scope: the generic scaling bridge can
       // exceed Clang's inline-cost budget for AVX-512 without VL.
-      return {{masked_scaleb_zero(active, y, n)...}};
+      return {{::wide::detail::native_ops<V>::exp_scale(active, y, n)...}};
     }
   }
   template<bool Flush = false, float_register V>

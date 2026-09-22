@@ -46,21 +46,25 @@ namespace wide::detail {
     }
     template<class M>
     static inline constexpr auto exp_scale(M active, V y, V n) noexcept {
-#if NATIVE_HAS_WASM_SIMD128
-      // exp's admitted lanes have integral -150 <= n <= 128 (or NaN).
-      // Two normal factors postpone subnormal rounding to the final multiply.
-      // Zero inactive lanes before converting their unbounded exponents.
-      n = select(active, n, V(0.f));
-      y = select(active, y, V(0.f));
-      V last = select(n < V(-126.f), V(-126.f), select(n > V(127.f), V(127.f), n));
-      auto power = [](V exponent) {
-        // Bias before unsigned conversion; both factors have normal exponents.
-        return V::from_bits(::native::trunc_sat<std::uint32_t>(exponent + V(127.f)).template left<23>());
-      };
-      return select(active, (y * power(n - last)) * power(last), V(0.f));
-#else
-      return masked_scaleb_zero(active, y, n);
+#if NATIVE_HAS_AVX512F
+      if constexpr (V::lanes == 1 || V::lanes == 16 || (NATIVE_HAS_AVX512VL && V::lanes > 1))
+        return masked_scaleb_zero(active, y, n);
+      else
 #endif
+      {
+        // This is exp's bounded reconstruction, not a scaling instruction.
+        // Active finite n is integral in [-150,128], with y near exp's reduced
+        // argument. Split the biased exponent into two normal powers of two:
+        // the first product is exact and normal; only the second can underflow.
+        // NaN y propagates, but its exponent must not enter an integer cast.
+        n = select(active & (n == n), n, V(0.f));
+        y = select(active, y, V(0.f));
+        auto const biased = trig_integer(n + V(254.f));
+        auto const first = biased.template right<1>();
+        auto const second = biased - first;
+        return (y * V::from_bits(first.template left<23>())) *
+          V::from_bits(second.template left<23>());
+      }
     }
     static inline constexpr auto scale_all(V a,V n) noexcept { return scaleb(a,n); }
     template<class M>
@@ -79,7 +83,7 @@ namespace wide::detail {
     template<class T>
     static inline constexpr auto mask_words(V a) noexcept { return ::native::mask_bits<T>(a); }
 
-    // These conversions serve the bounded nonnegative trigonometric reducer.
+    // These conversions serve the bounded nonnegative math reducers.
     // Its integer values are below INT32_MAX, matching the original signed
     // native conversion instructions; this is not a general uint32 conversion.
     static inline constexpr auto trig_integer(V a) noexcept {
