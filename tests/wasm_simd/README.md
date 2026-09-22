@@ -11,8 +11,8 @@ The C++26 named-module fixture has four CTest entries:
   and operand must match and calls are rejected. The JSON output retains both
   bodies. This does not measure engine JIT machine code or execution overhead.
 - `native.wasm.simd.clients`: constant and runtime `wide<simd<float,4,A>,2>`
-  arithmetic, empty packs, and compile-time checks that the unimplemented SIMD128
-  exponential does not participate.
+  arithmetic, empty packs, and compile-time participation checks for SIMD128
+  exponential. The dedicated math fixture validates its implementation.
 - `native.wasm.simd.api`: integer construction and scalar operator participation
   across every integer lane and scalar width, rejection of floating, Boolean,
   enum and user-converted inputs, constant/runtime wrapping checks, and retained
@@ -57,5 +57,6 @@ instruction in the paired test. Bit-select and scalar lane transfers similarly
 match their direct intrinsic instruction streams.
 
 There is no SIMD128 byte multiply, vector integer divide or fused multiply-add
-instruction. The range-reduced exponential graph is unavailable for these SIMD
-values. Relaxed SIMD has its own module and qualification fixture.
+instruction. The [promoted math kernels](../wasm_math/README.md) use a separately
+rounded multiply/add graph without weakening the fused-operation contract.
+Relaxed SIMD has its own module and qualification fixture.

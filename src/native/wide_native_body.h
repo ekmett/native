@@ -34,6 +34,34 @@ namespace wide::detail {
     static inline constexpr auto truncate(V a) noexcept { return trunc(a); }
     static inline constexpr auto round(V a) noexcept { return round_even(a); }
     static inline constexpr auto fused(V a, V b, V c) noexcept { return fma(a, b, c); }
+    // SIMD128 has no fused instruction. Keep its polynomial graph explicitly
+    // noncontracting, including in relaxed-SIMD callers; do not weaken fma.
+    static inline constexpr auto polynomial_madd(V a, V b, V c) noexcept {
+#if NATIVE_HAS_WASM_SIMD128
+#pragma clang fp contract(off)
+      return a * b + c;
+#else
+      return fma(a, b, c);
+#endif
+    }
+    template<class M>
+    static inline constexpr auto exp_scale(M active, V y, V n) noexcept {
+#if NATIVE_HAS_WASM_SIMD128
+      // exp's admitted lanes have integral -150 <= n <= 128 (or NaN).
+      // Two normal factors postpone subnormal rounding to the final multiply.
+      // Zero inactive lanes before converting their unbounded exponents.
+      n = select(active, n, V(0.f));
+      y = select(active, y, V(0.f));
+      V last = select(n < V(-126.f), V(-126.f), select(n > V(127.f), V(127.f), n));
+      auto power = [](V exponent) {
+        // Bias before unsigned conversion; both factors have normal exponents.
+        return V::from_bits(::native::trunc_sat<std::uint32_t>(exponent + V(127.f)).template left<23>());
+      };
+      return select(active, (y * power(n - last)) * power(last), V(0.f));
+#else
+      return masked_scaleb_zero(active, y, n);
+#endif
+    }
     static inline constexpr auto scale_all(V a,V n) noexcept { return scaleb(a,n); }
     template<class M>
     static inline constexpr auto choose(M m,V a,V b) noexcept { return select(m,a,b); }
@@ -75,6 +103,9 @@ namespace wide::detail {
       else if constexpr (V::lanes==4)
         return I::from_native(vreinterpretq_u8_s32(vcvtq_s32_f32(a.value)));
 #endif
+#if NATIVE_HAS_WASM_SIMD128
+      else if constexpr (V::lanes==4) return ::native::trunc_sat<std::uint32_t>(a);
+#endif
     }
     static inline constexpr auto trig_float(V a) noexcept {
       using F=typename V::template rebind<float>;
@@ -95,6 +126,9 @@ namespace wide::detail {
 #endif
 #if NATIVE_HAS_ARM_NEON
       else if constexpr (V::lanes==4) return F(vcvtq_f32_s32(vreinterpretq_s32_u8(a.value)));
+#endif
+#if NATIVE_HAS_WASM_SIMD128
+      else if constexpr (V::lanes==4) return ::native::convert<float>(a);
 #endif
     }
   };

@@ -115,6 +115,26 @@ namespace wide::detail {
     template<class V> requires requires(V a) { fma(a,a,a); }
     native_inline constexpr auto operator()(V const & a,V const & b,V const & c) const { return native_ops<V>::fused(a,b,c); }
   };
+  struct polynomial_madd {
+    template<class V>
+    native_inline constexpr auto operator()(V const & a,V const & b,V const & c) const {
+      return native_ops<V>::polynomial_madd(a,b,c);
+    }
+  };
+  struct exp_scale {
+    template<class M,class V>
+    native_inline constexpr auto operator()(M const & m,V const & a,V const & n) const {
+      return native_ops<V>::exp_scale(m,a,n);
+    }
+  };
+  template<class P,class Q,class R> requires liftable<polynomial_madd,P,Q,R>
+  native_inline constexpr auto madd(P const & a,Q const & b,R const & c) noexcept {
+    return lift(polynomial_madd{},a,b,c);
+  }
+  template<class M,class P,class Q> requires liftable<exp_scale,M,P,Q>
+  native_inline constexpr auto scale_exp(M const & active,P const & y,Q const & n) noexcept {
+    return lift(exp_scale{},active,y,n);
+  }
   struct scale {
     template<class M,class V> requires requires(M m,V a) { masked_scaleb_zero(m,a,a); }
     native_inline constexpr auto operator()(M const & m,V const & a,V const & n) const { return native_ops<V>::scale(m,a,n); }
@@ -272,17 +292,17 @@ namespace math {
       // Keep x second: the ordered minimum preserves NaNs.
       auto r = ::wide::min(c(88.72283935546875f), x);
       auto const n = ::wide::round_even(::wide::mul(r, c(1.4426950408889634f)));
-      r = ::wide::fma(n, c(-0x1.62e400p-1f), r);
-      r = ::wide::fma(n, c(-0x1.7f7d1cp-20f), r);
+      r = ::wide::detail::madd(n, c(-0x1.62e400p-1f), r);
+      r = ::wide::detail::madd(n, c(-0x1.7f7d1cp-20f), r);
 
-      auto y = ::wide::fma(r, c(0x1.a1d714d7b1510dp-13f), c(0x1.6da756e670ea6p-10f));
-      y = ::wide::fma(r, y, c(0x1.11105b3161a6fp-7f));
-      y = ::wide::fma(r, y, c(0x1.5554649b7487fp-5f));
-      y = ::wide::fma(r, y, c(0x1.555555c673724p-3f));
-      y = ::wide::fma(r, y, c(0x1.0000005c8dd89p-1f));
+      auto y = ::wide::detail::madd(r, c(0x1.a1d714d7b1510dp-13f), c(0x1.6da756e670ea6p-10f));
+      y = ::wide::detail::madd(r, y, c(0x1.11105b3161a6fp-7f));
+      y = ::wide::detail::madd(r, y, c(0x1.5554649b7487fp-5f));
+      y = ::wide::detail::madd(r, y, c(0x1.555555c673724p-3f));
+      y = ::wide::detail::madd(r, y, c(0x1.0000005c8dd89p-1f));
       auto const one = c(1.f);
-      y = ::wide::fma(r, y, one);
-      y = ::wide::fma(r, y, one);
+      y = ::wide::detail::madd(r, y, one);
+      y = ::wide::detail::madd(r, y, one);
       return std::tuple{active, y, n};
     }
   }
@@ -298,7 +318,7 @@ namespace math {
     } else {
       auto const x = ::wide::promote(input);
       auto const [active, y, n] = detail::exp_reduced<Flush>(x);
-      return ::wide::demote<T>(::wide::masked_scaleb_zero(active, y, n));
+      return ::wide::demote<T>(::wide::detail::scale_exp(active, y, n));
     }
   }
 }
@@ -330,20 +350,20 @@ namespace math {
       auto quadrant = j;
       if constexpr (K == trig_kind::cosine) quadrant = ::wide::sub(quadrant, i(2));
       auto const mask = ::wide::mask_bits<std::uint32_t>(::wide::cmp_eq(::wide::bit_and(quadrant, i(2)), i(0)));
-      x = ::wide::fma(y, c(-0.78515625f), x);
-      x = ::wide::fma(y, c(-2.4187564849853515625e-4f), x);
-      x = ::wide::fma(y, c(-3.77489497744594108e-8f), x);
+      x = ::wide::detail::madd(y, c(-0.78515625f), x);
+      x = ::wide::detail::madd(y, c(-2.4187564849853515625e-4f), x);
+      x = ::wide::detail::madd(y, c(-3.77489497744594108e-8f), x);
       auto const z = ::wide::mul(x, x);
-      auto cosine = ::wide::fma(c(2.443315711809948e-5f), z, c(-1.388731625493765e-3f));
-      cosine = ::wide::fma(cosine, z, c(4.166664568298827e-2f));
+      auto cosine = ::wide::detail::madd(c(2.443315711809948e-5f), z, c(-1.388731625493765e-3f));
+      cosine = ::wide::detail::madd(cosine, z, c(4.166664568298827e-2f));
       cosine = ::wide::mul(cosine, z);
       cosine = ::wide::mul(cosine, z);
       cosine = ::wide::sub(cosine, ::wide::mul(z, c(0.5f)));
       cosine = ::wide::add(cosine, c(1.f));
-      auto sine = ::wide::fma(c(-1.9515295891e-4f), z, c(8.3321608736e-3f));
-      sine = ::wide::fma(sine, z, c(-1.6666654611e-1f));
+      auto sine = ::wide::detail::madd(c(-1.9515295891e-4f), z, c(8.3321608736e-3f));
+      sine = ::wide::detail::madd(sine, z, c(-1.6666654611e-1f));
       sine = ::wide::mul(sine, z);
-      sine = ::wide::fma(sine, x, x);
+      sine = ::wide::detail::madd(sine, x, x);
       auto selected_sine = ::wide::from_bits(::wide::bit_and(mask, ::wide::bits(sine)));
       auto selected_cosine = ::wide::from_bits(::wide::bit_and(::wide::bit_xor(mask, i(0xffffffffu)), ::wide::bits(cosine)));
       if constexpr (K == trig_kind::paired) {

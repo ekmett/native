@@ -10,10 +10,8 @@ using vector = native::simd<float, 4, architecture>;
 using registers = native::wide<vector, 2>;
 template <class T>
 concept has_exp = requires(T value) { native::math::exp(value); };
-// The range-reduced exp kernel requires backend FMA/scaling operations. SIMD128
-// does not expose it until a numerically qualified implementation is available.
-static_assert(!has_exp<vector>);
-static_assert(!has_exp<registers>);
+static_assert(has_exp<vector>);
+static_assert(has_exp<registers>);
 
 __attribute__((target("simd128"))) constexpr bool arithmetic(float x) {
   registers a{vector(x), vector(x + 1.f)};

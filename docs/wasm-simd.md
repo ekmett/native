@@ -114,3 +114,23 @@ operations against intrinsic leaves at the same ABI; the [coverage inventory](..
 records primitive families and composed operations. These comparisons check
 compiled Wasm bytecode, not engine JIT machine code or execution overhead.
 Tests do not enable engine feature flags.
+
+## Promoted binary32 math
+
+`import native.math;` adds `math::exp`, `sin`, `cos`, and `sincos` to the SIMD128
+values, arrays and `native::wide` batches. `native::math` provides equivalent
+Wasm overloads. These kernels require only `simd128`; `relaxed_simd` does not
+change their arithmetic. SIMD128 lacks FMA, so each polynomial multiply and add
+rounds separately. The existing scalar, x86 and ARM fused graph stays distinct.
+Wasm constant evaluation uses the same separate-rounding graph as execution.
+
+Exponential preserves NaNs, returns positive infinity on overflow and positive
+zero below its cutoff, and retains gradual underflow unless `exp<true>` selects
+the existing early cutoff. Trig requires finite lanes with `|x| < 8192` radians.
+Both zero signs are preserved for sine; cosine of either zero is one. No runtime
+feature dispatch or scalar lane/libm fallback occurs inside these kernels.
+
+The [math fixture](../tests/wasm_math/README.md) qualifies public/module and
+installed-consumer forms, accuracy samples, constant/runtime agreement, and
+call-free vector bytecode. General-purpose SIMD128 FMA and exponent-scaling
+operations remain outside this addition.

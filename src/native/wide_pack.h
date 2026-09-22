@@ -111,6 +111,8 @@ namespace wide {
       using R=decltype(restore_element<E>(std::declval<V>()));
       if constexpr (S::kind==family::std_array)
         return std::array<R,S::size>{{restore_element<E>(std::get<I>(std::forward<P>(value)))...}};
+      else if constexpr (requires(std::array<R,S::size> a) { S::restore(a); })
+        return S::restore(std::array<R,S::size>{{restore_element<E>(std::get<I>(std::forward<P>(value)))...}});
       else return typename S::template rebind<R>{std::array<R,S::size>{{
         restore_element<E>(std::get<I>(std::forward<P>(value)))...}}};
     }

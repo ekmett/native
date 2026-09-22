@@ -458,5 +458,12 @@ namespace wide::detail {
   template<class T,std::size_t N> struct shape<::native::wide<T,N>> : array_shape<T,N> {
     static constexpr auto kind=family::legacy;
     template<class R> using rebind=::native::wide<R,N>;
+#if NATIVE_HOST_WASM
+    // Let generic demotion reach the caller before inlining SIMD128 constructors.
+    template<class R> requires (::native::detail::wide_target<R> == 16)
+    __attribute__((target("simd128"))) static inline constexpr rebind<R> restore(std::array<R,N> const & values) {
+      return rebind<R>{values};
+    }
+#endif
   };
 }

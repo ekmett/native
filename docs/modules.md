@@ -263,7 +263,23 @@ operations. Each polynomial stage advances all independent chains before the
 next stage begins, rather than finishing one `exp` call per element. Results
 preserve the input scalar, SIMD, array, or `native::wide` shape, including
 empty and one-element containers.
-These kernels support binary32 elements.
+These kernels support binary32 elements on x86, ARM and Wasm SIMD128.
+Wasm provides `math::exp`, `sin`, `cos` and `sincos` for single vectors,
+standard arrays and `native::wide`; `native::math` exposes the same Wasm kernels.
+SIMD128 has no fused multiply-add instruction, so its polynomial stages use
+separate binary32 multiply and add roundings, with contraction disabled even in
+a relaxed-SIMD caller. Constant evaluation uses this same Wasm graph. The x86,
+ARM and scalar graphs retain FMA; cross-architecture bitwise equality is not a
+contract for these approximations. Neither public `fma` nor `wide::fma` acquires
+a nonfused Wasm implementation.
+
+Wasm exp retains the degree-seven coefficients, cutoff policy, NaN/infinity
+behavior and gradual underflow. Its integral exponent is split into two normal
+power-of-two factors so tiny results round only at the final multiplication.
+Trig retains the finite `|x| < 8192` domain, coefficients, quadrant selection and
+signed-zero behavior. [The Wasm math fixture](../tests/wasm_math/README.md) checks
+these distinct rounding semantics and sampled error budgets; it is not an
+exhaustive accuracy proof.
 
 Binary32 arithmetic, comparisons, selection, fused multiply-add, square root,
 rounding and exponent scaling support constant evaluation, including short
