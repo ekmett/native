@@ -273,18 +273,25 @@ ARM and scalar graphs retain FMA; cross-architecture bitwise equality is not a
 contract for these approximations. Neither public `fma` nor `wide::fma` acquires
 a nonfused Wasm implementation.
 
-Wasm exp retains the degree-seven coefficients, cutoff policy, NaN/infinity
-behavior and gradual underflow. Its integral exponent is split into two normal
-power-of-two factors so tiny results round only at the final multiplication.
+Exp retains the degree-seven polynomial, nearest-integer reduction, cutoff
+policy, NaN/infinity classes and gradual underflow. Its internal reconstruction
+uses balanced normal power-of-two factors on ARM, AVX2, Wasm and scalar profiles,
+so tiny results round only at the final multiplication. AVX-512 uses native
+scaling where the vector width and features admit it. This bounded exp stage
+does not supply a public software scaling operation; NaN payloads are unspecified.
 Trig retains the finite `|x| < 8192` domain, coefficients, quadrant selection and
 signed-zero behavior. [The Wasm math fixture](../tests/wasm_math/README.md) checks
 these distinct rounding semantics and sampled error budgets; it is not an
 exhaustive accuracy proof.
 
 Binary32 arithmetic, comparisons, selection, fused multiply-add, square root,
-rounding and exponent scaling support constant evaluation, including short
-vectors. The promoted exponential and trigonometric kernels evaluate their
-existing polynomial graphs with the same input bounds and approximation
+rounding support constant evaluation, including short vectors. Exponent scaling
+retains constant evaluation only for hardware-admitted `scaleb` shapes: AVX512F
+scalar and sixteen-lane vectors, and AVX512VL two-, three-, four- and eight-lane
+vectors within the supported kernel profiles. The short forms mask padding lanes.
+`scaleb`, `masked_scaleb` and `masked_scaleb_zero` have no software fallback on
+scalar, AVX2, NEON or Wasm profiles. The promoted exponential and trigonometric
+kernels evaluate their existing polynomial graphs with the same input bounds and approximation
 contracts. Scalar, array and empty-array forms retain their shapes.
 
 Constant evaluation uses round-to-nearest with ties to even and gradual
@@ -331,7 +338,8 @@ coefficient's scalar type matching its SIMD element type exactly.
 `wide::add`, `sub`, `mul`, `div`, and `negate` provide arithmetic; `bit_and`,
 `bit_or`, `bit_xor`, and `bit_not` provide bitwise operations. Comparisons,
 selection, `min`/`max`, `abs`, `sqrt`, rounding, `fma`, and exponent scaling use
-the same lifting rule. These stages use compile-time pack expansion.
+the same lifting rule. Scaling is available only when the SIMD element admits
+the native scaling instruction. These stages use compile-time pack expansion.
 
 `math::sin`, `math::cos`, and `math::sincos` also promote and restore the input
 shape. Their reducer and polynomial advance stage by stage across the array.

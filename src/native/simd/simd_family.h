@@ -4272,71 +4272,19 @@ namespace native {
   };
 #endif
   namespace detail::NATIVE_BACKEND {
-    // VSCALEF uses floor, including negative fractions. Native rounding also
-    // observes the caller's denormal-input mode before this operation.
-    template <std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-    native_nodiscard native_inline native_pure simd<float,N,Arch> scaleb_floor(simd<float,N,Arch> x) noexcept {
-#if NATIVE_HAS_AVX2
-      if constexpr(N==1) return simd<float,N,Arch>(_mm_cvtss_f32(_mm_floor_ss(_mm_setzero_ps(),_mm_set_ss(x.value))));
-      else if constexpr(N==4) return simd<float,N,Arch>(_mm_floor_ps(x.value));
-      else if constexpr(N==8) return simd<float,N,Arch>(_mm256_floor_ps(x.value));
-      else
+    // Scalar VSCALEFSS and 512-bit VSCALEFPS require AVX512F; packed
+    // 128/256-bit forms require AVX512VL. Short vectors mask their padding.
+    // Keep names available for module exports without admitting software APIs.
+    template<std::size_t N> inline constexpr bool native_scaleb_shape =
+#if NATIVE_HAS_AVX512F
+      N==1 || N==16
+#if NATIVE_HAS_AVX512VL
+      || N==2 || N==3 || N==4 || N==8
 #endif
-#if NATIVE_HAS_ARM_NEON
-      if constexpr(N==4) return simd<float,N,Arch>(__builtin_elementwise_floor(x.value));
-      else
+      ;
+#else
+      false;
 #endif
-      return simd<float,N,Arch>(std::floor(x.value));
-    }
-    // Cold nonfinite-exponent table from Intel VSCALEFPD/SD/PS/SS. In particular,
-    // quiet NaN scaled by +inf/-inf is +inf/+0, but signaling NaN stays NaN.
-    // NaN payload/sign and matching active-lane exception flags are not promised.
-    native_nodiscard native_inline native_pure float scaleb_special(float x,float exponent) noexcept {
-      auto a=std::bit_cast<std::uint32_t>(x),b=std::bit_cast<std::uint32_t>(exponent);
-      auto aa=a&0x7fffffffu,bb=b&0x7fffffffu;
-      if(aa>0x7f800000u && (a&0x00400000u)==0u) return x+x;
-      if(bb>0x7f800000u) return x+exponent;
-      bool negative=(b&0x80000000u)!=0u;
-      if(aa>0x7f800000u) return std::bit_cast<float>(negative?0u:0x7f800000u);
-      if(aa==0x7f800000u) return negative?x*0.0f:x;
-      // A numerical zero comparison observes DAZ/FZ for a raw subnormal base.
-      if(x==0.0f) return negative?std::bit_cast<float>(a&0x80000000u):x*exponent;
-      return std::bit_cast<float>((a&0x80000000u)|(negative?0u:0x7f800000u));
-    }
-    template <std::size_t N,class M, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-    native_nodiscard native_inline native_pure simd<float,N,Arch> scaleb_fallback(M mask,
-        simd<float,N,Arch> prior,simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
-      using V=simd<float,N,Arch>;using U=simd<uint32_t,N,Arch>;
-      if(none(mask)) return prior;
-      V x=select(mask,value,V(0)),n=select(mask,exponent,V(0));
-      auto special=(n.bits()&U(0x7fffffffu))>=U(0x7f800000u);
-      n=select(special,V(0),n);x=select(special,V(0),x);
-      n=scaleb_floor(n);
-      V result;
-      if(any((n<V(-126))|(n>V(127)))) {
-        // Three normal factors cover every binary32 input/exponent outcome.
-        // Clamp before integer conversion, including very large finite n.
-        n=select(n<V(-378),V(-378),select(n>V(381),V(381),n));
-        V last=select(n<V(-126),V(-126),select(n>V(127),V(127),n));
-        V remainder=n-last;
-        V first=select(remainder<V(-126),V(-126),select(remainder>V(127),V(127),remainder));
-        V middle=remainder-first;
-        auto down=n<V(0);
-        // Downscale extras first: an early tiny value must ultimately round to
-        // zero. Upscale the largest factor first to normalize raw tiny inputs.
-        V leading=select(down,first,last),trailing=select(down,last,middle);
-        middle=select(down,middle,first);
-        result=((x*normal_pow2(leading))*normal_pow2(middle))*normal_pow2(trailing);
-      } else result=x*normal_pow2(n);
-      if(any(special)) {
-        std::array<float,N> a,b,r;
-        value.store(a.data());exponent.store(b.data());result.store(r.data());
-        auto bits=special.to_bitset();
-        for(std::size_t i=0;i<N;++i) if((bits>>i)&1u) r[i]=scaleb_special(a[i],b[i]);
-        result=V::load(r.data());
-      }
-      return select(mask,result,prior);
-    }
   }
   // Full VSCALEFPS value semantics: floor(exponent), including nonfinite
   // operands. This raw operation follows the caller's FP environment.
@@ -4345,8 +4293,10 @@ namespace native {
   /// Scale active lanes by 2^floor(exponent), retaining `prior` in other lanes.
   /// Inactive lanes are excluded from the scaling operation. The result follows
   /// the caller's floating-point environment, including denormal controls.
+  /// Available only for native AVX512F scaling shapes; packed widths below 16
+  /// require AVX512VL. No scalar, AVX2, NEON or Wasm software fallback exists.
   template <std::size_t N,class M, ::native::isa<> Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)
   native_nodiscard native_inline constexpr native_pure simd<float,N,Arch> masked_scaleb(M mask,
       simd<float,N,Arch> prior,simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
@@ -4357,12 +4307,15 @@ namespace native {
       for(std::size_t i=0;i<N;++i) if((active>>i)&1) result[i]=::native::detail::float_constant::scale(a[i],b[i]);
       return simd<float,N,Arch>::load_bits(result.data());
     }
+#if NATIVE_HAS_AVX512F
     if constexpr(N==2 || N==3) {
       using V=simd<float,N,Arch>;
-      using M4=typename V::storage_type::mask_type;
-      return V::from_storage(masked_scaleb(M4::from_bitset(mask.to_bitset()),prior.to_storage(),value.to_storage(),exponent.to_storage()));
+      // The compact mask excludes padding, whose prior bits are already zero.
+      // A representation copy avoids re-normalizing the short-vector storage.
+      return std::bit_cast<V>(_mm_mask_scalef_ps(std::bit_cast<__m128>(prior.to_native()),
+        __mmask8(mask.to_bitset()),std::bit_cast<__m128>(value.to_native()),
+        std::bit_cast<__m128>(exponent.to_native())));
     } else {
-#if NATIVE_HAS_AVX512F
       auto native_mask=[&] {if constexpr(M::compact) return mask.to_native();else return to_predicate(mask).to_native();};
       if constexpr(N==1) return simd<float,N,Arch>(_mm_cvtss_f32(_mm_mask_scalef_ss(
         _mm_set_ss(prior.value),__mmask8(native_mask()),_mm_set_ss(value.value),_mm_set_ss(exponent.value))));
@@ -4371,24 +4324,34 @@ namespace native {
       else if constexpr(N==4) return simd<float,N,Arch>(_mm_mask_scalef_ps(prior.value,native_mask(),value.value,exponent.value));
       else if constexpr(N==8) return simd<float,N,Arch>(_mm256_mask_scalef_ps(prior.value,native_mask(),value.value,exponent.value));
 #endif
-      else
-#endif
-      return ::NATIVE_BACKEND_NAMESPACE::scaleb_fallback(mask,prior,value,exponent);
     }
+#endif
   }
   /// \ingroup vector_math
   /// Scale active lanes by 2^floor(exponent), writing positive zero elsewhere.
   template <std::size_t N,class M, ::native::isa<> Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)
   native_nodiscard native_inline constexpr native_pure simd<float,N,Arch> masked_scaleb_zero(M mask,
       simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
-    return masked_scaleb(mask,simd<float,N,Arch>(0.f),value,exponent);
+    if consteval { return masked_scaleb(mask,simd<float,N,Arch>(0.f),value,exponent); }
+#if NATIVE_HAS_AVX512F
+    auto native_mask=[&] {if constexpr(M::compact) return mask.to_native();else return to_predicate(mask).to_native();};
+    if constexpr(N==1) return simd<float,N,Arch>(_mm_cvtss_f32(_mm_maskz_scalef_ss(
+      __mmask8(native_mask()),_mm_set_ss(value.value),_mm_set_ss(exponent.value))));
+    else if constexpr(N==16) return simd<float,N,Arch>(_mm512_maskz_scalef_ps(native_mask(),value.value,exponent.value));
+#if NATIVE_HAS_AVX512VL
+    else if constexpr(N==2 || N==3) return std::bit_cast<simd<float,N,Arch>>(_mm_maskz_scalef_ps(
+      __mmask8(mask.to_bitset()),std::bit_cast<__m128>(value.to_native()),std::bit_cast<__m128>(exponent.to_native())));
+    else if constexpr(N==4) return simd<float,N,Arch>(_mm_maskz_scalef_ps(native_mask(),value.value,exponent.value));
+    else if constexpr(N==8) return simd<float,N,Arch>(_mm256_maskz_scalef_ps(native_mask(),value.value,exponent.value));
+#endif
+#endif
   }
   /// \ingroup vector_math
   /// Scale every lane by 2^floor(exponent), including fractional exponents.
   /// Unlike an integer ldexp exponent, the exponent argument is itself a vector.
-  template <std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
+  template <std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N>
   native_nodiscard native_inline constexpr native_pure simd<float,N,Arch> scaleb(simd<float,N,Arch> value,
       simd<float,N,Arch> exponent) noexcept {
     return masked_scaleb_zero(typename simd<float,N,Arch>::mask_type(true),value,exponent);

@@ -28,11 +28,13 @@ endforeach()
 foreach(mode IN ITEMS gradual flush)
   add_test(NAME native.scaleb.${mode}
     COMMAND native_test_scaleb ${mode} ${NATIVE_RAW_SCALEB_FTZ_PROFILE})
+  set_tests_properties(native.scaleb.${mode} PROPERTIES SKIP_RETURN_CODE 77)
 endforeach()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86_64|AMD64|amd64)$")
   foreach(mode IN ITEMS daz ftz)
     add_test(NAME native.scaleb.${mode}
       COMMAND native_test_scaleb ${mode} ${NATIVE_RAW_SCALEB_FTZ_PROFILE})
+    set_tests_properties(native.scaleb.${mode} PROPERTIES SKIP_RETURN_CODE 77)
   endforeach()
 endif()
 foreach(suite IN ITEMS integer mask bit_bridge wide_exp)

@@ -71,7 +71,7 @@ extern "C" std::size_t NATIVE_TEST_ENTRY(std::uint32_t * out, std::size_t capaci
     put(3,select(x>F(0.f),x,-x)); put(4,exponential.registers[i]);
     using U=test_vec<std::uint32_t,lanes>;
     ((x.bits()+U(3u))^U(0x9e3779b9u)).store(out+5*profile_test::count+offset);
-    put(6,masked_scaleb_zero(x>F(0.f),x,F(-1.f)));
+    put(6,select(x>F(0.f),x*F(.5f),F(0.f)));
     put(7,sqrt(abs(x)));
     std::array<std::uint32_t,lanes> direct;
     exp(x).store_bits(direct.data());

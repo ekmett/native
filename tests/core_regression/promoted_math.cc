@@ -201,19 +201,29 @@ template<class V> static void primitive_broadcasts() {
   auto selected = wide::select(mask, V(8.f), p);
   auto sum = wide::add(V(2.f), p), difference = wide::sub(p, V(2.f)), divided = wide::div(p, V(2.f));
   auto product = wide::mul(p, V(2.f)), negated = wide::negate(p);
-  auto scaled = wide::scaleb(p, V(2.f));
-  auto merged = wide::masked_scaleb(mask, V(77.f), p, V(2.f));
-  auto cleared = wide::masked_scaleb_zero(mask, p, V(2.f));
+  if constexpr(requires { wide::scaleb(p,V(2.f)); }) {
+    auto scaled=wide::scaleb(p,V(2.f));
+    auto merged=wide::masked_scaleb(mask,V(77.f),p,V(2.f));
+    auto cleared=wide::masked_scaleb_zero(mask,p,V(2.f));
+    for(std::size_t element=0;element<2;++element) {
+      std::array<float,V::lanes> scale{},merge{},clear{};
+      scaled[element].storeu(scale.data());merged[element].storeu(merge.data());
+      cleared[element].storeu(clear.data());
+      for(std::size_t lane=0;lane<V::lanes;++lane) {
+        float value=element==0?input[lane]:-input[lane];
+        exact(scale[lane],value*4.f,"scaleb broadcast");
+        exact(merge[lane],value<0.f?value*4.f:77.f,"masked_scaleb inactive prior");
+        exact(clear[lane],value<0.f?value*4.f:0.f,"masked_scaleb_zero inactive zero");
+      }
+    }
+  }
   static_assert(std::same_as<decltype(selected), P>);
   for (std::size_t element = 0; element < 2; ++element) {
     std::array<float, V::lanes> lo{}, hi{}, choice{}, plus{}, minus{}, quotient{};
-    std::array<float, V::lanes> scale{}, merge{}, clear{};
     std::array<float, V::lanes> times{}, negative{};
     low[element].storeu(lo.data()); high[element].storeu(hi.data());
     selected[element].storeu(choice.data()); sum[element].storeu(plus.data());
     difference[element].storeu(minus.data()); divided[element].storeu(quotient.data());
-    scaled[element].storeu(scale.data()); merged[element].storeu(merge.data());
-    cleared[element].storeu(clear.data());
     product[element].storeu(times.data()); negated[element].storeu(negative.data());
     for (std::size_t lane = 0; lane < V::lanes; ++lane) {
       float value = element == 0 ? input[lane] : -input[lane];
@@ -234,9 +244,6 @@ template<class V> static void primitive_broadcasts() {
       exact(quotient[lane], value / 2.f, "division broadcast");
       exact(times[lane], value * 2.f, "multiplication broadcast");
       exact(negative[lane], -value, "negation pointwise");
-      exact(scale[lane], value * 4.f, "scaleb broadcast");
-      exact(merge[lane], value < 0.f ? value * 4.f : 77.f, "masked_scaleb inactive prior");
-      exact(clear[lane], value < 0.f ? value * 4.f : 0.f, "masked_scaleb_zero inactive zero");
     }
   }
 }

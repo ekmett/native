@@ -3,7 +3,8 @@
 The same fixture compiles through private headers and the public `native.math`
 module. It checks scalar, short and full binary32 shapes, preserving their ISA
 tags. Exact static assertions cover signed zeros, subnormal ties, infinities,
-NaNs, fused cancellation, comparisons, conversions, masked scaling, mixed
+NaNs, fused cancellation, comparisons, conversions, hardware-admitted masked
+scaling, mixed
 scalar operands and bounded memory transfers.
 
 Reproducible compile-time cases are compared with admitted native execution.

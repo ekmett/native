@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+// This fixture executes native VSCALEF only; other profiles test rejection.
+#if defined(__AVX512F__)
 namespace {
   using namespace test_simd;
   using word = std::uint32_t;
@@ -194,10 +196,12 @@ int main(int argc,char ** argv) {
 #endif
       auto requested=native::test::read_fp_state().control;
       checked+=check_width<1>(rows,daz,output_flush,raw_before);
-#if defined(__AVX2__) || defined(__ARM_NEON)
+#if defined(__AVX512VL__)
+      checked+=check_width<2>(rows,daz,output_flush,raw_before);
+      checked+=check_width<3>(rows,daz,output_flush,raw_before);
       checked+=check_width<4>(rows,daz,output_flush,raw_before);
 #endif
-#if defined(__AVX2__)
+#if defined(__AVX512VL__)
       checked+=check_width<8>(rows,daz,output_flush,raw_before);
 #endif
 #if defined(__AVX512F__) && defined(__AVX512DQ__)
@@ -212,6 +216,13 @@ int main(int argc,char ** argv) {
       <<",\"environment_restored\":true}\n";
   }
 }
+
+#else
+int main() {
+  std::cout<<"Native VSCALEF unavailable in the selected test profile.\n";
+  return 77;
+}
+#endif
 
 /**
  * \file

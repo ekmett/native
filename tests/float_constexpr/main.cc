@@ -82,10 +82,12 @@ namespace fixture {
     auto x=V(2.f);x+=3.f;x*=2.f;x-=1.f;x/=3.f;
     if(!all(x==3.f) || !all(3.f==x) || !all(fma(2.f,x,-1.f)==5.f)) return false;
     if(!all(convert<float>(convert<std::int32_t>(V(-2.75f)))==-2.f)) return false;
-    if(bits(masked_scaleb(typename V::mask_type(false),nan,infinity,infinity))[0]!=0x7f812345u) return false;
-    if(bits(scaleb(V::from_bits(1),V(1.f)))[0]!=2) return false;
-    if(bits(scaleb(V(1.f),V(-.5f)))[0]!=0x3f000000u) return false;
-    if(bits(scaleb(nan,infinity))[0]!=0x7fc12345u) return false;
+    if constexpr(requires(V a) { scaleb(a,a); }) {
+      if(bits(masked_scaleb(typename V::mask_type(false),nan,infinity,infinity))[0]!=0x7f812345u) return false;
+      if(bits(scaleb(V::from_bits(1),V(1.f)))[0]!=2) return false;
+      if(bits(scaleb(V(1.f),V(-.5f)))[0]!=0x3f000000u) return false;
+      if(bits(scaleb(nan,infinity))[0]!=0x7fc12345u) return false;
+    }
     std::array<float,V::lanes+1> storage{};storage.back()=99.f;
     auto filled=load_simd_partial<V>(static_cast<float const*>(nullptr),0,-2.f);
     store_simd_partial(storage.data(),filled,V::lanes);

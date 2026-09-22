@@ -122,7 +122,8 @@ void arithmetic() {
   check(all(y == V(7.f)));
   check(all(sqrt(V(4.f)) == V(2.f)));
   check(all(native::abs(V(-2.f)) == V(2.f)));
-  check(all(native::scaleb(V(1.f), V(3.5f)) == V(8.f)));
+  if constexpr(requires(V v) { native::scaleb(v,v); })
+    check(all(native::scaleb(V(1.f), V(3.5f)) == V(8.f)));
   auto integers = native::convert<std::int32_t>(V(3.75f));
   check(all(native::convert<float>(integers) == V(3.f)));
 }

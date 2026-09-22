@@ -19,7 +19,7 @@ exponents, extreme valid int exponents, zeros, infinities and quiet NaNs.
 Scalar `scalef` truncates its exponent toward zero; that truncated value must
 fit in int. Its constexpr result assumes nearest-even and gradual underflow.
 Runtime delegates to `std::scalbn`, so other rounding/denormal environments need
-not agree. This is separate from the FTZ vector `scaleb` contract. These tests make no GPU or timing claim.
+not agree. This is separate from the native AVX-512 `scaleb` contract. These tests make no GPU or timing claim.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

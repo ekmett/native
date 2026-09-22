@@ -53,7 +53,15 @@ template<class V> consteval bool storage_only() {
 template<native::isa<> A,std::size_t N> consteval bool arithmetic_float() {
   using V=native::simd<float,N,A>;
   static_assert(has_floor<V> && has_ceil<V> && has_trunc<V> && has_abs<V>);
-  static_assert(has_scaleb<V> && has_fma<V> && has_masked_scaleb<V> && has_masked_scaleb_zero<V>);
+  static_assert(has_fma<V>);
+#if NATIVE_HOST_X86
+  constexpr bool native_scale=A.has(native::x86_feature::avx512f) &&
+    (N==1 || N==16 || A.has(native::x86_feature::avx512vl));
+#else
+  constexpr bool native_scale=false;
+#endif
+  static_assert(has_scaleb<V> == native_scale && has_masked_scaleb<V> == native_scale &&
+    has_masked_scaleb_zero<V> == native_scale);
   static_assert(has_convert_int<V> && has_compress<V> && has_expand<V> && has_compress_store<V>);
   static_assert(has_exp<V> && has_flush<V> && has_math_floor<V> && has_math_exp<V> && has_math_sin<V>);
   static_assert(has_array_floor<V> && has_array_exp<V> && has_wide_floor<V> && has_wide_exp<V>);

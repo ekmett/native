@@ -21,6 +21,20 @@ using registers = native::wide<vector, 3>;
 template<class V> concept has_fma = requires(V v) { native::fma(v,v,v); };
 static_assert(!has_fma<vector>);
 static_assert(!has_fma<native::simd<float,4,relaxed_architecture>>);
+template<class V> concept has_scaleb = requires(V v) { native::scaleb(v,v); };
+template<class V,class M> concept has_masked_scaleb = requires(V v,M m) {
+  native::masked_scaleb(m,v,v,v); native::masked_scaleb_zero(m,v,v);
+};
+static_assert(!has_scaleb<vector> && !has_masked_scaleb<vector,vector::mask>);
+static_assert(!has_scaleb<native::simd<float,4,relaxed_architecture>>);
+static_assert(!has_scaleb<batch> && !has_masked_scaleb<batch,std::array<vector::mask,3>>);
+static_assert(!has_scaleb<registers> && !has_masked_scaleb<registers,native::wide<vector::mask,3>>);
+template<class V> concept has_wide_scaleb = requires(V v) { wide::scaleb(v,v); };
+template<class V,class M> concept has_wide_masked_scaleb = requires(V v,M m) {
+  wide::masked_scaleb(m,v,v,v); wide::masked_scaleb_zero(m,v,v);
+};
+static_assert(!has_wide_scaleb<batch> && !has_wide_masked_scaleb<batch,std::array<vector::mask,3>>);
+
 
 static void require(bool good, char const * message) {
   if (!good) { std::fprintf(stderr, "%s\n", message); std::abort(); }
