@@ -22,3 +22,6 @@ export import native.x86.sha;
 export import native.x86.vaes;
 export import native.x86.ifma;
 export import native.x86.adx;
+export import native.x86.sha512;
+export import native.x86.sm3;
+export import native.x86.sm4;

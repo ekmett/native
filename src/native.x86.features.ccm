@@ -61,7 +61,7 @@ export namespace native {
       /// Maximum supported structured-feature subleaf, from CPUID.7.0 EAX.
       /// Zero when leaf 7 is unavailable; subleaf 1 must not be assumed in that case.
       std::uint32_t max_leaf7_subleaf = 0;
-      /// CPUID.7.1 EAX feature bits; bits 4 and 5 report AVX_VNNI and AVX512_BF16.
+      /// CPUID.7.1 EAX feature bits; bits 0, 1, 2, 4 and 5 report SHA512, SM3, SM4, AVX_VNNI and AVX512_BF16.
       /// Zero unless leaf 7 and subleaf 1 were reported as available.
       std::uint32_t leaf7_1_eax = 0;
       /// CPUID.7.0 EDX; bit 23 reports AVX512_FP16. Zero without leaf 7.
@@ -73,7 +73,7 @@ export namespace native {
       /// Extended CPUID range and leaf 0x80000001 ECX (LAHF/SAHF, LZCNT and MWAITX).
       /// Zero when unavailable; source target admission checks the range first.
       std::uint32_t max_extended_leaf = 0, extended1_ecx = 0;
-      /// CPUID.7.1 EDX; bits 4 and 10 report AVX_VNNI_INT8 and AVX_VNNI_INT16.
+      /// CPUID.7.1 EDX; bits 4, 5 and 10 report AVX_VNNI_INT8, AVX_NE_CONVERT and AVX_VNNI_INT16.
       /// Zero unless leaf 7 and subleaf 1 were reported as available.
       std::uint32_t leaf7_1_edx = 0;
     };

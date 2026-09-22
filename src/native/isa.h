@@ -18,7 +18,7 @@ namespace native {
     bmi1, bmi2, avx512f, avx512dq, avx512bw, avx512vl,
     avx512bf16, avx512fp16, aes, pclmul, cx16, avx512cd,
     avx512ifma, lzcnt, movbe, sahf, mwaitx, waitpkg, crc32, gfni, avx512vpopcntdq,
-    vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16, avx512bitalg, avx512vbmi, avx512vbmi2, sha, vaes, avxifma, adx
+    vpclmulqdq, avxvnni, avx512vnni, avxvnniint8, avxvnniint16, avx512bitalg, avx512vbmi, avx512vbmi2, sha, vaes, avxifma, adx, sha512, sm3, sm4, avxneconvert
   };
   /// Independently observable ARM instruction features, using local bit indices.
   enum class arm_feature : std::uint64_t {
@@ -31,7 +31,7 @@ namespace native {
   /// Number of named Wasm feature values.
   inline constexpr std::size_t wasm_feature_count=std::size_t(wasm_feature::relaxed_simd)+1;
   /// Number of named x86 feature values.
-  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::adx)+1;
+  inline constexpr std::size_t x86_feature_count=std::size_t(x86_feature::avxneconvert)+1;
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::sm4)+1;
 
@@ -285,6 +285,18 @@ namespace native {
     constexpr bool get_adx() const noexcept { return get(x86_feature::adx); }
     constexpr void set_adx(bool value) noexcept { set(x86_feature::adx, value); }
     __declspec(property(get=get_adx,put=set_adx)) bool adx;
+    constexpr bool get_sha512() const noexcept { return get(x86_feature::sha512); }
+    constexpr void set_sha512(bool value) noexcept { set(x86_feature::sha512, value); }
+    __declspec(property(get=get_sha512,put=set_sha512)) bool sha512;
+    constexpr bool get_sm3() const noexcept { return get(x86_feature::sm3); }
+    constexpr void set_sm3(bool value) noexcept { set(x86_feature::sm3, value); }
+    __declspec(property(get=get_sm3,put=set_sm3)) bool sm3;
+    constexpr bool get_sm4() const noexcept { return get(x86_feature::sm4); }
+    constexpr void set_sm4(bool value) noexcept { set(x86_feature::sm4, value); }
+    __declspec(property(get=get_sm4,put=set_sm4)) bool sm4;
+    constexpr bool get_avxneconvert() const noexcept { return get(x86_feature::avxneconvert); }
+    constexpr void set_avxneconvert(bool value) noexcept { set(x86_feature::avxneconvert, value); }
+    __declspec(property(get=get_avxneconvert,put=set_avxneconvert)) bool avxneconvert;
   };
 
   /// Exact ARM feature requirements; construction does not add prerequisites.
@@ -609,6 +621,10 @@ namespace native {
       {x86_feature::avx512ifma,"avx512ifma",isa(x86_feature::avx512f),feature_register::leaf7_ebx,21},
       {x86_feature::avxifma,"avxifma",isa(x86_feature::avx),feature_register::leaf7_1_eax,23,isa(x86_feature::avx2)},
       {x86_feature::adx,"adx",{},feature_register::leaf7_ebx,19},
+      {x86_feature::sha512,"sha512",isa(x86_feature::avx),feature_register::leaf7_1_eax,0,isa(x86_feature::avx2)},
+      {x86_feature::sm3,"sm3",isa(x86_feature::avx),feature_register::leaf7_1_eax,1},
+      {x86_feature::sm4,"sm4",isa(x86_feature::avx),feature_register::leaf7_1_eax,2,isa(x86_feature::avx2)},
+      {x86_feature::avxneconvert,"avxneconvert",isa(x86_feature::avx),feature_register::leaf7_1_edx,5,isa(x86_feature::avx2)},
       {x86_feature::lzcnt,"lzcnt",{},feature_register::extended1_ecx,5},
       {x86_feature::movbe,"movbe",{},feature_register::leaf1_ecx,22},
       {x86_feature::sahf,"sahf",{},feature_register::extended1_ecx,0}

@@ -118,7 +118,7 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64|X86_64)$")
       native.x86.vpclmul.ccm native.x86.vnni.ccm native.x86.f16c.ccm
       native.x86.aes.ccm native.x86.avx512cd.ccm native.x86.bitalg.ccm
       native.x86.vbmi.ccm native.x86.vbmi2.ccm native.x86.sha.ccm native.x86.vaes.ccm
-      native.x86.ifma.ccm native.x86.ccm)
+      native.x86.ifma.ccm native.x86.sha512.ccm native.x86.sm3.ccm native.x86.sm4.ccm native.x86.ccm)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
   target_sources(native PUBLIC FILE_SET cxx_modules TYPE CXX_MODULES
     BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"

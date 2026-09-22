@@ -197,3 +197,6 @@ early and is subject to OS time limits. It supplies no memory ordering.
 `umwait::mwait(deadline)` accepts the same full 64-bit deadline after
 `umwait::monitor` has been armed. Wait operations have no constant-evaluation
 substitute.
+
+[SHA512, SM3 and SM4](x86-extended-crypto.md) supply the VEX crypto families
+with typed vector operands and exact constant-evaluation semantics.

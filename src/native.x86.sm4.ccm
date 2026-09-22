@@ -1,0 +1,119 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/config.h"
+#include "native/attributes.h"
+#include <array>
+#include <bit>
+#include <cstdint>
+#include <immintrin.h>
+#include "native/x86/detail/constant_lanes.h"
+#include "native/detail/sm4_sbox.h"
+export module native.x86.sm4;
+export import native.x86.features;
+export import native.simd;
+
+namespace native::detail::x86_sm4_constant {
+  template<bool Key, class V> constexpr V rounds(V state, V keys) noexcept {
+    auto x = x86_constant::lanes(state), k = x86_constant::lanes(keys);
+    for (unsigned base = 0; base < V::lanes; base += 4) {
+      for (unsigned i = 0; i < 4; ++i) {
+        auto mixed = x[base + 1] ^ x[base + 2] ^ x[base + 3] ^ k[base + i];
+        std::uint32_t t = 0;
+        for (unsigned byte = 0; byte < 4; ++byte)
+          t |= std::uint32_t(sbox[(mixed >> (byte * 8)) & 255]) << (byte * 8);
+        auto next = x[base] ^ t;
+        if constexpr (Key) next ^= std::rotl(t, 13) ^ std::rotl(t, 23);
+        else next ^= std::rotl(t, 2) ^ std::rotl(t, 10) ^ std::rotl(t, 18) ^ std::rotl(t, 24);
+        for (unsigned j = 0; j < 3; ++j) x[base + j] = x[base + j + 1];
+        x[base + 3] = next;
+      }
+    }
+    return x86_constant::pack<V>(x);
+  }
+  template<class V> constexpr V sm4rnds4(V a, V b) noexcept { return rounds<false>(a, b); }
+  template<class V> constexpr V sm4key4(V a, V b) noexcept { return rounds<true>(a, b); }
+}
+
+export namespace native {
+  /// \defgroup x86_sm4 SM4 instruction primitives
+  /// Runtime calls require AVX and SM4, matching compiler targets and OS vector state.
+  /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
+  /// Missing-feature overloads are constant-evaluation-only.
+  /// \{
+
+  /// Four SM4 data rounds independently within each 128-bit block; a is state, b is keys.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sm4")
+  constexpr simd<std::uint32_t, 4, Arch> sm4rnds4(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    if consteval { return detail::x86_sm4_constant::sm4rnds4(a, b); }
+    else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm4rnds4_epi32(a.to_native(), b.to_native())); }
+  }
+
+  /// Evaluate constant operands without SM4.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm4rnds4(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sm4_constant::sm4rnds4(a, b);
+  }
+
+  /// Four SM4 key-schedule rounds independently within each 128-bit block; a is state, b is constants.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sm4")
+  constexpr simd<std::uint32_t, 4, Arch> sm4key4(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    if consteval { return detail::x86_sm4_constant::sm4key4(a, b); }
+    else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm4key4_epi32(a.to_native(), b.to_native())); }
+  }
+
+  /// Evaluate constant operands without SM4.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm4key4(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sm4_constant::sm4key4(a, b);
+  }
+
+  /// Four SM4 data rounds independently within each 128-bit block; a is state, b is keys.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sm4")
+  constexpr simd<std::uint32_t, 8, Arch> sm4rnds4(simd<std::uint32_t, 8, Arch> a, simd<std::uint32_t, 8, Arch> b) noexcept {
+    if consteval { return detail::x86_sm4_constant::sm4rnds4(a, b); }
+    else { return simd<std::uint32_t, 8, Arch>::from_native(_mm256_sm4rnds4_epi32(a.to_native(), b.to_native())); }
+  }
+
+  /// Evaluate constant operands without SM4.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 8, Arch> sm4rnds4(simd<std::uint32_t, 8, Arch> a, simd<std::uint32_t, 8, Arch> b) noexcept {
+    return detail::x86_sm4_constant::sm4rnds4(a, b);
+  }
+
+  /// Four SM4 key-schedule rounds independently within each 128-bit block; a is state, b is constants.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sm4")
+  constexpr simd<std::uint32_t, 8, Arch> sm4key4(simd<std::uint32_t, 8, Arch> a, simd<std::uint32_t, 8, Arch> b) noexcept {
+    if consteval { return detail::x86_sm4_constant::sm4key4(a, b); }
+    else { return simd<std::uint32_t, 8, Arch>::from_native(_mm256_sm4key4_epi32(a.to_native(), b.to_native())); }
+  }
+
+  /// Evaluate constant operands without SM4.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sm4) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 8, Arch> sm4key4(simd<std::uint32_t, 8, Arch> a, simd<std::uint32_t, 8, Arch> b) noexcept {
+    return detail::x86_sm4_constant::sm4key4(a, b);
+  }
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sm4rnds4(Args...) = delete;
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sm4key4(Args...) = delete;
+  /// \}
+}

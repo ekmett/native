@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/config.h"
+#include "native/attributes.h"
+#include <array>
+#include <bit>
+#include <cstdint>
+#include <immintrin.h>
+#include "native/x86/detail/constant_lanes.h"
+export module native.x86.sm3;
+export import native.x86.features;
+export import native.simd;
+
+namespace native::detail::x86_sm3_constant {
+  template<class V> constexpr V sm3msg1(V a, V b, V c) noexcept {
+    auto x = x86_constant::lanes(a), y = x86_constant::lanes(b), z = x86_constant::lanes(c);
+    for (unsigned i = 0; i < 4; ++i) {
+      auto t = x[i] ^ z[i];
+      if (i < 3) t ^= std::rotl(y[i], 15);
+      x[i] = t ^ std::rotl(t, 15) ^ std::rotl(t, 23);
+    }
+    return x86_constant::pack<V>(x);
+  }
+  template<class V> constexpr V sm3msg2(V a, V b, V c) noexcept {
+    auto x = x86_constant::lanes(a), y = x86_constant::lanes(b), z = x86_constant::lanes(c);
+    for (unsigned i = 0; i < 4; ++i) x[i] ^= std::rotl(y[i], 7) ^ z[i];
+    x[3] ^= std::rotl(x[0], 6) ^ std::rotl(x[0], 15) ^ std::rotl(x[0], 30);
+    return x86_constant::pack<V>(x);
+  }
+  template<unsigned Imm8, class V> constexpr V sm3rnds2(V cdgh, V abef, V message) noexcept {
+    auto x = x86_constant::lanes(cdgh), y = x86_constant::lanes(abef);
+    auto words = x86_constant::lanes(message);
+    auto a = y[3], b = y[2], c = std::rotl(x[3], 9), d = std::rotl(x[2], 9);
+    auto e = y[1], f = y[0], g = std::rotl(x[1], 19), h = std::rotl(x[0], 19);
+    constexpr unsigned round = Imm8 & 62;
+    auto k = std::rotl(std::uint32_t(round < 16 ? 0x79cc4519 : 0x7a879d8a), int(round));
+    for (unsigned i = 0; i < 2; ++i) {
+      auto ss1 = std::rotl(std::rotl(a, 12) + e + k, 7);
+      auto ss2 = ss1 ^ std::rotl(a, 12);
+      auto ff = round < 16 ? a ^ b ^ c : (a & b) | (a & c) | (b & c);
+      auto gg = round < 16 ? e ^ f ^ g : (e & f) | (~e & g);
+      auto tt1 = ff + d + ss2 + (words[i] ^ words[i + 2]);
+      auto tt2 = gg + h + ss1 + words[i];
+      d = c; c = std::rotl(b, 9); b = a; a = tt1;
+      h = g; g = std::rotl(f, 19); f = e;
+      e = tt2 ^ std::rotl(tt2, 9) ^ std::rotl(tt2, 17);
+      k = std::rotl(k, 1);
+    }
+    return x86_constant::pack<V>(std::array{f, e, b, a});
+  }
+}
+
+export namespace native {
+  /// \defgroup x86_sm3 SM3 instruction primitives
+  /// Runtime calls require AVX and SM3, matching compiler targets and OS vector state.
+  /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
+  /// Missing-feature overloads are constant-evaluation-only.
+  /// \{
+
+  /// First SM3 schedule step.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sm3")
+  constexpr simd<std::uint32_t, 4, Arch> sm3msg1(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    if consteval { return detail::x86_sm3_constant::sm3msg1(a, b, c); }
+    else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm3msg1_epi32(a.to_native(), b.to_native(), c.to_native())); }
+  }
+
+  /// Evaluate constant operands without SM3.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm3msg1(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::x86_sm3_constant::sm3msg1(a, b, c);
+  }
+
+  /// Final SM3 schedule step.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sm3")
+  constexpr simd<std::uint32_t, 4, Arch> sm3msg2(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    if consteval { return detail::x86_sm3_constant::sm3msg2(a, b, c); }
+    else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm3msg2_epi32(a.to_native(), b.to_native(), c.to_native())); }
+  }
+
+  /// Evaluate constant operands without SM3.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm3msg2(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::x86_sm3_constant::sm3msg2(a, b, c);
+  }
+
+  /// Two SM3 rounds; Imm8 is masked with 0x3e. a holds unrotated CDGH and b holds ABEF.
+  template<isa<x86> Arch, unsigned Imm8>
+    requires(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx) && Imm8 <= 255)
+  native_nodiscard native_inline native_const native_target("sm3")
+  constexpr simd<std::uint32_t, 4, Arch> sm3rnds2(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    if consteval { return detail::x86_sm3_constant::sm3rnds2<Imm8>(a, b, c); }
+    else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm3rnds2_epi32(a.to_native(), b.to_native(), c.to_native(), Imm8)); }
+  }
+
+  /// Evaluate constant operands without SM3.
+  template<isa<x86> Arch, unsigned Imm8>
+    requires(!(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx)) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm3rnds2(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::x86_sm3_constant::sm3rnds2<Imm8>(a, b, c);
+  }
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sm3msg1(Args...) = delete;
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sm3msg2(Args...) = delete;
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, unsigned Imm8, class... Args> void sm3rnds2(Args...) = delete;
+  /// \}
+}

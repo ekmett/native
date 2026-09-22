@@ -1,0 +1,122 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/config.h"
+#include "native/attributes.h"
+#include <array>
+#include <bit>
+#include <cstdint>
+#include <immintrin.h>
+#include "native/x86/detail/constant_lanes.h"
+export module native.x86.sha512;
+export import native.x86.features;
+export import native.simd;
+
+namespace native::detail::x86_sha512_constant {
+  constexpr std::uint64_t sigma0(std::uint64_t x) noexcept {
+    return std::rotr(x, 1) ^ std::rotr(x, 8) ^ (x >> 7);
+  }
+  constexpr std::uint64_t sigma1(std::uint64_t x) noexcept {
+    return std::rotr(x, 19) ^ std::rotr(x, 61) ^ (x >> 6);
+  }
+  template<class V, class W> constexpr V sha512msg1(V a, W b) noexcept {
+    auto x = x86_constant::lanes(a);
+    auto y = x86_constant::lanes(b);
+    for (unsigned i = 0; i < 3; ++i) x[i] += sigma0(x[i + 1]);
+    x[3] += sigma0(y[0]);
+    return x86_constant::pack<V>(x);
+  }
+  template<class V> constexpr V sha512msg2(V a, V b) noexcept {
+    auto x = x86_constant::lanes(a);
+    auto y = x86_constant::lanes(b);
+    x[0] += sigma1(y[2]);
+    x[1] += sigma1(y[3]);
+    x[2] += sigma1(x[0]);
+    x[3] += sigma1(x[1]);
+    return x86_constant::pack<V>(x);
+  }
+  template<class V, class W> constexpr V sha512rnds2(V cdgh, V abef, W message) noexcept {
+    auto x = x86_constant::lanes(cdgh), y = x86_constant::lanes(abef);
+    auto words = x86_constant::lanes(message);
+    auto a = y[3], b = y[2], c = x[3], d = x[2];
+    auto e = y[1], f = y[0], g = x[1], h = x[0];
+    for (unsigned i = 0; i < 2; ++i) {
+      auto t1 = h + (std::rotr(e, 14) ^ std::rotr(e, 18) ^ std::rotr(e, 41)) +
+        ((e & f) ^ (~e & g)) + words[i];
+      auto t2 = (std::rotr(a, 28) ^ std::rotr(a, 34) ^ std::rotr(a, 39)) +
+        ((a & b) ^ (a & c) ^ (b & c));
+      h = g; g = f; f = e; e = d + t1;
+      d = c; c = b; b = a; a = t1 + t2;
+    }
+    return x86_constant::pack<V>(std::array{f, e, b, a});
+  }
+}
+
+export namespace native {
+  /// \defgroup x86_sha512 SHA512 instruction primitives
+  /// Runtime calls require AVX and SHA512, matching compiler targets and OS vector state.
+  /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
+  /// Missing-feature overloads are constant-evaluation-only.
+  /// \{
+
+  /// First SHA-512 schedule step; only the low lane of b is used.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sha512")
+  constexpr simd<std::uint64_t, 4, Arch> sha512msg1(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    if consteval { return detail::x86_sha512_constant::sha512msg1(a, b); }
+    else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512msg1_epi64(a.to_native(), b.to_native())); }
+  }
+
+  /// Evaluate constant operands without SHA512.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 4, Arch> sha512msg1(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_sha512_constant::sha512msg1(a, b);
+  }
+
+  /// Final SHA-512 schedule step with recurrence through the low output lanes.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sha512")
+  constexpr simd<std::uint64_t, 4, Arch> sha512msg2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    if consteval { return detail::x86_sha512_constant::sha512msg2(a, b); }
+    else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512msg2_epi64(a.to_native(), b.to_native())); }
+  }
+
+  /// Evaluate constant operands without SHA512.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 4, Arch> sha512msg2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_sha512_constant::sha512msg2(a, b);
+  }
+
+  /// Two SHA-512 rounds: a is CDGH, b is ABEF, c contains two message-plus-constant words.
+  template<isa<x86> Arch>
+    requires(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx))
+  native_nodiscard native_inline native_const native_target("sha512")
+  constexpr simd<std::uint64_t, 4, Arch> sha512rnds2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
+    if consteval { return detail::x86_sha512_constant::sha512rnds2(a, b, c); }
+    else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512rnds2_epi64(a.to_native(), b.to_native(), c.to_native())); }
+  }
+
+  /// Evaluate constant operands without SHA512.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+  native_nodiscard consteval simd<std::uint64_t, 4, Arch> sha512rnds2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
+    return detail::x86_sha512_constant::sha512rnds2(a, b, c);
+  }
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sha512msg1(Args...) = delete;
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sha512msg2(Args...) = delete;
+
+  /// Reject raw registers, mixed requirements and unsupported shapes.
+  template<isa<x86> Arch, class... Args> void sha512rnds2(Args...) = delete;
+  /// \}
+}
