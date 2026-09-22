@@ -1,12 +1,14 @@
 // SPDX-FileCopyrightText: 2024 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/isa_import.h"
 #include <cstdint>
 #include <x86intrin.h>
 #include "native/attributes.h"
+#include "native/targets.h"
 
 export module native.x86.wait;
-import native.x86.features;
+export import native.x86.features;
 
 export namespace native {
   /// \defgroup x86_mwaitx MWAITX
@@ -16,7 +18,7 @@ export namespace native {
 
   /// \defgroup x86_waitpkg WAITPKG
   /// \ingroup wait
-  /// UMONITOR and UMWAIT require x86_feature::waitpkg, reported by
+  /// UMONITOR, UMWAIT and TPAUSE require x86_feature::waitpkg, reported by
   /// CPUID leaf 7 subleaf 0 ECX bit 5. No vector-state feature is required.
 
   /// \defgroup wait Waiting
@@ -73,10 +75,22 @@ export namespace native {
     [[gnu::target("waitpkg")]] static void monitor(volatile void * p) noexcept;
     /// \ingroup x86_waitpkg
     /// Issue UMWAIT with this absolute deadline operand; return the intrinsic status.
-    [[gnu::target("waitpkg")]] static std::uint8_t mwait(std::uint32_t timer = 0) noexcept native_blocking;
+    [[gnu::target("waitpkg")]] static std::uint8_t mwait(std::uint64_t timer = 0) noexcept native_blocking;
     /// \hideinlinesource
     static const bool supported;
   };
+
+  /// Wait until an absolute 64-bit TSC deadline without arming a monitor.
+  /// Control 0 permits C0.2; Control 1 requests C0.1. The OS may limit the wait.
+  /// Returns the intrinsic carry status; no memory ordering is promised.
+  /// Call only after admitting WAITPKG on the executing CPU.
+  template<isa<x86> Arch = NATIVE_BASELINE, unsigned Control = 1>
+    requires(Arch.has(x86_feature::waitpkg) && Control < 2)
+  native_inline native_artificial native_target("waitpkg")
+  std::uint8_t tpause(std::uint64_t deadline) noexcept native_blocking {
+    return __builtin_ia32_tpause(Control, std::uint32_t(deadline >> 32),
+      std::uint32_t(deadline));
+  }
 
   /// A universally supported x86 spin waiter using PAUSE; monitor is a no-op.
   struct spin {
@@ -120,7 +134,7 @@ namespace native {
   [[gnu::target("waitpkg")]] void umwait::monitor(volatile void * p) noexcept {
     _umonitor(const_cast<void *>(p));
   }
-  [[gnu::target("waitpkg")]] std::uint8_t umwait::mwait(std::uint32_t timer) noexcept native_blocking {
+  [[gnu::target("waitpkg")]] std::uint8_t umwait::mwait(std::uint64_t timer) noexcept native_blocking {
     return _umwait(1, timer);
   }
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #include <cstdint>
+#include "native/attributes.h"
 #include <cstdio>
 #include <cstring>
 #if defined(_MSC_VER)
@@ -11,6 +12,8 @@
 #endif
 import native.x86.features;
 import native.x86.wait;
+static_assert(__is_same(decltype(&native::umwait::mwait),
+  std::uint8_t (*)(std::uint64_t) noexcept native_blocking));
 #if (!NATIVE_MINIMAL_HAS_AVX512 && (defined(__AVX512F__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || defined(__AVX512VL__))) || defined(__WAITPKG__) || defined(__MWAITX__)
 #error Common consumer inherited AVX-512 or optional wait ISA flags
 #endif

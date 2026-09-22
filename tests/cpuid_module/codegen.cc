@@ -9,6 +9,10 @@ extern "C" {
   void probe_monitorx(volatile void * p) noexcept { native::mwaitx::monitor(p); }
   void probe_mwaitx(unsigned timer) noexcept { native::mwaitx::mwait(timer); }
   void probe_umonitor(volatile void * p) noexcept { native::umwait::monitor(p); }
-  unsigned char probe_umwait(unsigned timer) noexcept { return native::umwait::mwait(timer); }
+  unsigned char probe_umwait(unsigned long long timer) noexcept { return native::umwait::mwait(timer); }
   void probe_pause() noexcept { native::spin::mwait(); }
+}
+
+extern "C" [[gnu::target("waitpkg")]] unsigned char probe_tpause(unsigned long long deadline) noexcept {
+  return native::tpause<native::x86_feature::waitpkg>(deadline);
 }

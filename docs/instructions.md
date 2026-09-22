@@ -184,3 +184,16 @@ operations. A semantic result at compile time does not reproduce a hardware
 side effect such as a sticky saturation or floating-point exception flag.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
+### Waiting with a TSC deadline
+
+`native.x86.wait` exports `tpause<Arch, Control>(deadline)`, where the scalar
+`deadline` is an absolute 64-bit TSC value and `Control` is 0 (permit C0.2) or
+1 (request C0.1, the default). `Arch` defaults to the provider's compiler
+baseline and must contain `x86_feature::waitpkg`; the caller must also enable
+the `waitpkg` compiler target and admit that feature before execution. The
+operation returns the intrinsic carry status. It needs no monitor, may wake
+early and is subject to OS time limits. It supplies no memory ordering.
+`umwait::mwait(deadline)` accepts the same full 64-bit deadline after
+`umwait::monitor` has been armed. Wait operations have no constant-evaluation
+substitute.
