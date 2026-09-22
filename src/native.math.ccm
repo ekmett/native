@@ -39,6 +39,8 @@ export namespace math {
   using ::math::damping_gain;
   using ::math::log;
   using ::math::log1p;
+  using ::math::tanh;
+  using ::math::atan2;
   using ::math::sin;
   using ::math::cos;
   using ::math::sincos;
@@ -97,6 +99,8 @@ export namespace wide {
   using ::wide::damping_gain;
   using ::wide::log;
   using ::wide::log1p;
+  using ::wide::tanh;
+  using ::wide::atan2;
   using ::wide::sin;
   using ::wide::cos;
   using ::wide::sincos;
@@ -113,6 +117,7 @@ export namespace native {
   using ::native::log;
   using ::native::log1p;
   using ::native::tanh;
+  using ::native::atan2;
   namespace math {
     using ::native::abs;
     using ::native::cos;
@@ -129,5 +134,6 @@ export namespace native {
     using ::native::ceil;
     using ::native::trunc;
     using ::native::tanh;
+    using ::native::atan2;
   }
 }

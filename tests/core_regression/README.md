@@ -51,3 +51,23 @@ it is not a public library control API. No GPU or performance claim is implied.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
+
+## Tanh and atan2 accuracy
+
+`native.promoted_tanh.{header,import}` and
+`native.promoted_atan2.{header,import}` exercise scalars, every admitted SIMD
+width, arrays, `wide`, empty shapes and constant evaluation. Gradual and flushing
+runs preserve caller FP controls. Tanh also compares the fused graph against a
+frozen FTZ reference on CPU targets; Wasm has a separately rounded graph.
+
+The default sampled reference uses double libm rounded to binary32. Configure
+`-DNATIVE_TEST_MPFR=ON` to replace it with MPFR at 256-bit precision and
+round-to-nearest, ties-to-even. MPFR and GMP are optional test dependencies; point
+`CMAKE_PREFIX_PATH` at their installations if needed. This covers 45,190 tanh
+inputs and 84,330 atan2 pairs, including boundary windows and seeded samples.
+The 2 ULP limit is a sampled regression budget, not a proof over all inputs.
+NaN payload/sign differences are permitted; signed zeros and axes are exact.
+
+The optional [atan2 benchmark](../transcendentals/README.md) compares packed
+division with reciprocal refinement across register counts. It is separate from
+correctness tests and is not a timing gate.

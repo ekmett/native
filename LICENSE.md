@@ -13,7 +13,11 @@ GITHUB -->
 Code in this repository is licensed under either of
  * Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  * BSD 2-Clause license (https://opensource.org/licenses/BSD-2-Clause)
-at your option.
+at your option, except where a file carries an additional notice.
+
+The atan2 polynomial coefficients in `src/native/wide_math.h` derive from
+SLEEF 3.9.0, copyright Naoki Shibata and contributors, under the Boost Software
+License 1.0. The complete notice accompanies that implementation.
 
 The [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md) is licensed under
  * Creative Commons Attribution 4.0 International Public License (https://creativecommons.org/licenses/by/4.0/)

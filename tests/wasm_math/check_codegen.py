@@ -30,7 +30,7 @@ names = ['exp_single', 'exp_batch', 'exp_flush', 'sin_single', 'cos_single',
          'sincos_single', 'sincos_batch', 'exp_relaxed_caller', 'promoted_exp_single',
          'promoted_exp_batch', 'array_exp_batch', 'promoted_sincos_batch']
 new_names = [f'{prefix}_{operation}_{shape}'
-             for operation in ('expm1', 'damping_gain', 'log', 'log1p')
+             for operation in ('expm1', 'damping_gain', 'log', 'log1p', 'tanh', 'atan2')
              for prefix, shape in (('promoted', 'single'), ('native', 'single'), ('promoted', 'batch'))]
 names += new_names
 for name in names:
@@ -42,7 +42,11 @@ for name in names:
         if re.search(forbidden, code):
             failures.append(f'{name}: forbidden instruction {forbidden}')
     required_ops = ['f32x4.mul', 'f32x4.add', 'v128.load', 'v128.store']
-    if '_log' in name:
+    if '_tanh' in name:
+        required_ops.append('i8x16.swizzle')
+    elif '_atan2' in name:
+        required_ops.append('f32x4.div')
+    elif '_log' in name:
         required_ops.append('f32x4.convert_i32x4_s')
     else:
         required_ops.append('i32x4.trunc_sat_f32x4_u')
@@ -54,7 +58,7 @@ for a, b in [('exp_single', 'promoted_exp_single'), ('exp_single', 'exp_relaxed_
              ('sincos_batch', 'promoted_sincos_batch')]:
     if functions.get(a) != functions.get(b):
         failures.append(f'{a}/{b}: alias/shape instruction streams differ')
-for operation in ('expm1', 'damping_gain', 'log', 'log1p'):
+for operation in ('expm1', 'damping_gain', 'log', 'log1p', 'tanh', 'atan2'):
     a, b = f'promoted_{operation}_single', f'native_{operation}_single'
     if functions.get(a) != functions.get(b):
         failures.append(f'{a}/{b}: public/compatibility instruction streams differ')

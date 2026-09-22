@@ -76,3 +76,25 @@ ENTRY void promoted_log1p_batch(float * out,float const * in) {
   for(unsigned i=0;i<3;++i) r[i].store(out+4*i);
 }
 }
+
+extern "C" {
+ENTRY void promoted_tanh_single(float * out,float const * in) { math::tanh(vector::load(in)).store(out); }
+ENTRY void native_tanh_single(float * out,float const * in) { native::tanh(vector::load(in)).store(out); }
+ENTRY void promoted_tanh_batch(float * out,float const * in) {
+  native::wide<vector,3> x{vector::load(in),vector::load(in+4),vector::load(in+8)};
+  auto r=math::tanh(x);
+  for(unsigned i=0;i<3;++i) r.registers[i].store(out+4*i);
+}
+ENTRY void promoted_atan2_single(float * out,float const * y,float const * x) {
+  math::atan2(vector::load(y),vector::load(x)).store(out);
+}
+ENTRY void native_atan2_single(float * out,float const * y,float const * x) {
+  native::atan2(vector::load(y),vector::load(x)).store(out);
+}
+ENTRY void promoted_atan2_batch(float * out,float const * y,float const * x) {
+  native::wide<vector,3> a{vector::load(y),vector::load(y+4),vector::load(y+8)};
+  native::wide<vector,3> b{vector::load(x),vector::load(x+4),vector::load(x+8)};
+  auto r=math::atan2(a,b);
+  for(unsigned i=0;i<3;++i) r.registers[i].store(out+4*i);
+}
+}

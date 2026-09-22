@@ -193,6 +193,61 @@ namespace wide::detail {
 #endif
 #endif
     }
+    // Eight coefficient words indexed by lanes in [0,7]. Runtime full vectors
+    // use register tables; scalar indexing is confined to scalar/constant paths.
+    static inline constexpr auto tanh_coefficient(V index,
+        std::array<std::uint32_t,8> const & table) noexcept {
+      using F=typename V::template rebind<float>;
+      if consteval {
+        std::array<std::uint32_t,V::lanes> indices{},words{};
+        index.store(indices.data());
+        for(std::size_t i=0;i<V::lanes;++i) words[i]=table[indices[i]];
+        return F::load_bits(words.data());
+      } else {
+        if constexpr(V::lanes==1) return F::from_bits(table[index.to_native()]);
+        else if constexpr(V::lanes==2 || V::lanes==3)
+          return F::from_storage(native_ops<typename V::storage_type>::tanh_coefficient(index.to_storage(),table));
+#if NATIVE_HAS_AVX2
+        else if constexpr(V::lanes<=8) {
+          auto const coefficients=std::bit_cast<__m256i>(table);
+          if constexpr(V::lanes==4) {
+            auto const indices=_mm256_zextsi128_si256(index.to_native());
+            return F::from_native(_mm_castsi128_ps(_mm256_castsi256_si128(
+              _mm256_permutevar8x32_epi32(coefficients,indices))));
+          } else return F::from_native(_mm256_castsi256_ps(
+            _mm256_permutevar8x32_epi32(coefficients,index.to_native())));
+        }
+#endif
+#if NATIVE_HAS_AVX512F
+        else if constexpr(V::lanes==16) {
+          auto const coefficients=_mm512_broadcast_i64x4(std::bit_cast<__m256i>(table));
+          return F::from_native(_mm512_castsi512_ps(
+            _mm512_permutexvar_epi32(index.to_native(),coefficients)));
+        }
+#endif
+#if NATIVE_HAS_ARM_NEON
+        else if constexpr(V::lanes==4) {
+          uint8x16x2_t const coefficients{{vld1q_u8(reinterpret_cast<std::uint8_t const *>(table.data())),
+            vld1q_u8(reinterpret_cast<std::uint8_t const *>(table.data()+4))}};
+          auto const indices=std::bit_cast<uint32x4_t>(index.to_native());
+          // Vector arithmetic avoids importing arm_neon.h's internal-linkage
+          // scalar-broadcast wrappers into both native.simd and native.math.
+          auto const offsets=indices*0x04040404u+0x03020100u;
+          return F::from_native(vreinterpretq_f32_u8(vqtbl2q_u8(coefficients,vreinterpretq_u8_u32(offsets))));
+        }
+#endif
+#if NATIVE_HAS_WASM_SIMD128
+        else if constexpr(V::lanes==4) {
+          auto const offsets=wasm_i32x4_add(wasm_i32x4_mul(index.to_native(),wasm_i32x4_splat(0x04040404)),
+            wasm_i32x4_splat(0x03020100));
+          auto const low=wasm_i8x16_swizzle(wasm_v128_load(table.data()),offsets);
+          auto const high=wasm_i8x16_swizzle(wasm_v128_load(table.data()+4),
+            wasm_i8x16_sub(offsets,wasm_i8x16_splat(16)));
+          return F::from_native(wasm_v128_or(low,high));
+        }
+#endif
+      }
+    }
     static inline constexpr auto signed_float(V a) noexcept {
       using F=typename V::template rebind<float>;
       if consteval {

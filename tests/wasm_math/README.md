@@ -2,7 +2,7 @@
 
 This fixture imports `native` and `native.math` and can also build against an
 installed package with `find_package(native)`. It covers binary32 `exp`,
-`exp<true>`, `sin`, `cos`, and paired `sincos` on SIMD128 vectors, standard arrays
+`exp<true>`, `expm1`, `damping_gain`, `log`, `log1p`, `tanh`, `atan2`, `sin`, `cos`, and paired `sincos` on SIMD128 vectors, standard arrays
 and `native::wide`, including empty packs and both public math namespaces.
 
 The arithmetic contract is intentionally distinct from FMA-based scalar, x86
@@ -14,7 +14,7 @@ underflow cutoffs and sign/quadrant selection stay shared with the existing
 kernels. Exponential uses two normal exponent factors; the last multiplication
 performs gradual-underflow rounding. No general-purpose scaleb is added.
 
-The three CTests are:
+The CTests are:
 
 - `native.wasm.math`: Node validation/execution, constexpr/runtime agreement,
   empty/batched shape checks, signed zeros, subnormal inputs/outputs, underflow
@@ -29,12 +29,18 @@ The three CTests are:
 - `native.wasm.math.base_engine`: runs the same module with Wasmtime SIMD enabled
   and relaxed SIMD explicitly disabled. This checks this module's actual
   feature requirement; it does not alter advisory engine-conformance tests.
-- `native.wasm.math.codegen`: checks all twelve single/batched entry bodies for
+- `native.wasm.math.codegen`: checks the single/batched entry bodies for
   vector arithmetic/conversions, no scalar floating arithmetic or lane
-  extraction, no calls and no relaxed instructions. Five pairs require
+  extraction, no calls and no relaxed instructions. Namespace and batching pairs require
   identical Wasm instruction streams across namespace aliases, wide/array
   shapes and stronger caller attributes. The generated JSON retains complete
   bodies. This inspects Wasm bytecode, not engine JIT machine code or timing.
+
+`native.wasm.tanh` and `native.wasm.atan2`, plus their `.base_engine` variants,
+reuse the promoted-kernel regression banks. They check signed special values,
+empty and wide shapes, public aliases and sampled accuracy with a 2 ULP budget.
+The tanh bank retains a small MPFR-derived word fixture; the complete sampled
+banks use double libm by default.
 
 ## Local reproduction
 
@@ -65,10 +71,6 @@ passes the fixture. Both engines report maximum observed exponential error of
 1 ULP and maximum observed trig absolute error of `7.82414814e-08`. These local
 results do not qualify all browser engines or promise cross-ISA bitwise output.
 
-At the 2026-09-22 checkpoint, the complete producer suite passes 98/98 after
-excluding the existing `engine-conformance` advisory label, and the fresh
-installed-package consumer passes 3/3. Clang 23.1.1 on macOS ARM64 also passes
-all five existing `native.promoted_exp.{header,import}`,
-`native.promoted_math.{header,import}`, and `native.wide_exp` checks. That verifies
-the retained fused NEON/scalar graph against the existing references; x86 native
-execution was not available for this checkpoint. No performance claim is made.
+The focused module suite passes 7/7 with these two kernels and the shared
+code-generation check. Accuracy qualification and engine-conformance checks are
+separate; the existing `engine-conformance` label remains advisory.

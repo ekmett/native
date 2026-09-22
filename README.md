@@ -116,8 +116,11 @@ forms take `simd` values; scalar forms take ordinary C++ values. Their feature
 requirements and arithmetic contracts remain specific to the instruction.
 
 Import `native.math` separately for promoted numerical kernels such as
-`math::exp`, `math::expm1`, `math::log1p`, and `math::sincos`. Their domains and batching behavior are described
-in the [value guide](docs/modules.md#promoted-math-batches). Floating-point
+`math::exp`, `math::expm1`, `math::log1p`, `math::tanh`, `math::atan2`, and
+`math::sincos`. Their domains and batching behavior are described
+in the [value guide](docs/modules.md#promoted-math-batches). The
+[transcendental plan](docs/transcendentals.md) covers prospective kernels and their
+accuracy and performance checks. Floating-point
 controls remain under application ownership. Wasm SIMD128 promoted kernels use
 separately rounded multiply/add stages; x86 and ARM use fused stages. The separate
 FTZ package builds reproducible binary32 arithmetic on this library's element

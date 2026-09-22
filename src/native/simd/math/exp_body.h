@@ -52,7 +52,21 @@ namespace native {
   NATIVE_PROMOTED_MATH_ENTRY(damping_gain)
   NATIVE_PROMOTED_MATH_ENTRY(log)
   NATIVE_PROMOTED_MATH_ENTRY(log1p)
+  NATIVE_PROMOTED_MATH_ENTRY(tanh)
 #undef NATIVE_PROMOTED_MATH_ENTRY
+  /// \ingroup vector_math
+  /// Evaluate atan2(y,x), retaining the common SIMD architecture and lane count.
+  template<std::size_t L, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr simd<float,L,Arch>
+  atan2(simd<float,L,Arch> y, simd<float,L,Arch> x) noexcept { return ::math::atan2(y,x); }
+  /// \ingroup vector_math
+  /// Advance each atan2 stage across matching arrays of independent registers.
+  template<std::size_t L, std::size_t N, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N>
+  atan2(std::array<simd<float,L,Arch>,N> const & y,
+      std::array<simd<float,L,Arch>,N> const & x) noexcept { return ::math::atan2(y,x); }
   /** \ingroup vector_math
    * \brief Evaluate the binary32 range-reduced exponential approximation.
    * This uses the library's degree-seven polynomial and exponent scaling graph;

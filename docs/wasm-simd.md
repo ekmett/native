@@ -115,7 +115,8 @@ Tests do not enable engine feature flags.
 
 ## Promoted binary32 math
 
-`import native.math;` adds `math::exp`, `sin`, `cos`, and `sincos` to the SIMD128
+`import native.math;` adds `math::exp`, `expm1`, `log`, `log1p`, `damping_gain`,
+`tanh`, `atan2`, `sin`, `cos`, and `sincos` to the SIMD128
 values, arrays and `native::wide` batches. `native::math` provides equivalent
 Wasm overloads. These kernels require only `simd128`; `relaxed_simd` does not
 change their arithmetic. SIMD128 lacks FMA, so each polynomial multiply and add

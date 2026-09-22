@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+// SPDX-License-Identifier: (BSD-2-Clause OR Apache-2.0) AND BSL-1.0
 #pragma once
 #include "native/simd.h"
 #include "native/wide_pack.h"
@@ -184,6 +184,13 @@ namespace wide::detail {
     template<class V> requires std::same_as<typename V::value_type,float>
     native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::trig_integer(a); }
   };
+  struct tanh_coefficient {
+    std::array<std::uint32_t,8> table;
+    template<class V> requires std::same_as<typename V::value_type,std::uint32_t>
+    native_inline constexpr auto operator()(V const & index) const noexcept {
+      return native_ops<V>::tanh_coefficient(index,table);
+    }
+  };
   struct signed_float_operation {
     template<class V> requires std::same_as<typename V::value_type,std::uint32_t>
     native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::signed_float(a); }
@@ -345,7 +352,154 @@ namespace math {
   }
 }
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+// SPDX-License-Identifier: (BSD-2-Clause OR Apache-2.0) AND BSL-1.0
+// Adapted from FTZ's seven-interval tanh polynomial, with native arithmetic.
+namespace math::detail {
+  template<class V,std::size_t N> requires (::wide::detail::binary32_register<V>)
+  native_nodiscard native_inline constexpr auto tanh_kernel(std::array<V,N> const & input) noexcept {
+    namespace w=::wide;
+    auto const word=w::bits(input);
+    auto const u=[&](std::uint32_t value) {return w::constant_like(word,value);};
+    auto const magnitude=w::bit_and(word,u(0x7fffffffu));
+    // Bound large inputs before squaring; the tiny-region result below keeps
+    // original words, including subnormals under the caller's FP environment.
+    auto const safe=w::select(w::cmp_lt(magnitude,u(0x41200000u)),magnitude,u(0x3f800000u));
+    auto const x=w::from_bits(safe);
+    auto const z=w::mul(x,x);
+    auto const interval=w::select(w::cmp_le(safe,u(0x40800000u)),
+      w::select(w::cmp_le(safe,u(0x40000000u)),
+        w::select(w::cmp_le(safe,u(0x3f800000u)),u(0),u(1)),
+        w::select(w::cmp_le(safe,u(0x40400000u)),u(2),u(3))),
+      w::select(w::cmp_le(safe,u(0x41000000u)),
+        w::select(w::cmp_le(safe,u(0x40c00000u)),u(4),u(5)),u(6)));
+    auto const coefficient=[&](std::uint32_t c0,std::uint32_t c1,std::uint32_t c2,
+        std::uint32_t c3,std::uint32_t c4,std::uint32_t c5,std::uint32_t c6) {
+      return w::detail::lift(w::detail::tanh_coefficient{{c0,c1,c2,c3,c4,c5,c6,c6}},interval);
+    };
+    auto const t=w::detail::madd(z,
+      coefficient(0x40000000u,0x3f000000u,0x3e800000u,0x3e800000u,0x3d800000u,0x3d800000u,0x3d000000u),
+      coefficient(0xbf800000u,0xbfa00000u,0xbfd00000u,0xc0480000u,0xbfd00000u,0xc0480000u,0xc0240000u));
+    auto h=coefficient(0x00000000u,0x00000000u,0x00000000u,0x00000000u,0xb9405fbfu,0x00000000u,0x00000000u);
+    h=w::detail::madd(h,t,coefficient(0x00000000u,0x38752140u,0x00000000u,0x00000000u,0x39ab4d5fu,0x00000000u,0x00000000u));
+    h=w::detail::madd(h,t,coefficient(0x00000000u,0xb9183513u,0xb947bd66u,0xb58f6d10u,0xb9c08feeu,0xb59171b1u,0x00000000u));
+    h=w::detail::madd(h,t,coefficient(0x34facb37u,0x398d9ee0u,0x39dfe5a4u,0x36863471u,0x3a2bf5fau,0x3671d749u,0x00000000u));
+    h=w::detail::madd(h,t,coefficient(0xb63a0d2du,0xba2fdf3au,0xba4a3864u,0xb758ec9du,0xbaa65b2au,0xb72757e1u,0xb811c415u));
+    h=w::detail::madd(h,t,coefficient(0x37813497u,0x3ae1130du,0x3ae2b84bu,0x384b3fb7u,0x3b1584c1u,0x380d4deeu,0x38c8e73cu));
+    h=w::detail::madd(h,t,coefficient(0xb8bfb3f8u,0xbb8bc302u,0xbb813c08u,0xb9404721u,0xbb86bc79u,0xb8f4646bu,0xb980a2b8u));
+    h=w::detail::madd(h,t,coefficient(0x3a0e6d24u,0x3c2d6773u,0x3c1129ceu,0x3a356f7bu,0x3bf71905u,0x39d46b54u,0x3a37296bu));
+    h=w::detail::madd(h,t,coefficient(0xbb535f6cu,0xbcd7a178u,0xbca3c0b8u,0xbb2d3d49u,0xbc67da1fu,0xbabdbc02u,0xbb06690eu));
+    h=w::detail::madd(h,t,coefficient(0x3c9d20e4u,0x3d86d45du,0x3d3bcdf4u,0x3c2a7e14u,0x3ce35ff2u,0x3bb1ed8au,0x3bcea86au));
+    h=w::detail::madd(h,t,coefficient(0xbded544du,0xbe2e2df9u,0xbde4f8bcu,0xbd36d397u,0xbd76f5e5u,0xbcb95c19u,0xbcb08499u));
+    h=w::detail::madd(h,t,coefficient(0x3f5c6e3eu,0x3f14c222u,0x3ec662fcu,0x3e9091d7u,0x3e48ced7u,0x3e10d0b5u,0x3de229ecu));
+
+    auto result=w::bits(w::mul(x,h));
+    auto const sign=w::bit_and(word,u(0x80000000u));
+    result=w::bit_or(w::min(result,u(0x3f800000u)),sign);
+    result=w::select(w::cmp_ge(magnitude,u(0x41200000u)),w::bit_or(sign,u(0x3f800000u)),result);
+    result=w::select(w::cmp_le(magnitude,u(0x39800000u)),word,result);
+    result=w::select(w::cmp_gt(magnitude,u(0x7f800000u)),u(0x7fc00000u),result);
+    return w::from_bits(result);
+  }
+}
+namespace math {
+  /// Hyperbolic tangent; preserve signed zero and tiny inputs, and saturate
+  /// infinities to signed one. NaNs return a quiet NaN without a payload promise.
+  template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto tanh(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size==0) return std::remove_cvref_t<T>(input);
+    else return ::wide::demote<T>(detail::tanh_kernel(::wide::promote(input)));
+  }
+}
+
+// Adapted coefficient use from SLEEF 3.9.0 atan2kf; Boost 1.0 notice below.
+namespace math::detail {
+  // Raw subnormal inputs are signed zero. Normal operands use one packed
+  // min/max ratio, with no software flushing or changes to FP controls.
+  // A tiny finite result may underflow according to the caller's FP mode.
+  template<class V, std::size_t N>
+    requires (::wide::detail::binary32_register<V>)
+  native_nodiscard native_inline constexpr auto atan2_kernel(
+      std::array<V, N> const & y, std::array<V, N> const & x) noexcept {
+    namespace w = ::wide;
+    auto const c = [&](float value) { return w::constant_like(y, value); };
+    auto const yw = w::bits(y), xw = w::bits(x);
+    auto const u = [&](std::uint32_t value) { return w::constant_like(yw, value); };
+    auto const f = [&](std::uint32_t value) { return c(std::bit_cast<float>(value)); };
+    auto ay = w::bit_and(yw, u(0x7fffffffu));
+    auto ax = w::bit_and(xw, u(0x7fffffffu));
+    ay = w::select(w::cmp_lt(ay, u(0x00800000u)), u(0), ay);
+    ax = w::select(w::cmp_lt(ax, u(0x00800000u)), u(0), ax);
+    auto const swap = w::cmp_gt(ay, ax);
+    auto const negative_x = w::cmp_ne(w::bit_and(xw, u(0x80000000u)), u(0));
+    auto const a = w::select(swap, ax, ay);
+    auto const b = w::select(swap, ay, ax);
+    auto const ratio = w::div(w::from_bits(a), w::from_bits(b));
+    auto const tiny = w::cmp_le(w::bits(ratio), u(0x39800000u));
+    auto const z = w::mul(ratio, ratio);
+    auto h = w::detail::madd(f(0x3b390ccdu), z, f(0xbc82b80du));
+    h = w::detail::madd(h, z, f(0x3d2e19b6u));
+    h = w::detail::madd(h, z, f(0xbd995ffau));
+    h = w::detail::madd(h, z, f(0x3dd9ccf2u));
+    h = w::detail::madd(h, z, f(0xbe116f9fu));
+    h = w::detail::madd(h, z, f(0x3e4cb9a7u));
+    h = w::detail::madd(h, z, f(0xbeaaaa5du));
+    auto angle = w::detail::madd(w::mul(z, h), ratio, ratio);
+    angle = w::select(tiny, ratio, angle);
+    angle = w::select(swap, w::sub(f(0x3fc90fdbu), angle), angle);
+    angle = w::select(negative_x, w::sub(f(0x40490fdbu), angle), angle);
+    auto result = w::bits(angle);
+    auto const axis = w::select(negative_x, u(0x40490fdbu), u(0));
+    result = w::select(w::cmp_eq(ax, u(0)), u(0x3fc90fdbu), result);
+    result = w::select(w::cmp_eq(ax, u(0x7f800000u)), axis, result);
+    result = w::select(w::cmp_eq(ay, u(0x7f800000u)),
+      w::select(w::cmp_eq(ax, u(0x7f800000u)),
+        w::select(negative_x, u(0x4016cbe4u), u(0x3f490fdbu)), u(0x3fc90fdbu)), result);
+    result = w::select(w::cmp_eq(ay, u(0)), axis, result);
+    result = w::bit_or(result, w::bit_and(yw, u(0x80000000u)));
+    result = w::select(w::bit_or(w::cmp_gt(ay, u(0x7f800000u)),
+      w::cmp_gt(ax, u(0x7f800000u))), u(0x7fc00000u), result);
+    return w::from_bits(result);
+  }
+}
+namespace math {
+  /// atan2(y,x) in radians, preserving the common operand shape and signed axes.
+  /// Subnormal inputs are signed zero; tiny outputs follow the caller's FP mode.
+  template<::wide::promotable T>
+    requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto atan2(T const & y, T const & x) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
+      return std::remove_cvref_t<T>(y);
+    else return ::wide::demote<T>(detail::atan2_kernel(::wide::promote(y), ::wide::promote(x)));
+  }
+}
+
+/*
+Copyright Naoki Shibata and contributors 2010 - 2025.
+Boost Software License - Version 1.0 - August 17th, 2003
+
+Permission is hereby granted, free of charge, to any person or organization
+obtaining a copy of the software and accompanying documentation covered by
+this license (the "Software") to use, reproduce, display, distribute,
+execute, and transmit the Software, and to prepare derivative works of the
+Software, and to permit third-parties to whom the Software is furnished to
+do so, all subject to the following:
+
+The copyright notices in the Software and this entire statement, including
+the above license grant, this restriction and the following disclaimer,
+must be included in all copies of the Software, in whole or in part, and
+all derivative works of the Software, unless such copies or derivative
+works are solely in the form of machine-executable object code generated by
+a source language processor.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE AND NON-INFRINGEMENT. IN NO EVENT
+SHALL THE COPYRIGHT HOLDERS OR ANYONE DISTRIBUTING THE SOFTWARE BE LIABLE
+FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+*/
+
 // Adapted from FTZ's cancellation-safe expm1 and reduced log/log1p graphs.
 namespace math {
   namespace detail {
@@ -644,6 +798,8 @@ namespace wide {
   using ::math::damping_gain;
   using ::math::log;
   using ::math::log1p;
+  using ::math::tanh;
+  using ::math::atan2;
   using ::math::sin;
   using ::math::cos;
   using ::math::sincos;

@@ -45,7 +45,17 @@ namespace native {
   NATIVE_WASM_MATH(damping_gain)
   NATIVE_WASM_MATH(log)
   NATIVE_WASM_MATH(log1p)
+  NATIVE_WASM_MATH(tanh)
 #undef NATIVE_WASM_MATH
+  /// Binary32 SIMD128 atan2(y,x), with separately rounded multiply/add stages.
+  template<isa<> A> requires(A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr auto atan2(simd<float,4,A> y, simd<float,4,A> x) noexcept {
+    return ::math::atan2(y,x);
+  }
+  /// Advance each atan2 stage across matching SIMD128 register arrays.
+  template<std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr auto atan2(std::array<simd<float,4,A>,N> const & y,
+      std::array<simd<float,4,A>,N> const & x) noexcept { return ::math::atan2(y,x); }
 }
 #pragma clang attribute pop
 #endif

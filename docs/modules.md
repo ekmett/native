@@ -264,7 +264,8 @@ next stage begins, rather than finishing one `exp` call per element. Results
 preserve the input scalar, SIMD, array, or `native::wide` shape, including
 empty and one-element containers.
 These kernels support binary32 elements on x86, ARM and Wasm SIMD128.
-Wasm provides `math::exp`, `sin`, `cos` and `sincos` for single vectors,
+Wasm provides `math::exp`, `expm1`, `log`, `log1p`, `damping_gain`, `tanh`,
+`atan2`, `sin`, `cos` and `sincos` for single vectors,
 standard arrays and `native::wide`; `native::math` exposes the same Wasm kernels.
 SIMD128 has no fused multiply-add instruction, so its polynomial stages use
 separate binary32 multiply and add roundings, with contraction disabled even in
@@ -372,10 +373,12 @@ preserving the sign of zero and the exact bits of normal values, infinities,
 and NaNs. It leaves floating-point controls unchanged. `math::abs`, `sqrt`,
 `floor`, `ceil`, `trunc`, and `round_even` retain the native leaf operation's
 semantics through the same shape-preserving interface. Qualified aliases
-`wide::exp`, `expm1`, `log`, `log1p`, `damping_gain`, `sin`, `cos`, `sincos`, and `flush_to_zero` are also available;
+`wide::exp`, `expm1`, `log`, `log1p`, `damping_gain`, `tanh`, `atan2`, `sin`,
+`cos`, `sincos`, and `flush_to_zero` are also available;
 standard arrays do not acquire `wide` as an associated namespace for ADL.
 
-`math::log`, `math::log1p`, `math::expm1`, and `math::damping_gain` use the same
+`math::log`, `math::log1p`, `math::expm1`, `math::damping_gain`, `math::tanh`,
+and `math::atan2` use the same
 promotion and staged array evaluation. Their binary32 polynomials come from
 [FTZ](https://github.com/ekmett/ftz); ordinary native values do not acquire FTZ's
 arithmetic policy. No kernel changes the caller's FP controls or inserts software
@@ -388,18 +391,35 @@ Wasm SIMD128 uses separate multiply and add and has its own accuracy checks.
 | `log1p(x)` | `-1` gives `-inf`; inputs below `-1` give NaN; `+inf` is preserved. Inputs with `abs(x) <= 2^-25` retain their bits. |
 | `expm1(x)` | Computes `exp(x)-1` without cancellation near zero. Signed zero and tiny subnormals are preserved; `-inf` gives `-1`; positive overflow follows `exp`. |
 | `damping_gain(x)` | Computes `-expm1(-x)` with the same graph; nonnegative inputs approach one. |
+| `tanh(x)` | Signed zero and inputs with `abs(x) <= 2^-12` retain their bits. Large magnitudes and infinities saturate to signed one. |
+| `atan2(y,x)` | Returns radians with signed axes and the usual infinity quadrants. Subnormal inputs are treated as signed zero; tiny outputs follow the caller's FP mode. Both operands must have the same shape and type. |
 
 Logarithms return a canonical quiet NaN for NaN inputs and domain errors.
-`expm1` and `damping_gain` propagate NaNs without promising their payloads.
+`tanh` and `atan2` also return a quiet NaN for NaN inputs. `expm1` and
+`damping_gain` propagate NaNs without promising their payloads.
 These approximations require nearest-even rounding and do not promise libm's
 exception flags or correct rounding for every input. The regression bank checks
 normal-domain accuracy and special values separately. Native does not promise
 FTZ packet equality when subnormal intermediates or nonfused operations differ.
 
-The SIMD and SIMD-array forms also have `native::log`, `log1p`, `expm1`, and
-`damping_gain` entry points. The `native::wide` adapters for these operations use the array kernel for native
-SIMD elements; custom elements retain their ADL operations.
-`tanh` remains an adapter to an element library.
+The SIMD and SIMD-array forms also have `native::log`, `log1p`, `expm1`,
+`damping_gain`, `tanh`, and `atan2` entry points. The `native::wide` adapters
+use the array kernel for native SIMD elements; custom elements retain their ADL
+operations. `tanh` selects a polynomial from seven magnitude intervals using
+register table lookups. `atan2` evaluates one reduced polynomial after a packed
+min/max ratio division; its coefficients derive from SLEEF, with the Boost
+license notice retained beside the implementation.
+
+```cpp
+auto t = math::tanh(std::array{V(-1.f), V(1.f)});
+auto a = math::atan2(std::array{V(1.f), V(-1.f)},
+                     std::array{V(-1.f), V(-1.f)});
+```
+
+Sampled 256-bit MPFR checks for these two kernels reached a maximum of 2 ULP
+on ARM. This is a measured sample result, not an exhaustive error bound. See
+[transcendental validation and plans](transcendentals.md) for the distinction
+between numerical accuracy, backend agreement and throughput.
 
 `math::exp<true>` uses the existing early underflow cutoff. Both variants retain
 the original polynomial, NaN behavior, and floating-point environment policy.
