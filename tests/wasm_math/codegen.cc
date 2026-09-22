@@ -45,3 +45,34 @@ void exp_relaxed_caller(float * out,float const * in) {
   math::exp(native::simd<float,4,stronger>::load(in)).store(out);
 }
 }
+
+extern "C" {
+ENTRY void promoted_expm1_single(float * out,float const * in) { math::expm1(vector::load(in)).store(out); }
+ENTRY void native_expm1_single(float * out,float const * in) { native::expm1(vector::load(in)).store(out); }
+ENTRY void promoted_expm1_batch(float * out,float const * in) {
+  std::array x{vector::load(in),vector::load(in+4),vector::load(in+8)};
+  auto r=math::expm1(x);
+  for(unsigned i=0;i<3;++i) r[i].store(out+4*i);
+}
+ENTRY void promoted_damping_gain_single(float * out,float const * in) { math::damping_gain(vector::load(in)).store(out); }
+ENTRY void native_damping_gain_single(float * out,float const * in) { native::damping_gain(vector::load(in)).store(out); }
+ENTRY void promoted_damping_gain_batch(float * out,float const * in) {
+  std::array x{vector::load(in),vector::load(in+4),vector::load(in+8)};
+  auto r=math::damping_gain(x);
+  for(unsigned i=0;i<3;++i) r[i].store(out+4*i);
+}
+ENTRY void promoted_log_single(float * out,float const * in) { math::log(vector::load(in)).store(out); }
+ENTRY void native_log_single(float * out,float const * in) { native::log(vector::load(in)).store(out); }
+ENTRY void promoted_log_batch(float * out,float const * in) {
+  std::array x{vector::load(in),vector::load(in+4),vector::load(in+8)};
+  auto r=math::log(x);
+  for(unsigned i=0;i<3;++i) r[i].store(out+4*i);
+}
+ENTRY void promoted_log1p_single(float * out,float const * in) { math::log1p(vector::load(in)).store(out); }
+ENTRY void native_log1p_single(float * out,float const * in) { native::log1p(vector::load(in)).store(out); }
+ENTRY void promoted_log1p_batch(float * out,float const * in) {
+  std::array x{vector::load(in),vector::load(in+4),vector::load(in+8)};
+  auto r=math::log1p(x);
+  for(unsigned i=0;i<3;++i) r[i].store(out+4*i);
+}
+}

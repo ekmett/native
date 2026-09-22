@@ -121,6 +121,12 @@ namespace wide::detail {
       return native_ops<V>::polynomial_madd(a,b,c);
     }
   };
+  struct exp_power_operation {
+    template<class V>
+    native_inline constexpr auto operator()(V const & n) const { return native_ops<V>::exp_power(n); }
+  };
+  template<class P> requires liftable<exp_power_operation,P>
+  native_inline constexpr auto exp_power(P const & n) noexcept { return lift(exp_power_operation{},n); }
   struct exp_scale {
     template<class M,class V>
     native_inline constexpr auto operator()(M const & m,V const & replacement,V const & a,V const & n) const {
@@ -166,6 +172,10 @@ namespace wide::detail {
     template<class V> requires requires(V a) { a.template left<Shift>(); }
     native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template left<Shift>(a); }
   };
+  template<unsigned Shift> struct shift_right {
+    template<class V> requires requires(V a) { a.template right<Shift>(); }
+    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template right<Shift>(a); }
+  };
   template<class T> struct mask_words {
     template<class V> requires requires(V a) { ::native::mask_bits<T>(a); }
     native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template mask_words<T>(a); }
@@ -174,14 +184,14 @@ namespace wide::detail {
     template<class V> requires std::same_as<typename V::value_type,float>
     native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::trig_integer(a); }
   };
-  struct trig_float_operation {
+  struct signed_float_operation {
     template<class V> requires std::same_as<typename V::value_type,std::uint32_t>
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::trig_float(a); }
+    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::signed_float(a); }
   };
   template<class P> requires liftable<trig_integer_operation,P>
   native_inline constexpr auto trig_integer(P const & a) noexcept { return lift(trig_integer_operation{},a); }
-  template<class P> requires liftable<trig_float_operation,P>
-  native_inline constexpr auto trig_float(P const & a) noexcept { return lift(trig_float_operation{},a); }
+  template<class P> requires liftable<signed_float_operation,P>
+  native_inline constexpr auto signed_float(P const & a) noexcept { return lift(signed_float_operation{},a); }
 
 }
 
@@ -262,6 +272,11 @@ namespace wide {
   native_nodiscard native_inline constexpr auto left(P const & a) noexcept {
     return detail::lift(detail::shift_left<Shift>{},a);
   }
+  /// Shift each integer lane right by Shift bits, preserving the array shape.
+  template<unsigned Shift,class P> requires detail::liftable<detail::shift_right<Shift>,P>
+  native_nodiscard native_inline constexpr auto right(P const & a) noexcept {
+    return detail::lift(detail::shift_right<Shift>{},a);
+  }
   /// Expand each mask lane to an unsigned integer zero/all-one word for T.
   /// Preserve the array shape and each SIMD element's lane count.
   template<class T,class P> requires detail::liftable<detail::mask_words<T>,P>
@@ -329,6 +344,180 @@ namespace math {
     }
   }
 }
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+// Adapted from FTZ's cancellation-safe expm1 and reduced log/log1p graphs.
+namespace math {
+  namespace detail {
+    template<bool Gain, class V, std::size_t N>
+      requires (::wide::detail::binary32_register<V>)
+    native_nodiscard native_inline constexpr auto expm1_kernel(
+        std::array<V, N> const & input) noexcept {
+      if constexpr (N == 0) return input;
+      else {
+        auto const c = [&](float value) { return ::wide::constant_like(input, value); };
+        auto const w = [&](std::uint32_t bits) { return c(std::bit_cast<float>(bits)); };
+        auto const x = [&] {
+          if constexpr (Gain) return ::wide::negate(input);
+          else return input;
+        }();
+        auto const n = ::wide::round_even(::wide::mul(x, w(0x3fb8aa3bu)));
+        auto const n_zero = ::wide::cmp_eq(n, c(0.f));
+        auto r = ::wide::detail::madd(n, w(0xbf317200u), x);
+        r = ::wide::detail::madd(n, w(0xb5bfbe8eu), r);
+        r = ::wide::select(n_zero, x, r);
+        auto const z = ::wide::mul(r, r);
+        auto h = ::wide::detail::madd(r, w(0x3493f27eu), w(0x3638ef1du));
+        h = ::wide::detail::madd(r, h, w(0x37d00d01u));
+        h = ::wide::detail::madd(r, h, w(0x39500d01u));
+        h = ::wide::detail::madd(r, h, w(0x3ab60b61u));
+        h = ::wide::detail::madd(r, h, w(0x3c088889u));
+        h = ::wide::detail::madd(r, h, w(0x3d2aaaabu));
+        h = ::wide::detail::madd(r, h, w(0x3e2aaaabu));
+        h = ::wide::detail::madd(r, h, w(0x3f000000u));
+        auto p = ::wide::detail::madd(z, h, r);
+        auto const bits = ::wide::bits(r);
+        auto const u = [&](std::uint32_t value) { return ::wide::constant_like(bits, value); };
+        auto const not_tiny = ::wide::cmp_gt(::wide::bit_and(bits, u(0x7fffffffu)), u(0x33000000u));
+        p = ::wide::select(not_tiny, p, r);
+
+        // Only the reconstruction factor is bounded below; the input and
+        // polynomial are untouched. max's unordered case supplies -24 so a NaN
+        // polynomial propagates while the factor remains well-defined.
+        auto const factor_n = ::wide::max(n, c(-24.f));
+        auto const scale = ::wide::detail::exp_power(factor_n);
+        auto result = ::wide::detail::madd(scale, p, ::wide::sub(scale, c(1.f)));
+        result = ::wide::select(n_zero, p, result);
+        result = ::wide::select(::wide::cmp_eq(n, c(-25.f)),
+          ::wide::select(::wide::cmp_gt(p, c(0.f)), w(0xbf7fffffu), c(-1.f)), result);
+        result = ::wide::select(::wide::cmp_lt(n, c(-25.f)), c(-1.f), result);
+        // Retain general exp's accepted early positive overflow threshold.
+        result = ::wide::select(::wide::cmp_gt(x, c(88.37625885009765625f)),
+          w(0x7f800000u), result);
+        if constexpr (Gain) return ::wide::negate(result);
+        else return result;
+      }
+    }
+  }
+
+  /// Cancellation-safe exp(x)-1. Preserve input shape and signed zero;
+  /// NaNs propagate, negative infinity maps to -1, and early overflow follows exp.
+  template<::wide::promotable T>
+    requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto expm1(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
+      return std::remove_cvref_t<T>(input);
+    else return ::wide::demote<T>(detail::expm1_kernel<false>(::wide::promote(input)));
+  }
+
+  /// Evaluate -expm1(-x) with the same cancellation-safe graph.
+  /// Nonnegative damping inputs approach one; no domain-admission protocol.
+  template<::wide::promotable T>
+    requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto damping_gain(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
+      return std::remove_cvref_t<T>(input);
+    else return ::wide::demote<T>(detail::expm1_kernel<true>(::wide::promote(input)));
+  }
+}
+
+namespace math::detail {
+  // Normal inputs retain the FTZ hardware polynomial and reduction graph.
+  // There is no software flushing between arithmetic operations and no FP
+  // control change. log treats subnormal inputs as signed zero; log1p returns
+  // the original bits for |x|<=2^-25, including signed zero and subnormals.
+  // NaNs and domain errors return the FTZ graph's canonical quiet NaN.
+  template<bool OnePlus, class V, std::size_t N>
+    requires (::wide::detail::binary32_register<V>)
+  native_nodiscard native_inline constexpr auto log_kernel(std::array<V, N> const & input) noexcept {
+    namespace w = ::wide;
+    auto const c = [&](float value) { return w::constant_like(input, value); };
+    auto const word = w::bits(input);
+    auto const u = [&](std::uint32_t value) { return w::constant_like(word, value); };
+    auto const magnitude = w::bit_and(word, u(0x7fffffffu));
+    auto const sign = w::bit_and(word, u(0x80000000u));
+    auto const valid = [&] {
+      if constexpr (OnePlus) return w::bit_and(w::cmp_lt(magnitude, u(0x7f800000u)),
+        w::bit_or(w::cmp_eq(sign, u(0)), w::cmp_lt(magnitude, u(0x3f800000u))));
+      else return w::bit_and(w::cmp_ge(word, u(0x00800000u)), w::cmp_lt(word, u(0x7f800000u)));
+    }();
+    auto const direct = [&] {
+      if constexpr (OnePlus) return w::bit_and(valid, w::cmp_le(magnitude,
+        w::select(w::cmp_ne(sign, u(0)), u(0x3f000000u), u(0x3f800000u))));
+      else return valid;
+    }();
+    auto const positive = [&] {
+      if constexpr (OnePlus) return w::bits(w::add(c(1.f), w::from_bits(
+        w::select(w::bit_and(valid, w::mask_not(direct)), word, u(0)))));
+      else return w::select(valid, word, u(0x3f800000u));
+    }();
+    auto exponent = w::sub(w::right<23>(positive), u(127));
+    auto mantissa = w::bit_or(w::bit_and(positive, u(0x007fffffu)), u(0x3f800000u));
+    auto const upper = w::cmp_ge(mantissa, u(0x3fc00000u));
+    mantissa = w::sub(mantissa, w::select(upper, u(0x00800000u), u(0)));
+    exponent = w::add(exponent, w::select(upper, u(1), u(0)));
+    auto const reduced = w::sub(w::from_bits(mantissa), c(1.f));
+    auto const argument = [&] {
+      if constexpr (OnePlus) return w::select(direct, input, reduced);
+      else return reduced;
+    }();
+    auto const negative = w::cmp_ne(w::bit_and(w::bits(argument), u(0x80000000u)), u(0));
+    auto const coefficient = [&](std::uint32_t negative_word, std::uint32_t positive_word) {
+      return w::select(negative, c(std::bit_cast<float>(negative_word)), c(std::bit_cast<float>(positive_word)));
+    };
+    auto const square = w::mul(argument, argument);
+    auto const t = w::detail::madd(argument, coefficient(0x40800000u, 0x40000000u),
+      coefficient(0x3f800000u, 0xbf800000u));
+    auto h = coefficient(0x00000000u, 0xb29c7ee2u);
+    h = w::detail::madd(h, t, coefficient(0x00000000u, 0x3378ea39u));
+    h = w::detail::madd(h, t, coefficient(0xb44f5480u, 0xb3faaccbu));
+    h = w::detail::madd(h, t, coefficient(0x352754efu, 0x34c9e1cdu));
+    h = w::detail::madd(h, t, coefficient(0xb5bb75dbu, 0xb5b13b5eu));
+    h = w::detail::madd(h, t, coefficient(0x369a1c19u, 0x36902a0au));
+    h = w::detail::madd(h, t, coefficient(0xb7866f43u, 0xb76af011u));
+    h = w::detail::madd(h, t, coefficient(0x3861235au, 0x38423d8au));
+    h = w::detail::madd(h, t, coefficient(0xb93e98dfu, 0xb9225d51u));
+    h = w::detail::madd(h, t, coefficient(0x3a24a041u, 0x3a0988b0u));
+    h = w::detail::madd(h, t, coefficient(0xbb117f6au, 0xbaed1a41u));
+    h = w::detail::madd(h, t, coefficient(0x3c04b7c5u, 0x3bd13ce0u));
+    h = w::detail::madd(h, t, coefficient(0xbcfda364u, 0xbcbeef90u));
+    h = w::detail::madd(h, t, coefficient(0x3e029133u, 0x3db786beu));
+    h = w::detail::madd(h, t, coefficient(0xbf1a5884u, 0xbec19b82u));
+    auto const polynomial = w::detail::madd(square, h, argument);
+    auto const e = w::detail::signed_float(exponent);
+    auto const low = w::detail::madd(e, c(std::bit_cast<float>(0x35bfbe8eu)), polynomial);
+    auto result = w::bits(w::detail::madd(e, c(std::bit_cast<float>(0x3f317200u)), low));
+    if constexpr (OnePlus) {
+      result = w::select(direct, w::bits(polynomial), result);
+      result = w::select(w::cmp_le(magnitude, u(0x33000000u)), word, result);
+      result = w::select(w::cmp_eq(word, u(0xbf800000u)), u(0xff800000u), result);
+      result = w::select(w::cmp_eq(word, u(0x7f800000u)), word, result);
+      result = w::select(w::bit_or(w::cmp_gt(magnitude, u(0x7f800000u)),
+        w::bit_and(w::cmp_ne(sign, u(0)), w::cmp_gt(magnitude, u(0x3f800000u)))), u(0x7fc00000u), result);
+    } else {
+      result = w::select(w::cmp_eq(word, u(0x7f800000u)), word, result);
+      result = w::select(w::cmp_ne(sign, u(0)), u(0x7fc00000u), result);
+      result = w::select(w::cmp_lt(magnitude, u(0x00800000u)), u(0xff800000u), result);
+      result = w::select(w::cmp_gt(magnitude, u(0x7f800000u)), u(0x7fc00000u), result);
+    }
+    return w::from_bits(result);
+  }
+}
+namespace math {
+  /// Natural logarithm; subnormal inputs are treated as signed zero.
+  template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto log(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
+    else return ::wide::demote<T>(detail::log_kernel<false>(::wide::promote(input)));
+  }
+  /// Cancellation-safe log(1+x), preserving signed zero and tiny inputs.
+  template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto log1p(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
+    else return ::wide::demote<T>(detail::log_kernel<true>(::wide::promote(input)));
+  }
+}
+
 // SPDX-FileCopyrightText: 2012 Giovanni Garberoglio
 // SPDX-FileCopyrightText: 2017 Edward Kmett
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
@@ -351,7 +540,7 @@ namespace math {
       auto x = ::wide::from_bits(::wide::bit_and(encoded, i(0x7fffffffu)));
       auto y = ::wide::mul(x, c(1.27323954473516f));
       auto const j = ::wide::bit_and(::wide::add(::wide::detail::trig_integer(y), i(1)), i(0xfffffffeu));
-      y = ::wide::detail::trig_float(j);
+      y = ::wide::detail::signed_float(j);
       sign_sine = ::wide::bit_xor(sign_sine, ::wide::left<29>(::wide::bit_and(j, i(4))));
       auto const sign_cosine = ::wide::left<29>(::wide::bit_and(::wide::bit_xor(::wide::sub(j, i(2)), i(0xffffffffu)), i(4)));
       auto quadrant = j;
@@ -451,6 +640,10 @@ namespace math {
 namespace wide {
   // Qualified convenience aliases; standard arrays keep their ordinary ADL.
   using ::math::exp;
+  using ::math::expm1;
+  using ::math::damping_gain;
+  using ::math::log;
+  using ::math::log1p;
   using ::math::sin;
   using ::math::cos;
   using ::math::sincos;

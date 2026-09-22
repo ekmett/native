@@ -37,6 +37,22 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
 }
 
 namespace native {
+  // SIMD and array overloads let native::wide reuse the staged array kernel.
+#define NATIVE_PROMOTED_MATH_ENTRY(name) \
+  template<std::size_t L, ::native::isa<> Arch> \
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L> \
+  native_nodiscard native_inline constexpr simd<float,L,Arch> name(simd<float,L,Arch> input) noexcept { \
+    return ::math::name(input); \
+  } \
+  template<std::size_t L, std::size_t N, ::native::isa<> Arch> \
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L> \
+  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N> \
+  name(std::array<simd<float,L,Arch>,N> const & input) noexcept { return ::math::name(input); }
+  NATIVE_PROMOTED_MATH_ENTRY(expm1)
+  NATIVE_PROMOTED_MATH_ENTRY(damping_gain)
+  NATIVE_PROMOTED_MATH_ENTRY(log)
+  NATIVE_PROMOTED_MATH_ENTRY(log1p)
+#undef NATIVE_PROMOTED_MATH_ENTRY
   /** \ingroup vector_math
    * \brief Evaluate the binary32 range-reduced exponential approximation.
    * This uses the library's degree-seven polynomial and exponent scaling graph;

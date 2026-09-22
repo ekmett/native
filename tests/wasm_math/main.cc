@@ -164,6 +164,112 @@ static void neighbors(std::vector<float> & bank,float x) {
 }
 volatile std::uint32_t runtime_seed=0x47ca198bu;
 
+// New public cancellation-safe/logarithmic kernels, including compatibility
+// wrappers, follow the SIMD128 separate-rounding graph at compile and run time.
+#pragma clang attribute push(__attribute__((target("simd128"))), apply_to=function)
+struct new_math_result {
+  std::array<float, 12> expm1{}, gain{}, log{}, log1p{};
+};
+constexpr new_math_result evaluate_new_math(std::array<float, 12> const & input) {
+  batch x{vector::load(input.data()), vector::load(input.data()+4), vector::load(input.data()+8)};
+  auto e=math::expm1(x), g=math::damping_gain(x), l=math::log(x), p=math::log1p(x);
+  new_math_result result;
+  for (unsigned j=0; j<3; ++j) {
+    e[j].store(result.expm1.data()+4*j); g[j].store(result.gain.data()+4*j);
+    l[j].store(result.log.data()+4*j); p[j].store(result.log1p.data()+4*j);
+  }
+  return result;
+}
+constexpr std::array<float, 12> new_math_input{-0.f, 0.f, 0x1p-149f, -0x1p-149f,
+  INFINITY, -INFINITY, std::bit_cast<float>(0x7fc12345u), std::bit_cast<float>(0xff800001u),
+  1.f, -1.f, 0x1p-25f, -0x1p-25f};
+constexpr auto new_math_constant=evaluate_new_math(new_math_input);
+static_assert(std::bit_cast<std::uint32_t>(new_math_constant.expm1[0])==0x80000000u);
+static_assert(std::bit_cast<std::uint32_t>(new_math_constant.gain[0])==0x80000000u);
+static_assert(std::bit_cast<std::uint32_t>(new_math_constant.log1p[0])==0x80000000u);
+static_assert(new_math_constant.expm1[2]==0x1p-149f && new_math_constant.expm1[3]==-0x1p-149f);
+static_assert(new_math_constant.gain[2]==0x1p-149f && new_math_constant.gain[3]==-0x1p-149f);
+static_assert(new_math_constant.log1p[2]==0x1p-149f && new_math_constant.log1p[3]==-0x1p-149f);
+static_assert(new_math_constant.expm1[4]==INFINITY && new_math_constant.expm1[5]==-1.f);
+static_assert(new_math_constant.gain[4]==1.f && new_math_constant.gain[5]==-INFINITY);
+static_assert(new_math_constant.log[0]==-INFINITY && new_math_constant.log[2]==-INFINITY);
+static_assert(new_math_constant.log[3]==-INFINITY && new_math_constant.log[4]==INFINITY);
+static_assert(new_math_constant.log[8]==0.f && new_math_constant.log1p[9]==-INFINITY);
+static_assert((std::bit_cast<std::uint32_t>(new_math_constant.log[6])&0x7fffffffu)>0x7f800000u);
+static_assert((std::bit_cast<std::uint32_t>(new_math_constant.log1p[7])&0x7fffffffu)>0x7f800000u);
+static_assert(math::expm1(std::array<vector,0>{}).empty());
+static_assert(math::damping_gain(std::array<vector,0>{}).empty());
+static_assert(math::log(std::array<vector,0>{}).empty());
+static_assert(math::log1p(std::array<vector,0>{}).empty());
+
+static void new_math_shapes(batch const & x) {
+  registers w{x};
+#define CHECK_NEW_MATH(name) \
+  { auto a=math::name(x), b=native::name(x); \
+    auto c=math::name(w), d=native::math::name(w); \
+    for (unsigned j=0; j<3; ++j) { \
+      exact_vector(a[j], math::name(x[j])); \
+      exact_vector(a[j], native::name(x[j])); \
+      exact_vector(a[j], b[j]); exact_vector(a[j], c.registers[j]); \
+      exact_vector(a[j], d.registers[j]); \
+    } }
+  CHECK_NEW_MATH(expm1)
+  CHECK_NEW_MATH(damping_gain)
+  CHECK_NEW_MATH(log)
+  CHECK_NEW_MATH(log1p)
+#undef CHECK_NEW_MATH
+}
+
+static void check_new_math(std::vector<float> bank) {
+  std::array<float,12> input=new_math_input;
+  volatile std::uint32_t zero=0;
+  for (auto & x:input) x=std::bit_cast<float>(std::bit_cast<std::uint32_t>(x)^zero);
+  auto r=evaluate_new_math(input);
+  for (unsigned i=0; i<12; ++i) {
+    exact(r.expm1[i],new_math_constant.expm1[i]); exact(r.gain[i],new_math_constant.gain[i]);
+    exact(r.log[i],new_math_constant.log[i]); exact(r.log1p[i],new_math_constant.log1p[i]);
+  }
+  new_math_shapes(batch{vector::load(input.data()),vector::load(input.data()+4),vector::load(input.data()+8)});
+  for (int n=-26; n<=127; ++n)
+    for (double residual:{-0.5,0.,0.5}) neighbors(bank,float((double(n)+residual)*std::log(2.)));
+  for (float x:{0x1p-25f,-0x1p-25f,0x1p-126f,-0x1p-126f}) neighbors(bank,x);
+  std::uint32_t seed=runtime_seed;
+  for (unsigned i=0; i<65536; ++i) {
+    seed^=seed<<13; seed^=seed>>17; seed^=seed<<5;
+    bank.push_back(std::bit_cast<float>(seed));
+  }
+  unsigned max_expm1_ulp=0,max_gain_ulp=0;
+  for (std::size_t base=0; base<bank.size(); base+=4) {
+    std::array<float,4> x{},e{},g{};
+    for (unsigned i=0; i<4; ++i) x[i]=bank[(base+i)%bank.size()];
+    auto v=vector::load(x.data());
+    math::expm1(v).store(e.data()); math::damping_gain(v).store(g.data());
+    if (base%1024==0) new_math_shapes(batch{v,-v,vector(0.25f)});
+    for (unsigned i=0; i<4; ++i) {
+      for (unsigned gain=0; gain<2; ++gain) {
+        double argument=gain ? -double(x[i]) : double(x[i]);
+        float expected=argument>=88.3762664794921875 ? INFINITY : float(std::expm1(argument));
+        if (gain) expected=-expected;
+        auto actual=gain ? g[i] : e[i];
+        if (!std::isfinite(expected) || expected==0.f) exact(actual,expected);
+        else {
+          auto ulp=distance(actual,expected);
+          auto & maximum=gain ? max_gain_ulp : max_expm1_ulp;
+          maximum=std::max(maximum,ulp);
+          if (ulp>2) {
+            std::fprintf(stderr,"SIMD128 %s input=%a actual=%a expected=%a ULP=%u\n",
+              gain?"damping_gain":"expm1",x[i],actual,expected,ulp);
+            std::abort();
+          }
+        }
+      }
+    }
+  }
+  std::printf("SIMD128 expm1/damping_gain %zu inputs: max %u/%u ULP; four-operation shapes/constexpr/corners passed\n",
+    bank.size(),max_expm1_ulp,max_gain_ulp);
+}
+#pragma clang attribute pop
+
 __attribute__((target("simd128"),noinline)) static int run() {
   std::array<float,12> runtime_input=constant_input;
   // Force inputs through runtime storage, excluding a constant-folded execution.
@@ -197,6 +303,7 @@ __attribute__((target("simd128"),noinline)) static int run() {
     if(std::isfinite(bits) && std::abs(bits)<8192.f) trig_bank.push_back(bits);
   }
   for(float & x:trig_bank) if(x==-8192.f) x=-8191.99951171875f;
+  check_new_math(exp_bank);
   unsigned max_exp_ulp=0; double max_trig_error=0;
   for(std::size_t base=0;base<exp_bank.size();base+=4) {
     std::array<float,4> x{},e{},f{};

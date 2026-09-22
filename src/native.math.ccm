@@ -35,6 +35,10 @@ export namespace native {
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 export namespace math {
   using ::math::exp;
+  using ::math::expm1;
+  using ::math::damping_gain;
+  using ::math::log;
+  using ::math::log1p;
   using ::math::sin;
   using ::math::cos;
   using ::math::sincos;
@@ -87,7 +91,12 @@ export namespace wide {
   using ::wide::mask_bits;
   /// Export compile-time left shifts of each integer lane in an array.
   using ::wide::left;
+  using ::wide::right;
   using ::wide::exp;
+  using ::wide::expm1;
+  using ::wide::damping_gain;
+  using ::wide::log;
+  using ::wide::log1p;
   using ::wide::sin;
   using ::wide::cos;
   using ::wide::sincos;
@@ -100,6 +109,7 @@ export namespace native {
   using ::native::sincos;
   using ::native::exp;
   using ::native::expm1;
+  using ::native::damping_gain;
   using ::native::log;
   using ::native::log1p;
   using ::native::tanh;
@@ -108,6 +118,7 @@ export namespace native {
     using ::native::cos;
     using ::native::exp;
     using ::native::expm1;
+    using ::native::damping_gain;
     using ::native::fma;
     using ::native::log;
     using ::native::log1p;

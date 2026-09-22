@@ -27,7 +27,7 @@ namespace native {
       std::bool_constant<Flush>) noexcept {
     return ::math::exp<Flush>(x);
   }
-#define NATIVE_WASM_TRIG(name) \
+#define NATIVE_WASM_MATH(name) \
   template<isa<> A> requires(A.has(wasm_feature::simd128)) \
   native_nodiscard native_inline constexpr auto name(simd<float,4,A> x) noexcept { \
     return ::math::name(x); \
@@ -37,10 +37,15 @@ namespace native {
     return ::math::name(x); \
   }
   /// Finite binary32 lanes with |x| < 8192; multiply/add stages round separately.
-  NATIVE_WASM_TRIG(sin)
-  NATIVE_WASM_TRIG(cos)
-  NATIVE_WASM_TRIG(sincos)
-#undef NATIVE_WASM_TRIG
+  NATIVE_WASM_MATH(sin)
+  NATIVE_WASM_MATH(cos)
+  NATIVE_WASM_MATH(sincos)
+  /// Binary32 approximations with separately rounded SIMD128 multiply/add.
+  NATIVE_WASM_MATH(expm1)
+  NATIVE_WASM_MATH(damping_gain)
+  NATIVE_WASM_MATH(log)
+  NATIVE_WASM_MATH(log1p)
+#undef NATIVE_WASM_MATH
 }
 #pragma clang attribute pop
 #endif

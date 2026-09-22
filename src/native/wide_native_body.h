@@ -81,6 +81,38 @@ namespace wide::detail {
       }
     }
 #endif
+    // Internal normal power-of-two reconstruction for expm1. Special inputs
+    // have defined integer conversions; the caller selects range endpoints.
+    static inline constexpr V exp_power(V n) noexcept {
+#if NATIVE_HAS_AVX512F
+      if constexpr (V::lanes == 1 || V::lanes == 16 || (NATIVE_HAS_AVX512VL && V::lanes > 1))
+        return scaleb(V(1.f),n);
+      else
+#endif
+      {
+#if NATIVE_HOST_NEON
+        return V::from_bits(::native::fcvtzu(n + V(127.f)).template left<23>());
+#elif NATIVE_HOST_X86
+        return exp_factor(n + V(127.f));
+#else
+        auto const biased=n + V(127.f);
+        if consteval {
+          auto words=::native::detail::float_constant::words(biased);
+          for(auto & word:words) word=::native::detail::float_constant::fcvtzu(word)<<23;
+          return V::load_bits(words.data());
+        } else {
+          if constexpr(V::lanes==1) {
+            auto const word=std::bit_cast<std::uint32_t>(biased.to_native());
+            return V::from_bits(::native::detail::float_constant::fcvtzu(word)<<23);
+          } else if constexpr(V::lanes==2 || V::lanes==3)
+            return V::from_storage(native_ops<typename V::storage_type>::exp_power(n.to_storage()));
+#if NATIVE_HAS_WASM_SIMD128
+          else return V::from_bits(::native::trunc_sat<std::uint32_t>(biased).template left<23>());
+#endif
+        }
+#endif
+      }
+    }
     template<class M>
     static inline constexpr auto exp_scale(M in_range, V replacement, V y, V n) noexcept {
 #if NATIVE_HAS_AVX512F
@@ -127,6 +159,8 @@ namespace wide::detail {
     }
     template<unsigned Shift>
     static inline constexpr auto left(V a) noexcept { return a.template left<Shift>(); }
+    template<unsigned Shift>
+    static inline constexpr auto right(V a) noexcept { return a.template right<Shift>(); }
     template<class T>
     static inline constexpr auto mask_words(V a) noexcept { return ::native::mask_bits<T>(a); }
 
@@ -159,16 +193,16 @@ namespace wide::detail {
 #endif
 #endif
     }
-    static inline constexpr auto trig_float(V a) noexcept {
+    static inline constexpr auto signed_float(V a) noexcept {
       using F=typename V::template rebind<float>;
       if consteval {
         std::array<std::uint32_t,V::lanes> x{};std::array<float,V::lanes> y{};a.store(x.data());
-        for(std::size_t i=0;i<V::lanes;++i) y[i]=static_cast<float>(x[i]);
+        for(std::size_t i=0;i<V::lanes;++i) y[i]=static_cast<float>(std::bit_cast<std::int32_t>(x[i]));
         return F::load(y.data());
       }
-      if constexpr (V::lanes==1) return F(static_cast<float>(a.value));
+      if constexpr (V::lanes==1) return F(static_cast<float>(std::bit_cast<std::int32_t>(a.value)));
       else if constexpr (V::lanes==2 || V::lanes==3)
-        return F::from_storage(native_ops<typename V::storage_type>::trig_float(a.to_storage()));
+        return F::from_storage(native_ops<typename V::storage_type>::signed_float(a.to_storage()));
 #if NATIVE_HAS_AVX2
       else if constexpr (V::lanes==4) return F(_mm_cvtepi32_ps(a.value));
       else if constexpr (V::lanes==8) return F(_mm256_cvtepi32_ps(a.value));
@@ -180,7 +214,11 @@ namespace wide::detail {
       else if constexpr (V::lanes==4) return F(vcvtq_f32_s32(vreinterpretq_s32_u8(a.value)));
 #endif
 #if NATIVE_HAS_WASM_SIMD128
-      else if constexpr (V::lanes==4) return ::native::convert<float>(a);
+      else if constexpr (V::lanes==4) {
+        using I=typename V::template rebind<std::int32_t>;
+        return ::native::convert<float>(I::from_native(
+          __builtin_bit_cast(typename I::native_type,a.to_native())));
+      }
 #endif
     }
   };

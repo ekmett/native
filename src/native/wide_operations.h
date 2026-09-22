@@ -396,6 +396,8 @@
         noexcept(noexcept(cos(a...))) -> decltype(cos(a...)) { return cos(a...); }
     template<class... A> native_inline constexpr auto adl_expm1(A const &... a)
         noexcept(noexcept(expm1(a...))) -> decltype(expm1(a...)) { return expm1(a...); }
+    template<class... A> native_inline constexpr auto adl_damping_gain(A const &... a)
+        noexcept(noexcept(damping_gain(a...))) -> decltype(damping_gain(a...)) { return damping_gain(a...); }
     template<class... A> native_inline constexpr auto adl_log(A const &... a)
         noexcept(noexcept(log(a...))) -> decltype(log(a...)) { return log(a...); }
     template<class... A> native_inline constexpr auto adl_log1p(A const &... a)
@@ -694,6 +696,27 @@
       auto & [...value] = result;
       auto const & [...x] = input;
       ([&] { value = NATIVE_WIDE_DETAIL::adl_expm1(x); }(), ...);
+      return result;
+    }
+  }
+  /// \ingroup wide_values
+  /// Apply the element library's -expm1(-x) operation.
+  /// Uses one array call when available, otherwise an elementwise fallback.
+  template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_damping_gain(x); }
+  native_nodiscard native_inline constexpr wide<R,N> damping_gain(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_damping_gain(a); })
+          return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_damping_gain(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = NATIVE_WIDE_DETAIL::adl_damping_gain(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { NATIVE_WIDE_DETAIL::adl_damping_gain(input.registers); })
+      return wide<R,N>{NATIVE_WIDE_DETAIL::adl_damping_gain(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = NATIVE_WIDE_DETAIL::adl_damping_gain(x); }(), ...);
       return result;
     }
   }

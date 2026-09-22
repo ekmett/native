@@ -29,6 +29,10 @@ failures = []
 names = ['exp_single', 'exp_batch', 'exp_flush', 'sin_single', 'cos_single',
          'sincos_single', 'sincos_batch', 'exp_relaxed_caller', 'promoted_exp_single',
          'promoted_exp_batch', 'array_exp_batch', 'promoted_sincos_batch']
+new_names = [f'{prefix}_{operation}_{shape}'
+             for operation in ('expm1', 'damping_gain', 'log', 'log1p')
+             for prefix, shape in (('promoted', 'single'), ('native', 'single'), ('promoted', 'batch'))]
+names += new_names
 for name in names:
     code = '\n'.join(functions.get(name, []))
     if not code:
@@ -37,7 +41,12 @@ for name in names:
                       r'\bf32\.(?:add|sub|mul|div)\b', r'\bf64\.(?:add|sub|mul|div)\b']:
         if re.search(forbidden, code):
             failures.append(f'{name}: forbidden instruction {forbidden}')
-    for required in ['f32x4.mul', 'f32x4.add', 'v128.load', 'v128.store', 'i32x4.trunc_sat_f32x4_u']:
+    required_ops = ['f32x4.mul', 'f32x4.add', 'v128.load', 'v128.store']
+    if '_log' in name:
+        required_ops.append('f32x4.convert_i32x4_s')
+    else:
+        required_ops.append('i32x4.trunc_sat_f32x4_u')
+    for required in required_ops:
         if required not in code:
             failures.append(f'{name}: missing {required}')
 for a, b in [('exp_single', 'promoted_exp_single'), ('exp_single', 'exp_relaxed_caller'),
@@ -45,6 +54,10 @@ for a, b in [('exp_single', 'promoted_exp_single'), ('exp_single', 'exp_relaxed_
              ('sincos_batch', 'promoted_sincos_batch')]:
     if functions.get(a) != functions.get(b):
         failures.append(f'{a}/{b}: alias/shape instruction streams differ')
+for operation in ('expm1', 'damping_gain', 'log', 'log1p'):
+    a, b = f'promoted_{operation}_single', f'native_{operation}_single'
+    if functions.get(a) != functions.get(b):
+        failures.append(f'{a}/{b}: public/compatibility instruction streams differ')
 args.output.write_text(json.dumps({'functions': functions, 'failures': failures}, indent=2)+'\n')
 print(f'{len(names)} vector polynomial entries; {len(failures)} failures')
 for failure in failures:

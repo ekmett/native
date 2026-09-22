@@ -372,11 +372,34 @@ preserving the sign of zero and the exact bits of normal values, infinities,
 and NaNs. It leaves floating-point controls unchanged. `math::abs`, `sqrt`,
 `floor`, `ceil`, `trunc`, and `round_even` retain the native leaf operation's
 semantics through the same shape-preserving interface. Qualified aliases
-`wide::exp`, `sin`, `cos`, `sincos`, and `flush_to_zero` are also available;
+`wide::exp`, `expm1`, `log`, `log1p`, `damping_gain`, `sin`, `cos`, `sincos`, and `flush_to_zero` are also available;
 standard arrays do not acquire `wide` as an associated namespace for ADL.
 
-The `log`, `log1p`, `expm1`, and `tanh` adapters delegate to an element library;
-this interface does not supply native approximations for them.
+`math::log`, `math::log1p`, `math::expm1`, and `math::damping_gain` use the same
+promotion and staged array evaluation. Their binary32 polynomials come from
+[FTZ](https://github.com/ekmett/ftz); ordinary native values do not acquire FTZ's
+arithmetic policy. No kernel changes the caller's FP controls or inserts software
+flushing between arithmetic steps. ARM and x86 use fused multiply-add; baseline
+Wasm SIMD128 uses separate multiply and add and has its own accuracy checks.
+
+| Function | Boundary behavior |
+| --- | --- |
+| `log(x)` | Signed zero and subnormal inputs give `-inf`; negative normal inputs give NaN; `+inf` is preserved. |
+| `log1p(x)` | `-1` gives `-inf`; inputs below `-1` give NaN; `+inf` is preserved. Inputs with `abs(x) <= 2^-25` retain their bits. |
+| `expm1(x)` | Computes `exp(x)-1` without cancellation near zero. Signed zero and tiny subnormals are preserved; `-inf` gives `-1`; positive overflow follows `exp`. |
+| `damping_gain(x)` | Computes `-expm1(-x)` with the same graph; nonnegative inputs approach one. |
+
+Logarithms return a canonical quiet NaN for NaN inputs and domain errors.
+`expm1` and `damping_gain` propagate NaNs without promising their payloads.
+These approximations require nearest-even rounding and do not promise libm's
+exception flags or correct rounding for every input. The regression bank checks
+normal-domain accuracy and special values separately. Native does not promise
+FTZ packet equality when subnormal intermediates or nonfused operations differ.
+
+The SIMD and SIMD-array forms also have `native::log`, `log1p`, `expm1`, and
+`damping_gain` entry points. The `native::wide` adapters for these operations use the array kernel for native
+SIMD elements; custom elements retain their ADL operations.
+`tanh` remains an adapter to an element library.
 
 `math::exp<true>` uses the existing early underflow cutoff. Both variants retain
 the original polynomial, NaN behavior, and floating-point environment policy.
