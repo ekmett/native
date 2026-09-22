@@ -12,7 +12,7 @@
 #include "../core_regression/support/fp_environment.h"
 #if NATIVE_ROUNDING_HEADER
 #define NATIVE_PROFILE NATIVE_ROUNDING_PROFILE
-#include <native/vec.h>
+#include <native/simd.h>
 import native.wide;
 #else
 import native.scalar;

@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #if NATIVE_CONSTEXPR_HEADERS
-#include <native/vec.h>
+#include <native/simd.h>
 #else
 import native.simd;
 #endif

@@ -2,17 +2,22 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
-#include <native/vec.h>
+#include <native/simd.h>
 #include <native/integer.h>
 #include <native/packing.h>
 #include <native/simd/math/bits.h>
-#include "native/simd/defaults.h"
+#include <native/targets.h>
 export module native.simd;
 export import native.numerics;
 export import native.wide;
 export import native.static_string;
 export import native.types;
 export import native.memory;
+// Defaults use the owning module provider's baseline.
+extern "C++" namespace native {
+  /// Omitted architecture arguments use the native.simd provider's baseline.
+  template<class T, std::size_t N, isa<> Arch = NATIVE_BASELINE> struct simd;
+}
 // Keep the GMF partial specializations reachable to module consumers.
 export namespace native { using ::native::mask_traits; }
 #include "native/simd/exports.h"

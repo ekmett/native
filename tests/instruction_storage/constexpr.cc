@@ -5,7 +5,7 @@
 #include <limits>
 #include <type_traits>
 #if NATIVE_CONSTEXPR_HEADERS
-#include <native/vec.h>
+#include <native/simd.h>
 #include <native/wide.h>
 #else
 import native.simd;

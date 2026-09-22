@@ -3,10 +3,30 @@ module;
 
 #include "native/isa_import.h"
 #include "native/x86/adx.h"
-#include "native/x86/adx_defaults.h"
+#include "native/targets.h"
 
 export module native.x86.adx;
 export import native.x86.features;
+// Defaults belong to this module's provider; importer macros cannot change them.
+#if NATIVE_HOST_X86
+extern "C++" namespace native {
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::adx))
+  constexpr std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
+
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx))
+  consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
+
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::adx))
+  constexpr std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
+
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx))
+  consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
+}
+#endif
 
 export namespace native {
   /// \addtogroup x86_adx

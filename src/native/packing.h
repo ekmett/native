@@ -1,5 +1,5 @@
 #pragma once
-#include "native/vec.h"
+#include "native/simd.h"
 #include "native/x86/bmi2.h"
 
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "native/vec.h"
+#include "native/simd.h"
 
 namespace native::detail {
   // A complete instruction register may provide only storage and transfers.

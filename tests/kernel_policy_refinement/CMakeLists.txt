@@ -7,7 +7,7 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 # No per-fixture ISA flags: native entry points carry literal target attributes.
 set(kernel_kinds module)
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../src/native/vec.h")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../src/native/simd.h")
   list(PREPEND kernel_kinds header)
 endif()
 foreach(kind IN LISTS kernel_kinds)

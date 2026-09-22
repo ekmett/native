@@ -3,9 +3,9 @@
 
 #if NATIVE_APPLE_HEADER_FIRST
 #include <simd/simd.h> // Apple SDK, not a project forwarding header.
-#include <native/vec.h>
+#include <native/simd.h>
 #else
-#include <native/vec.h>
+#include <native/simd.h>
 #include <simd/simd.h>
 #endif
 

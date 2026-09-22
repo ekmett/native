@@ -84,7 +84,7 @@ namespace native::detail::float_constant {
 #if NATIVE_HOST_NEON
 #include <arm_neon.h>
 #endif
-#define NATIVE_BACKEND_BODY "native/simd/vec_family.h"
+#define NATIVE_BACKEND_BODY "native/simd/simd_family.h"
 #include "native/simd/for_each_backend.h"
 #undef NATIVE_BACKEND_BODY
 

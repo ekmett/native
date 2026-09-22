@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <native/vec.h>
+#include <native/simd.h>
 import native;
 import native.scalar;
 import native.types;

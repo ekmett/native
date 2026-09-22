@@ -24,7 +24,7 @@ import native;
 #if NATIVE_TEST_PROFILE == 0
 #define NATIVE_PROFILE 0
 #endif
-#include <native/vec.h>
+#include <native/simd.h>
 #include <native/simd/math/exp.h>
 #include <native/simd/math/bits.h>
 #endif

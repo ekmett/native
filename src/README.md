@@ -11,14 +11,14 @@ start with the [value guide](../docs/modules.md) or
 | `native/targets.h` | Textual macros for source targets and compiler-baseline snapshots |
 | `native.scalar.ccm` | Scalar register operations and common element extension declarations |
 | `native.wide.ccm`, `native/wide.h` | Register packs, tuple protocol and generic operation forwarding |
-| `native.simd.ccm`, `native/vec.h`, `native/simd/` | SIMD storage, masks, memory policies and native operations |
+| `native.simd.ccm`, `native/simd.h`, `native/simd/` | SIMD storage, masks, memory policies and native operations |
 | `native.math.ccm` | Promoted numerical kernels and targeted math forwarding |
 | `native.{x86,arm}.*.ccm`, `native/{x86,arm}/` | Capability observers and instruction families |
 | `native.numerics.ccm` | Scalar FP16/BF16 storage, conversions and numerical utilities |
 | `native/attributes.h` | Named compiler modifiers for textual inclusion |
 
-The implementation umbrella is named `vec.h` so it does not shadow Apple's
-SDK `<simd/simd.h>`. The public class template is `native::simd`.
+The shared implementation is `<native/simd.h>`; Apple's SDK remains available
+as `<simd/simd.h>`. The public class template is `native::simd`.
 Source files use `.h` for textual inputs, `.cc` for ordinary translation units,
 and `.ccm` for module interfaces.
 
@@ -54,9 +54,9 @@ the global module fragment.
 
 Vector instruction modules import `native.simd` before defining their public
 bindings directly in the module interface. Textual implementation headers serve
-shared consumers, repeated target expansion, or declarations that belong in the
-global module fragment. Vector parameters and results use `simd<T,N,Arch>`; scalar operations
-use ordinary C++ values. Masked x86 instruction forms use `predicate<N,Arch>`.
+shared consumers or repeated target expansion. Provider defaults and private
+helpers live in the owning module interface. Vector parameters and results use
+`simd<T,N,Arch>`; scalar operations use ordinary C++ values. Masked x86 instruction forms use `predicate<N,Arch>`.
 Each operation constrains its required features and retains the appropriate
 compiler target. Raw intrinsic helpers remain private. The `native.arm.sm3` and
 `native.arm.sm4` modules follow this split with four-word public vectors and

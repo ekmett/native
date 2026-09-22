@@ -10,7 +10,7 @@
 import native;
 import native.math;
 #else
-#include <native/vec.h>
+#include <native/simd.h>
 #include <native/wide.h>
 #if defined(__x86_64__) || defined(_M_X64)
 import native.x86.features;
