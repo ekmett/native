@@ -26,9 +26,9 @@ zero/sign-extension, rounding and saturation behavior.
 
 For multiply-high, compute the doubled full product and take its high half;
 the rounded form adds half a unit before truncating. The minimum-times-minimum
-case saturates to the maximum signed lane. Narrowing saturates each source lane
-before changing width. There is no 64-bit-input narrowing instruction in this
-API; the high forms explicitly preserve their low argument.
+case saturates to the maximum signed lane. Narrowing consumes 128 logical bits
+and saturates each source lane before changing width. The high forms explicitly
+preserve their low argument.
 
 ```cpp
 #include <cstdint>
