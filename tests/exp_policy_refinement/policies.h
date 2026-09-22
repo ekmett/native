@@ -1,7 +1,12 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
-#include "refinement.h"
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+#include "../../src/native/abi_refinement.h"
+namespace refinement_test {
+  template<class... Lists> using refinement=native::detail::abi_refinement<Lists...>;
+}
 #include "../../src/native/exp_policies.h"
 #define NATIVE_TARGET_exp_bw_bf16 NATIVE_KERNEL_TARGET_7
 #define NATIVE_TARGET_exp_bw_fp16 NATIVE_KERNEL_TARGET_11

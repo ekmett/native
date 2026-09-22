@@ -3,7 +3,7 @@
 These tests cover raw SIMD arithmetic, scalar/vector/wide consistency, explicit
 construction, masks and bit bridges, modular integers, guarded aligned and
 unaligned memory, partial tails, scaling boundaries, special values and wide exponential results.
-`reference.h` supplies an independent staged split-scale exponential oracle.
+`wide_exp.cc` contains an independent staged split-scale exponential oracle.
 Failure paths print a diagnostic and abort, including with exceptions disabled.
 
 The public shape is `native::simd<T,N,Arch>` with an ISA value; these tests choose it explicitly.

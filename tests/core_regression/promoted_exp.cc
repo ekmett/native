@@ -116,7 +116,7 @@ static void check_word(float input, float actual, float expected) {
   }
 }
 
-// Independent scalar form of reference.h's historical split-scale graph. It
+// Independent scalar form of wide_exp.cc's historical split-scale graph. It
 // remains available to an import consumer without using hidden native names.
 template<bool Flush> static float reference(float x) {
   if (std::isnan(x)) return x;

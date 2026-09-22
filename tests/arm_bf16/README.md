@@ -11,8 +11,10 @@ The BFDOT bank reuses the independent exact-rational reference in
 512 cases, including all 64 input-position pairs and cancellation across the
 two ordered pair accumulations. Another 512 cases check fused multiply-add.
 The Python generator performs no host floating-point arithmetic and runs
-326,501 self-checks. `check_reference.py` regenerates the new banks in a
-temporary directory and compares them with the checked-in header.
+326,501 self-checks. `check_reference.py` regenerates the matrix/FMA banks and
+compares them byte-for-byte with the marked region in `checks.h`.
+`generate_reference.py` updates that region; `--output PATH` emits its contents
+to a separate file.
 
 Default BF16 runs under all four rounding settings, both FZ settings and both
 DN settings; those controls must not alter its defined arithmetic. Enhanced
