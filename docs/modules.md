@@ -274,6 +274,57 @@ ARM and scalar graphs retain FMA; cross-architecture bitwise equality is not a
 contract for these approximations. Neither public `fma` nor `wide::fma` acquires
 a nonfused Wasm implementation.
 
+### Choosing a register count
+
+`import native.math;` also supplies `native::exp_width<T,K,A>`,
+`atan2_width<T,K,A>` and a `name_width` variable template for each other
+transcendental kernel. The same declarations are available in `math` and
+`native::math`. Their `std::size_t` values recommend the number of independent
+registers, not the number of lanes or the total number of elements:
+
+```cpp
+import native.math;
+using namespace native;
+
+constexpr auto A = avx2;
+using V = simd<float, 8, A>;
+using exp_batch = native::wide<V, exp_width<float, 8, A>>;     // 6 registers, 48 floats
+using angle_batch = native::wide<V, atan2_width<float, 8, A>>; // 2 registers, 16 floats
+```
+
+These are starting points for tuning; they do not change the kernel, split a
+larger batch, or dispatch at runtime. Any other explicit `wide` or array extent
+still works. The caller must compile and admit the selected ISA as usual.
+`K` must be positive. Omitting `A` uses the defining module's compiler baseline,
+as with SIMD's module default. The header form uses the translation unit's baseline.
+Pass the same explicit `A` as the vector in a multiversioned kernel.
+
+| Kernel | x86 float, K=8 or 16 | NEON float, K=4 | Wasm SIMD128 float, K=4 |
+| --- | ---: | ---: | ---: |
+| `exp` | 6 | 4 | 2 |
+| `exp2` | 2 | 2 | 2 |
+| `expm1`, `damping_gain`, `log`, `log2`, `log1p` | 4 | 4 | 2 |
+| `atan2`, `tanh` | 2 | 2 | 2 |
+| `sin`, `cos`, `sincos` | 2 | 4 | 2 |
+
+X86 K=8 requires the AVX2/FMA profile; K=16 requires the AVX-512F/DQ
+kernel profile. For x86 and NEON short vectors with K=2 or 3, `exp_width`
+is 4 and the other recommendations are 2. X86 K=4 follows the NEON column
+except that `sin`, `cos` and `sincos` use 2.
+Scalar K=1, other element types, and unrecognized shape/ISA combinations use 1.
+A returned width does not assert that the corresponding math operation exists.
+The templates inspect metadata and can be queried with a foreign-family
+`isa` without instantiating its SIMD type.
+
+The `exp` recommendations target the default degree-six polynomial. Measured
+NEON and full-width AVX2/AVX-512 results guide those choices; other polynomial
+degrees may prefer another extent. The small `atan2` batch limits register
+pressure, AVX2 `exp2` favors two registers, and NEON `sincos` reaches its
+throughput knee at four. Remaining entries, including Wasm and mixed
+feature/width combinations, are conservative
+heuristics. They do not promise a universal optimum or absence of spills. See
+the [tuning rationale](transcendentals.md#register-count-recommendations).
+
 `exp<Flush = false, Degree = 6>` selects a polynomial of degree one through
 seven, defaulting to six, with nearest-even range reduction. Range
 comparisons run independently of that arithmetic: lower-cutoff and overflow

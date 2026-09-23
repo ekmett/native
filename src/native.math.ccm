@@ -34,6 +34,18 @@ export namespace native {
 #endif
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 export namespace math {
+  using ::native::exp_width;
+  using ::native::exp2_width;
+  using ::native::expm1_width;
+  using ::native::damping_gain_width;
+  using ::native::log_width;
+  using ::native::log2_width;
+  using ::native::log1p_width;
+  using ::native::tanh_width;
+  using ::native::atan2_width;
+  using ::native::sincos_width;
+  using ::native::sin_width;
+  using ::native::cos_width;
   using ::math::horner;
   using ::math::exp;
   using ::math::exp2;
@@ -114,6 +126,18 @@ export namespace wide {
 }
 
 export namespace native {
+  using ::native::exp_width;
+  using ::native::exp2_width;
+  using ::native::expm1_width;
+  using ::native::damping_gain_width;
+  using ::native::log_width;
+  using ::native::log2_width;
+  using ::native::log1p_width;
+  using ::native::tanh_width;
+  using ::native::atan2_width;
+  using ::native::sincos_width;
+  using ::native::sin_width;
+  using ::native::cos_width;
   using ::native::sin;
   using ::native::cos;
   using ::native::sincos;
@@ -127,6 +151,18 @@ export namespace native {
   using ::native::tanh;
   using ::native::atan2;
   namespace math {
+    using ::native::exp_width;
+    using ::native::exp2_width;
+    using ::native::expm1_width;
+    using ::native::damping_gain_width;
+    using ::native::log_width;
+    using ::native::log2_width;
+    using ::native::log1p_width;
+    using ::native::tanh_width;
+    using ::native::atan2_width;
+    using ::native::sincos_width;
+    using ::native::sin_width;
+    using ::native::cos_width;
     using ::native::abs;
     using ::native::cos;
     using ::native::exp;

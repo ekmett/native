@@ -5,6 +5,106 @@
 #include "native/wide_pack.h"
 #include <tuple>
 
+namespace native {
+  namespace detail {
+    // Metadata only: recommendations can be queried for another ISA family
+    // without instantiating a foreign SIMD type or enabling its instructions.
+    template<class T, std::size_t K, isa A>
+    inline constexpr bool math_vector_shape = [] {
+      if constexpr (!std::same_as<T, float> || K <= 1 || !A.valid()) return false;
+      else if constexpr (A.family == x86)
+        return A.has(avx2) && ((K >= 2 && K <= 4) || K == 8 ||
+          (K == 16 && A.has(kernel_base)));
+      else if constexpr (A.family == arm)
+        return A.has(neon) && K >= 2 && K <= 4;
+      else if constexpr (A.family == wasm)
+        return A.has(wasm_feature::simd128) && K == 4;
+      else return false;
+    }();
+
+    // A conservative starting point for kernels without a measured width sweep.
+    template<class T, std::size_t K, isa A>
+    inline constexpr std::size_t math_polynomial_width =
+      !math_vector_shape<T, K, A> ? 1 : K >= 4 && A.family != wasm ? 4 : 2;
+
+    template<class T, std::size_t K, isa A>
+    inline constexpr std::size_t math_branching_width = math_vector_shape<T, K, A> ? 2 : 1;
+  }
+
+  /// Recommended independent register count for degree-six exp on simd<T,K,A>.
+  /// A defaults to the defining header or module's compiler baseline. This is
+  /// tuning advice, not an instruction-availability test or a guaranteed optimum.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t exp_width = [] {
+    if constexpr (!detail::math_vector_shape<T, K, A>) return std::size_t{1};
+    else if constexpr (A.family == wasm) return std::size_t{2};
+    else if constexpr (A.family == x86 && K >= 8) return std::size_t{6};
+    else return std::size_t{4};
+  }();
+
+  /// Recommended exp2 register count; its shorter reduction favors small batches.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t exp2_width = detail::math_branching_width<T, K, A>;
+
+  /// Conservative independent register count for cancellation-safe expm1.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t expm1_width = detail::math_polynomial_width<T, K, A>;
+
+  /// Suggested damping_gain register count, matching its expm1 graph.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t damping_gain_width = expm1_width<T, K, A>;
+
+  /// Conservative independent register count for the logarithm kernel.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t log_width = detail::math_polynomial_width<T, K, A>;
+
+  /// Suggested log2 register count, matching the logarithm recommendation.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t log2_width = log_width<T, K, A>;
+
+  /// Conservative independent register count for cancellation-safe log1p.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t log1p_width = detail::math_polynomial_width<T, K, A>;
+
+  /// Conservative independent register count for tanh's table and polynomial.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t tanh_width = detail::math_branching_width<T, K, A>;
+
+  /// Recommended independent register count for atan2's two-input kernel.
+  /// Small batches limit the live values used by classification and quadrants.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t atan2_width = detail::math_branching_width<T, K, A>;
+
+  /// Recommended independent register count for paired sine and cosine.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t sincos_width =
+    detail::math_vector_shape<T, K, A> && A.family == arm && K == 4
+      ? 4 : detail::math_branching_width<T, K, A>;
+
+  /// Suggested sine register count, matching the paired trigonometric kernel.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t sin_width = sincos_width<T, K, A>;
+
+  /// Suggested cosine register count, matching the paired trigonometric kernel.
+  template<class T, std::size_t K, isa A = NATIVE_BASELINE> requires (K > 0)
+  inline constexpr std::size_t cos_width = sincos_width<T, K, A>;
+}
+
+namespace math {
+  using ::native::exp_width;
+  using ::native::exp2_width;
+  using ::native::expm1_width;
+  using ::native::damping_gain_width;
+  using ::native::log_width;
+  using ::native::log2_width;
+  using ::native::log1p_width;
+  using ::native::tanh_width;
+  using ::native::atan2_width;
+  using ::native::sincos_width;
+  using ::native::sin_width;
+  using ::native::cos_width;
+}
+
 namespace wide::detail {
   template<class V> struct native_ops;
 }

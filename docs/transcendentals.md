@@ -88,6 +88,46 @@ arithmetic chains, but larger packs cause substantial register spills; more
 registers do not imply proportionally better throughput. The benchmark retains
 those costs and its sampling limits separately from numerical qualification.
 
+## Register-count recommendations
+
+Each implemented transcendental has a `native::name_width<T,K,A>` variable
+template, also exposed through `math` and `native::math`. Use its value as the
+extent of `wide<simd<T,K,A>, N>` or a register array. The
+[value guide](modules.md#choosing-a-register-count) gives the complete default
+table and usage. Recommendations use the explicit ISA and logical lane count;
+they neither observe the running CPU nor enable instructions.
+
+The degree-six exp sweep used Clang 23.1.1 with N=1,2,3,4,6,8,12. On Apple M3,
+four NEON registers capture the throughput knee; eight improved per-register
+time by about 0.9% in the controlled comparison while introducing spills.
+Six registers are the practical default for the measured eight-lane AVX2
+kernel on a Core i9-12900K and sixteen-lane AVX-512 kernel on a Ryzen 7950X3D.
+Larger packs did not improve their best throughput. AVX2 results also exhibited
+run-to-run variation, so these choices describe useful starting points.
+
+The AVX2 exp2 sweep measured N=1,2,6 at approximately 1.845, 1.713 and 1.776 ns
+per eight-lane vector. Its recommendation is two. Atan2 also recommends two:
+the retained [throughput and assembly study](../tests/transcendentals/README.md)
+shows that larger batches retain many classification and quadrant temporaries.
+Two is a conservative balance, not the minimum of every measured timing row
+or a promise of no stack traffic.
+
+On Apple M3, paired sincos measured approximately 0.754, 0.708, 0.676 and
+0.676 ns per input for N=1,2,4,8 on the central input bank. The four-lane NEON
+trigonometric kernels therefore recommend four registers.
+
+Other kernels use conservative starting points based on their live values.
+Long polynomial chains use four registers; table-heavy, paired-output and
+two-input kernels without their own tuning use two. Short vectors, Wasm, and
+narrower x86 vectors with AVX-512 features have not had separate tuning sweeps.
+In particular, AVX-512VL
+can change the mask representation of an eight-lane vector: inheriting the
+six-register exp recommendation does not establish its optimality.
+
+The recommendations leave surrounding application registers, compiler
+scheduling, memory traffic and CPU tuning to the caller. Explicit batch sizes
+remain available, and recommendations may change as measurements improve.
+
 ## Further kernels
 
 These are proposed additions, not available entry points.

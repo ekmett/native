@@ -119,7 +119,10 @@ Import `native.math` separately for promoted numerical kernels such as
 `math::exp`, `math::exp2`, `math::expm1`, `math::log2`, `math::log1p`, `math::tanh`, `math::atan2`, and
 `math::sincos`. Their domains and batching behavior are described
 in the [value guide](docs/modules.md#promoted-math-batches). The
-[transcendental plan](docs/transcendentals.md) covers prospective kernels and their
+compile-time recommendations `native::exp_width<T,K,A>`,
+`atan2_width<T,K,A>` and their counterparts choose a starting register count
+for `wide<simd<T,K,A>, N>`; callers can always choose another extent.
+The [transcendental plan](docs/transcendentals.md) covers prospective kernels and their
 accuracy and performance checks. Floating-point
 controls remain under application ownership. Wasm SIMD128 promoted kernels use
 separately rounded multiply/add stages; x86 and ARM use fused stages. The separate
