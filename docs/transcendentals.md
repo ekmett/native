@@ -14,6 +14,19 @@ payloads. Neither a matching packet nor a sampled ULP bound proves the other.
 
 ## Current implementation cost
 
+`math::horner(c0, c1, ...)(z)` evaluates a polynomial from highest power to
+constant term: `horner(2.f, 3.f, 4.f)(z)` computes `(2*z + 3)*z + 4`.
+The returned callable owns its coefficients and can be reused at different input
+shapes when its coefficient types permit them.
+It preserves the scalar, SIMD, array or `wide` shape of `z`. Coefficients are
+`float` values or SIMD values matching the pack's register type, shared across
+all registers. At least one coefficient is required; a single coefficient
+returns a constant polynomial without evaluating an arithmetic operation on `z`.
+Each additional coefficient adds one multiply-add stage across the pack, fused
+where available and separately rounded on baseline Wasm SIMD. Leading zeros remain
+part of the evaluation, including their behavior with infinities and NaNs.
+The same helper is available as `wide::horner` through `import native.math;`.
+
 The native `tanh` graph performs fourteen coefficient-table lookups and twelve
 polynomial FMAs per register, plus range reduction and result classification.
 The native `atan2` graph uses one packed divide and eight polynomial FMAs, plus

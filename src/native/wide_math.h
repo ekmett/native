@@ -305,6 +305,62 @@ namespace wide {
 
 namespace math {
   namespace detail {
+    template<class T, class C> concept horner_coefficient = std::same_as<C, float> ||
+      std::same_as<C, typename ::wide::detail::shape_t<::wide::canonical_t<T>>::template element_type<0>>;
+
+    template<class P, class C0, class C1, class... C>
+    native_inline constexpr auto horner_kernel(P const & z, C0 const & first,
+        C1 const & second, C const &... rest) noexcept {
+      auto h = ::wide::detail::madd(first, z, second);
+      ((h = ::wide::detail::madd(h, z, rest)), ...);
+      return h;
+    }
+
+    template<class T, class C0, class... C>
+    native_inline constexpr auto evaluate_horner(T const & z,
+        C0 const & first, C const &... rest) noexcept {
+      auto const input = ::wide::promote(z);
+      auto const coefficient = [&](auto const & value) {
+        if constexpr (std::same_as<std::remove_cvref_t<decltype(value)>, float>)
+          return ::wide::constant_like(input, value);
+        else return value;
+      };
+      if constexpr (sizeof...(C) == 0) {
+        auto const value = coefficient(first);
+        return ::wide::demote<T>(::wide::map([&](auto const &) { return value; }, input));
+      } else {
+        return ::wide::demote<T>(horner_kernel(input,
+          coefficient(first), coefficient(rest)...));
+      }
+    }
+
+    template<class... C> struct horner_polynomial {
+      std::tuple<C...> coefficients;
+
+      template<::wide::promotable T>
+        requires (::wide::detail::binary32_array<::wide::canonical_t<T>>) &&
+          (horner_coefficient<T, C> && ...)
+      native_nodiscard native_inline constexpr auto operator()(T const & z) const noexcept {
+        auto const & [...values] = coefficients;
+        return evaluate_horner(z, values...);
+      }
+    };
+  }
+
+  /// Own a binary32 polynomial's coefficients in descending power order.
+  /// Calling the result preserves the argument's scalar, SIMD, array or wide
+  /// shape. Coefficients are floats or matching SIMD values shared across the
+  /// pack. Require at least one; a constant polynomial performs no arithmetic.
+  /// Each remaining coefficient adds one multiply-add, fused where supported
+  /// and separate on baseline Wasm SIMD.
+  template<class C0, class... C>
+    requires (std::same_as<C0, float> || ::wide::detail::binary32_register<C0>) &&
+      ((std::same_as<C, float> || ::wide::detail::binary32_register<C>) && ...)
+  native_nodiscard native_inline constexpr auto horner(C0 first, C... rest) noexcept {
+    return detail::horner_polynomial<C0, C...>{{first, rest...}};
+  }
+
+  namespace detail {
     // The single polynomial body, shared by generic and targeted entry points.
     template<bool Flush, class V, std::size_t N>
       requires (::wide::detail::binary32_register<V>)
@@ -436,13 +492,9 @@ namespace math::detail {
     auto const ratio = w::div(w::from_bits(a), w::from_bits(b));
     auto const tiny = w::cmp_le(w::bits(ratio), u(0x39800000u));
     auto const z = w::mul(ratio, ratio);
-    auto h = w::detail::madd(f(0x3b390ccdu), z, f(0xbc82b80du));
-    h = w::detail::madd(h, z, f(0x3d2e19b6u));
-    h = w::detail::madd(h, z, f(0xbd995ffau));
-    h = w::detail::madd(h, z, f(0x3dd9ccf2u));
-    h = w::detail::madd(h, z, f(0xbe116f9fu));
-    h = w::detail::madd(h, z, f(0x3e4cb9a7u));
-    h = w::detail::madd(h, z, f(0xbeaaaa5du));
+    auto const h = ::math::horner(
+      f(0x3b390ccdu), f(0xbc82b80du), f(0x3d2e19b6u), f(0xbd995ffau),
+      f(0x3dd9ccf2u), f(0xbe116f9fu), f(0x3e4cb9a7u), f(0xbeaaaa5du))(z);
     auto angle = w::detail::madd(w::mul(z, h), ratio, ratio);
     angle = w::select(tiny, ratio, angle);
     angle = w::select(swap, w::sub(f(0x3fc90fdbu), angle), angle);
@@ -793,6 +845,7 @@ namespace math {
 
 namespace wide {
   // Qualified convenience aliases; standard arrays keep their ordinary ADL.
+  using ::math::horner;
   using ::math::exp;
   using ::math::expm1;
   using ::math::damping_gain;

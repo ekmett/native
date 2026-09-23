@@ -99,7 +99,7 @@ if(NATIVE_TEST_MPFR)
 endif()
 
 # Promoted kernels: public headers and modules share each fixture.
-foreach(suite IN ITEMS promoted_expm1 promoted_log promoted_atan2 promoted_tanh)
+foreach(suite IN ITEMS promoted_expm1 promoted_log promoted_atan2 promoted_tanh promoted_horner)
   foreach(kind IN ITEMS header import)
     add_executable(native_test_${suite}_${kind} ${suite}.cc)
     target_link_libraries(native_test_${suite}_${kind} PRIVATE native::native)

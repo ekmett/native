@@ -377,6 +377,13 @@ semantics through the same shape-preserving interface. Qualified aliases
 `cos`, `sincos`, and `flush_to_zero` are also available;
 standard arrays do not acquire `wide` as an associated namespace for ADL.
 
+`math::horner(c0, c1, ...)(z)` evaluates coefficients from highest power to
+constant term, preserving the shape of `z`. The callable owns its coefficients;
+`float` coefficients can be reused across scalar, SIMD and wide inputs, while
+SIMD coefficients must match the input's register type. `wide::horner` is an
+alias. See [polynomial evaluation](transcendentals.md#current-implementation-cost)
+for its multiply-add and constant-polynomial behavior.
+
 `math::log`, `math::log1p`, `math::expm1`, `math::damping_gain`, `math::tanh`,
 and `math::atan2` use the same
 promotion and staged array evaluation. Their binary32 polynomials come from
