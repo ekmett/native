@@ -33,6 +33,39 @@ where available and separately rounded on baseline Wasm SIMD. Leading zeros rema
 part of the evaluation, including their behavior with infinities and NaNs.
 The same helper is available as `wide::horner` through `import native.math;`.
 
+`math::exp<Flush = false, Degree = 6>(x)` uses nearest-even range reduction,
+two split-logarithm multiply-adds, and a Horner polynomial with `Degree` stages.
+Degrees one through seven are available; six is the default. The SIMD and
+`native::wide<simd<...>, N>` entry points accept the same options, for example
+`native::exp<false, 5>(vectors)`. Invalid degrees are rejected at compile time.
+Changing degree selects only the polynomial: reduction, range masks, exponent
+scaling and `Flush` behavior are shared, with no runtime degree selection.
+
+Every polynomial has constant coefficient one, so `exp(0)` remains exactly one.
+Degrees six and seven also have linear coefficient one. Degree one is piecewise
+affine after reconstruction, not rational; neighboring fitted pieces need not
+join continuously. Generate the selected fits with
+`sollya tests/transcendentals/exp.sollya`.
+
+On the same 4,969,601 sampled normal-output inputs, MPFR256 comparisons give:
+
+| Degree | Maximum float steps from correctly rounded result | Approximate maximum relative error | Nominal join, ppm |
+| --- | ---: | ---: | ---: |
+| 1 | 678,492 | 5.72% | +1.714 |
+| 2 | 27,525 | 0.1964% | +3,934 |
+| 3 | 1,345 | 0.01014% | +0.0164 |
+| 4 | 43 | 2.91 parts per million | +5.640 |
+| 5 | 2 | 0.186 parts per million | +0.000466 |
+| 6 | 1 | 0.0981 parts per million | +0.00620 |
+| 7 | 1 | 0.0973 parts per million | −0.00111 |
+
+The table takes the worse of fused and separately rounded evaluation. These
+are sampled results, not bounds over every input or subnormal output. The join
+column measures `2*P(-ln(2)/2)/P(ln(2)/2)-1` for the real coefficient polynomial,
+excluding operation rounding and the spacing between adjacent float inputs.
+Positive values jump upward; continuity is not enforced. Lower degrees save
+polynomial stages at the cost of the accuracy shown above.
+
 `exp2` and `log2` use direct base-two reductions, with no conversion through
 natural exponential or logarithm. Their Sollya fitting scripts and numerical
 qualification are retained with the [base-two tests](../tests/transcendentals/base2/README.md).

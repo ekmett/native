@@ -12,9 +12,9 @@ bool check_import() {
   using V=native::simd<float,8,native::avx2>;
   using W=native::wide<V,2>;
   using F=W (*)(W const &);
-  static_assert(static_cast<F>(&native::exp<false>)==static_cast<F>(&native::exp<false,8,2,native::avx2>));
+  static_assert(static_cast<F>(&native::exp<false>)==static_cast<F>(&native::exp<false,6,8,2,native::avx2>));
   static_assert(static_cast<F>(&native::math::exp<false>)==static_cast<F>(&native::exp<false>));
-  static_assert(static_cast<F>(&native::exp<false>)!=static_cast<F>(&native::exp<false,V,2>));
+  static_assert(static_cast<F>(&native::exp<false>)!=static_cast<F>(&native::exp<false,6,V,2>));
   W input{V(0.f),V(0.f)};
   auto output=native::math::exp(input);
   static_assert(std::same_as<decltype(output),W>);
@@ -36,11 +36,11 @@ NATIVE_TARGET_POP()
     using V=native::simd<float,8,A>; \
     using W=native::wide<V,2>; \
     using F=W (*)(W const &); \
-    static_assert(static_cast<F>(&native::exp<false>)==static_cast<F>(&native::exp<false,8,2,A>)); \
+    static_assert(static_cast<F>(&native::exp<false>)==static_cast<F>(&native::exp<false,6,8,2,A>)); \
     static_assert(static_cast<F>(&native::math::exp<false>)==static_cast<F>(&native::exp<false>)); \
-    static_assert(static_cast<F>(&native::exp<false>)!=static_cast<F>(&native::exp<false,V,2>)); \
+    static_assert(static_cast<F>(&native::exp<false>)!=static_cast<F>(&native::exp<false,6,V,2>)); \
     W input{V(0.f),V(0.f)}; \
-    static_assert(noexcept(native::exp(input))==noexcept(native::exp<false,V,2>(input))); \
+    static_assert(noexcept(native::exp(input))==noexcept(native::exp<false,6,V,2>(input))); \
     auto output=native::math::exp(input); \
     static_assert(std::same_as<decltype(output),W>); \
     std::array<float,8> lanes; \

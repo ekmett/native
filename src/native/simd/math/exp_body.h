@@ -1,12 +1,13 @@
 
 namespace NATIVE_BACKEND_NAMESPACE::native {
   // Compatibility entry points share the promoted pack graph.
-  template<bool Flush = false, float_register V, std::size_t N>
+  template<bool Flush = false, unsigned Degree = 6, float_register V, std::size_t N>
+    requires (Degree >= 1 && Degree <= 7)
   native_nodiscard native_flatten native_inline constexpr native_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
     if constexpr (N == 0) return input;
     else {
       auto const [masks, replacements, values, exponents] =
-        ::math::detail::exp_reduced<Flush>(::wide::promote(input));
+        ::math::detail::exp_reduced<Flush, Degree>(::wide::promote(input));
       auto const & [...in_range] = masks;
       auto const & [...replacement] = replacements;
       auto const & [...y] = values;
@@ -16,9 +17,10 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
       return {{::wide::detail::native_ops<V>::exp_scale(in_range, replacement, y, n)...}};
     }
   }
-  template<bool Flush = false, float_register V>
+  template<bool Flush = false, unsigned Degree = 6, float_register V>
+    requires (Degree >= 1 && Degree <= 7)
   native_nodiscard native_inline constexpr native_pure V exp(V x) noexcept {
-    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(std::array{x})[0];
+    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(std::array{x})[0];
   }
 #if NATIVE_HAS_ARM_NEON
   native_nodiscard native_inline constexpr native_pure float32x4_t exp(float32x4_t x) noexcept {
@@ -96,36 +98,37 @@ namespace native {
       std::array<simd<float,L,Arch>,N> const & x) noexcept { return ::math::atan2(y,x); }
   /** \ingroup vector_math
    * \brief Evaluate the binary32 range-reduced exponential approximation.
-   * This uses the library's degree-seven polynomial and exponent scaling graph;
-   * it is not a claim of correctly rounded exp for every input. `Flush` selects
+   * `Degree` selects a polynomial from one through seven, defaulting to six.
+   * Every degree shares range reduction and exponent scaling; none promises
+   * correctly rounded exp for every input. `Flush` selects
    * the early underflow cutoff at compile time; it does not change CPU controls
    * or turn a raw vector into a policy-bearing FTZ type.
    * \snippet api.cc exponential
    */
-  template<bool Flush = false, std::size_t L, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  template<bool Flush = false, unsigned Degree = 6, std::size_t L, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
   native_nodiscard native_inline constexpr native_pure simd<float,L,Arch> exp(simd<float,L,Arch> input) noexcept {
-    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
+    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
   /// \ingroup vector_math
   /// Evaluate exp stage by stage across independent registers; N may be zero.
-  template<bool Flush = false, std::size_t L, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  template<bool Flush = false, unsigned Degree = 6, std::size_t L, std::size_t N, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
   native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N> exp(std::array<simd<float,L,Arch>,N> const & input) noexcept {
-    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
+    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
   // A tag argument avoids confusing this policy with register-width template
   // arguments on other exp overloads during dependent lookup.
   /// \ingroup vector_math
-  /// Select the same exp cutoff through a bool_constant tag for dependent calls.
-  template<bool Flush, std::size_t L, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  /// Pass cutoff and degree through constant tags for dependent calls.
+  template<bool Flush, unsigned Degree = 6, std::size_t L, std::size_t N, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
   native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N> exp(
-      std::array<simd<float,L,Arch>,N> const & input, std::bool_constant<Flush>) noexcept {
-    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
+      std::array<simd<float,L,Arch>,N> const & input, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
+    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
   /// \ingroup vector_math
-  /// Select the same exp cutoff through a bool_constant tag for dependent calls.
-  template<bool Flush, std::size_t L, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr simd<float,L,Arch> exp(simd<float,L,Arch> input, std::bool_constant<Flush>) noexcept {
-    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush>(input);
+  /// Pass cutoff and degree through constant tags for dependent calls.
+  template<bool Flush, unsigned Degree = 6, std::size_t L, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr simd<float,L,Arch> exp(simd<float,L,Arch> input, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
+    return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
 }
 

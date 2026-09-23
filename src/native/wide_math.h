@@ -383,9 +383,37 @@ namespace math {
   }
 
   namespace detail {
+    // Each degree shares the reduction and scaling graph. Sollya binary32 fits
+    // keep the constant exactly one; six is the default accuracy/cost choice.
+    template<unsigned Degree, class V, std::size_t N>
+      requires (Degree >= 1 && Degree <= 7) && (::wide::detail::binary32_register<V>)
+    native_inline constexpr auto exp_polynomial(std::array<V, N> const & r) noexcept {
+      auto const c = [&](float value) { return ::wide::constant_like(r, value); };
+      if constexpr (Degree == 1)
+        return ::math::horner(c(0x1.ec7054p-1f), c(1.f))(r);
+      else if constexpr (Degree == 2)
+        return ::math::horner(c(0x1.ff3a12p-2f), c(0x1.039e16p+0f), c(1.f))(r);
+      else if constexpr (Degree == 3)
+        return ::math::horner(c(0x1.5249a2p-3f), c(0x1.021d64p-1f),
+          c(0x1.000cd6p+0f), c(1.f))(r);
+      else if constexpr (Degree == 4)
+        return ::math::horner(c(0x1.541326p-5f), c(0x1.57ce98p-3f),
+          c(0x1.0003f6p-1f), c(0x1.fffba8p-1f), c(1.f))(r);
+      else if constexpr (Degree == 5)
+        return ::math::horner(c(0x1.0f9fa4p-7f), c(0x1.573a1cp-5f),
+          c(0x1.555a8p-3f), c(0x1.fffdc6p-2f), c(0x1.fffff6p-1f), c(1.f))(r);
+      else if constexpr (Degree == 6)
+        return ::math::horner(c(0x1.6d55f4p-10f), c(0x1.123e2cp-7f),
+          c(0x1.5554ep-5f), c(0x1.55548ap-3f), c(0.5f), c(1.f), c(1.f))(r);
+      else
+        return ::math::horner(c(0x1.a1d714d7b1510dp-13f), c(0x1.6da756e670ea6p-10f),
+          c(0x1.11105b3161a6fp-7f), c(0x1.5554649b7487fp-5f),
+          c(0x1.555555c673724p-3f), c(0x1.0000005c8dd89p-1f), c(1.f), c(1.f))(r);
+    }
+
     // The single polynomial body, shared by generic and targeted entry points.
-    template<bool Flush, class V, std::size_t N>
-      requires (::wide::detail::binary32_register<V>)
+    template<bool Flush, unsigned Degree = 6, class V, std::size_t N>
+      requires (Degree >= 1 && Degree <= 7) && (::wide::detail::binary32_register<V>)
     native_nodiscard native_inline constexpr auto exp_reduced(std::array<V, N> const & x) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(x, value); };
       auto const active = ::wide::mask_not(::wide::cmp_lt(x, c(Flush ? -87.33654022216796875f : -104.f)));
@@ -402,29 +430,24 @@ namespace math {
       r = ::wide::detail::madd(n, c(-0x1.62e400p-1f), r);
       r = ::wide::detail::madd(n, c(-0x1.7f7d1cp-20f), r);
 
-      auto y = ::wide::detail::madd(r, c(0x1.a1d714d7b1510dp-13f), c(0x1.6da756e670ea6p-10f));
-      y = ::wide::detail::madd(r, y, c(0x1.11105b3161a6fp-7f));
-      y = ::wide::detail::madd(r, y, c(0x1.5554649b7487fp-5f));
-      y = ::wide::detail::madd(r, y, c(0x1.555555c673724p-3f));
-      y = ::wide::detail::madd(r, y, c(0x1.0000005c8dd89p-1f));
-      auto const one = c(1.f);
-      y = ::wide::detail::madd(r, y, one);
-      y = ::wide::detail::madd(r, y, one);
+      auto const y = exp_polynomial<Degree>(r);
       return std::tuple{in_range, replacement, y, n};
     }
   }
 
   /// Evaluate exp through a homogeneous SIMD array and restore the input shape.
   /// Scalar and SIMD inputs promote to singleton arrays; tuples are unsupported.
-  template<bool Flush = false, ::wide::promotable T>
-    requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  /// Degree selects one of the fitted polynomials from one through seven;
+  /// six is the default. Reduction, range cutoffs and scaling are shared.
+  template<bool Flush = false, unsigned Degree = 6, ::wide::promotable T>
+    requires (Degree >= 1 && Degree <= 7) && (::wide::detail::binary32_array<::wide::canonical_t<T>>)
   native_nodiscard native_inline constexpr auto exp(T const & input) noexcept {
     // MSVC's array<T,0> may construct a dummy T; an empty batch needs no work.
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
       return std::remove_cvref_t<T>(input);
     } else {
       auto const x = ::wide::promote(input);
-      auto const [in_range, replacement, y, n] = detail::exp_reduced<Flush>(x);
+      auto const [in_range, replacement, y, n] = detail::exp_reduced<Flush, Degree>(x);
       return ::wide::demote<T>(::wide::detail::scale_exp(in_range, replacement, y, n));
     }
   }

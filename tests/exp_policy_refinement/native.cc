@@ -57,14 +57,14 @@ namespace refinement_test {
       if constexpr(N==0) return native::wide<V,0>{std::array<V,0>{{}}}; \
       else return native::wide<V,N>{V::load_bits(input+K*L)...}; \
     }(std::make_index_sequence<N>{}); \
-    static_assert(noexcept(native::exp<Flush>(values))==noexcept(native::exp<Flush,V,N>(values))); \
+    static_assert(noexcept(native::exp<Flush>(values))==noexcept(native::exp<Flush,6,V,N>(values))); \
     using W=native::wide<V,N>; \
     using F=W (*)(W const &); \
-    static_assert(static_cast<F>(&native::exp<Flush>)==static_cast<F>(&native::exp<Flush,L,N,A>)); \
+    static_assert(static_cast<F>(&native::exp<Flush>)==static_cast<F>(&native::exp<Flush,6,L,N,A>)); \
     static_assert(static_cast<F>(&native::math::exp<Flush>)==static_cast<F>(&native::exp<Flush>)); \
-    static_assert(static_cast<F>(&native::exp<Flush>)!=static_cast<F>(&native::exp<Flush,V,N>)); \
+    static_assert(static_cast<F>(&native::exp<Flush>)!=static_cast<F>(&native::exp<Flush,6,V,N>)); \
     auto computed=[&] { \
-      if constexpr(Reference) return native::exp<Flush,V,N>(values); \
+      if constexpr(Reference) return native::exp<Flush,6,V,N>(values); \
       else return native::exp<Flush>(values); \
     }(); \
     static_assert(std::same_as<decltype(computed),native::wide<V,N>>); \

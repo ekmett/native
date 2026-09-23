@@ -148,10 +148,9 @@ static float exp_reference(float x,bool flush) {
   float r=88.72283935546875f < x ? 88.72283935546875f : x;
   float n=std::nearbyint(r*1.4426950408889634f);
   r=madd(n,-0x1.62e400p-1f,r); r=madd(n,-0x1.7f7d1cp-20f,r);
-  float y=madd(r,0x1.a1d714d7b1510dp-13f,0x1.6da756e670ea6p-10f);
-  y=madd(r,y,0x1.11105b3161a6fp-7f); y=madd(r,y,0x1.5554649b7487fp-5f);
-  y=madd(r,y,0x1.555555c673724p-3f); y=madd(r,y,0x1.0000005c8dd89p-1f);
-  y=madd(r,y,1.f); y=madd(r,y,1.f);
+  float y=madd(r,0x1.6d55f4p-10f,0x1.123e2cp-7f);
+  y=madd(r,y,0x1.5554ep-5f); y=madd(r,y,0x1.55548ap-3f);
+  y=madd(r,y,0.5f); y=madd(r,y,1.f); y=madd(r,y,1.f);
   return std::isnan(n) ? n : std::ldexp(y,int(n));
 }
 static std::uint32_t distance(float a,float b) {

@@ -9,23 +9,23 @@
 #pragma clang attribute push(__attribute__((target("simd128"))), apply_to=function)
 namespace native {
   /// Binary32 SIMD128 exp; multiply/add stages round separately, without relaxed SIMD.
-  template<bool Flush = false, isa<> A> requires(A.has(wasm_feature::simd128))
+  template<bool Flush = false, unsigned Degree = 6, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
   native_nodiscard native_inline constexpr simd<float,4,A> exp(simd<float,4,A> x) noexcept {
-    return ::math::exp<Flush>(x);
+    return ::math::exp<Flush, Degree>(x);
   }
   /// Advance every independent SIMD128 polynomial chain stage by stage.
-  template<bool Flush = false, std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
+  template<bool Flush = false, unsigned Degree = 6, std::size_t N, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
   native_nodiscard native_inline constexpr auto exp(std::array<simd<float,4,A>,N> const & x) noexcept {
-    return ::math::exp<Flush>(x);
+    return ::math::exp<Flush, Degree>(x);
   }
-  template<bool Flush, isa<> A> requires(A.has(wasm_feature::simd128))
-  native_nodiscard native_inline constexpr auto exp(simd<float,4,A> x, std::bool_constant<Flush>) noexcept {
-    return ::math::exp<Flush>(x);
+  template<bool Flush, unsigned Degree = 6, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr auto exp(simd<float,4,A> x, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
+    return ::math::exp<Flush, Degree>(x);
   }
-  template<bool Flush, std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
+  template<bool Flush, unsigned Degree = 6, std::size_t N, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
   native_nodiscard native_inline constexpr auto exp(std::array<simd<float,4,A>,N> const & x,
-      std::bool_constant<Flush>) noexcept {
-    return ::math::exp<Flush>(x);
+      std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
+    return ::math::exp<Flush, Degree>(x);
   }
   /// Binary32 SIMD128 exp2; multiply/add stages round separately, without relaxed SIMD.
   template<bool Flush = false, isa<> A> requires(A.has(wasm_feature::simd128))

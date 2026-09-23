@@ -410,9 +410,25 @@
         noexcept(noexcept(atan2(a...))) -> decltype(atan2(a...)) { return atan2(a...); }
     template<class... A> native_inline constexpr auto adl_tanh(A const &... a)
         noexcept(noexcept(tanh(a...))) -> decltype(tanh(a...)) { return tanh(a...); }
-    template<bool Flush,class A> requires requires(A const & a) { exp(a,std::bool_constant<Flush>{}); }
-    native_inline constexpr auto adl_exp(A const & a) noexcept(noexcept(exp(a,std::bool_constant<Flush>{}))) -> decltype(exp(a,std::bool_constant<Flush>{})) { return exp(a,std::bool_constant<Flush>{}); }
-    template<bool Flush,class A> requires (!Flush) && (!requires(A const & a) { exp(a,std::bool_constant<Flush>{}); })
+    template<bool Flush,unsigned Degree,class A>
+      requires requires(A const & a) { exp(a,std::bool_constant<Flush>{},std::integral_constant<unsigned,Degree>{}); }
+    native_inline constexpr auto adl_exp(A const & a)
+        noexcept(noexcept(exp(a,std::bool_constant<Flush>{},std::integral_constant<unsigned,Degree>{})))
+        -> decltype(exp(a,std::bool_constant<Flush>{},std::integral_constant<unsigned,Degree>{})) {
+      return exp(a,std::bool_constant<Flush>{},std::integral_constant<unsigned,Degree>{});
+    }
+    template<bool Flush,unsigned Degree,class A>
+      requires (Degree == 6) &&
+        (!requires(A const & a) { exp(a,std::bool_constant<Flush>{},std::integral_constant<unsigned,Degree>{}); }) &&
+        requires(A const & a) { exp(a,std::bool_constant<Flush>{}); }
+    native_inline constexpr auto adl_exp(A const & a)
+        noexcept(noexcept(exp(a,std::bool_constant<Flush>{}))) -> decltype(exp(a,std::bool_constant<Flush>{})) {
+      return exp(a,std::bool_constant<Flush>{});
+    }
+    template<bool Flush,unsigned Degree,class A>
+      requires (!Flush && Degree == 6) &&
+        (!requires(A const & a) { exp(a,std::bool_constant<Flush>{},std::integral_constant<unsigned,Degree>{}); }) &&
+        (!requires(A const & a) { exp(a,std::bool_constant<Flush>{}); })
     native_inline constexpr auto adl_exp(A const & a) noexcept(noexcept(exp(a))) -> decltype(exp(a)) { return exp(a); }
     template<bool Flush,class A> requires requires(A const & a) { exp2(a,std::bool_constant<Flush>{}); }
     native_inline constexpr auto adl_exp2(A const & a) noexcept(noexcept(exp2(a,std::bool_constant<Flush>{}))) -> decltype(exp2(a,std::bool_constant<Flush>{})) { return exp2(a,std::bool_constant<Flush>{}); }
@@ -666,23 +682,24 @@
     }
   }
   /// \ingroup wide_values
-  /// Apply exponential; pass the compile-time Flush tag when the element supports it.
+  /// Apply exponential with compile-time cutoff and degree tags when supported.
   /// Uses one array call when available, otherwise an elementwise fallback.
-  template<bool Flush = false,class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_exp<Flush>(x); }
+  /// Untagged element operations are available only at the default degree six.
+  template<bool Flush = false,unsigned Degree = 6,class R,std::size_t N> requires (Degree >= 1 && Degree <= 7) && (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(x); }
   native_nodiscard native_inline constexpr wide<R,N> exp(wide<R,N> const & input)
       noexcept([] {
-        if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_exp<Flush>(a); })
-          return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp<Flush>(std::declval<std::array<R,N> const &>())});
+        if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(a); })
+          return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(std::declval<std::array<R,N> const &>())});
         else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
-          (N == 0 || noexcept(std::declval<R &>() = NATIVE_WIDE_DETAIL::adl_exp<Flush>(std::declval<R const &>())));
+          (N == 0 || noexcept(std::declval<R &>() = NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(std::declval<R const &>())));
       }()) {
-    if constexpr (requires { NATIVE_WIDE_DETAIL::adl_exp<Flush>(input.registers); })
-      return wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp<Flush>(input.registers)};
+    if constexpr (requires { NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(input.registers); })
+      return wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(input.registers)};
     else {
       wide<R,N> result;
       auto & [...value] = result;
       auto const & [...x] = input;
-      ([&] { value = NATIVE_WIDE_DETAIL::adl_exp<Flush>(x); }(), ...);
+      ([&] { value = NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(x); }(), ...);
       return result;
     }
   }

@@ -26,14 +26,13 @@ namespace exp_before {
         // the original inputs before Horner evaluation. Clamped finite endpoints
         // naturally produce zero/infinity, including either infinite input.
         ((a.r = select(a.x == a.x, a.r, a.x)), ...);
-        ((a.y = V(0x1.a1d714d7b1510dp-13f)), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.6da756e670ea6p-10f))), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.11105b3161a6fp-7f))), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.5554649b7487fp-5f))), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.555555c673724p-3f))), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.0000005c8dd89p-1f))), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.ffffffffb0eefp-1f))), ...);
-        ((a.y = fma(a.r, a.y, V(0x1.ffffffffa70c9p-1f))), ...);
+        ((a.y = V(0x1.6d55f4p-10f)), ...);
+        ((a.y = fma(a.r, a.y, V(0x1.123e2cp-7f))), ...);
+        ((a.y = fma(a.r, a.y, V(0x1.5554ep-5f))), ...);
+        ((a.y = fma(a.r, a.y, V(0x1.55548ap-3f))), ...);
+        ((a.y = fma(a.r, a.y, V(0.5f))), ...);
+        ((a.y = fma(a.r, a.y, V(1.f))), ...);
+        ((a.y = fma(a.r, a.y, V(1.f))), ...);
         // Split scaling handles n=128 and subnormal results with normal factors.
         ((a.r = min(max(a.n, V(-126)), V(127))), ...);
         ((a.y = (a.y * normal_pow2(a.n - a.r)) * normal_pow2(a.r)), ...);
@@ -55,7 +54,7 @@ namespace exp_before {
       }
     };
   }
-  // Sollya degree 7, tools/sollya_exp.sollya; coefficients round to FP32.
+  // Sollya degree six, tests/transcendentals/exp.sollya; binary32 coefficients.
   // Apply the accepted range policy after the historical graph; no FP control changes.
   // Each dependency stage expands across independent register chains.
   template<float_register V, std::size_t N>

@@ -274,7 +274,8 @@ ARM and scalar graphs retain FMA; cross-architecture bitwise equality is not a
 contract for these approximations. Neither public `fma` nor `wide::fma` acquires
 a nonfused Wasm implementation.
 
-Exp uses a degree-seven polynomial and nearest-even range reduction. Range
+`exp<Flush = false, Degree = 6>` selects a polynomial of degree one through
+seven, defaulting to six, with nearest-even range reduction. Range
 comparisons run independently of that arithmetic: lower-cutoff and overflow
 flags select zero or infinity at the finish rather than clamping the input.
 Inputs at or above `88.3762664794921875f` return positive infinity. This deliberately

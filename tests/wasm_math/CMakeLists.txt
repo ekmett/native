@@ -31,7 +31,7 @@ add_test(NAME native.wasm.math.codegen COMMAND "${Python3_EXECUTABLE}"
 set_tests_properties(native.wasm.math.codegen PROPERTIES LABELS "wasm;simd128;math;codegen")
 
 # The same promoted-kernel regressions run through the baseline Wasm engine.
-foreach(operation IN ITEMS tanh atan2 horner base2)
+foreach(operation IN ITEMS tanh atan2 horner base2 exp_degree)
   add_executable(native_test_wasm_${operation} ../core_regression/promoted_${operation}.cc)
   target_link_libraries(native_test_wasm_${operation} PRIVATE native::native)
   target_compile_definitions(native_test_wasm_${operation} PRIVATE NATIVE_TEST_IMPORT=1)
