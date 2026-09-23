@@ -20,7 +20,13 @@ The returned callable owns its coefficients and can be reused at different input
 shapes when its coefficient types permit them.
 It preserves the scalar, SIMD, array or `wide` shape of `z`. Coefficients are
 `float` values or SIMD values matching the pack's register type, shared across
-all registers. At least one coefficient is required; a single coefficient
+all registers, or arrays and `wide` packs of those values matching `z`'s extent.
+Packed coefficients can vary by register as well as by lane, as when a mask
+selects coefficients for different intervals. Packed `float` coefficients
+broadcast within each corresponding SIMD register. Array and `wide` coefficient
+containers can be mixed; the result keeps `z`'s shape. Packed coefficients require
+a packed input, and mismatched extents or SIMD types are rejected.
+At least one coefficient is required; a single coefficient
 returns a constant polynomial without evaluating an arithmetic operation on `z`.
 Each additional coefficient adds one multiply-add stage across the pack, fused
 where available and separately rounded on baseline Wasm SIMD. Leading zeros remain

@@ -381,7 +381,10 @@ standard arrays do not acquire `wide` as an associated namespace for ADL.
 constant term, preserving the shape of `z`. The callable owns its coefficients;
 `float` coefficients can be reused across scalar, SIMD and wide inputs, while
 SIMD coefficients must match the input's register type. `wide::horner` is an
-alias. See [polynomial evaluation](transcendentals.md#current-implementation-cost)
+alias. Coefficients may also be arrays or `wide` packs matching the input's
+extent, including coefficients selected by per-lane masks. A packed float
+coefficient broadcasts within its corresponding register; shared coefficients
+remain shared. See [polynomial evaluation](transcendentals.md#current-implementation-cost)
 for its multiply-add and constant-polynomial behavior.
 
 `math::log`, `math::log1p`, `math::expm1`, `math::damping_gain`, `math::tanh`,

@@ -305,8 +305,13 @@ namespace wide {
 
 namespace math {
   namespace detail {
+    template<class T> using horner_register_t = typename ::wide::canonical_t<T>::value_type;
     template<class T, class C> concept horner_coefficient = std::same_as<C, float> ||
-      std::same_as<C, typename ::wide::detail::shape_t<::wide::canonical_t<T>>::template element_type<0>>;
+      std::same_as<C, horner_register_t<T>> ||
+      (::wide::detail::is_array<T> && ::wide::detail::is_array<C> &&
+       ::wide::detail::shape_t<T>::size == ::wide::detail::shape_t<C>::size &&
+       (std::same_as<typename ::wide::detail::shape_t<C>::template element_type<0>, float> ||
+        std::same_as<typename ::wide::detail::shape_t<C>::template element_type<0>, horner_register_t<T>>));
 
     template<class P, class C0, class C1, class... C>
     native_inline constexpr auto horner_kernel(P const & z, C0 const & first,
@@ -316,18 +321,33 @@ namespace math {
       return h;
     }
 
+    // Inline broadcasts with their consuming stages so scalar coefficient packs
+    // do not survive as temporary arrays in the generated code.
+    template<class P> struct horner_coefficient_conversion {
+      P const & input;
+
+      template<class C>
+      native_inline constexpr auto operator()(C const & value) const noexcept {
+        using shape = ::wide::detail::shape_t<C>;
+        if constexpr (shape::kind == ::wide::detail::family::legacy)
+          return ::wide::map(*this, value.registers);
+        else if constexpr (shape::kind == ::wide::detail::family::std_array)
+          return ::wide::map(*this, value);
+        else if constexpr (std::same_as<C, float>)
+          return ::wide::constant_like(input, value);
+        else return value;
+      }
+    };
+
     template<class T, class C0, class... C>
     native_inline constexpr auto evaluate_horner(T const & z,
         C0 const & first, C const &... rest) noexcept {
       auto const input = ::wide::promote(z);
-      auto const coefficient = [&](auto const & value) {
-        if constexpr (std::same_as<std::remove_cvref_t<decltype(value)>, float>)
-          return ::wide::constant_like(input, value);
-        else return value;
-      };
+      auto const coefficient = horner_coefficient_conversion<decltype(input)>{input};
       if constexpr (sizeof...(C) == 0) {
         auto const value = coefficient(first);
-        return ::wide::demote<T>(::wide::map([&](auto const &) { return value; }, input));
+        if constexpr (::wide::pack<decltype(value)>) return ::wide::demote<T>(value);
+        else return ::wide::demote<T>(::wide::map([&](auto const &) { return value; }, input));
       } else {
         return ::wide::demote<T>(horner_kernel(input,
           coefficient(first), coefficient(rest)...));
@@ -349,13 +369,15 @@ namespace math {
 
   /// Own a binary32 polynomial's coefficients in descending power order.
   /// Calling the result preserves the argument's scalar, SIMD, array or wide
-  /// shape. Coefficients are floats or matching SIMD values shared across the
-  /// pack. Require at least one; a constant polynomial performs no arithmetic.
+  /// shape. A float or matching SIMD coefficient is shared across the pack;
+  /// array and wide coefficients match its extent and may vary by register.
+  /// Packed floats broadcast within each SIMD register. Require at least one
+  /// coefficient; a constant polynomial performs no arithmetic.
   /// Each remaining coefficient adds one multiply-add, fused where supported
   /// and separate on baseline Wasm SIMD.
-  template<class C0, class... C>
-    requires (std::same_as<C0, float> || ::wide::detail::binary32_register<C0>) &&
-      ((std::same_as<C, float> || ::wide::detail::binary32_register<C>) && ...)
+  template<::wide::promotable C0, ::wide::promotable... C>
+    requires (::wide::detail::binary32_array<::wide::canonical_t<C0>>) &&
+      ((::wide::detail::binary32_array<::wide::canonical_t<C>>) && ...)
   native_nodiscard native_inline constexpr auto horner(C0 first, C... rest) noexcept {
     return detail::horner_polynomial<C0, C...>{{first, rest...}};
   }
