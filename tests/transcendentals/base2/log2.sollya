@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+// Newly generated coefficient fit; this script contains no imported approximation.
+prec = 256!;
+display = hexadecimal!;
+f = log(1+x)/(x*log(2));
+p = fpminimax(f, 9, [|single...|], [-0x1.2bec34p-2;0x1.a82790p-2], absolute);
+print("polynomial in ascending powers", p);
+print("uncertified absolute supremum estimate", dirtyinfnorm(p-f,[-0x1.2bec34p-2;0x1.a82790p-2]));
+quit;

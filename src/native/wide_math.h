@@ -428,6 +428,34 @@ namespace math {
       return ::wide::demote<T>(::wide::detail::scale_exp(in_range, replacement, y, n));
     }
   }
+
+  /// Direct base-two exponential, preserving the input shape. Normal integer
+  /// powers are exact. Inputs at least 127.5 overflow; Flush returns zero below
+  /// -126. Otherwise subnormal accuracy follows the backend's bounded scaling.
+  template<bool Flush = false, ::wide::promotable T>
+    requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto exp2(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
+      return std::remove_cvref_t<T>(input);
+    } else {
+      namespace w = ::wide;
+      auto const x = w::promote(input);
+      auto const c = [&](float value) { return w::constant_like(x, value); };
+      auto const active = w::mask_not(w::cmp_lt(x, c(Flush ? -126.f : -150.f)));
+      auto const overflow = w::cmp_ge(x, c(127.5f));
+      auto const in_range = w::bit_and(active, w::mask_not(overflow));
+      auto const replacement = w::select(overflow,
+        c(std::bit_cast<float>(0x7f800000u)), c(0.f));
+      auto const n = w::round_even(x);
+      auto const r = w::sub(x, n);
+      // Sollya fpminimax(2^x,[|1,...,6|],[|single...|],[-1/2;1/2],relative,1).
+      // All coefficients are binary32; the fixed constant preserves exp2(0).
+      auto const y = ::math::horner(
+        c(0x1.3fa206p-13f), c(0x1.5f0b82p-10f), c(0x1.3b30ap-7f),
+        c(0x1.c6af76p-5f), c(0x1.ebfbd8p-3f), c(0x1.62e43p-1f), c(1.f))(r);
+      return w::demote<T>(w::detail::scale_exp(in_range, replacement, y, n));
+    }
+  }
 }
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: (BSD-2-Clause OR Apache-2.0) AND BSL-1.0
@@ -650,6 +678,41 @@ namespace math {
 }
 
 namespace math::detail {
+  // Direct base-two reduction and a newly generated Sollya polynomial.
+  template<class V, std::size_t N>
+    requires (::wide::detail::binary32_register<V>)
+  native_nodiscard native_inline constexpr auto log2_kernel(std::array<V, N> const & input) noexcept {
+    namespace w = ::wide;
+    auto const c = [&](float value) { return w::constant_like(input, value); };
+    auto const word = w::bits(input);
+    auto const u = [&](std::uint32_t value) { return w::constant_like(word, value); };
+    // The sign bit adds a harmless 256 for negative inputs, replaced below.
+    // Delay the magnitude mask so it need not stay live through the polynomial.
+    auto exponent = w::sub(w::right<23>(word), u(127));
+    auto mantissa = w::bit_or(w::bit_and(word, u(0x007fffffu)), u(0x3f800000u));
+    // Fold at binary32 sqrt(2), keeping log2(m) close to [-0.5, 0.5].
+    // The bit reduction is finite even for inputs classified below.
+    auto const upper = w::cmp_ge(mantissa, u(0x3fb504f3u));
+    mantissa = w::sub(mantissa, w::select(upper, u(0x00800000u), u(0)));
+    exponent = w::add(exponent, w::select(upper, u(1), u(0)));
+    auto const r = w::sub(w::from_bits(mantissa), c(1.f));
+    // Sollya 8.0 fpminimax of log2(1+r)/r, degree 9, binary32
+    // coefficients, absolute error on [-0x1.2bec34p-2, 0x1.a82790p-2].
+    auto const h = ::math::horner(
+      c(-0x1.9c1d9ep-4f), c(0x1.729888p-3f), c(-0x1.8ac44cp-3f),
+      c(0x1.a55be8p-3f), c(-0x1.ea87d4p-3f), c(0x1.2767d4p-2f),
+      c(-0x1.715b1p-2f), c(0x1.ec713ap-2f), c(-0x1.71547p-1f),
+      c(0x1.715476p+0f))(r);
+    auto result = w::bits(w::detail::madd(r, h, w::detail::signed_float(exponent)));
+    auto const magnitude = w::bit_and(word, u(0x7fffffffu));
+    auto const sign = w::bit_and(word, u(0x80000000u));
+    result = w::select(w::cmp_eq(word, u(0x7f800000u)), word, result);
+    result = w::select(w::cmp_ne(sign, u(0)), u(0x7fc00000u), result);
+    result = w::select(w::cmp_lt(magnitude, u(0x00800000u)), u(0xff800000u), result);
+    result = w::select(w::cmp_gt(magnitude, u(0x7f800000u)), u(0x7fc00000u), result);
+    return w::from_bits(result);
+  }
+
   // Normal inputs retain the FTZ hardware polynomial and reduction graph.
   // There is no software flushing between arithmetic operations and no FP
   // control change. log treats subnormal inputs as signed zero; log1p returns
@@ -737,6 +800,13 @@ namespace math {
   native_nodiscard native_inline constexpr auto log(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::log_kernel<false>(::wide::promote(input)));
+  }
+  /// Binary logarithm; subnormal inputs are treated as signed zero.
+  /// Normal powers of two are exact, including positive zero at one.
+  template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
+  native_nodiscard native_inline constexpr auto log2(T const & input) noexcept {
+    if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
+    else return ::wide::demote<T>(detail::log2_kernel(::wide::promote(input)));
   }
   /// Cancellation-safe log(1+x), preserving signed zero and tiny inputs.
   template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
@@ -869,9 +939,11 @@ namespace wide {
   // Qualified convenience aliases; standard arrays keep their ordinary ADL.
   using ::math::horner;
   using ::math::exp;
+  using ::math::exp2;
   using ::math::expm1;
   using ::math::damping_gain;
   using ::math::log;
+  using ::math::log2;
   using ::math::log1p;
   using ::math::tanh;
   using ::math::atan2;

@@ -51,9 +51,36 @@ namespace native {
   NATIVE_PROMOTED_MATH_ENTRY(expm1)
   NATIVE_PROMOTED_MATH_ENTRY(damping_gain)
   NATIVE_PROMOTED_MATH_ENTRY(log)
+  NATIVE_PROMOTED_MATH_ENTRY(log2)
   NATIVE_PROMOTED_MATH_ENTRY(log1p)
   NATIVE_PROMOTED_MATH_ENTRY(tanh)
 #undef NATIVE_PROMOTED_MATH_ENTRY
+  /// \ingroup vector_math
+  /// Base-two exponential with the same compile-time underflow policy as exp.
+  template<bool Flush = false, std::size_t L, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr simd<float,L,Arch>
+  exp2(simd<float,L,Arch> input) noexcept { return ::math::exp2<Flush>(input); }
+  /// \ingroup vector_math
+  /// Evaluate exp2 stage by stage across independent registers.
+  template<bool Flush = false, std::size_t L, std::size_t N, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N>
+  exp2(std::array<simd<float,L,Arch>,N> const & input) noexcept { return ::math::exp2<Flush>(input); }
+  /// \ingroup vector_math
+  /// Select exp2's underflow policy through a tag for dependent calls.
+  template<bool Flush, std::size_t L, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr simd<float,L,Arch>
+  exp2(simd<float,L,Arch> input, std::bool_constant<Flush>) noexcept { return ::math::exp2<Flush>(input); }
+  /// \ingroup vector_math
+  /// Select exp2's underflow policy for a register batch through a tag.
+  template<bool Flush, std::size_t L, std::size_t N, ::native::isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
+  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N>
+  exp2(std::array<simd<float,L,Arch>,N> const & input, std::bool_constant<Flush>) noexcept {
+    return ::math::exp2<Flush>(input);
+  }
   /// \ingroup vector_math
   /// Evaluate atan2(y,x), retaining the common SIMD architecture and lane count.
   template<std::size_t L, ::native::isa<> Arch>

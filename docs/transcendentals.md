@@ -33,6 +33,13 @@ where available and separately rounded on baseline Wasm SIMD. Leading zeros rema
 part of the evaluation, including their behavior with infinities and NaNs.
 The same helper is available as `wide::horner` through `import native.math;`.
 
+`exp2` and `log2` use direct base-two reductions, with no conversion through
+natural exponential or logarithm. Their Sollya fitting scripts and numerical
+qualification are retained with the [base-two tests](../tests/transcendentals/base2/README.md).
+Normal integer powers of two are exact in both directions. `exp2` deliberately
+returns infinity starting at 127.5 and shares exp's backend-specific treatment
+of subnormal outputs; `log2` treats subnormal inputs as signed zero.
+
 The native `tanh` graph performs fourteen coefficient-table lookups and twelve
 polynomial FMAs per register, plus range reduction and result classification.
 The native `atan2` graph uses one packed divide and eight polynomial FMAs, plus
@@ -48,13 +55,12 @@ arithmetic chains, but larger packs cause substantial register spills; more
 registers do not imply proportionally better throughput. The benchmark retains
 those costs and its sampling limits separately from numerical qualification.
 
-## Candidates after tanh and atan2
+## Further kernels
 
 These are proposed additions, not available entry points.
 
 | Priority | Operations | Why they are useful | Main work |
 | --- | --- | --- | --- |
-| First | `exp2`, `log2` | Natural partners for binary exponent reconstruction and mantissa reduction. | Fit or scale the reduced polynomial directly; avoid wrappers that unnecessarily convert through natural-log units. Check integer powers of two and range endpoints. |
 | First | `atan` | Can reuse the reduced atan polynomial without atan2's two-input axis handling. | Reciprocal reduction for large magnitudes; signed zero, infinities and the tiny interval. |
 | Next | `sinh`, `cosh`, paired `sinhcosh` | Share exponential work when both are needed. | Use a cancellation-safe small-input form; choose their own overflow range instead of inheriting exp's cutoff accidentally. |
 | Next | `sigmoid`, `softplus` | Common stable compositions of exp and log1p. | Work with `exp(-abs(x))` to avoid positive overflow, retain useful tiny corrections and measure the cost of each divide or selection. |

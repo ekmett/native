@@ -27,6 +27,25 @@ namespace native {
       std::bool_constant<Flush>) noexcept {
     return ::math::exp<Flush>(x);
   }
+  /// Binary32 SIMD128 exp2; multiply/add stages round separately, without relaxed SIMD.
+  template<bool Flush = false, isa<> A> requires(A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr simd<float,4,A> exp2(simd<float,4,A> x) noexcept {
+    return ::math::exp2<Flush>(x);
+  }
+  /// Advance every independent SIMD128 polynomial chain stage by stage.
+  template<bool Flush = false, std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr auto exp2(std::array<simd<float,4,A>,N> const & x) noexcept {
+    return ::math::exp2<Flush>(x);
+  }
+  template<bool Flush, isa<> A> requires(A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr auto exp2(simd<float,4,A> x, std::bool_constant<Flush>) noexcept {
+    return ::math::exp2<Flush>(x);
+  }
+  template<bool Flush, std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
+  native_nodiscard native_inline constexpr auto exp2(std::array<simd<float,4,A>,N> const & x,
+      std::bool_constant<Flush>) noexcept {
+    return ::math::exp2<Flush>(x);
+  }
 #define NATIVE_WASM_MATH(name) \
   template<isa<> A> requires(A.has(wasm_feature::simd128)) \
   native_nodiscard native_inline constexpr auto name(simd<float,4,A> x) noexcept { \
@@ -44,6 +63,7 @@ namespace native {
   NATIVE_WASM_MATH(expm1)
   NATIVE_WASM_MATH(damping_gain)
   NATIVE_WASM_MATH(log)
+  NATIVE_WASM_MATH(log2)
   NATIVE_WASM_MATH(log1p)
   NATIVE_WASM_MATH(tanh)
 #undef NATIVE_WASM_MATH

@@ -116,7 +116,7 @@ forms take `simd` values; scalar forms take ordinary C++ values. Their feature
 requirements and arithmetic contracts remain specific to the instruction.
 
 Import `native.math` separately for promoted numerical kernels such as
-`math::exp`, `math::expm1`, `math::log1p`, `math::tanh`, `math::atan2`, and
+`math::exp`, `math::exp2`, `math::expm1`, `math::log2`, `math::log1p`, `math::tanh`, `math::atan2`, and
 `math::sincos`. Their domains and batching behavior are described
 in the [value guide](docs/modules.md#promoted-math-batches). The
 [transcendental plan](docs/transcendentals.md) covers prospective kernels and their

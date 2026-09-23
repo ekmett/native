@@ -146,6 +146,10 @@ void exponential() {
   using V = native::simd<float, 4, Arch>;
   std::array<V, 2> registers{V(0.f), V(1.f)};
   auto result = native::exp(registers);
+  auto powers = native::exp2(registers);
+  check(all(powers[0] == V(1.f)) && all(powers[1] == V(2.f)));
+  auto exponents = native::log2(powers);
+  check(all(exponents[0] == V(0.f)) && all(exponents[1] == V(1.f)));
   check(all(result[0] == V(1.f)));
   check(all(result[1] > V(2.718f)) && all(result[1] < V(2.719f)));
 }

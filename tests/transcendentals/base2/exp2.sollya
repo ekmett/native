@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+// Newly generated fit: no third-party polynomial coefficients.
+prec = 256!;
+points = 10001!;
+display = hexadecimal!;
+f = 2^x;
+p = fpminimax(f, [|1,2,3,4,5,6|], [|single...|], [-1/2;1/2], relative, 1);
+print("degree-6 binary32 fit; constant fixed to 1:");
+print(p);
+for i from 0 to 6 do print(i, coeff(p,i));
+display = decimal!;
+print("unrounded polynomial relative dirtyinfnorm (not a proof):", dirtyinfnorm(p/f-1, [-1/2;1/2]));
+quit;

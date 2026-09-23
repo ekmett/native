@@ -36,9 +36,11 @@ export namespace native {
 export namespace math {
   using ::math::horner;
   using ::math::exp;
+  using ::math::exp2;
   using ::math::expm1;
   using ::math::damping_gain;
   using ::math::log;
+  using ::math::log2;
   using ::math::log1p;
   using ::math::tanh;
   using ::math::atan2;
@@ -97,9 +99,11 @@ export namespace wide {
   using ::wide::left;
   using ::wide::right;
   using ::wide::exp;
+  using ::wide::exp2;
   using ::wide::expm1;
   using ::wide::damping_gain;
   using ::wide::log;
+  using ::wide::log2;
   using ::wide::log1p;
   using ::wide::tanh;
   using ::wide::atan2;
@@ -114,9 +118,11 @@ export namespace native {
   using ::native::cos;
   using ::native::sincos;
   using ::native::exp;
+  using ::native::exp2;
   using ::native::expm1;
   using ::native::damping_gain;
   using ::native::log;
+  using ::native::log2;
   using ::native::log1p;
   using ::native::tanh;
   using ::native::atan2;
@@ -124,10 +130,12 @@ export namespace native {
     using ::native::abs;
     using ::native::cos;
     using ::native::exp;
+    using ::native::exp2;
     using ::native::expm1;
     using ::native::damping_gain;
     using ::native::fma;
     using ::native::log;
+    using ::native::log2;
     using ::native::log1p;
     using ::native::sin;
     using ::native::sincos;

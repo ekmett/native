@@ -264,7 +264,7 @@ next stage begins, rather than finishing one `exp` call per element. Results
 preserve the input scalar, SIMD, array, or `native::wide` shape, including
 empty and one-element containers.
 These kernels support binary32 elements on x86, ARM and Wasm SIMD128.
-Wasm provides `math::exp`, `expm1`, `log`, `log1p`, `damping_gain`, `tanh`,
+Wasm provides `math::exp`, `exp2`, `expm1`, `log`, `log2`, `log1p`, `damping_gain`, `tanh`,
 `atan2`, `sin`, `cos` and `sincos` for single vectors,
 standard arrays and `native::wide`; `native::math` exposes the same Wasm kernels.
 SIMD128 has no fused multiply-add instruction, so its polynomial stages use
@@ -294,6 +294,15 @@ reconstruction. These internal exp steps do not supply a public software scaling
 operation; NaN payloads are unspecified. Range selection does not suppress
 exceptions from intermediate operations, and FP exception flags can differ
 between backends.
+`exp2` reduces directly with `n = round_even(x)` and `r = x - n`, then
+approximates `2^r` and uses the same reconstruction. It avoids converting the
+argument to natural-log units. Its intentional early overflow cutoff is 127.5;
+`Flush=true` selects zero below -126. `log2` separates the binary exponent from
+a mantissa close to one (approximately `[1/sqrt(2),sqrt(2))`), approximates
+its base-two logarithm and adds the
+exponent. Both use Sollya-generated binary32 coefficients with scripts retained
+in the [base-two math tests](../tests/transcendentals/base2/README.md).
+
 Trig retains the finite `|x| < 8192` domain, coefficients, quadrant selection and
 signed-zero behavior. [The Wasm math fixture](../tests/wasm_math/README.md) checks
 these distinct rounding semantics and sampled error budgets; it is not an
@@ -373,7 +382,7 @@ preserving the sign of zero and the exact bits of normal values, infinities,
 and NaNs. It leaves floating-point controls unchanged. `math::abs`, `sqrt`,
 `floor`, `ceil`, `trunc`, and `round_even` retain the native leaf operation's
 semantics through the same shape-preserving interface. Qualified aliases
-`wide::exp`, `expm1`, `log`, `log1p`, `damping_gain`, `tanh`, `atan2`, `sin`,
+`wide::exp`, `exp2`, `expm1`, `log`, `log2`, `log1p`, `damping_gain`, `tanh`, `atan2`, `sin`,
 `cos`, `sincos`, and `flush_to_zero` are also available;
 standard arrays do not acquire `wide` as an associated namespace for ADL.
 
@@ -388,15 +397,17 @@ remain shared. See [polynomial evaluation](transcendentals.md#current-implementa
 for its multiply-add and constant-polynomial behavior.
 
 `math::log`, `math::log1p`, `math::expm1`, `math::damping_gain`, `math::tanh`,
-and `math::atan2` use the same
-promotion and staged array evaluation. Their binary32 polynomials come from
-[FTZ](https://github.com/ekmett/ftz); ordinary native values do not acquire FTZ's
-arithmetic policy. No kernel changes the caller's FP controls or inserts software
+and `math::atan2` use the same promotion and staged array evaluation. The first
+five kernels adapt binary32 polynomials from [FTZ](https://github.com/ekmett/ftz);
+atan2 uses the SLEEF coefficients described below. Ordinary native values do not
+acquire FTZ's arithmetic policy. No kernel changes the caller's FP controls or inserts software
 flushing between arithmetic steps. ARM and x86 use fused multiply-add; baseline
 Wasm SIMD128 uses separate multiply and add and has its own accuracy checks.
 
 | Function | Boundary behavior |
 | --- | --- |
+| `exp2(x)` | Normal integer powers from -126 through 127 are exact; inputs at or above 127.5 give `+inf`. `exp2<true>` selects zero below -126; other subnormal results follow the exp reconstruction policy. |
+| `log2(x)` | Normal powers of two return their exact integer exponents; `log2(1)` is positive zero. Zero, subnormal, negative and nonfinite inputs follow `log`. |
 | `log(x)` | Signed zero and subnormal inputs give `-inf`; negative normal inputs give NaN; `+inf` is preserved. |
 | `log1p(x)` | `-1` gives `-inf`; inputs below `-1` give NaN; `+inf` is preserved. Inputs with `abs(x) <= 2^-25` retain their bits. |
 | `expm1(x)` | Computes `exp(x)-1` without cancellation near zero. Signed zero and tiny subnormals are preserved; `-inf` gives `-1`; positive overflow follows `exp`. |
@@ -412,7 +423,7 @@ exception flags or correct rounding for every input. The regression bank checks
 normal-domain accuracy and special values separately. Native does not promise
 FTZ packet equality when subnormal intermediates or nonfused operations differ.
 
-The SIMD and SIMD-array forms also have `native::log`, `log1p`, `expm1`,
+The SIMD and SIMD-array forms also have `native::exp2`, `log`, `log2`, `log1p`, `expm1`,
 `damping_gain`, `tanh`, and `atan2` entry points. The `native::wide` adapters
 use the array kernel for native SIMD elements; custom elements retain their ADL
 operations. `tanh` selects a polynomial from seven magnitude intervals using

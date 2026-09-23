@@ -379,8 +379,10 @@
     using std::sin;
     using std::cos;
     using std::exp;
+    using std::exp2;
     using std::expm1;
     using std::log;
+    using std::log2;
     using std::log1p;
     using std::tanh;
     using std::atan2;
@@ -400,6 +402,8 @@
         noexcept(noexcept(damping_gain(a...))) -> decltype(damping_gain(a...)) { return damping_gain(a...); }
     template<class... A> native_inline constexpr auto adl_log(A const &... a)
         noexcept(noexcept(log(a...))) -> decltype(log(a...)) { return log(a...); }
+    template<class... A> native_inline constexpr auto adl_log2(A const &... a)
+        noexcept(noexcept(log2(a...))) -> decltype(log2(a...)) { return log2(a...); }
     template<class... A> native_inline constexpr auto adl_log1p(A const &... a)
         noexcept(noexcept(log1p(a...))) -> decltype(log1p(a...)) { return log1p(a...); }
     template<class... A> native_inline constexpr auto adl_atan2(A const &... a)
@@ -410,6 +414,10 @@
     native_inline constexpr auto adl_exp(A const & a) noexcept(noexcept(exp(a,std::bool_constant<Flush>{}))) -> decltype(exp(a,std::bool_constant<Flush>{})) { return exp(a,std::bool_constant<Flush>{}); }
     template<bool Flush,class A> requires (!Flush) && (!requires(A const & a) { exp(a,std::bool_constant<Flush>{}); })
     native_inline constexpr auto adl_exp(A const & a) noexcept(noexcept(exp(a))) -> decltype(exp(a)) { return exp(a); }
+    template<bool Flush,class A> requires requires(A const & a) { exp2(a,std::bool_constant<Flush>{}); }
+    native_inline constexpr auto adl_exp2(A const & a) noexcept(noexcept(exp2(a,std::bool_constant<Flush>{}))) -> decltype(exp2(a,std::bool_constant<Flush>{})) { return exp2(a,std::bool_constant<Flush>{}); }
+    template<bool Flush,class A> requires (!Flush) && (!requires(A const & a) { exp2(a,std::bool_constant<Flush>{}); })
+    native_inline constexpr auto adl_exp2(A const & a) noexcept(noexcept(exp2(a))) -> decltype(exp2(a)) { return exp2(a); }
     template<class A> native_inline constexpr auto adl_sincos(A const & a)
         noexcept(noexcept(sincos(a))) -> decltype(sincos(a)) { return sincos(a); }
     template<class M,class T> native_inline constexpr auto adl_select(M const & m,T const & a,T const & b)
@@ -679,6 +687,27 @@
     }
   }
   /// \ingroup wide_values
+  /// Apply base-two exponential; pass the compile-time Flush tag when the element supports it.
+  /// Uses one array call when available, otherwise an elementwise fallback.
+  template<bool Flush = false,class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_exp2<Flush>(x); }
+  native_nodiscard native_inline constexpr wide<R,N> exp2(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_exp2<Flush>(a); })
+          return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp2<Flush>(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = NATIVE_WIDE_DETAIL::adl_exp2<Flush>(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { NATIVE_WIDE_DETAIL::adl_exp2<Flush>(input.registers); })
+      return wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp2<Flush>(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = NATIVE_WIDE_DETAIL::adl_exp2<Flush>(x); }(), ...);
+      return result;
+    }
+  }
+  /// \ingroup wide_values
   /// Apply the element library's exp(x)-1 operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_expm1(x); }
@@ -738,6 +767,27 @@
       auto & [...value] = result;
       auto const & [...x] = input;
       ([&] { value = NATIVE_WIDE_DETAIL::adl_log(x); }(), ...);
+      return result;
+    }
+  }
+  /// \ingroup wide_values
+  /// Apply the element library's base-two logarithm.
+  /// Uses one array call when available, otherwise an elementwise fallback.
+  template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_log2(x); }
+  native_nodiscard native_inline constexpr wide<R,N> log2(wide<R,N> const & input)
+      noexcept([] {
+        if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_log2(a); })
+          return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_log2(std::declval<std::array<R,N> const &>())});
+        else return noexcept(wide<R,N>()) && std::is_nothrow_move_constructible_v<wide<R,N>> &&
+          (N == 0 || noexcept(std::declval<R &>() = NATIVE_WIDE_DETAIL::adl_log2(std::declval<R const &>())));
+      }()) {
+    if constexpr (requires { NATIVE_WIDE_DETAIL::adl_log2(input.registers); })
+      return wide<R,N>{NATIVE_WIDE_DETAIL::adl_log2(input.registers)};
+    else {
+      wide<R,N> result;
+      auto & [...value] = result;
+      auto const & [...x] = input;
+      ([&] { value = NATIVE_WIDE_DETAIL::adl_log2(x); }(), ...);
       return result;
     }
   }
