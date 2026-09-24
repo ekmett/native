@@ -27,4 +27,11 @@ It can also be configured independently against an installed package using
 `native_DIR`. The rejection tests serialize their build commands so they do
 not run concurrent Ninja processes against one build tree.
 
+Clang 23.1.1 qualification passes all 22 checks from source and all 22 again
+after package relocation on Linux x86-64 and Windows x64. The Linux host runs
+the AVX2 bank; the Windows host runs AVX2, AVX512F and AVX512F+VL. Both hosts
+pass the complete minimal/broad code-generation comparisons. These checks
+establish instruction equivalence and memory semantics, not gather/scatter
+throughput on other CPUs.
+
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
