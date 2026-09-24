@@ -1,12 +1,31 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include <bit>
 #include "native/arm/neon.h"
 #include "native/arm/neon_constant.h"
 export module native.arm.neon;
 export import native.arm.features;
 export import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+namespace native::detail::arm_neon_bits {
+  template<class V, class F> consteval V unary(V input, F operation) noexcept {
+    auto values = arm_constant::lanes(input);
+    for (auto &value : values)
+      value = operation(value);
+    return arm_constant::pack<V>(values);
+  }
+
+  template<unsigned Bits, class V> consteval V reverse(V input) noexcept {
+    auto source = arm_constant::lanes(input);
+    auto result = source;
+    constexpr unsigned group = Bits / (8 * sizeof(typename V::value_type));
+    for (unsigned i = 0; i < V::lanes; ++i)
+      result[i] = source[i ^ (group - 1)];
+    return arm_constant::pack<V>(result);
+  }
+}
+
 export namespace native {
   /// \defgroup arm_neon NEON integer instructions
   /// Typed instruction operations require arm_feature::neon and a matching caller target.
@@ -1049,6 +1068,171 @@ export namespace native {
                            std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
     using result = simd<element, 2 * N, Arch>;
     return detail::arm_neon_constant::narrow_high<result>(low, a);
+  }
+
+  /// Count leading zero bits in each lane, including the full width for zero.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(arm_feature::neon) && (sizeof(T) <= 4) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  native_nodiscard native_inline native_target("neon") constexpr simd<T, N, Arch>
+  clz(simd<T, N, Arch> a) noexcept {
+    if consteval {
+      return detail::arm_neon_bits::unary(a, [](T value) {
+        return T(std::countl_zero(std::make_unsigned_t<T>(value)));
+      });
+    } else {
+      if constexpr (sizeof(T) == 1 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclz_u8(detail::arm_neon::to_register<uint8x8_t>(a)));
+      else if constexpr (sizeof(T) == 1 && N == 16)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclzq_u8(detail::arm_neon::to_register<uint8x16_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclz_u16(detail::arm_neon::to_register<uint16x4_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclzq_u16(detail::arm_neon::to_register<uint16x8_t>(a)));
+      else if constexpr (sizeof(T) == 4 && N == 2)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclz_u32(detail::arm_neon::to_register<uint32x2_t>(a)));
+      else if constexpr (sizeof(T) == 4 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclzq_u32(detail::arm_neon::to_register<uint32x4_t>(a)));
+    }
+  }
+
+  /// Count leading sign bits in each lane, excluding the sign bit itself.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && (sizeof(T) <= 4) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  native_nodiscard native_inline native_target("neon") constexpr simd<T, N, Arch>
+  cls(simd<T, N, Arch> a) noexcept {
+    if consteval {
+      return detail::arm_neon_bits::unary(a, [](T value) {
+        using U = std::make_unsigned_t<T>;
+        U bits = U(value);
+        if (value < 0)
+          bits = U(~bits);
+        return T(std::countl_zero(bits) - 1);
+      });
+    } else {
+      if constexpr (sizeof(T) == 1 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vcls_s8(detail::arm_neon::to_register<int8x8_t>(a)));
+      else if constexpr (sizeof(T) == 1 && N == 16)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclsq_s8(detail::arm_neon::to_register<int8x16_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vcls_s16(detail::arm_neon::to_register<int16x4_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclsq_s16(detail::arm_neon::to_register<int16x8_t>(a)));
+      else if constexpr (sizeof(T) == 4 && N == 2)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vcls_s32(detail::arm_neon::to_register<int32x2_t>(a)));
+      else if constexpr (sizeof(T) == 4 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vclsq_s32(detail::arm_neon::to_register<int32x4_t>(a)));
+    }
+  }
+
+  /// Reverse the eight bits within each byte lane.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  native_nodiscard native_inline native_target("neon") constexpr simd<T, N, Arch>
+  rbit(simd<T, N, Arch> a) noexcept {
+    if consteval {
+      return detail::arm_neon_bits::unary(a, [](T value) {
+        std::uint8_t bits = std::uint8_t(value), result = 0;
+        for (unsigned bit = 0; bit < 8; ++bit) {
+          result = std::uint8_t((unsigned(result) << 1) | (bits & 1));
+          bits >>= 1;
+        }
+        return std::bit_cast<T>(result);
+      });
+    } else {
+      if constexpr (sizeof(T) == 1 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrbit_u8(detail::arm_neon::to_register<uint8x8_t>(a)));
+      else if constexpr (sizeof(T) == 1 && N == 16)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrbitq_u8(detail::arm_neon::to_register<uint8x16_t>(a)));
+    }
+  }
+
+  /// Reverse byte lanes within each 16-bit block.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  native_nodiscard native_inline native_target("neon") constexpr simd<T, N, Arch>
+  rev16(simd<T, N, Arch> a) noexcept {
+    if consteval {
+      return detail::arm_neon_bits::reverse<16>(a);
+    } else {
+      if constexpr (sizeof(T) == 1 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev16_u8(detail::arm_neon::to_register<uint8x8_t>(a)));
+      else if constexpr (sizeof(T) == 1 && N == 16)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev16q_u8(detail::arm_neon::to_register<uint8x16_t>(a)));
+    }
+  }
+
+  /// Reverse byte or halfword lanes within each 32-bit block.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(arm_feature::neon) && (sizeof(T) <= 2) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  native_nodiscard native_inline native_target("neon") constexpr simd<T, N, Arch>
+  rev32(simd<T, N, Arch> a) noexcept {
+    if consteval {
+      return detail::arm_neon_bits::reverse<32>(a);
+    } else {
+      if constexpr (sizeof(T) == 1 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev32_u8(detail::arm_neon::to_register<uint8x8_t>(a)));
+      else if constexpr (sizeof(T) == 1 && N == 16)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev32q_u8(detail::arm_neon::to_register<uint8x16_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev32_u16(detail::arm_neon::to_register<uint16x4_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev32q_u16(detail::arm_neon::to_register<uint16x8_t>(a)));
+    }
+  }
+
+  /// Reverse byte, halfword or word lanes within each 64-bit block.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(arm_feature::neon) && (sizeof(T) <= 4) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  native_nodiscard native_inline native_target("neon") constexpr simd<T, N, Arch>
+  rev64(simd<T, N, Arch> a) noexcept {
+    if consteval {
+      return detail::arm_neon_bits::reverse<64>(a);
+    } else {
+      if constexpr (sizeof(T) == 1 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev64_u8(detail::arm_neon::to_register<uint8x8_t>(a)));
+      else if constexpr (sizeof(T) == 1 && N == 16)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev64q_u8(detail::arm_neon::to_register<uint8x16_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev64_u16(detail::arm_neon::to_register<uint16x4_t>(a)));
+      else if constexpr (sizeof(T) == 2 && N == 8)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev64q_u16(detail::arm_neon::to_register<uint16x8_t>(a)));
+      else if constexpr (sizeof(T) == 4 && N == 2)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev64_u32(detail::arm_neon::to_register<uint32x2_t>(a)));
+      else if constexpr (sizeof(T) == 4 && N == 4)
+        return detail::arm_neon::from_register<simd<T, N, Arch>>(
+          vrev64q_u32(detail::arm_neon::to_register<uint32x4_t>(a)));
+    }
   }
 
   /// \}

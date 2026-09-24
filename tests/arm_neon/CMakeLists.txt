@@ -50,6 +50,21 @@ foreach(kind IN ITEMS header import)
 endforeach()
 
 
+foreach(module IN ITEMS neon arm omnibus)
+  set(target native_test_arm_neon_bits_${module})
+  add_executable(${target} bits.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
+  if(module STREQUAL "arm")
+    target_compile_definitions(${target} PRIVATE NATIVE_BITS_ARM=1)
+  elseif(module STREQUAL "omnibus")
+    target_compile_definitions(${target} PRIVATE NATIVE_BITS_OMNIBUS=1)
+  endif()
+  add_test(NAME native.arm.neon.bits.${module} COMMAND ${target})
+  set_tests_properties(native.arm.neon.bits.${module} PROPERTIES
+    SKIP_RETURN_CODE 77 LABELS "arm;neon;modules;constexpr;exact")
+endforeach()
+
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
 endif()
@@ -157,3 +172,39 @@ target_link_libraries(native_test_arm_neon_shapes PRIVATE native::native)
 set_target_properties(native_test_arm_neon_shapes PROPERTIES CXX_SCAN_FOR_MODULES ON)
 add_test(NAME native.arm.neon.shapes COMMAND native_test_arm_neon_shapes)
 set_tests_properties(native.arm.neon.shapes PROPERTIES LABELS "arm;neon;constexpr")
+
+add_library(native_test_arm_neon_bits_codegen OBJECT bits_codegen.cc)
+target_link_libraries(native_test_arm_neon_bits_codegen PRIVATE native::native)
+set_target_properties(native_test_arm_neon_bits_codegen PROPERTIES
+  CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+  target_compile_options(native_test_arm_neon_bits_codegen PRIVATE /O2 /clang:-mcpu=generic /clang:-march=armv8-a)
+else()
+  target_compile_options(native_test_arm_neon_bits_codegen PRIVATE -O2 -mcpu=generic -march=armv8-a)
+endif()
+add_test(NAME native.arm.neon.bits.codegen COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check_bits.py" --objdump "${neon_objdump}"
+  --output "${CMAKE_CURRENT_BINARY_DIR}/bits-$<CONFIG>.json"
+  $<TARGET_OBJECTS:native_test_arm_neon_bits_codegen> COMMAND_EXPAND_LISTS)
+set_tests_properties(native.arm.neon.bits.codegen PROPERTIES LABELS "arm;neon;codegen")
+
+foreach(kind IN ITEMS feature target shape)
+  set(target native_test_arm_neon_bits_reject_${kind})
+  add_library(${target} OBJECT EXCLUDE_FROM_ALL bits_negative.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
+  string(TOUPPER "${kind}" upper)
+  target_compile_definitions(${target} PRIVATE NATIVE_BITS_REJECT_${upper}=1)
+  if(kind STREQUAL "target")
+    set(diagnostic "requires target feature.*neon|target specific option mismatch")
+  else()
+    set(diagnostic "no matching function")
+  endif()
+  add_test(NAME native.arm.neon.bits.reject_${kind} COMMAND "${Python3_EXECUTABLE}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../arm_fp16fml/check_negative.py"
+    --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
+    --config "$<CONFIG>" --diagnostic "${diagnostic}"
+    --log "${CMAKE_CURRENT_BINARY_DIR}/bits-reject-${kind}-$<CONFIG>.log")
+  set_tests_properties(native.arm.neon.bits.reject_${kind} PROPERTIES
+    LABELS "arm;neon;negative" RUN_SERIAL TRUE)
+endforeach()

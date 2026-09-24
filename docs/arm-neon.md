@@ -17,6 +17,29 @@ instruction modules.
 | `sqdmulh`, `sqrdmulh` | Saturating signed doubled multiply-high, without/with rounding; 16- or 32-bit lanes in 64 or 128 logical bits |
 | `sshl`, `ushl`, `srshl`, `urshl` | Per-lane signed-count shifts, without/with right-shift rounding; all integer widths in 64 or 128 logical bits |
 | `sqshl`, `uqshl`, `sqrshl`, `uqrshl` | The corresponding saturating left-shift forms, without/with right-shift rounding |
+| `clz` | Count leading zero bits in signed or unsigned 8-, 16- or 32-bit lanes; zero returns the lane width |
+| `cls` | Count leading sign bits after the sign bit in signed 8-, 16- or 32-bit lanes; zero and minus one return width minus one |
+| `rbit` | Reverse bits within each signed or unsigned byte lane |
+| `rev16`, `rev32`, `rev64` | Reverse the order of integer lanes within each 16-, 32- or 64-bit block; the lane width must be smaller than the block width |
+
+The six bit operations accept 64 or 128 logical bits, return the same
+`simd<T,N,Arch>` type, and preserve the complete architecture tag. `rev32` on
+halfwords swaps adjacent halfwords; it does not reverse bits or bytes inside
+those halfwords. `rev64` similarly reverses byte, halfword or word lanes within
+each separate 64-bit block. There are no 64-bit-lane forms of these operations.
+All six require NEON storage and the NEON feature in `Arch`; they have no scalar
+or runtime fallback overload. Their constexpr paths compute the same lane values.
+These instructions do not read or change FPSR, including sticky QC.
+
+The bit fixture adds 46 concrete operation/shape forms. On little-endian
+AArch64 with Clang 23, each raw ACLE leaf and its public wrapper compile to the
+same single instruction and return, including the padded two-word shapes.
+The fixture checks exact independent results, byte-exhaustive inputs, explicit
+constant examples, all three public module imports, architecture preservation,
+feature/target/shape rejection, and preservation of clear or populated FPSR.
+See [the bit-operation fixture](../tests/arm_neon/README.md) for scope and commands.
+These additions have native Apple M3 execution evidence; no new big-endian
+execution or code-generation claim is made for them.
 
 A shift-count vector always has signed elements of the same width as the value
 lanes, including unsigned value instructions. Only the signed low byte of each
