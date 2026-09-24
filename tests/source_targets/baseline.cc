@@ -8,6 +8,9 @@ static_assert((native::target_arch == native::arm) == bool(NATIVE_HOST_NEON));
 static_assert((native::target_arch == native::x86) == bool(NATIVE_HOST_X86));
 static_assert(!(native::target_arch == native::wasm));
 
+// Inspect the inherited deployment minimum before injecting an unknown extra.
+constexpr auto configured_minimum=NATIVE_TARGET_MINIMUM;
+
 // An extra deployment requirement must not change the compiler's permissions.
 #undef NATIVE_TARGET_EXTRA_MINIMUM
 #define NATIVE_TARGET_EXTRA_MINIMUM (::native::target_features("unregistered"))
@@ -40,6 +43,7 @@ namespace {
   // An unregistered enabled extension leaves registered features usable.
   static_assert(baseline.has(native::x86_feature::avx512f));
   static_assert(baseline.has(native::x86_feature::avx512bw));
+  static_assert(!configured_minimum.valid());
 #elif NATIVE_BASELINE_CASE == 5
   // An ARM scalar extension does not require additional SIMD instructions.
   static_assert(baseline.has(native::arm_feature::neon));
@@ -65,6 +69,19 @@ namespace {
   static_assert(!baseline.has(native::arm_feature::rdm));
   static_assert(!baseline.has(native::arm_feature::complxnum));
   static_assert(!baseline.has(native::arm_feature::jsconv));
+#elif NATIVE_BASELINE_CASE == 10
+  // A registered global compiler flag must not poison source-target admission.
+  static_assert(baseline.has(native::x86_feature::avxneconvert));
+  static_assert(baseline.has(native::x86_feature::avx2));
+  static_assert(configured_minimum.valid());
+  static_assert(configured_minimum==native::feature_closure(baseline));
+#elif NATIVE_BASELINE_CASE == 11
+  static_assert(!baseline.has(native::x86_feature::avxneconvert));
+  static_assert(configured_minimum.valid());
+#elif NATIVE_BASELINE_CASE == 12
+  // The registered feature must not hide a separate unregistered extension.
+  static_assert(baseline.has(native::x86_feature::avxneconvert));
+  static_assert(!configured_minimum.valid());
 #endif
 }
 

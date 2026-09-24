@@ -32,6 +32,8 @@ Runtime calls require `x86_feature::avxneconvert`, AVX, enabled XMM/YMM OS state
 and a matching caller compiler target. The instruction feature is CPUID leaf 7,
 subleaf 1, EDX bit 5. Clang's `avxneconvert` compiler target additionally enables
 AVX2; `target_features<x86>("avxneconvert")` records that compiler prerequisite.
+A translation unit built with `-mavxneconvert` also records the feature in
+`NATIVE_BASELINE` and its inherited `NATIVE_TARGET_MINIMUM`.
 A function target does not change its vector architecture tag. Admission belongs
 in the baseline caller, before entering the targeted function:
 

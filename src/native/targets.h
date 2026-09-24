@@ -477,7 +477,6 @@ the authors.
 
 #if defined(__SSE4A__) || defined(__XOP__) || defined(__FMA4__) || \
     defined(__AVX512VP2INTERSECT__) || \
-    defined(__AVXNECONVERT__) || \
     defined(__AMX_TILE__) || defined(__AMX_INT8__) || defined(__AMX_BF16__) || \
     defined(__ARM_FEATURE_SVE) || defined(__ARM_FEATURE_SME)
 #define NATIVE_DETAIL_MIN_UNREGISTERED (::native::target_features("unregistered"))
