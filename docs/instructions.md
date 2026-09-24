@@ -97,6 +97,10 @@ under application ownership; `noexcept` does not mask hardware exceptions.
 
 ## Bits, polynomials and checksums
 
+[NEON bit operations](arm-neon.md) count leading zeros or redundant sign bits,
+reverse bits within bytes, and reverse element order within 16-, 32- or 64-bit
+groups. These are integer register operations and do not change FPSR.QC.
+
 For scalar x86 integers, [BMI1](x86-bmi1.md) and [BMI2](x86-bmi2.md) provide bit
 field operations, deposit/extract and related primitives. [POPCNT](x86-popcnt.md)
 and [LZCNT](x86-lzcnt.md) have independent feature requirements.
@@ -140,6 +144,14 @@ data-round and key-schedule instructions on four-word vectors. Their hardware
 bits are independent; Clang's `sm4` target enables both and admission covers
 that complete pair together with NEON.
 
+## Indexed memory
+
+[X86 gather and scatter](x86-memory.md) load or store lanes at a base address
+plus signed vector indices multiplied by a byte scale. AVX2 supplies gathers
+with full-vector sign-bit masks. AVX-512 supplies predicate-masked gathers and
+scatters, with AVX512VL required for the narrow forms. Inactive lanes do not
+access memory; overlapping scatter writes follow increasing lane order.
+
 ## Shapes, masks and execution
 
 The family guides list supported element types, lane counts and compile-time
@@ -148,11 +160,12 @@ register size; converting signedness or reinterpreting elements must be explicit
 Scalar RDM lane forms, for example, still take a `simd` value for their vector
 lane source.
 
-Masked x86 instruction forms take `predicate<N,Arch>`, with one meaningful bit
+AVX-512 masked instruction forms take `predicate<N,Arch>`, with one meaningful bit
 per documented mask lane. Merge and zero forms differ in what happens to
 inactive lanes. Use the exact predicate type required by the operation; a full
 vector comparison mask may have a different representation under a minimal
-feature set.
+feature set. AVX2 gathers instead take signed integer SIMD masks and test each
+lane's sign bit, matching their instruction's mask representation.
 
 Vector families link `native::native` and import `native.simd`. Scalar-only
 families and feature observation link `native::minimal`. The

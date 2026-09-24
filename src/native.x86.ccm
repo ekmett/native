@@ -26,3 +26,4 @@ export import native.x86.sha512;
 export import native.x86.sm3;
 export import native.x86.sm4;
 export import native.x86.avxneconvert;
+export import native.x86.memory;

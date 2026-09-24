@@ -56,7 +56,9 @@ Vector instruction modules import `native.simd` before defining their public
 bindings directly in the module interface. Textual implementation headers serve
 shared consumers or repeated target expansion. Provider defaults and private
 helpers live in the owning module interface. Vector parameters and results use
-`simd<T,N,Arch>`; scalar operations use ordinary C++ values. Masked x86 instruction forms use `predicate<N,Arch>`.
+`simd<T,N,Arch>`; scalar operations use ordinary C++ values. AVX-512 masked
+instruction forms use `predicate<N,Arch>`; AVX2 gathers use the instruction's
+full-vector sign-bit mask.
 Each operation constrains its required features and retains the appropriate
 compiler target. Raw intrinsic helpers remain private. The `native.arm.sm3` and
 `native.arm.sm4` modules follow this split with four-word public vectors and

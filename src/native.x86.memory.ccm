@@ -1,0 +1,1724 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include "native/isa_import.h"
+#include "native/config.h"
+#include "native/attributes.h"
+#include <array>
+#include <concepts>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#if NATIVE_HOST_X86
+#include <immintrin.h>
+#endif
+export module native.x86.memory;
+export import native.x86.features;
+export import native.simd;
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+namespace native::detail::x86_memory {
+  // These checks belong solely to constant evaluation. Runtime addresses are
+  // formed by the gather/scatter instruction, including unaligned byte offsets.
+  inline void constant_offset_requires_complete_elements() noexcept { __builtin_trap(); }
+  inline void constant_offset_out_of_range() noexcept { __builtin_trap(); }
+
+  template<int Scale, class T, class I>
+  constexpr std::ptrdiff_t element_offset(I index) noexcept {
+    std::int64_t value = index;
+    if constexpr (Scale < sizeof(T)) {
+      constexpr auto divisor = static_cast<std::int64_t>(sizeof(T) / Scale);
+      if (value % divisor) constant_offset_requires_complete_elements();
+      value /= divisor;
+    } else {
+      constexpr auto multiplier = static_cast<std::int64_t>(Scale / sizeof(T));
+      if (value > std::numeric_limits<std::ptrdiff_t>::max() / multiplier ||
+          value < std::numeric_limits<std::ptrdiff_t>::min() / multiplier) {
+        constant_offset_out_of_range();
+      }
+      value *= multiplier;
+    }
+    if (value > std::numeric_limits<std::ptrdiff_t>::max() ||
+        value < std::numeric_limits<std::ptrdiff_t>::min()) constant_offset_out_of_range();
+    return static_cast<std::ptrdiff_t>(value);
+  }
+
+  template<class V>
+  constexpr auto array(V value) noexcept {
+    std::array<typename V::value_type, V::lanes> result{};
+    value.store(result.data());
+    return result;
+  }
+
+  template<class M>
+  constexpr bool active(M mask, std::size_t lane) noexcept {
+    if constexpr (std::same_as<M, std::uint64_t>) return (mask >> lane) & 1;
+    else return array(mask)[lane] < 0;
+  }
+
+  template<int Scale, class V, class I, class M>
+  constexpr V gather(typename V::value_type const * base, I indices, V source, M mask) noexcept {
+    auto result = array(source);
+    auto offsets = array(indices);
+    constexpr auto count = V::lanes < I::lanes ? V::lanes : I::lanes;
+    for (std::size_t lane = 0; lane < count; ++lane) {
+      if (active(mask, lane)) result[lane] = base[element_offset<Scale, typename V::value_type>(offsets[lane])];
+    }
+    for (std::size_t lane = count; lane < V::lanes; ++lane) result[lane] = {};
+    return V(result);
+  }
+
+  template<int Scale, class V, class I>
+  constexpr void scatter(typename V::value_type * base, I indices, V value, std::uint64_t mask) noexcept {
+    auto values = array(value);
+    auto offsets = array(indices);
+    constexpr auto count = V::lanes < I::lanes ? V::lanes : I::lanes;
+    for (std::size_t lane = 0; lane < count; ++lane) {
+      if (!active(mask, lane)) continue;
+      auto offset = element_offset<Scale, typename V::value_type>(offsets[lane]);
+      base[offset] = values[lane];
+    }
+  }
+}
+
+export namespace native {
+  /** \defgroup x86_memory Indexed x86 memory
+   * Gather and scatter retain the hardware index and data register shapes.
+   * Scale is a byte multiplier of 1, 2, 4 or 8; indices are signed. All active
+   * addresses must be accessible, including a complete element at each address.
+   * Inactive lanes do not access memory. AVX2 vector masks use only sign bits;
+   * AVX512 predicates select one bit per data lane. Excess index lanes are
+   * ignored and excess result lanes are zero, even in merging gathers.
+   * Constant evaluation uses typed arrays and requires element-aligned offsets.
+   * Overlapping scatter writes follow increasing lane order: the highest active
+   * lane wins when addresses are equal. Runtime byte overlaps follow that order.
+   * Admit CPU/OS features before entering the matching compiler target scope.
+   * \{ */
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 4, Arch> vgatherdps(float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm_i32gather_ps(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm_mask_i32gather_ps(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm_mmask_i32gather_ps(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterdps(float * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i32scatter_ps(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 8, Arch> vgatherdps(float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<float, 8, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<float, 8, Arch>::from_native(
+        _mm256_i32gather_ps(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
+    float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<float, 8, Arch>::from_native(
+        _mm256_mask_i32gather_ps(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
+    float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<float, 8, Arch>::from_native(
+        _mm256_mmask_i32gather_ps(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterdps(float * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i32scatter_ps(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<float, 16, Arch> mask_vgatherdps(simd<float, 16, Arch> source, predicate<16, Arch> mask,
+    float const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<float, 16, Arch>::from_native(
+        _mm512_mask_i32gather_ps(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f")
+  constexpr void mask_vscatterdps(float * base, predicate<16, Arch> mask,
+    simd<std::int32_t, 16, Arch> indices, simd<float, 16, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i32scatter_ps(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> vpgatherdd(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm_i32gather_epi32(reinterpret_cast<int const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm_mask_i32gather_epi32(source.to_native(), reinterpret_cast<int const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm_mmask_i32gather_epi32(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterdd(T * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i32scatter_epi32(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 8, Arch> vpgatherdd(T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 8, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 8, Arch>::from_native(
+        _mm256_i32gather_epi32(reinterpret_cast<int const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 8, Arch>::from_native(
+        _mm256_mask_i32gather_epi32(source.to_native(), reinterpret_cast<int const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 8, Arch>::from_native(
+        _mm256_mmask_i32gather_epi32(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterdd(T * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i32scatter_epi32(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<T, 16, Arch> mask_vpgatherdd(simd<T, 16, Arch> source, predicate<16, Arch> mask,
+    T const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 16, Arch>::from_native(
+        _mm512_mask_i32gather_epi32(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_inline native_target("avx512f")
+  constexpr void mask_vpscatterdd(T * base, predicate<16, Arch> mask,
+    simd<std::int32_t, 16, Arch> indices, simd<T, 16, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i32scatter_epi32(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 2, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<double, 2, Arch>::from_native(
+        _mm_i32gather_pd(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<double, 2, Arch>::from_native(
+        _mm_mask_i32gather_pd(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<double, 2, Arch>::from_native(
+        _mm_mmask_i32gather_pd(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterdpd(double * base, predicate<2, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<double, 2, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i32scatter_pd(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 4, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<double, 4, Arch>::from_native(
+        _mm256_i32gather_pd(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<double, 4, Arch>::from_native(
+        _mm256_mask_i32gather_pd(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<double, 4, Arch>::from_native(
+        _mm256_mmask_i32gather_pd(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterdpd(double * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i32scatter_pd(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<double, 8, Arch> mask_vgatherdpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
+    double const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<double, 8, Arch>::from_native(
+        _mm512_mask_i32gather_pd(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f")
+  constexpr void mask_vscatterdpd(double * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i32scatter_pd(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 2, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 2, Arch>::from_native(
+        _mm_i32gather_epi64(reinterpret_cast<long long const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 2, Arch>::from_native(
+        _mm_mask_i32gather_epi64(source.to_native(), reinterpret_cast<long long const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 2, Arch>::from_native(
+        _mm_mmask_i32gather_epi64(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterdq(T * base, predicate<2, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 2, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i32scatter_epi64(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_i32gather_epi64(reinterpret_cast<long long const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_mask_i32gather_epi64(source.to_native(), reinterpret_cast<long long const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_mmask_i32gather_epi64(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterdq(T * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i32scatter_epi64(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<T, 8, Arch> mask_vpgatherdq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 8, Arch>::from_native(
+        _mm512_mask_i32gather_epi64(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_inline native_target("avx512f")
+  constexpr void mask_vpscatterdq(T * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i32scatter_epi64(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm_i64gather_ps(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm_mask_i64gather_ps(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm_mmask_i64gather_ps(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterqps(float * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i64scatter_ps(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm256_i64gather_ps(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm256_mask_i64gather_ps(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<float, 4, Arch>::from_native(
+        _mm256_mmask_i64gather_ps(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterqps(float * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i64scatter_ps(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<float, 8, Arch> mask_vgatherqps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
+    float const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<float, 8, Arch>::from_native(
+        _mm512_mask_i64gather_ps(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f")
+  constexpr void mask_vscatterqps(float * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i64scatter_ps(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm_i64gather_epi32(reinterpret_cast<int const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm_mask_i64gather_epi32(source.to_native(), reinterpret_cast<int const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm_mmask_i64gather_epi32(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i64scatter_epi32(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_i64gather_epi32(reinterpret_cast<int const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_mask_i64gather_epi32(source.to_native(), reinterpret_cast<int const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_mmask_i64gather_epi32(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i64scatter_epi32(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<T, 8, Arch> mask_vpgatherqd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 8, Arch>::from_native(
+        _mm512_mask_i64gather_epi32(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>))
+  native_inline native_target("avx512f")
+  constexpr void mask_vpscatterqd(T * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i64scatter_epi32(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 2, Arch> vgatherqpd(double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<double, 2, Arch>::from_native(
+        _mm_i64gather_pd(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<double, 2, Arch>::from_native(
+        _mm_mask_i64gather_pd(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
+    double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<double, 2, Arch>::from_native(
+        _mm_mmask_i64gather_pd(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterqpd(double * base, predicate<2, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<double, 2, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i64scatter_pd(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4)
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 4, Arch> vgatherqpd(double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<double, 4, Arch>::from_native(
+        _mm256_i64gather_pd(base, indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<double, 4, Arch>::from_native(
+        _mm256_mask_i64gather_pd(source.to_native(), base, indices.to_native(), __builtin_bit_cast(typename decltype(source)::native_type, mask.to_native()), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
+    double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<double, 4, Arch>::from_native(
+        _mm256_mmask_i64gather_pd(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vscatterqpd(double * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i64scatter_pd(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<double, 8, Arch> mask_vgatherqpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
+    double const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<double, 8, Arch>::from_native(
+        _mm512_mask_i64gather_pd(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8))
+  native_inline native_target("avx512f")
+  constexpr void mask_vscatterqpd(double * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i64scatter_pd(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 2, Arch> vpgatherqq(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 2, Arch>::from_native(
+        _mm_i64gather_epi64(reinterpret_cast<long long const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 2, Arch>::from_native(
+        _mm_mask_i64gather_epi64(source.to_native(), reinterpret_cast<long long const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 2, Arch>::from_native(
+        _mm_mmask_i64gather_epi64(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterqq(T * base, predicate<2, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<T, 2, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm_mask_i64scatter_epi64(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather all addressable lanes; N specifies the result lane count.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> vpgatherqq(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_i64gather_epi64(reinterpret_cast<long long const *>(base), indices.to_native(), Scale));
+    }
+  }
+
+  /// Gather lanes whose full vector mask has its sign bit set; retain source otherwise.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx2) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx2")
+  constexpr simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_mask_i64gather_epi64(source.to_native(), reinterpret_cast<long long const *>(base), indices.to_native(), mask.to_native(), Scale));
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx512f,avx512vl")
+  constexpr simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 4, Arch>::from_native(
+        _mm256_mmask_i64gather_epi64(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_inline native_target("avx512f,avx512vl")
+  constexpr void mask_vpscatterqq(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm256_mask_i64scatter_epi64(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Gather predicate-selected lanes; retain source in inactive addressable lanes.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_nodiscard native_inline native_target("avx512f")
+  constexpr simd<T, 8, Arch> mask_vpgatherqq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    if consteval {
+      return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      return simd<T, 8, Arch>::from_native(
+        _mm512_mask_i64gather_epi64(source.to_native(), mask.to_bitset(), indices.to_native(), base, Scale));
+    }
+  }
+
+  /// Store predicate-selected lanes; inactive addresses are not accessed.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(x86_feature::avx512f) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>))
+  native_inline native_target("avx512f")
+  constexpr void mask_vpscatterqq(T * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    if consteval {
+      detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+    } else {
+      _mm512_mask_i64scatter_epi64(base, mask.to_bitset(), indices.to_native(), value.to_native(), Scale);
+    }
+  }
+
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> vgatherdps(float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  consteval void mask_vscatterdps(float * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<float, 8, Arch> vgatherdps(float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 8, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
+    float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
+    float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  consteval void mask_vscatterdps(float * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  native_nodiscard consteval simd<float, 16, Arch> mask_vgatherdps(simd<float, 16, Arch> source, predicate<16, Arch> mask,
+    float const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  consteval void mask_vscatterdps(float * base, predicate<16, Arch> mask,
+    simd<std::int32_t, 16, Arch> indices, simd<float, 16, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> vpgatherdd(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  consteval void mask_vpscatterdd(T * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<T, 8, Arch> vpgatherdd(T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 8, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  consteval void mask_vpscatterdd(T * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  native_nodiscard consteval simd<T, 16, Arch> mask_vpgatherdd(simd<T, 16, Arch> source, predicate<16, Arch> mask,
+    T const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  consteval void mask_vpscatterdd(T * base, predicate<16, Arch> mask,
+    simd<std::int32_t, 16, Arch> indices, simd<T, 16, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 2, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  consteval void mask_vscatterdpd(double * base, predicate<2, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<double, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 4, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  consteval void mask_vscatterdpd(double * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<double, 8, Arch> mask_vgatherdpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
+    double const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  consteval void mask_vscatterdpd(double * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 2, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  consteval void mask_vpscatterdq(T * base, predicate<2, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  consteval void mask_vpscatterdq(T * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  native_nodiscard consteval simd<T, 8, Arch> mask_vpgatherdq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  consteval void mask_vpscatterdq(T * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  consteval void mask_vscatterqps(float * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  consteval void mask_vscatterqps(float * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  native_nodiscard consteval simd<float, 8, Arch> mask_vgatherqps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
+    float const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  consteval void mask_vscatterqps(float * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  consteval void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  consteval void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  native_nodiscard consteval simd<T, 8, Arch> mask_vpgatherqd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  consteval void mask_vpscatterqd(T * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<double, 2, Arch> vgatherqpd(double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
+    double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  consteval void mask_vscatterqpd(double * base, predicate<2, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<double, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 4, Arch> vgatherqpd(double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
+    double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  consteval void mask_vscatterqpd(double * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  native_nodiscard consteval simd<double, 8, Arch> mask_vgatherqpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
+    double const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  consteval void mask_vscatterqpd(double * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 2, Arch> vpgatherqq(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  native_nodiscard consteval simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  consteval void mask_vpscatterqq(T * base, predicate<2, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<T, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> vpgatherqq(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  native_nodiscard consteval simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  consteval void mask_vpscatterqq(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  native_nodiscard consteval simd<T, 8, Arch> mask_vpgatherqq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+  /// Evaluate this hardware shape only at compile time when its storage is available.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  consteval void mask_vpscatterqq(T * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// \}
+}
+#endif
