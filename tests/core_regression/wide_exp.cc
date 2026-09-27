@@ -40,8 +40,8 @@ namespace exp_before {
         // historical graph everywhere else, including native VSCALEF shapes.
         if constexpr (native::test::exp_uses_single_factor<V>)
           ((a.y = select((a.n <= V(-127)) & (a.x == a.x), V(0.f), a.y)), ...);
-        // General exp explicitly permits infinity from the first n=128 input.
-        ((a.y = select(a.x >= V(88.3762664794921875f),
+        // Classify only at the first binary32 input whose exact exp rounds infinite.
+        ((a.y = select(a.x >= V(88.72283935546875f),
           V(std::numeric_limits<float>::infinity()), a.y)), ...);
         return {{a.y...}};
       }

@@ -123,8 +123,8 @@ static void check_word(float input, float actual, float expected) {
 template<bool Flush, class V = scalar> static float reference(float x) {
   if (std::isnan(x)) return x;
   if (x < (Flush ? -87.33654022216796875f : -104.f)) return 0.f;
-  // The general exp contract intentionally overflows at its first n=128 input.
-  if (x >= 88.3762664794921875f) return std::bit_cast<float>(0x7f800000u);
+  // Retain finite n=128 results until the true binary32 overflow boundary.
+  if (x >= 88.72283935546875f) return std::bit_cast<float>(0x7f800000u);
   float r = x > 88.72283935546875f ? 88.72283935546875f : x;
   float n = std::nearbyint(r * 1.4426950408889634f);
   // Software scaling collapses exactly this band; native VSCALEF keeps its

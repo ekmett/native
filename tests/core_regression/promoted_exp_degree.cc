@@ -156,7 +156,7 @@ namespace {
       auto x_value = value(w); word expected;
       if (nan(w)) expected = 0x7fc00000u;
       else if (x_value < -104.f) expected = 0;
-      else if (x_value >= 88.3762664794921875f) expected = 0x7f800000u;
+      else if (x_value >= 88.72283935546875f) expected = 0x7f800000u;
       else {
 #if defined(NATIVE_TEST_MPFR)
         mpfr_set_flt(x, x_value, MPFR_RNDN); mpfr_exp(y, x, MPFR_RNDN);
@@ -205,7 +205,7 @@ namespace {
     bool exact = false;
     if (!nan(r.input)) {
       if (x < (F ? -87.33654022216796875f : -104.f)) { expected = 0; exact = true; }
-      else if (x >= 88.3762664794921875f) { expected = 0x7f800000u; exact = true; }
+      else if (x >= 88.72283935546875f) { expected = 0x7f800000u; exact = true; }
       else if (magnitude(r.input) == 0) { expected = 0x3f800000u; exact = true; }
       else if constexpr (native::test::exp_uses_single_factor<register_type<T>>)
         if (std::nearbyint(x * 1.4426950408889634f) <= -127.f) { expected = 0; exact = true; }

@@ -125,10 +125,15 @@ namespace wide::detail {
         // The biased field is unsigned: FCVTZU maps underflow and NaN to zero
         // without a compare. NaN y survives the multiply. Range flags stay off
         // the arithmetic chain and select the completed result below.
-        auto const biased = ::native::fcvtzu(n + V(127.f));
-        auto const result = y * V::from_bits(biased.template left<23>());
+        // A single field cannot encode 2^128. Its two-factor reconstruction
+        // has an exact normal first product, with rounding only in the second.
+        // Keep the established lower-range single-factor behavior unchanged.
+        auto const high = n > V(127.f);
+        auto const biased = ::native::fcvtzu(n + select(high, V(126.f), V(127.f)));
+        auto const result = (y * V::from_bits(biased.template left<23>())) * select(high, V(2.f), V(1.f));
 #elif NATIVE_HOST_X86
-        auto const result = y * exp_factor(n + V(127.f));
+        auto const high = n > V(127.f);
+        auto const result = (y * exp_factor(n + select(high, V(126.f), V(127.f)))) * select(high, V(2.f), V(1.f));
 #else
         // This is exp's bounded reconstruction, not a scaling instruction.
         // Finite n within exp's output range is integral in [-150,128].

@@ -251,7 +251,7 @@ namespace fixture {
   static_assert(constant_overflow_edges<floats<3>>());
   static_assert(constant_overflow_edges<floats<4>>());
 
-  constexpr auto cutoff_word = std::bit_cast<std::uint32_t>(88.3762664794921875f);
+  constexpr auto cutoff_word = std::bit_cast<std::uint32_t>(88.72283935546875f);
   template<bool Flush, class V> constexpr bool check_threshold_exp() {
     for (std::size_t offset = 0; offset < 3; ++offset) {
       std::array<float, V::lanes> input{}, output{};
@@ -289,7 +289,7 @@ namespace fixture {
   template<class V> void runtime_shape() {
     if (std::fegetround() == FE_TONEAREST &&
         (!check_threshold_exp<false, V>() || !check_threshold_exp<true, V>()))
-      fail("exp early-infinity threshold mismatch", V::lanes, cutoff_word);
+      fail("exp finite/infinite threshold mismatch", V::lanes, cutoff_word);
     for (auto value : overflow_inputs)
       if (!check_overflow_exp<false, V>(value) || !check_overflow_exp<true, V>(value))
         fail("exp overflow/underflow classification mismatch", V::lanes,
@@ -319,7 +319,7 @@ namespace fixture {
         if (word < cutoff_word ?
             (ordinary == 0 || ordinary >= 0x7f800000u || flush == 0 || flush >= 0x7f800000u) :
             (ordinary != 0x7f800000u || flush != 0x7f800000u))
-          fail("scalar exp early-infinity threshold mismatch", 1, word);
+          fail("scalar exp finite/infinite threshold mismatch", 1, word);
       }
     }
     for (auto value : overflow_inputs) {
@@ -393,7 +393,7 @@ int main(int argc, char ** argv) {
     fixture::all_nan_exp<false>();
     fixture::all_nan_exp<true>();
   }
-  std::puts("ARM FCVTZS/FCVTZU: scalar/1/2/3/4 lanes, signed/unsigned saturation, constexpr, four rounding modes, random inputs, exp NaN, overflow and early-infinity threshold passed");
+  std::puts("ARM FCVTZS/FCVTZU: scalar/1/2/3/4 lanes, signed/unsigned saturation, constexpr, four rounding modes, random inputs, exp NaN, overflow and finite/infinite threshold passed");
 }
 #else
 int main() { return 77; }

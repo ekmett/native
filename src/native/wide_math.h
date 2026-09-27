@@ -519,9 +519,10 @@ namespace math {
       auto const active = ::wide::mask_not(::wide::cmp_lt(x, c(Flush ? -87.33654022216796875f : -104.f)));
       // Classify independently; range flags are consumed only at the finish.
       // Unordered comparisons leave NaNs on the arithmetic propagation path.
-      // Compare with the last binary32 input before n=128. Strict comparison
-      // keeps NaNs on the arithmetic path and needs only one lane comparison.
-      auto const overflow = ::wide::cmp_gt(x, c(88.37625885009765625f));
+      // The last binary32 input whose exact exponential rounds finite. n=128
+      // is valid: bounded reconstruction splits its scale into 2^127 and 2.
+      // Strict comparison keeps NaNs on the arithmetic propagation path.
+      auto const overflow = ::wide::cmp_gt(x, c(88.72283172607421875f));
       auto const in_range = ::wide::bit_and(active, ::wide::mask_not(overflow));
       auto const replacement = ::wide::select(overflow,
         c(std::bit_cast<float>(0x7f800000u)), c(0.f));

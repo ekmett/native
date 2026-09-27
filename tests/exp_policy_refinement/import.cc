@@ -3,6 +3,9 @@
 // Only public headers and the public hub: no internal policy definitions.
 #include <native/targets.h>
 #include <array>
+#include <bit>
+#include <cmath>
+#include <cstdint>
 #include <type_traits>
 import native;
 import native.math;
@@ -22,6 +25,22 @@ bool check_import() {
   for(auto const & value:output.registers) {
     value.store(lanes.data());
     for(float lane:lanes) if(lane!=1.f) return false;
+  }
+  constexpr std::array<std::uint32_t,8> edge{
+    0x42b0c0a5,0x42b0c0a6,0x42b17214,0x42b17215,0x42b17216,0x42b17217,0x42b17218,0x42b17219};
+  constexpr std::array<std::uint32_t,4> historical{0x7f7ffe04,0x7f7ffe84,0x7f7fff04,0x7f7fff84};
+  auto input_edge=V::load_bits(edge.data());
+  for(auto candidate:{native::exp<false,6>(input_edge),native::exp<true,6>(input_edge),
+                      native::exp<false,7>(input_edge),native::exp<true,7>(input_edge)}) {
+    std::array<std::uint32_t,8> words;candidate.store_bits(words.data());
+    for(unsigned lane=0;lane<8;++lane) {
+      double exact_sample=std::exp(double(std::bit_cast<float>(edge[lane])));
+      // The two adjacent binary32 inputs straddle the overflow midpoint with
+      // much more margin than binary64 libm error; no tolerance is used for bits.
+      bool finite=exact_sample < 0x1.ffffffp127;
+      if(finite!=(words[lane]<0x7f800000u))return false;
+      if(lane>=2&&lane<6&&words[lane]!=historical[lane-2])return false;
+    }
   }
   return true;
 }
