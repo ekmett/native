@@ -7,11 +7,45 @@
 #include <cmath>
 #include <cstdint>
 #include <type_traits>
+#include <xmmintrin.h>
 import native;
 import native.math;
 
 NATIVE_TARGET_PUSH(avx2)
+template<unsigned L>
+[[gnu::noinline]] void lower_words(unsigned control, std::array<std::uint32_t, 8> & output) {
+  using V = native::simd<float, L, native::avx2>;
+  auto saved = _mm_getcsr();
+  _mm_setcsr((saved & ~0xe040u) | control);
+  // Volatile source values keep this an actual ambient-FP operation, not a
+  // compile-time constant evaluation.
+  volatile float input[8]{-87.4f, -87.5f, -87.6f, -87.65f, -126.1f, -126.2f, -126.3f, -126.4f};
+  std::array<float, L> lanes{};
+  for (unsigned index = 0; index < 8; ++index) {
+    lanes.fill(float(input[index]));
+    V x = V::load(lanes.data());
+    auto y = index < 4 ? native::exp<false, 6>(x) : native::exp2<false>(x);
+    std::array<std::uint32_t, L> result;
+    y.store_bits(result.data());
+    output[index] = result[0];
+  }
+  _mm_setcsr(saved);
+}
+
+template<unsigned L> bool check_lower() {
+  std::array<std::uint32_t, 8> gradual, daz, ftz, both;
+  lower_words<L>(0, gradual);
+  lower_words<L>(0x40, daz);
+  lower_words<L>(0x8000, ftz);
+  lower_words<L>(0x8040, both);
+  for (unsigned index = 0; index < gradual.size(); ++index)
+    if (gradual[index] == 0 || gradual[index] >= 0x800000u ||
+        daz[index] != gradual[index] || ftz[index] != 0 || both[index] != 0) return false;
+  return true;
+}
+
 bool check_import() {
+  if (!check_lower<1>() || !check_lower<8>()) return false;
   using V=native::simd<float,8,native::avx2>;
   using W=native::wide<V,2>;
   using F=W (*)(W const &);

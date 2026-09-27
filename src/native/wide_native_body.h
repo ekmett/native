@@ -130,10 +130,14 @@ namespace wide::detail {
         // Keep the established lower-range single-factor behavior unchanged.
         auto const high = n > V(127.f);
         auto const biased = ::native::fcvtzu(n + select(high, V(126.f), V(127.f)));
-        auto const result = (y * V::from_bits(biased.template left<23>())) * select(high, V(2.f), V(1.f));
+        auto const first = y * V::from_bits(biased.template left<23>());
+        auto const result = select(high, select(high, first, V(0.f)) * V(2.f), first);
 #elif NATIVE_HOST_X86
         auto const high = n > V(127.f);
-        auto const result = (y * exp_factor(n + select(high, V(126.f), V(127.f)))) * select(high, V(2.f), V(1.f));
+        auto const first = y * exp_factor(n + select(high, V(126.f), V(127.f)));
+        // Do not consume the lower result again: DAZ alone would erase a
+        // subnormal first product even though output flushing is disabled.
+        auto const result = select(high, select(high, first, V(0.f)) * V(2.f), first);
 #else
         // This is exp's bounded reconstruction, not a scaling instruction.
         // Finite n within exp's output range is integral in [-150,128].
