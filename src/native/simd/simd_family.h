@@ -48,19 +48,19 @@ namespace native::detail::NATIVE_BACKEND {
     template<class Self> static native_inline constexpr auto words(Self const & self) {
       using T=typename Self::value_type;
       if constexpr(native_words<Self>) {
-        return std::bit_cast<swizzle_native<T>>(self.to_native());
+        return __builtin_bit_cast(swizzle_native<T>,self.to_native());
       } else {
         std::array<T,4> values{};
         self.template store_memory<1>(values.data());
-        return std::bit_cast<swizzle_native<T>>(values);
+        return __builtin_bit_cast(swizzle_native<T>,values);
       }
     }
     template<class V> static native_inline constexpr V from_words(swizzle_native<typename V::value_type> words) {
       using T=typename V::value_type;
       if constexpr(native_words<V>) {
-        return V::from_native(std::bit_cast<typename V::native_type>(words));
+        return V::from_native(__builtin_bit_cast(typename V::native_type,words));
       } else {
-        auto values=std::bit_cast<std::array<T,4>>(words);
+        auto values=__builtin_bit_cast(std::array<T,4>,words);
         return V::template load_memory<1>(values.data());
       }
     }
@@ -2545,7 +2545,7 @@ namespace native {
       if consteval {
         std::array<T,N> data;
         data.fill(x);
-        value=std::bit_cast<native_type>(data);
+        value=__builtin_bit_cast(native_type,data);
       } else {
         if constexpr (sizeof(T) * N == 16)
           value = ::NATIVE_BACKEND_NAMESPACE::integer_broadcast_16(x);
@@ -2575,12 +2575,12 @@ namespace native {
       requires(sizeof...(U) == N && (simd_integer_element<U> && ...))
     native_inline constexpr simd(U... xs) noexcept {
       std::array<T, N> data{::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(xs)...};
-      if consteval { value=std::bit_cast<native_type>(data); }
+      if consteval { value=__builtin_bit_cast(native_type,data); }
       else { std::memcpy(&value, data.data(), sizeof(value)); }
     }
     /// Copy one value per logical lane in array order.
     native_inline constexpr simd(std::array<T, N> const &data) noexcept {
-      if consteval { value=std::bit_cast<native_type>(data); }
+      if consteval { value=__builtin_bit_cast(native_type,data); }
       else { std::memcpy(&value, data.data(), sizeof(value)); }
     }
 #if NATIVE_HOST_X86
@@ -3168,7 +3168,7 @@ namespace native {
     if consteval {
       if constexpr(N==1) *p=v.value;
       else {
-        auto data=std::bit_cast<std::array<T,N>>(v.value);
+        auto data=__builtin_bit_cast(std::array<T,N>,v.value);
         for(std::size_t i=0;i<N;++i) p[i]=data[i];
       }
       return;
@@ -4333,9 +4333,9 @@ namespace native {
       using V=simd<float,N,Arch>;
       // The compact mask excludes padding, whose prior bits are already zero.
       // A representation copy avoids re-normalizing the short-vector storage.
-      return std::bit_cast<V>(_mm_mask_scalef_ps(std::bit_cast<__m128>(prior.to_native()),
-        __mmask8(mask.to_bitset()),std::bit_cast<__m128>(value.to_native()),
-        std::bit_cast<__m128>(exponent.to_native())));
+      return __builtin_bit_cast(V,_mm_mask_scalef_ps(__builtin_bit_cast(__m128,prior.to_native()),
+        __mmask8(mask.to_bitset()),__builtin_bit_cast(__m128,value.to_native()),
+        __builtin_bit_cast(__m128,exponent.to_native())));
     } else {
       auto native_mask=[&] {if constexpr(M::compact) return mask.to_native();else return to_predicate(mask).to_native();};
       if constexpr(N==1) return simd<float,N,Arch>(_mm_cvtss_f32(_mm_mask_scalef_ss(
@@ -4362,8 +4362,8 @@ namespace native {
       __mmask8(native_mask()),_mm_set_ss(value.value),_mm_set_ss(exponent.value))));
     else if constexpr(N==16) return simd<float,N,Arch>(_mm512_maskz_scalef_ps(native_mask(),value.value,exponent.value));
 #if NATIVE_HAS_AVX512VL
-    else if constexpr(N==2 || N==3) return std::bit_cast<simd<float,N,Arch>>(_mm_maskz_scalef_ps(
-      __mmask8(mask.to_bitset()),std::bit_cast<__m128>(value.to_native()),std::bit_cast<__m128>(exponent.to_native())));
+    else if constexpr(N==2 || N==3) return __builtin_bit_cast(simd<float,N,Arch>,_mm_maskz_scalef_ps(
+      __mmask8(mask.to_bitset()),__builtin_bit_cast(__m128,value.to_native()),__builtin_bit_cast(__m128,exponent.to_native())));
     else if constexpr(N==4) return simd<float,N,Arch>(_mm_maskz_scalef_ps(native_mask(),value.value,exponent.value));
     else if constexpr(N==8) return simd<float,N,Arch>(_mm256_maskz_scalef_ps(native_mask(),value.value,exponent.value));
 #endif
@@ -4785,19 +4785,19 @@ namespace native {
     native_nodiscard native_inline constexpr operator native_type() const noexcept requires(!simd_mask_element<T>) { return value; }
     /// Import native lanes, normalizing mask elements; other elements retain their bits. Clear physical padding.
     native_nodiscard static native_inline constexpr simd from_native(native_type x) noexcept {
-      if constexpr(simd_mask_element<T>) return from_storage(storage_type::from_native(std::bit_cast<typename storage_type::native_type>(x)));
+      if constexpr(simd_mask_element<T>) return from_storage(storage_type::from_native(__builtin_bit_cast(typename storage_type::native_type,x)));
       else return simd(x);
     }
     /// Adopt native bits and clear physical padding. If T is a mask element, every logical lane must already be canonical.
     native_nodiscard static native_inline constexpr simd unsafe_from_native(native_type x) noexcept { return simd(x); }
     /// Return the corresponding four-lane storage vector without changing logical lane bits.
     native_nodiscard native_inline constexpr storage_type to_storage() const noexcept {
-      if constexpr(simd_mask_element<T>) return storage_type::unsafe_from_native(std::bit_cast<typename storage_type::native_type>(value));
-      else return storage_type::from_native(std::bit_cast<typename storage_type::native_type>(value));
+      if constexpr(simd_mask_element<T>) return storage_type::unsafe_from_native(__builtin_bit_cast(typename storage_type::native_type,value));
+      else return storage_type::from_native(__builtin_bit_cast(typename storage_type::native_type,value));
     }
     /// Copy the first N lanes from a four-lane storage value and clear physical padding.
     native_nodiscard static native_inline constexpr simd from_storage(storage_type x) noexcept {
-      return simd(std::bit_cast<native_type>(x.to_native()));
+      return simd(__builtin_bit_cast(native_type,x.to_native()));
     }
     // The caller supplies exactly N logical lanes; alignment never grants a
     // readable fourth lane. Three-lane x86 transfers use native masked memory.
@@ -4811,14 +4811,14 @@ namespace native {
       }
 #if defined(__x86_64__) || defined(_M_X64)
       if constexpr(bool(NATIVE_HAS_AVX2)) {
-        if constexpr(N==2) return simd(unchecked{},std::bit_cast<native_type>(_mm_loadl_epi64(reinterpret_cast<__m128i const *>(p))));
+        if constexpr(N==2) return simd(unchecked{},__builtin_bit_cast(native_type,_mm_loadl_epi64(reinterpret_cast<__m128i const *>(p))));
         else if constexpr(bool(NATIVE_HAS_AVX512VL)) {
-          if constexpr(std::same_as<T,float>) return simd(unchecked{},std::bit_cast<native_type>(_mm_maskz_loadu_ps(7,p)));
-          else return simd(unchecked{},std::bit_cast<native_type>(_mm_maskz_loadu_epi32(7,p)));
+          if constexpr(std::same_as<T,float>) return simd(unchecked{},__builtin_bit_cast(native_type,_mm_maskz_loadu_ps(7,p)));
+          else return simd(unchecked{},__builtin_bit_cast(native_type,_mm_maskz_loadu_epi32(7,p)));
         } else {
           auto active=_mm_set_epi32(0,-1,-1,-1);
-          if constexpr(std::same_as<T,float>) return simd(unchecked{},std::bit_cast<native_type>(_mm_maskload_ps(p,active)));
-          else return simd(unchecked{},std::bit_cast<native_type>(_mm_maskload_epi32(reinterpret_cast<int const *>(p),active)));
+          if constexpr(std::same_as<T,float>) return simd(unchecked{},__builtin_bit_cast(native_type,_mm_maskload_ps(p,active)));
+          else return simd(unchecked{},__builtin_bit_cast(native_type,_mm_maskload_epi32(reinterpret_cast<int const *>(p),active)));
         }
       }
 #elif defined(__aarch64__) || defined(_M_ARM64)
@@ -4826,12 +4826,12 @@ namespace native {
         if constexpr(std::same_as<T,float>) {
           auto x=vcombine_f32(vld1_f32(p),vdup_n_f32(0.f));
           if constexpr(N==3) x=vld1q_lane_f32(p+2,x,2);
-          return simd(unchecked{},std::bit_cast<native_type>(x));
+          return simd(unchecked{},__builtin_bit_cast(native_type,x));
         } else {
           auto q=reinterpret_cast<std::uint32_t const *>(p);
           auto x=vcombine_u32(vld1_u32(q),vdup_n_u32(0));
           if constexpr(N==3) x=vld1q_lane_u32(q+2,x,2);
-          return simd(unchecked{},std::bit_cast<native_type>(x));
+          return simd(unchecked{},__builtin_bit_cast(native_type,x));
         }
       }
 #endif
@@ -4848,23 +4848,23 @@ namespace native {
       }
 #if defined(__x86_64__) || defined(_M_X64)
       if constexpr(bool(NATIVE_HAS_AVX2)) {
-        if constexpr(N==2) _mm_storel_epi64(reinterpret_cast<__m128i *>(p),std::bit_cast<__m128i>(value));
+        if constexpr(N==2) _mm_storel_epi64(reinterpret_cast<__m128i *>(p),__builtin_bit_cast(__m128i,value));
         else if constexpr(bool(NATIVE_HAS_AVX512VL)) {
-          if constexpr(std::same_as<T,float>) _mm_mask_storeu_ps(p,7,std::bit_cast<__m128>(value));
-          else _mm_mask_storeu_epi32(p,7,std::bit_cast<__m128i>(value));
+          if constexpr(std::same_as<T,float>) _mm_mask_storeu_ps(p,7,__builtin_bit_cast(__m128,value));
+          else _mm_mask_storeu_epi32(p,7,__builtin_bit_cast(__m128i,value));
         } else {
           auto active=_mm_set_epi32(0,-1,-1,-1);
-          if constexpr(std::same_as<T,float>) _mm_maskstore_ps(p,active,std::bit_cast<__m128>(value));
-          else _mm_maskstore_epi32(reinterpret_cast<int *>(p),active,std::bit_cast<__m128i>(value));
+          if constexpr(std::same_as<T,float>) _mm_maskstore_ps(p,active,__builtin_bit_cast(__m128,value));
+          else _mm_maskstore_epi32(reinterpret_cast<int *>(p),active,__builtin_bit_cast(__m128i,value));
         }
       }
 #elif defined(__aarch64__) || defined(_M_ARM64)
       if constexpr((::native::arm_feature::neon <= Arch)) {
         if constexpr(std::same_as<T,float>) {
-          auto x=std::bit_cast<float32x4_t>(value);vst1_f32(p,vget_low_f32(x));
+          auto x=__builtin_bit_cast(float32x4_t,value);vst1_f32(p,vget_low_f32(x));
           if constexpr(N==3) vst1q_lane_f32(p+2,x,2);
         } else {
-          auto q=reinterpret_cast<std::uint32_t *>(p);auto x=std::bit_cast<uint32x4_t>(value);
+          auto q=reinterpret_cast<std::uint32_t *>(p);auto x=__builtin_bit_cast(uint32x4_t,value);
           vst1_u32(q,vget_low_u32(x));
           if constexpr(N==3) vst1q_lane_u32(q+2,x,2);
         }
@@ -4940,7 +4940,7 @@ namespace native {
     /// Inactive denominator lanes are set to one so padding does not introduce division by zero.
     native_nodiscard friend native_inline constexpr simd operator/(simd a,simd b) noexcept requires std::same_as<T,float> {
       auto padded=__builtin_shufflevector(b.value,native_type{1.f,1.f,1.f,1.f},0,1,N==3?2:4,4);
-      auto divisor=storage_type::from_native(std::bit_cast<typename storage_type::native_type>(padded));
+      auto divisor=storage_type::from_native(__builtin_bit_cast(typename storage_type::native_type,padded));
       return clean(a.to_storage()/divisor);
     }
     /// Negate every logical lane; floating-point lanes change sign.
@@ -5031,7 +5031,7 @@ namespace native {
   private:
     struct unchecked {};
     native_inline constexpr simd(unchecked,native_type x) noexcept : value(x) {}
-    native_nodiscard static native_inline constexpr simd clean(storage_type x) noexcept { return simd(unchecked{},std::bit_cast<native_type>(x.to_native())); }
+    native_nodiscard static native_inline constexpr simd clean(storage_type x) noexcept { return simd(unchecked{},__builtin_bit_cast(native_type,x.to_native())); }
     template<class M> native_nodiscard static native_inline constexpr mask_type comparison(M x) noexcept {
       if constexpr(mask_type::compact) return mask_type::from_native(x.to_native());
       else return mask_type::from_storage(x);
@@ -5170,13 +5170,13 @@ namespace native::detail::NATIVE_BACKEND {
 #if NATIVE_HAS_AVX2
     if constexpr (N > 1 && !M::compact) {
       if constexpr (sizeof(M) == 32)
-        return std::uint32_t(_mm256_movemask_ps(std::bit_cast<__m256>(mask.to_native())));
-      else return std::uint32_t(_mm_movemask_ps(std::bit_cast<__m128>(mask.to_native()))) & ((1u << N) - 1);
+        return std::uint32_t(_mm256_movemask_ps(__builtin_bit_cast(__m256,mask.to_native())));
+      else return std::uint32_t(_mm_movemask_ps(__builtin_bit_cast(__m128,mask.to_native()))) & ((1u << N) - 1);
     } else
 #elif NATIVE_HAS_ARM_NEON
     if constexpr (N > 1) {
       constexpr std::array<std::uint32_t,4> weights{1,2,4,8};
-      return vaddvq_u32(vandq_u32(std::bit_cast<uint32x4_t>(mask.to_native()),vld1q_u32(weights.data()))) & ((1u << N) - 1);
+      return vaddvq_u32(vandq_u32(__builtin_bit_cast(uint32x4_t,mask.to_native()),vld1q_u32(weights.data()))) & ((1u << N) - 1);
     } else
 #endif
     return std::uint32_t(mask.to_bitset()) & ((1u << N) - 1);
@@ -5208,19 +5208,19 @@ namespace native::detail::NATIVE_BACKEND {
     else {
 #if NATIVE_HAS_AVX512F
       if constexpr (sizeof(V) == 64) {
-        auto x = std::bit_cast<__m512i>(input), merge = std::bit_cast<__m512i>(prior);
-        if constexpr (Expand) return std::bit_cast<V>(_mm512_mask_expand_epi32(merge, __mmask16(mask), x));
-        else return std::bit_cast<V>(_mm512_mask_compress_epi32(merge, __mmask16(mask), x));
+        auto x = __builtin_bit_cast(__m512i,input), merge = __builtin_bit_cast(__m512i,prior);
+        if constexpr (Expand) return __builtin_bit_cast(V,_mm512_mask_expand_epi32(merge, __mmask16(mask), x));
+        else return __builtin_bit_cast(V,_mm512_mask_compress_epi32(merge, __mmask16(mask), x));
       }
 #if NATIVE_HAS_AVX512VL
       else if constexpr (sizeof(V) == 32) {
-        auto x = std::bit_cast<__m256i>(input), merge = std::bit_cast<__m256i>(prior);
-        if constexpr (Expand) return std::bit_cast<V>(_mm256_mask_expand_epi32(merge, __mmask8(mask), x));
-        else return std::bit_cast<V>(_mm256_mask_compress_epi32(merge, __mmask8(mask), x));
+        auto x = __builtin_bit_cast(__m256i,input), merge = __builtin_bit_cast(__m256i,prior);
+        if constexpr (Expand) return __builtin_bit_cast(V,_mm256_mask_expand_epi32(merge, __mmask8(mask), x));
+        else return __builtin_bit_cast(V,_mm256_mask_compress_epi32(merge, __mmask8(mask), x));
       } else {
-        auto x = std::bit_cast<__m128i>(input), merge = std::bit_cast<__m128i>(prior);
-        if constexpr (Expand) return std::bit_cast<V>(_mm_mask_expand_epi32(merge, __mmask8(mask), x));
-        else return std::bit_cast<V>(_mm_mask_compress_epi32(merge, __mmask8(mask), x));
+        auto x = __builtin_bit_cast(__m128i,input), merge = __builtin_bit_cast(__m128i,prior);
+        if constexpr (Expand) return __builtin_bit_cast(V,_mm_mask_expand_epi32(merge, __mmask8(mask), x));
+        else return __builtin_bit_cast(V,_mm_mask_compress_epi32(merge, __mmask8(mask), x));
       }
 #else
       else
@@ -5233,15 +5233,15 @@ namespace native::detail::NATIVE_BACKEND {
       if constexpr (sizeof(V) == 32) {
         auto const & row = compaction_indices<Expand,8>[mask];
         auto indices = _mm256_cvtepu8_epi32(_mm_loadl_epi64(reinterpret_cast<__m128i const *>(row.data())));
-        permuted = std::bit_cast<V>(_mm256_permutevar8x32_epi32(std::bit_cast<__m256i>(input), indices));
+        permuted = __builtin_bit_cast(V,_mm256_permutevar8x32_epi32(__builtin_bit_cast(__m256i,input), indices));
       } else {
         auto const & row = compaction_indices<Expand,4>[mask];
         auto indices = _mm_loadu_si128(reinterpret_cast<__m128i const *>(row.data()));
-        permuted = std::bit_cast<V>(_mm_shuffle_epi8(std::bit_cast<__m128i>(input), indices));
+        permuted = __builtin_bit_cast(V,_mm_shuffle_epi8(__builtin_bit_cast(__m128i,input), indices));
       }
 #else
       auto const & row = compaction_indices<Expand,4>[mask];
-      permuted = std::bit_cast<V>(vqtbl1q_u8(std::bit_cast<uint8x16_t>(input), vld1q_u8(row.data())));
+      permuted = __builtin_bit_cast(V,vqtbl1q_u8(__builtin_bit_cast(uint8x16_t,input), vld1q_u8(row.data())));
 #endif
       // Build the destination predicate in registers instead of round-tripping
       // a packed mask through the generic byte-oriented mask representation.
@@ -5252,14 +5252,14 @@ namespace native::detail::NATIVE_BACKEND {
           auto bits = _mm256_setr_epi32(1,2,4,8,16,32,64,128);
           live = _mm256_cmpeq_epi32(_mm256_and_si256(_mm256_set1_epi32(int(mask)),bits),bits);
         } else live = _mm256_cmpgt_epi32(_mm256_set1_epi32(std::popcount(mask)),_mm256_setr_epi32(0,1,2,3,4,5,6,7));
-        return std::bit_cast<V>(_mm256_blendv_epi8(std::bit_cast<__m256i>(prior),std::bit_cast<__m256i>(permuted),live));
+        return __builtin_bit_cast(V,_mm256_blendv_epi8(__builtin_bit_cast(__m256i,prior),__builtin_bit_cast(__m256i,permuted),live));
       } else {
         __m128i live;
         if constexpr (Expand) {
           auto bits = _mm_setr_epi32(1,2,4,8);
           live = _mm_cmpeq_epi32(_mm_and_si128(_mm_set1_epi32(int(mask)),bits),bits);
         } else live = _mm_cmpgt_epi32(_mm_set1_epi32(std::popcount(mask)),_mm_setr_epi32(0,1,2,3));
-        return std::bit_cast<V>(_mm_blendv_epi8(std::bit_cast<__m128i>(prior),std::bit_cast<__m128i>(permuted),live));
+        return __builtin_bit_cast(V,_mm_blendv_epi8(__builtin_bit_cast(__m128i,prior),__builtin_bit_cast(__m128i,permuted),live));
       }
 #else
       uint32x4_t live;
@@ -5270,7 +5270,7 @@ namespace native::detail::NATIVE_BACKEND {
         constexpr std::array<std::uint32_t,4> lanes{0,1,2,3};
         live = vcltq_u32(vld1q_u32(lanes.data()),vdupq_n_u32(std::uint32_t(std::popcount(mask))));
       }
-      return std::bit_cast<V>(vbslq_u8(vreinterpretq_u8_u32(live),std::bit_cast<uint8x16_t>(permuted),std::bit_cast<uint8x16_t>(prior)));
+      return __builtin_bit_cast(V,vbslq_u8(vreinterpretq_u8_u32(live),__builtin_bit_cast(uint8x16_t,permuted),__builtin_bit_cast(uint8x16_t,prior)));
 #endif
       }
 #endif
@@ -5299,7 +5299,7 @@ namespace native {
     auto bits = detail::NATIVE_BACKEND::compaction_mask_bits<N>(mask);
     // Construct fill through integer object representation, without FP arithmetic.
     using U = simd<std::uint32_t,N,Arch>;
-    V prior = std::bit_cast<V>(U(std::bit_cast<std::uint32_t>(fill)));
+    V prior = __builtin_bit_cast(V,U(std::bit_cast<std::uint32_t>(fill)));
     return {detail::NATIVE_BACKEND::compact_register<false>(bits, value, prior), std::size_t(std::popcount(bits))};
   }
 
@@ -5350,13 +5350,13 @@ namespace native {
       // This also avoids trimming the source predicate when capacity is small.
       auto prefix = (std::uint32_t(1) << written) - 1;
       if constexpr (sizeof(value) == 64) {
-        auto packed = _mm512_maskz_compress_epi32(__mmask16(bits),std::bit_cast<__m512i>(value));
+        auto packed = _mm512_maskz_compress_epi32(__mmask16(bits),__builtin_bit_cast(__m512i,value));
         _mm512_mask_storeu_epi32(destination,__mmask16(prefix),packed);
       } else if constexpr (sizeof(value) == 32) {
-        auto packed = _mm256_maskz_compress_epi32(__mmask8(bits),std::bit_cast<__m256i>(value));
+        auto packed = _mm256_maskz_compress_epi32(__mmask8(bits),__builtin_bit_cast(__m256i,value));
         _mm256_mask_storeu_epi32(destination,__mmask8(prefix),packed);
       } else {
-        auto packed = _mm_maskz_compress_epi32(__mmask8(bits),std::bit_cast<__m128i>(value));
+        auto packed = _mm_maskz_compress_epi32(__mmask8(bits),__builtin_bit_cast(__m128i,value));
         _mm_mask_storeu_epi32(destination,__mmask8(prefix),packed);
       }
       return written;

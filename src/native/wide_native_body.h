@@ -218,7 +218,7 @@ namespace wide::detail {
           return F::from_storage(native_ops<typename V::storage_type>::tanh_coefficient(index.to_storage(),table));
 #if NATIVE_HAS_AVX2
         else if constexpr(V::lanes<=8) {
-          auto const coefficients=std::bit_cast<__m256i>(table);
+          auto const coefficients=__builtin_bit_cast(__m256i,table);
           if constexpr(V::lanes==4) {
             auto const indices=_mm256_zextsi128_si256(index.to_native());
             return F::from_native(_mm_castsi128_ps(_mm256_castsi256_si128(
@@ -229,7 +229,7 @@ namespace wide::detail {
 #endif
 #if NATIVE_HAS_AVX512F
         else if constexpr(V::lanes==16) {
-          auto const coefficients=_mm512_broadcast_i64x4(std::bit_cast<__m256i>(table));
+          auto const coefficients=_mm512_broadcast_i64x4(__builtin_bit_cast(__m256i,table));
           return F::from_native(_mm512_castsi512_ps(
             _mm512_permutexvar_epi32(index.to_native(),coefficients)));
         }
@@ -238,7 +238,7 @@ namespace wide::detail {
         else if constexpr(V::lanes==4) {
           uint8x16x2_t const coefficients{{vld1q_u8(reinterpret_cast<std::uint8_t const *>(table.data())),
             vld1q_u8(reinterpret_cast<std::uint8_t const *>(table.data()+4))}};
-          auto const indices=std::bit_cast<uint32x4_t>(index.to_native());
+          auto const indices=__builtin_bit_cast(uint32x4_t,index.to_native());
           // Vector arithmetic avoids importing arm_neon.h's internal-linkage
           // scalar-broadcast wrappers into both native.simd and native.math.
           auto const offsets=indices*0x04040404u+0x03020100u;

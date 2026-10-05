@@ -38,6 +38,19 @@ build/tests/compaction/native_compaction_avx2_header --bench
 build/tests/compaction/native_compaction_avx512_header --bench
 ```
 
+On Windows, the same correctness tests can be run without optimization to cover
+the raw-register ABI path that optimization can hide:
+
+```powershell
+cmake -S . -B build/compaction-debug -G Ninja -DCMAKE_CXX_COMPILER=clang-cl `
+  -DCMAKE_BUILD_TYPE=Debug -DNATIVE_TEST_ISA=AVX2 `
+  "-DNATIVE_PROFILES=AVX2;AVX512"
+cmake --build build/compaction-debug --target `
+  native_compaction_avx2_header native_compaction_avx2_import `
+  native_compaction_avx512_header native_compaction_avx512_import --parallel
+ctest --test-dir build/compaction-debug -R '^native[.]compaction[.](avx2|avx512)[.](header|import)$' --output-on-failure
+```
+
 Use the executable suffix/layout appropriate to the generator. Configure a
 separate build with `NATIVE_ENABLE_ASAN=ON` for the sanitizer run. The installed
 `tests/api` fixture also compiles public compaction calls after package relocation.
