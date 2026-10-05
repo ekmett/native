@@ -1,4 +1,4 @@
-name: C++26 modules
+name: native
 
 on:
   pull_request:
