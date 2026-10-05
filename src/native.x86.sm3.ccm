@@ -52,7 +52,8 @@ namespace native::detail::x86_sm3_constant {
 }
 
 export namespace native {
-  /// \defgroup x86_sm3 SM3 instruction primitives
+  /// \defgroup x86_sm3 SM3
+  /// \ingroup cpu_x86
   /// Runtime calls require AVX and SM3, matching compiler targets and OS vector state.
   /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
   /// Missing-feature overloads are constant-evaluation-only.

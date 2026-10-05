@@ -27,7 +27,8 @@ export module native.arm.features;
 export import native.isa;
 
 export namespace native {
-  /// \defgroup arm_capabilities ARM capabilities
+  /// \defgroup arm_capabilities Feature detection
+  /// \ingroup cpu_arm
   /// AArch64 OS capability admission, independent of the native SIMD hub.
   /// Query before entering optional-profile code; no instruction probing occurs.
 

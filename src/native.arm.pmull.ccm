@@ -20,7 +20,8 @@ namespace native::detail {
   }
 }
 export namespace native {
-  /// \defgroup arm_pmull Polynomial multiplication
+  /// \defgroup arm_pmull PMULL
+  /// \ingroup cpu_arm
   /// Bit i is the coefficient of x^i. Products use XOR, without carry or
   /// reduction by a modulus. Byte products need NEON; runtime 64-bit products
   /// need FEAT_PMULL. The latter use the compiler "aes" target, whose full

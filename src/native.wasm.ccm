@@ -3,3 +3,16 @@ export module native.wasm;
 export import native.wasm.features;
 export import native.simd;
 export import native.wasm.relaxed;
+
+/** \defgroup cpu_wasm WebAssembly
+ * Instruction sets and feature detection for WebAssembly.
+ * See the [instruction guides](\ref md_docs_2wasm) for motivation,
+ * operation lists and instruction-specific caveats.
+ */
+
+/** \defgroup wasm_simd128 SIMD128
+ * \ingroup cpu_wasm
+ * The 128-bit WebAssembly implementation of the common SIMD interface.
+ * See the [SIMD128 guide](\ref md_docs_2wasm-simd) for its operations and
+ * semantics, and \ref vectors, \ref masks and \ref vector_memory for signatures.
+ */

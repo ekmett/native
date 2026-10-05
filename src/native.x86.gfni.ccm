@@ -10,6 +10,7 @@ export import native.simd;
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
 /** \defgroup x86_gfni GFNI
+ * \ingroup cpu_x86
  * Byte arithmetic modulo x^8 + x^4 + x^3 + x + 1 and binary affine maps.
  * Arch records instruction requirements; callers must separately enable and
  * admit a matching target. The vector lane count selects the overload and

@@ -55,7 +55,10 @@ Use the title `Architecture Extension: purpose`, with `x86`, `ARM`, or
 `Why use it`, `Operations`, and `Caveats` as the three level-two headings;
 subdivide those sections when necessary. Link back to the architecture index
 below the title, and add the guide to that index under `docs/`. Those index
-links also define the published sidebar.
+links also define the published sidebar. API topics use the same hierarchy:
+put each instruction group's `\ingroup cpu_x86`, `\ingroup cpu_arm`, or
+`\ingroup cpu_wasm` beside its `\defgroup`, and use the instruction-set name
+as the group title. Doxygen sorts those titles alphabetically.
 
 Document the current library. Test projects, benchmark logs and implementation
 history belong with the development material, not in the user's navigation.

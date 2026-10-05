@@ -10,7 +10,8 @@ export import native.simd;
 export {
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native {
-/** \defgroup arm_dotprod ARM DOTPROD
+/** \defgroup arm_dotprod DotProd
+ * \ingroup cpu_arm
  * Explicit ISA-gated AArch64 instructions. Admit the feature before entering
  * a matching target scope; runtime calls provide no software fallback.
  * Constant operands use exact integer semantics; feature-absent overloads are

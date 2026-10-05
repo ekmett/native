@@ -15,3 +15,9 @@ export import native.arm.pmull;
 export import native.arm.sha;
 export import native.arm.sm3;
 export import native.arm.sm4;
+
+/** \defgroup cpu_arm ARM
+ * Instruction sets and feature detection for ARM.
+ * See the [instruction guides](\ref md_docs_2arm) for motivation,
+ * operation lists and instruction-specific caveats.
+ */

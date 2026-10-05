@@ -15,7 +15,8 @@ export module native.x86.features;
 export import native.isa;
 
 export namespace native {
-  /// \defgroup capabilities CPU capabilities and waiting
+  /// \defgroup capabilities Feature detection
+  /// \ingroup cpu_x86
   /// x86-only queries and wait helpers. Feature queries belong outside hot loops;
   /// SIMD instruction admission also requires the appropriate OS vector state.
   /// \snippet api.cc capabilities

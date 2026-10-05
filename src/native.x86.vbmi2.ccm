@@ -9,7 +9,8 @@ export import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /** \defgroup x86_vbmi2 AVX512VBMI2
+  /** \defgroup x86_vbmi2 AVX-512VBMI2
+   * \ingroup cpu_x86
    * Byte/word compaction, packed memory transfers and double-source shifts.
    * Runtime targets require AVX512F, AVX512BW and AVX512VBMI2; 128/256-bit
    * forms also require AVX512VL. Admit CPU features and OS ZMM state first.

@@ -40,6 +40,7 @@ namespace native::detail {
 }
 export namespace native {
 /** \defgroup x86_f16c F16C
+ * \ingroup cpu_x86
  * Binary32 / IEEE binary16 conversions using VEX VCVTPS2PH and VCVTPH2PS.
  * Arch must contain f16c; its compiler prerequisite is AVX. Callers must enable
  * a matching target and admit CPU support and XMM/YMM OS state separately.

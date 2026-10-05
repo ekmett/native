@@ -12,7 +12,8 @@ export import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup x86_vaes Vector AES rounds
+  /// \defgroup x86_vaes VAES
+  /// \ingroup cpu_x86
   /// Independent 128-bit AES states in register order. The 128-bit VEX forms
   /// require AES and AVX; the 256-bit forms require VAES and AVX; the 512-bit
   /// forms require VAES and AVX512F. There are no instruction writemasks.

@@ -13,6 +13,7 @@
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 namespace native {
 /** \defgroup x86_crc32c CRC32C
+ * \ingroup cpu_x86
  * Raw Castagnoli CRC updates requiring CPUID leaf 1 ECX bit 20.
  * Runtime calls require Arch to contain x86_feature::crc32; the caller must enable and admit
  * that feature. No vector OS state is required. Each update consumes the

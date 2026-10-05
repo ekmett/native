@@ -12,7 +12,8 @@
 
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native {
-/** \defgroup arm_crc ARM CRC updates
+/** \defgroup arm_crc CRC
+ * \ingroup cpu_arm
  * Raw CRC32 and CRC32C updates, consuming operand bits from least to most
  * significant. CRC32 uses reflected polynomial 0xedb88320; CRC32C uses
  * 0x82f63b78. Neither applies an initial or final complement. Runtime calls

@@ -30,7 +30,8 @@ namespace native::detail {
   }
 }
 export namespace native {
-  /// \defgroup arm_fp16fml FP16 widening fused multiply-add
+  /// \defgroup arm_fp16fml FHM
+  /// \ingroup cpu_arm
   /// Runtime calls require arm_feature::fp16fml (FEAT_FHM), independently of FCMA/BF16.
   /// Binary16 inputs accumulate directly into binary32, with one rounding.
   /// FPCR controls and FPSR effects are those of the instruction; neither is reset.

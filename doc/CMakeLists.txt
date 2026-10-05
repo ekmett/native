@@ -170,6 +170,7 @@ set(DOXYGEN_INTERACTIVE_SVG YES)
 set(DOXYGEN_DOT_GRAPH_MAX_NODES 100)
 set(DOXYGEN_CALLER_GRAPH YES)
 set(DOXYGEN_GENERATE_TREEVIEW YES)
+set(DOXYGEN_SORT_GROUP_NAMES YES)
 set(DOXYGEN_HTML_INDEX_NUM_ENTRIES 1)
 # Static menus avoid Doxygen 1.18 links to absent short-list/tilde sections.
 # API pages, alphabetical indices and the navigation tree remain available.

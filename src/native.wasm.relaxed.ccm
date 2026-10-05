@@ -11,6 +11,7 @@ export import native.simd;
 #if NATIVE_HOST_WASM || defined(NATIVE_DOXYGEN)
 export namespace native {
   /// \defgroup wasm_relaxed Relaxed SIMD
+  /// \ingroup cpu_wasm
   /// Runtime calls require relaxed_simd in Arch and in the caller target.
   /// Constant evaluation chooses one valid result and does not promise engine
   /// agreement. Feature-absent tags are consteval-only and require SIMD128 storage.

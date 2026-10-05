@@ -11,6 +11,7 @@
 
 namespace native {
 /** \defgroup x86_popcnt POPCNT
+ * \ingroup cpu_x86
  * Scalar bit counts requiring only CPUID leaf 1 ECX bit 23.
  * Runtime calls require x86_feature::popcnt in the supplied ISA.
  * Admit that feature before entering a matching target scope. No vector OS state is required.

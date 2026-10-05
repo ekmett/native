@@ -23,6 +23,7 @@ namespace native::detail {
 
 namespace native {
   /// \defgroup x86_bmi1 BMI1
+  /// \ingroup cpu_x86
   /// Integer bit operations; runtime calls require x86_feature::bmi1 and target "bmi".
   /// Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
   /// \{

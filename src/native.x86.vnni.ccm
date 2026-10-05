@@ -9,7 +9,8 @@ export import native.simd;
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-/** \defgroup x86_vnni VNNI integer dot products
+/** \defgroup x86_vnni AVX-VNNI / AVX-512VNNI
+ * \ingroup cpu_x86
  * Each 32-bit accumulator lane receives the sum of four byte products or two
  * word products from the corresponding adjacent input group. Non-saturating
  * forms wrap modulo 2^32. Saturating forms clamp the complete sum, including

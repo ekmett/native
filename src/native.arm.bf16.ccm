@@ -50,7 +50,8 @@ namespace native::detail {
   }
 }
 export namespace native {
-  /// \defgroup arm_bf16 BF16 dot products, matrices and widening multiply-add
+  /// \defgroup arm_bf16 BF16
+  /// \ingroup cpu_arm
   /// Runtime calls require arm_feature::neon_bf16 and a compatible bf16 compiler target.
   /// BFDOT/BFMMLA use round-to-odd steps by default, or fused pairs followed by
   /// separate accumulation when FEAT_EBF16 and FPCR.EBF enable enhanced behavior.

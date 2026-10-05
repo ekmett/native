@@ -39,7 +39,8 @@ namespace native::detail::x86_adx {
 }
 
 namespace native {
-  /// \defgroup x86_adx Unsigned addition with carry
+  /// \defgroup x86_adx ADX
+  /// \ingroup cpu_x86
   /// Add two 32/64-bit values and one if the input carry is nonzero. Write the
   /// modular sum through a valid output pointer and return carry-out as 0 or 1.
   /// Strong tags require ADX and a compatible caller target; weak tags support

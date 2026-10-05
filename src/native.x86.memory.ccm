@@ -81,7 +81,8 @@ namespace native::detail::x86_memory {
 }
 
 export namespace native {
-  /** \defgroup x86_memory Indexed x86 memory
+  /** \defgroup x86_memory AVX2 / AVX-512 gather and scatter
+   * \ingroup cpu_x86
    * Gather and scatter retain the hardware index and data register shapes.
    * Scale is a byte multiplier of 1, 2, 4 or 8; indices are signed. All active
    * addresses must be accessible, including a complete element at each address.

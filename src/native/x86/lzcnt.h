@@ -11,6 +11,7 @@
 
 namespace native {
 /** \defgroup x86_lzcnt LZCNT
+ * \ingroup cpu_x86
  * Scalar bit counts requiring only extended CPUID leaf 0x80000001 ECX bit 5.
  * Runtime calls require x86_feature::lzcnt in the supplied ISA.
  * Admit that feature before entering a matching target scope. No vector OS state is required.

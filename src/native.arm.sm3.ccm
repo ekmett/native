@@ -143,7 +143,8 @@ namespace native::detail::arm_sm3 {
 
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup arm_sm3 SM3 instructions
+  /// \defgroup arm_sm3 SM3
+  /// \ingroup cpu_arm
   /// Individual Advanced SIMD operations on four native-order uint32_t words.
   /// Runtime calls require the named instruction feature; the compiler's "sm4"
   /// target enables both SM3 and SM4. Admit target_features<arm>("sm4") before

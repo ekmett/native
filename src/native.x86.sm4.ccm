@@ -36,7 +36,8 @@ namespace native::detail::x86_sm4_constant {
 }
 
 export namespace native {
-  /// \defgroup x86_sm4 SM4 instruction primitives
+  /// \defgroup x86_sm4 SM4
+  /// \ingroup cpu_x86
   /// Runtime calls require AVX and SM4, matching compiler targets and OS vector state.
   /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
   /// Missing-feature overloads are constant-evaluation-only.

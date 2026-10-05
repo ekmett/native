@@ -12,7 +12,8 @@ export import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup x86_sha SHA instruction primitives
+  /// \defgroup x86_sha SHA
+  /// \ingroup cpu_x86
   /// Four-dword register values follow the instruction packing, not four
   /// independent hashes. SHA-1 state and SHA-256 state packs run high-to-low;
   /// SHA-256 message words run low-to-high. Runtime calls require SHA and the

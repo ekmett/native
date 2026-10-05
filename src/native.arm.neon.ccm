@@ -27,7 +27,8 @@ namespace native::detail::arm_neon_bits {
 }
 
 export namespace native {
-  /// \defgroup arm_neon NEON integer instructions
+  /// \defgroup arm_neon NEON
+  /// \ingroup cpu_arm
   /// Typed instruction operations require arm_feature::neon and a matching caller target.
   /// Saturation may set sticky FPSR.QC at runtime; constant evaluation computes values only.
   /// Big-endian two-lane 64-bit add/subtract and variable shifts carry a known

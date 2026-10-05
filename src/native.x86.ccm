@@ -27,3 +27,9 @@ export import native.x86.sm3;
 export import native.x86.sm4;
 export import native.x86.avxneconvert;
 export import native.x86.memory;
+
+/** \defgroup cpu_x86 x86
+ * Instruction sets and feature detection for x86.
+ * See the [instruction guides](\ref md_docs_2x86) for motivation,
+ * operation lists and instruction-specific caveats.
+ */

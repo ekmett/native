@@ -51,6 +51,7 @@ namespace native::detail::x86_neconvert {
 
 export namespace native {
   /// \defgroup x86_avxneconvert AVX-NE-CONVERT
+  /// \ingroup cpu_x86
   /// Binary16/BF16 memory widening and binary32-to-BF16 narrowing, with no FP exceptions.
   /// Runtime calls require AVX-NE-CONVERT, AVX, matching compiler targets and OS vector state.
   /// Constant-only overloads are available for weaker ISA tags with the required storage.

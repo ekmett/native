@@ -8,7 +8,8 @@ export import native.arm.features;
 export import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup arm_aes AES rounds
+  /// \defgroup arm_aes AES
+  /// \ingroup cpu_arm
   /// Single-round AES transformations on a 16-byte state; no key expansion,
   /// padding or cipher mode is performed. Bytes use the ACLE state ordering.
   /// Arch requires FEAT_AES. The compiler target "aes" also enables PMULL;

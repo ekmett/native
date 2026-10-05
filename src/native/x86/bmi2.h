@@ -57,6 +57,7 @@ namespace native::detail {
 
 namespace native {
   /// \defgroup x86_bmi2 BMI2
+  /// \ingroup cpu_x86
   /// Integer bit manipulation; runtime calls require exactly x86_feature::bmi2.
   /// Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
   /// \{

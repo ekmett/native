@@ -9,7 +9,8 @@ export import native.arm.features;
 export import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup arm_sha SHA instruction helpers
+  /// \defgroup arm_sha SHA
+  /// \ingroup cpu_arm
   /// SHA-1, SHA-256 and SHA-512 state/schedule operations and SHA-3 Boolean
   /// helpers. These are individual instructions, not complete hash functions.
   /// Lane zero contains the first named word. Inputs contain native integer

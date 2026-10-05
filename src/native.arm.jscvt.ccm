@@ -28,7 +28,8 @@ namespace native::detail {
 
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup arm_jscvt ARM Javascript conversion
+  /// \defgroup arm_jscvt JSCVT
+  /// \ingroup cpu_arm
   /// Convert binary64 to a signed word by truncating and reducing modulo 2^32.
   /// NaNs, infinities and signed zeros convert to zero. Runtime calls use the
   /// current floating-point environment; constant evaluation has no FP effects.

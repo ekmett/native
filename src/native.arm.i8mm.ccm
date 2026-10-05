@@ -10,6 +10,7 @@ export {
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native {
   /// \defgroup arm_i8mm I8MM
+  /// \ingroup cpu_arm
   /// Advanced SIMD integer matrix and mixed-sign dot products. Runtime calls require I8MM,
   /// independently of DotProd, FP16 and BF16. All sums wrap modulo 2^32;
   /// signed results interpret the resulting bits as two's complement.

@@ -46,7 +46,20 @@ def check(html):
     assert page_children('index') == {'md_doc_2building.html'} | {
         'md_docs_2' + page + '.html' for page in
         ['modules', 'abi-lookup', 'omnibus', 'transcendentals', 'instructions']}
+    topics = {row[1] for row in tree('topics')}
+    for arch in ['arm', 'x86', 'wasm']:
+        parent = 'group__cpu__' + arch
+        assert parent + '.html' in topics, f'missing CPU topic: {arch}'
+        children = tree(parent)
+        expected = {p.name for p in html.glob('group__' + arch + '__*.html')}
+        if arch == 'x86':
+            expected |= {'group__capabilities.html', 'group__wait.html'}
+        assert {row[1] for row in children} == expected, f'wrong CPU topics: {arch}'
+        assert not topics & expected, f'instruction topic leaked to root: {arch}'
+        names = [row[0] for row in children]
+        assert names == sorted(names), f'unsorted instruction topics: {arch}'
     print(f'{count} guides: titles, sections, index coverage and sidebar hierarchy pass')
+    print('API topics: CPU families, instruction-set names and alphabetical order pass')
 
 
 if __name__ == '__main__':

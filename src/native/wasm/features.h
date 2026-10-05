@@ -6,7 +6,8 @@
 #include <optional>
 
 namespace native {
-  /// \defgroup wasm_capabilities WebAssembly capabilities
+  /// \defgroup wasm_capabilities Feature detection
+  /// \ingroup cpu_wasm
   /// Runtime validation observations, independent of CPU features and SIMD types.
 
   namespace detail {

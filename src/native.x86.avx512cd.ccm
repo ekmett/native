@@ -9,7 +9,8 @@ export import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /** \defgroup x86_avx512cd AVX512CD
+  /** \defgroup x86_avx512cd AVX-512CD
+   * \ingroup cpu_x86
    * Conflict detection and leading-zero counts for 32-bit and 64-bit lanes.
    * Runtime calls require AVX512F and AVX512CD; 128/256-bit forms also require
    * AVX512VL. Admit CPU features and OS ZMM state before a matching target scope.

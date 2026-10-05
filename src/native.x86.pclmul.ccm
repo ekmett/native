@@ -10,6 +10,7 @@ export import native.simd;
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
 /** \defgroup x86_pclmul PCLMULQDQ
+ * \ingroup cpu_x86
  * Exact multiplication of two binary polynomials of degree at most 63.
  * Bit i of an input is the coefficient of x^i. Addition is XOR, with no
  * carries or reduction; result bit 127 is always zero.

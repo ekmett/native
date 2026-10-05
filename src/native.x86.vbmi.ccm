@@ -9,7 +9,8 @@ export import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /** \defgroup x86_vbmi AVX512VBMI
+  /** \defgroup x86_vbmi AVX-512VBMI
+   * \ingroup cpu_x86
    * Byte permutations across whole vectors and circular qword bit windows.
    * Runtime targets require AVX512F, AVX512BW and AVX512VBMI; 128/256-bit forms
    * also require AVX512VL. Admit CPU features and OS ZMM state before entry.

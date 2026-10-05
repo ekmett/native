@@ -58,7 +58,8 @@ namespace native::detail {
   }
 }
 export namespace native {
-  /// \defgroup arm_fcma Complex arithmetic
+  /// \defgroup arm_fcma FCMA
+  /// \ingroup cpu_arm
   /// Interleaved real/imaginary pairs; requires arm_feature::complxnum (FEAT_FCMA).
   /// Half arithmetic additionally requires arm_feature::neon_fp16.
   /// FCMLA is one partial complex product per call, not a full complex multiply.

@@ -53,7 +53,8 @@ namespace native::detail::x86_sha512_constant {
 }
 
 export namespace native {
-  /// \defgroup x86_sha512 SHA512 instruction primitives
+  /// \defgroup x86_sha512 SHA512
+  /// \ingroup cpu_x86
   /// Runtime calls require AVX and SHA512, matching compiler targets and OS vector state.
   /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
   /// Missing-feature overloads are constant-evaluation-only.

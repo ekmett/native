@@ -12,16 +12,17 @@ export import native.x86.features;
 
 export namespace native {
   /// \defgroup x86_mwaitx MWAITX
-  /// \ingroup wait
+  /// \ingroup cpu_x86
   /// MONITORX and MWAITX require x86_feature::mwaitx, reported by extended
   /// CPUID leaf 0x80000001 ECX bit 29. No vector-state feature is required.
 
   /// \defgroup x86_waitpkg WAITPKG
-  /// \ingroup wait
+  /// \ingroup cpu_x86
   /// UMONITOR, UMWAIT and TPAUSE require x86_feature::waitpkg, reported by
   /// CPUID leaf 7 subleaf 0 ECX bit 5. No vector-state feature is required.
 
-  /// \defgroup wait Waiting
+  /// \defgroup wait Waiting helpers
+  /// \ingroup cpu_x86
   /// \{
 
   /// \brief some way to wait for a value to change

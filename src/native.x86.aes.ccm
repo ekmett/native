@@ -14,6 +14,7 @@ export import native.simd;
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
   /// \defgroup x86_aes AES
+  /// \ingroup cpu_x86
   /// AES-NI transformations of one 16-byte state in little-endian register order.
   /// Bytes 4 * column + row form the AES state matrix. Encryption and decryption
   /// rounds add the key last, unlike ARM AESE/AESD. AESDEC uses inverse-mixed

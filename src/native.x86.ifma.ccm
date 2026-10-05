@@ -12,7 +12,8 @@ export import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
-  /// \defgroup x86_ifma Integer fused multiply-add of 52-bit values
+  /// \defgroup x86_ifma AVX-IFMA / AVX-512IFMA
+  /// \ingroup cpu_x86
   /// Multiply the low 52 bits of each input lane and add either product half
   /// to the full 64-bit accumulator, modulo 2^64. Short unmasked operations use
   /// AVX-IFMA when tagged; otherwise they require AVX512IFMA and AVX512VL.
