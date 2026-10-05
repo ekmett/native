@@ -81,16 +81,4 @@ int main() {
 }
 ```
 
-`tests/x86_crc32c` compares updates with an independent bitwise polynomial
-reference. Cases include the known `"123456789"` result, selected seeds and
-operands, random inputs at every width, and agreement between wider updates
-and ordered byte updates. The tests use the header, granular module, x86 module
-and main module, including a relocated installed package.
-
-Compilation must fail when feature requirements or caller targets are missing.
-Assembly checks cover each CRC operand width and verify that ordinary baseline
-functions remain free of CRC instructions. Runtime tests check CPU support
-before execution and report skips when it is unavailable; successful
-compilation and assembly checks alone do not establish native execution.
-
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

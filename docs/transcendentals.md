@@ -10,9 +10,9 @@ Accuracy and cross-platform agreement are separate checks. Native approximations
 follow the caller's floating-point environment and use separately rounded
 multiply/add on baseline Wasm. FTZ may choose the same polynomial where useful,
 but its admitted implementations must share one result graph, except for NaN
-payloads. Neither a matching packet nor a sampled ULP bound proves the other.
+payloads. A sampled accuracy result does not establish bit-for-bit agreement.
 
-## Current implementation cost
+## Polynomials
 
 `math::horner(c0, c1, ...)(z)` evaluates a polynomial from highest power to
 constant term: `horner(2.f, 3.f, 4.f)(z)` computes `(2*z + 3)*z + 4`.
@@ -44,8 +44,7 @@ scaling and `Flush` behavior are shared, with no runtime degree selection.
 Every polynomial has constant coefficient one, so `exp(0)` remains exactly one.
 Degrees six and seven also have linear coefficient one. Degree one is piecewise
 affine after reconstruction, not rational; neighboring fitted pieces need not
-join continuously. Generate the selected fits with
-`sollya tests/transcendentals/exp.sollya`.
+join continuously.
 
 On the same 4,969,601 sampled normal-output inputs, MPFR256 comparisons give:
 
@@ -67,9 +66,8 @@ Positive values jump upward; continuity is not enforced. Lower degrees save
 polynomial stages at the cost of the accuracy shown above.
 
 `exp2` and `log2` use direct base-two reductions, with no conversion through
-natural exponential or logarithm. Their Sollya fitting scripts and numerical
-qualification are retained with the [base-two tests](../tests/transcendentals/base2/README.md).
-Normal integer powers of two are exact in both directions. `exp2` deliberately
+natural exponential or logarithm. Normal integer powers of two are exact in
+both directions. `exp2` deliberately
 returns infinity starting at 127.5 and shares exp's backend-specific treatment
 of subnormal outputs; `log2` treats subnormal inputs as signed zero.
 
@@ -80,13 +78,8 @@ two multiplies, input classification and quadrant reconstruction. These are
 multi-instruction kernels. Baseline Wasm replaces each polynomial FMA with a
 separately rounded multiply and add.
 
-Packed division was selected over three normalized reciprocal Newton refinements
-using accuracy, assembly and throughput evidence. The optional
-[atan2 benchmark and results](../tests/transcendentals/README.md) compare one to
-eight registers on Apple ARM and AVX2. Wide evaluation exposes independent
-arithmetic chains, but larger packs cause substantial register spills; more
-registers do not imply proportionally better throughput. The benchmark retains
-those costs and its sampling limits separately from numerical qualification.
+Wide evaluation exposes independent arithmetic chains, but larger packs can
+spill registers. More registers do not imply proportionally better throughput.
 
 ## Register-count recommendations
 
@@ -97,71 +90,10 @@ extent of `wide<simd<T,K,A>, N>` or a register array. The
 table and usage. Recommendations use the explicit ISA and logical lane count;
 they neither observe the running CPU nor enable instructions.
 
-The degree-six exp sweep used Clang 23.1.1 with N=1,2,3,4,6,8,12. On Apple M3,
-four NEON registers capture the throughput knee; eight improved per-register
-time by about 0.9% in the controlled comparison while introducing spills.
-Six registers are the practical default for the measured eight-lane AVX2
-kernel on a Core i9-12900K and sixteen-lane AVX-512 kernel on a Ryzen 7950X3D.
-Larger packs did not improve their best throughput. AVX2 results also exhibited
-run-to-run variation, so these choices describe useful starting points.
+The defaults reflect each kernel's register pressure. `exp` recommends six
+registers for full-width AVX2 and AVX-512 vectors and four for NEON; `atan2`
+recommends two. Larger `atan2` packs keep too many classification and quadrant
+temporaries live at once. Short vectors and Wasm use conservative defaults.
 
-The AVX2 exp2 sweep measured N=1,2,6 at approximately 1.845, 1.713 and 1.776 ns
-per eight-lane vector. Its recommendation is two. Atan2 also recommends two:
-the retained [throughput and assembly study](../tests/transcendentals/README.md)
-shows that larger batches retain many classification and quadrant temporaries.
-Two is a conservative balance, not the minimum of every measured timing row
-or a promise of no stack traffic.
-
-On Apple M3, paired sincos measured approximately 0.754, 0.708, 0.676 and
-0.676 ns per input for N=1,2,4,8 on the central input bank. The four-lane NEON
-trigonometric kernels therefore recommend four registers.
-
-Other kernels use conservative starting points based on their live values.
-Long polynomial chains use four registers; table-heavy, paired-output and
-two-input kernels without their own tuning use two. Short vectors, Wasm, and
-narrower x86 vectors with AVX-512 features have not had separate tuning sweeps.
-In particular, AVX-512VL
-can change the mask representation of an eight-lane vector: inheriting the
-six-register exp recommendation does not establish its optimality.
-
-The recommendations leave surrounding application registers, compiler
-scheduling, memory traffic and CPU tuning to the caller. Explicit batch sizes
-remain available, and recommendations may change as measurements improve.
-
-## Further kernels
-
-These are proposed additions, not available entry points.
-
-| Priority | Operations | Why they are useful | Main work |
-| --- | --- | --- | --- |
-| First | `atan` | Can reuse the reduced atan polynomial without atan2's two-input axis handling. | Reciprocal reduction for large magnitudes; signed zero, infinities and the tiny interval. |
-| Next | `sinh`, `cosh`, paired `sinhcosh` | Share exponential work when both are needed. | Use a cancellation-safe small-input form; choose their own overflow range instead of inheriting exp's cutoff accidentally. |
-| Next | `sigmoid`, `softplus` | Common stable compositions of exp and log1p. | Work with `exp(-abs(x))` to avoid positive overflow, retain useful tiny corrections and measure the cost of each divide or selection. |
-| Later | `asinh`, `acosh`, `atanh` | Complete the useful inverse hyperbolic set. | Stable log1p-based reductions near zero/one and explicit domains, with no avoidable overflow in intermediate squares. |
-| Later | `erf`, `erfc` | Useful for Gaussian probabilities and smooth transitions. | Separate central and tail approximations; `erfc` must not lose its tail by subtracting `erf` from one. |
-| Separate design | general `pow` | Widely used, but has a large exceptional-value surface. | Negative bases, integer-exponent admission, signed zero, overflow and cancellation; not simply `exp(y*log(x))`. |
-
-`log10` is straightforward to offer once logarithmic reconstruction is factored
-appropriately, but adds less new machinery than the first group. Dedicated
-integer-power helpers should precede a general real `pow` when that is the actual
-application need.
-
-## Acceptance checks
-
-Use MPFR where available for sampled mathematical accuracy, and retain a small
-fixed regression bank without a mandatory external dependency. Record worst
-inputs and distinguish ULP distance from absolute error near zero. Check dense
-windows at reduction boundaries, signed zeros, finite extremes and nonfinite
-inputs. Require constant evaluation to follow the selected backend's fused or
-nonfused graph.
-
-Inspect full-register and wide output for scalarized comparisons, scalar lane
-loops, libm calls and spills. Benchmark several register counts on Apple ARM and
-x86 before selecting a schedule. Hardware division versus reciprocal refinement
-is a measured choice, not an assumption that fewer source operations are faster.
-Baseline Wasm needs its own accuracy and bytecode checks; native SIMD instructions
-in bytecode do not by themselves establish the engine's machine-code performance.
-
-The FTZ implementation and its cross-platform packet checks remain the reference
-for arithmetic-policy work. It need not freeze historical output words: a changed
-graph is acceptable when every admitted platform implements the same contract.
+These are starting points. Measure the complete loop: surrounding live values,
+memory traffic and compiler scheduling can change the best batch size.

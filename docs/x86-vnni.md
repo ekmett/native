@@ -102,11 +102,3 @@ ZMM state too. Compiler closure adds AVX2 to each VEX feature and AVX512F to
 AVX512VNNI, without adding another VNNI family. See
 [Intel CPUID definitions](https://cdrdv2-public.intel.com/874240/325462-090-sdm-vol-1-2abcd-3abcd-4.pdf)
 and [LLVM feature prerequisites](https://github.com/llvm/llvm-project/blob/main/llvm/lib/Target/X86/X86.td).
-
-The [VNNI fixture](../tests/x86_vnni/README.md) exercises the granular module,
-x86 umbrella and main hub. It also runs as an installed module consumer.
-Independent wide scalar arithmetic checks grouping, wrapping, saturation and
-masks, including cancellation after an overflowing signed word product pair.
-Separate object probes check instruction encodings and reject missing features,
-caller targets and register shapes. Unsupported runtime families return a skip;
-successful compilation does not establish native execution.

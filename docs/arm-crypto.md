@@ -117,6 +117,3 @@ and unsigned 128-bit integer vectors with 8-, 16-, 32- or 64-bit elements.
 `rax1` computes `a ^ rotl(b, 1)` in each unsigned 64-bit lane.
 `xar<Arch, Rotate>` computes `rotr(a ^ b, Rotate)` with a compile-time rotation
 from 0 through 63.
-
-The [crypto tests](../tests/arm_crypto/README.md) check the individual operations,
-compiler admission boundaries and installed module consumers.

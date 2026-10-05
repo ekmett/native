@@ -49,14 +49,6 @@ bool available() {
 }
 ```
 
-The [tests](../tests/arm_dotprod/README.md) exercise all twelve overloads and
-every lane through the granular module and hubs. An independent scalar
-reference uses unsigned accumulation to check wraparound, boundary values and
-random inputs. Assembly checks start with DotProd and RDM disabled, enable
-only DotProd per function, and require one SDOT/UDOT instruction with native
-lane selection and no helper call. A caller without the target must fail to
-compile.
-
 Paired assembly checks compare the public `simd` call with its private native
 helper under identical target attributes and register signatures. The complete
 instruction sequences must match, including moves, loads, stores and calls.

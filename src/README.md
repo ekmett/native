@@ -88,7 +88,7 @@ specific numerical library.
 
 The separate FTZ package supplies reproducible floating-point semantics through
 this extension. It is a downstream consumer, not part of the native archive.
-The [validation record](../docs/validation.md) distinguishes tested contracts
+The [validation record](../tests/validation.md) distinguishes tested contracts
 from compiler and runtime limitations.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->

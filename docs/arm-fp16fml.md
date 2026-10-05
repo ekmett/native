@@ -82,25 +82,6 @@ barrier also orders surrounding memory-based floating-environment operations;
 it is not a general CPU memory fence. The implementation normalizes Clang's
 big-endian register coercion separately for 64-bit and 128-bit vectors.
 
-`tests/arm_fp16fml` checks the granular and main modules, exact public `simd` types, missing or unobserved features, and invalid lanes.
-Native execution on Apple M3 with Clang 23 checks all vector and indexed shapes
-against scalar `std::fma`, all four rounding modes, signed zeros, a subnormal
-input, unchanged FPCR, sticky flags, and invalid-operation effects with both
-used and discarded results. The scalar reference cases assume ordinary gradual
-underflow; they do not exhaust FPCR settings, NaN behavior or hardware traps.
-The assembly checks compile from Armv8-A, verify sixteen instruction forms and
-baseline isolation, and reject a caller missing the target attribute.
-Thirty-two big-endian cross-compiled memory mappings verify input bytes, lane
-selection and stored results symbolically, with ACLE vector controls. They do
-not execute big-endian hardware. Standalone CMake consumers exercise the
-installed granular and main modules.
-
-Paired assembly checks compare the public `simd` call with its private native
-helper under identical target attributes and register signatures. The complete
-instruction sequences must match, including moves, loads, stores and calls.
-This checks abstraction overhead in the tested leaf contexts; it is not a
-benchmark or a guarantee about surrounding application code.
-
 The API follows the FHM entries in the
 [Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#fp16-armv84-a)
 and the floating-point instruction semantics in the

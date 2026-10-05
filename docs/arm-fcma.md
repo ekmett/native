@@ -103,30 +103,6 @@ The operations carry neither `pure` nor `const`. A shared private helper handles
 Clang's different 64-bit and 128-bit big-endian asm register coercions, including
 bytes within each floating element.
 
-`tests/arm_fcma` runs through the granular module and main module on
-Apple M3 with Clang 23. It compares all five formats, every rotation and every
-indexed pair with scalar arithmetic under all four rounding modes. It also
-checks exact public `simd` types, unchanged FPCR, sticky FPSR, and
-invalid-operation effects with used and discarded results. The FP32/FP64
-reference uses `std::fma`; the half-precision cases use bounded dyadic values
-whose binary64 expressions are exact, followed by one half conversion. These
-tests do not establish NaN payload identity or cover every FPCR setting and
-hardware trap configuration.
-
-The Armv8-A assembly fixture verifies 102 vector/indexed forms and baseline
-isolation. Compilation must fail for missing FCMA targets, missing FP16
-targets or features, and invalid FP32 lanes even when the supplied ISA also
-includes FP16. Twenty-eight big-endian compiler memory mappings check byte and
-pair selection symbolically, including ACLE vector controls. Native big-endian
-execution remains untested. Standalone CMake consumers exercise the
-installed granular and main modules.
-
-Paired assembly checks compare the public `simd` call with its private native
-helper under identical target attributes and register signatures. The complete
-instruction sequences must match, including moves, loads, stores and calls.
-This checks abstraction overhead in the tested leaf contexts; it is not a
-benchmark or a guarantee about surrounding application code.
-
 See the [Arm Neon complex-operation reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#complex-operations-from-armv83-a)
 and the [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).
 

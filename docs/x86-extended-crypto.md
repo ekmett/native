@@ -35,6 +35,3 @@ or lane counts, and out-of-range SM3 immediates are rejected.
 The operations implement the [Intel instruction specification](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
 They neither inspect nor modify floating-point control or status. These are
 instruction leaves, not complete hashing, encryption or protocol APIs.
-
-[Tests](../tests/x86_extended_crypto/README.md) cover complete known-answer
-computations, feature admission, compile-time boundaries and paired codegen.

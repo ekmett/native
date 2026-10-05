@@ -36,8 +36,3 @@ cast. Runtime calls lower directly to FJCVTZS and retain the instruction's
 floating-point environment behavior. Constant evaluation computes the numerical
 result without changing FP status. See the [Arm ACLE conversion
 contract](https://arm-software.github.io/acle/main/acle.html#floating-point-data-processing-intrinsics).
-
-[The qualification fixture](../tests/arm_jscvt/README.md) checks special values,
-modular wrap boundaries, 2,048 constant results against hardware and an independent
-arithmetic reference, and 100,000 seeded binary64 inputs. It also checks exact
-raw/public instructions, caller-target rejection and weak-tag runtime rejection.

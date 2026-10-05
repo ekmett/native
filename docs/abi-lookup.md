@@ -77,8 +77,7 @@ prerequisite closure. The `avx2` preset also requests FMA.
 
 For function constraints, use `requires(A.has(x86_feature::avx2 & x86_feature::fma))`
 or the selector below. Clang 23's Linux/macOS mangler rejects direct property
-expressions such as `requires(A.avx2 && A.fma)`; see the
-[tooling limits](validation.md).
+expressions such as `requires(A.avx2 && A.fma)`.
 
 ## Select an implementation
 
@@ -226,9 +225,7 @@ diagnosed. No match gives `matched == false`, `index == -1` and empty values of
 the same family.
 
 Composed kernels whose callees have different lists need a common refinement
-that preserves each callee's first match. Those checks stay internal. See the
-[exp tests](../tests/exp_policy_refinement/README.md) for value and code-generation
-coverage.
+that preserves each callee's first match. Those checks stay internal.
 
 ## ARM capabilities and compiler targets
 

@@ -124,20 +124,8 @@ set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
 # Paired backticks in the historical license denote quotation marks; escape
 # them for Doxygen without a shell filter (whose quoting differs on Windows).
 set(docs_markdown_root "${CMAKE_CURRENT_BINARY_DIR}/markdown")
-set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md src/README.md tests/api/README.md
-  doc/building.md tests/omnibus/README.md tests/bf16_profile/README.md tests/neon_fp16/README.md tests/neon_bf16/README.md tests/avx512_fp16/README.md
-  tests/exp_policy_refinement/README.md tests/wide_construction/README.md tests/scaleb/README.md
-  tests/arm_dotprod/README.md tests/arm_rdm/README.md tests/arm_bf16/README.md tests/arm_crypto/README.md tests/arm_sm_crypto/README.md
-  tests/x86_pclmul/README.md tests/x86_vnni/README.md tests/x86_f16c/README.md tests/x86_avxneconvert/README.md
-  tests/x86_memory/README.md
-  tests/x86_sha/README.md tests/x86_extended_crypto/README.md tests/x86_vaes/README.md
-  tests/x86_ifma/README.md tests/x86_adx/README.md tests/x86_wait/README.md
-  tests/arm_jscvt/README.md tests/arm_neon/README.md
-  tests/x86_aes/README.md tests/x86_avx512cd/README.md tests/x86_bitalg/README.md
-  tests/x86_vbmi/README.md tests/x86_vbmi2/README.md
-  tests/wasm_features/README.md tests/wasm_simd/README.md tests/wasm_relaxed/README.md
-  tests/wasm_math/README.md tests/transcendentals/README.md
-  tests/transcendentals/base2/README.md)
+# Publish library guides, not the READMEs of standalone test projects.
+set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md doc/building.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")
 list(APPEND docs_pages ${docs_guides})

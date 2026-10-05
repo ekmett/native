@@ -37,8 +37,5 @@ at runtime. An SSE2 storage tag without AES can call a `consteval` overload;
 it cannot use that overload with runtime inputs. The result retains the exact
 input tag. These integer operations leave floating-point status unchanged.
 
-The [fixture](../tests/x86_aes/README.md) describes the compiled shape checks,
-constant-evaluation references and admitted runtime tests.
-
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

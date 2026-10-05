@@ -43,8 +43,5 @@ overloads and still need complete storage: SSE2 for 128 bits, AVX for 256 bits,
 or AVX512F for 512 bits, including the register prerequisites. Results retain
 the exact tag. These overloads do not add a software fallback for runtime data.
 
-The [fixture](../tests/x86_avx512cd/README.md) describes the shape checks,
-constant-evaluation references, runtime admission and instruction probes.
-
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

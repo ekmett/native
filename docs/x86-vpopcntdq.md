@@ -78,17 +78,5 @@ Admission requires observed and present CPU features plus readable XCR0 with
 XMM, YMM, opmask, upper ZMM and high ZMM state enabled (`(XCR0 & 0xe6) == 0xe6`).
 This also applies to VL forms. Missing CPU support or OS state prevents the call.
 
-`tests/x86_vpopcntdq` uses the granular module and hub. On admitted
-hardware, a baseline scalar bit loop checks selected inputs, every one-hot bit,
-complements, lane order, masks and random vectors. Separate baseline tests cover
-metadata and admission using synthetic capability records. Compilation must
-fail for missing feature sets or target attributes; disassembly checks the
-instruction, register width and masking for every form.
-
-Runtime tests return CTest skip code 77 when AVX-512 cannot execute. The
-compilation and disassembly checks establish instruction selection, with no
-claim of native execution or performance. The same module tests support a
-relocated installed package.
-
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

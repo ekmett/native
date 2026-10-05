@@ -27,8 +27,7 @@ The result is the updated `[F,E,B,A]`. The previous ABEF becomes CDGH after
 those two rounds. SHA-256 schedule operands place the earliest word in the low
 dword. Message primitives are partial schedule steps: SHA-1 also needs an XOR
 with the intervening words, and SHA-256 needs an addition of the intervening
-words between its two primitives. The fixture composes both schedules and
-round primitives into SHA-1 and SHA-256 `"abc"` digest checks.
+words between its two primitives.
 
 Use `target_features<native::x86>("sha")`. Runtime calls require SHA, complete
 SSE2 register storage, and a caller compiled for `"sha"`. SHA is independently
@@ -45,8 +44,6 @@ tags and other vector shapes are rejected. These operations do not add a
 runtime software hash implementation or perform padding, endian conversion,
 feed-forward, or complete hashing on behalf of the caller.
 
-The [fixture](../tests/x86_sha/README.md) describes independent scalar checks,
-known digests, runtime admission, rejection controls and raw/public codegen.
 Packing and instruction semantics follow Intel's
 [SHA extensions description](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sha-extensions.html)
 and [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).

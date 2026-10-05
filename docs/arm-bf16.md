@@ -117,12 +117,7 @@ feature with that spelling. Enhanced arithmetic uses the same BF16 instructions.
 Pass BF16 and FP32 `simd` values directly between vector algorithms and these APIs. The
 wrappers add no BF16 elementwise arithmetic or conversion policy.
 
-The [tests](../tests/arm_bf16/README.md) cover every shape and legal lane,
-independent exact-rational arithmetic, FPCR preservation, FPSR effects and
-compiler rejection. Native default-BF16 and AFP controls pass on Apple M3 with
-Clang 23. EBF16 was not advertised there, so enhanced native execution remains
-unverified. Big-endian checks inspect compiler mappings without executing
-big-endian hardware.
+Enhanced BF16 execution has not been verified on hardware advertising EBF16.
 
 The arithmetic follows Arm's [BF16 instruction overview](https://developer.arm.com/community/arm-community-blogs/b/ai-blog/posts/bfloat16-processing-for-neural-networks-on-armv8_2d00_a)
 and [SME supplement, B3.1.2 and E2.2](https://documentation-service.arm.com/static/62015c6c965f7d118e3f5f4c).

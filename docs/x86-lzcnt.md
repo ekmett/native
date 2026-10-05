@@ -59,9 +59,4 @@ The wrappers preserve the zero-input behavior at every width and expose the
 count, not the instruction's flags. Constant folding and instruction selection
 remain compiler decisions; the API does not promise an exact encoding.
 
-`tests/x86_lzcnt` checks the header, direct module and main import, along with
-feature constraints and runtime admission. It compares zero, all-one,
-single-bit and random inputs with `std::countl_zero`. Assembly checks cover
-all three widths with optional ISA features disabled outside the target scopes.
-
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

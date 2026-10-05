@@ -30,17 +30,11 @@ including normalization of all 255 nonzero carry-byte values. An output object
 modified during constant evaluation must satisfy the usual C++ constant
 expression rules. There is no weak-tag runtime fallback.
 
-Clang 23 lowers its `_addcarryx_u32` and `_addcarryx_u64` intrinsics to ADD/ADC
-in the fixture's isolated additions and four-limb chains. The public operations
-produce exactly the same instruction streams as those intrinsics. This API
-does not expose independently scheduled ADCX and ADOX flag chains, and the
-current qualification does not claim those dedicated opcodes. That remains a
-compiler/API limitation; adding assembly or extra flag setup would change the
-raw-intrinsic contract.
+Clang 23 lowers `_addcarryx_u32` and `_addcarryx_u64` to ADD/ADC in ordinary
+addition chains. These wrappers follow the intrinsics; they do not expose
+independently scheduled ADCX and ADOX flag chains.
 
-The [fixture](../tests/x86_adx/README.md) documents full-adder references,
-carry chains, default architecture behavior and assembly comparisons. Carry
-semantics follow Clang's [ADX header](https://clang.llvm.org/doxygen/adxintrin_8h_source.html)
+Carry semantics follow Clang's [ADX header](https://clang.llvm.org/doxygen/adxintrin_8h_source.html)
 and Intel's [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

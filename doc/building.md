@@ -108,120 +108,13 @@ conventions. Review global initializers as well as explicit native calls.
 
 ## Compiler caching
 
-The producer CI jobs use sccache 0.16.0 through Mozilla's commit-pinned
-[sccache action](https://github.com/Mozilla-Actions/sccache-action/tree/fc920bf0ec8de6ee65d409111f7ec508035751ba)
-and GitHub Actions cache backend. The action verifies the release archive's
-published SHA-256 and supplies the cache service environment. The workflow keeps
-`contents: read` permissions and needs no additional repository secrets or
-separate `actions/cache` step.
+To use a local sccache installation, put it on `PATH` and configure with
+`-DCMAKE_CXX_COMPILER_LAUNCHER=sccache`. This is a build-tree setting; the
+installed package does not choose the consumer's launcher. Set
+`-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear it in an existing build.
+Module and PCH caching depend on the sccache version and compiler driver.
+Check `sccache --show-stats` to see which compilations are actually cached.
 
-For an opt-in local disk cache, install sccache separately, put it on `PATH`, and
-add `-DCMAKE_CXX_COMPILER_LAUNCHER=sccache` to the producer configure command.
-IPO remains supported; the single-module providers do not use PCHs. This
-launcher is a build-tree setting; installed
-packages neither require sccache nor select a consumer's launcher. Configure
-without that argument for an uncached new tree, or set
-`-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear an existing tree's launcher.
-
-On Linux and macOS, CI places the small
-[module-map launcher](https://github.com/ekmett/native/blob/main/.github/scripts/sccache_launcher.py) before sccache.
-CMake quotes paths in its `.modmap` response files, while sccache 0.16.0's
-[response-file reader](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/gcc.rs)
-bypasses any quoted response file with reason `@`. The launcher recognizes only
-CMake's `-x c++-module`, quoted `-fmodule-output` and named `-fmodule-file` lines
-with simple nonempty ASCII values, expanding them to equivalent argv entries.
-It never changes CMake's files. This makes the pinned cache's existing module
-input hashing and object/BMI output storage available to those commands.
-
-Unknown flags, malformed or compound quotes, single quotes, escapes, whitespace
-inside values, nested/other response files and oversized inputs execute the
-original compiler arguments directly without caching. Expanded argv has a
-conservative size limit; an `E2BIG` retry also runs the original compiler
-directly. This is intentionally not a general response-file parser.
-
-Only POSIX compiler names `clang` and `clang++`, optionally followed by a
-numeric version suffix, enter this cache path. Other names, including
-`c++` and target-prefixed Clang aliases, execute the original compiler
-arguments directly without caching so they cannot bypass PCH input hashing.
-
-Explicit `-include-pch` binary inputs, including CMake's `-Xclang` spelling,
-are appended to `SCCACHE_EXTRAFILES`, preserving existing entries. The pinned
-sccache release otherwise treats this flag only as a preprocessing argument;
-an unchanged preprocessor result can conceal a changed PCH binary recorded
-inside a cached module. Unknown or missing PCH inputs bypass caching.
-
-POSIX CI runs `test_sccache_launcher.py` and the real PCH/module warm-cache
-fixture `test_sccache_pch.py`. Compiler validation remains enabled. See the
-[validation boundary](https://github.com/ekmett/native/blob/main/docs/validation.md#pch-dependent-module-invalidation)
-for the cache invalidation checks.
-
-To opt into the same launcher locally, replace the plain sccache configure
-argument with this CMake list (Python 3 and sccache must be available):
-
-```sh
--DCMAKE_CXX_COMPILER_LAUNCHER="$(command -v python3);$PWD/.github/scripts/sccache_launcher.py"
-```
-
-Windows retains direct sccache; clang-cl's PCH and forwarded module flags remain
-[unsupported](https://github.com/mozilla/sccache/blob/v0.16.0/src/compiler/msvc.rs).
-Some CMake-synthesized BMI commands do not use a compiler launcher at all.
-Dependency scanning and linking still execute, and cache misses still compile
-normally. The launcher does not change module generation or compiler settings;
-its PCH handling applies when a consumer or cache regression fixture uses one.
-
-Every CI job records `sccache --show-adv-stats`, JSON statistics and the cache
-version in its logs artifact, including after a failed build when setup succeeded.
-The job summary includes non-cacheable reasons as well as hits, misses and cache
-errors. Inspect those counters before attributing a speedup to the cache; a
-successful build alone does not demonstrate reuse across workflow runs.
-
-To check local reuse, build and run CTest, record the statistics, run
-`cmake --build build/core --target clean`, then `sccache --zero-stats`, rebuild
-and run CTest again. An incremental build with no work does not exercise the
-cache. Use the same source/build paths and compiler; changed paths, compiler
-contents or flags can prevent hits. See the cache checks in
-[validation](https://github.com/ekmett/native/blob/main/docs/validation.md#compiler-cache).
-
-## Toolchain recipes and CI
-
-Keep `clang++` and `clang-scan-deps` from the same LLVM 23 installation on
-`PATH`. Select `CMAKE_CXX_COMPILER` explicitly when several Clang installations
-are available. Keep the compiler resource directory, standard-library headers
-and linker consistent with that installation. `CMAKE_PREFIX_PATH` points to
-installed library packages, not to a producer's build directory.
-
-The [CI policy](../docs/validation.md#running-the-checks) uses Linux ARM64 and
-Windows ARM64 for relevant pull requests. Manual dispatch runs the full ten-job
-matrix, including x86, macOS and exception-disabled configurations. The workflow
-configures Ninja directly, builds the providers with IPO and
-without PCHs, exercises consumer-owned PCHs in relocated fixtures, runs CTest,
-and checks installation. It selects AVX2 tests on Linux and Windows x86-64 runners and NEON
-on Linux, macOS and Windows ARM64 runners; the hub includes every implemented host ISA family. The
-baseline profile tests check CPU and OS support before entering AVX-512 code.
-The workflow is a reproducible build recipe; platform execution claims are
-listed separately in [validation](../docs/validation.md).
-
-Each job retains its actual CPU features, OS and toolchain identity, test list,
-JUnit results and configure logs. Standard hosted runner labels select an OS
-and architecture, not a fixed CPU model. AVX-512 compilation and unsupported
-profile skips are not AVX-512 execution coverage. These jobs qualify native CPU
-packages; they do not establish GPU behavior.
-
-Intel macOS is pending a qualified Clang 23 toolchain artifact: the hosted
-image compiler is too old, and the current LLVM/Homebrew releases do not
-provide an Intel macOS binary for the required compiler. It is not an
-execution lane in this workflow.
-
-`make`, `make test` and `make install` wrap the `clang-release` preset. Override
-`PRESET=clang-cl-release` when using clang-cl, or pass explicit configure options
-through `CMAKE_ARGS`. The preset takes the test ISA from the host default.
-For example, `make test CMAKE_ARGS=-DNATIVE_TEST_ISA=AVX512` requires a matching CPU
-and OS vector state. Runtime tests must not be used as feature probes.
-
-`Dockerfile` is an optional Ubuntu 24.04 / LLVM 23 build environment. It installs
-build tools but does not build the library or establish a Linux qualification.
-Build a local image explicitly with `docker build -t simd-build .`. CI does not
-depend on a prepublished container.
 ## API documentation
 
 Doxygen 1.18 generates the guides, individual API contracts and example listings.
@@ -235,30 +128,12 @@ cmake -S . -B build/docs -G Ninja -DNATIVE_BUILD_HOST=OFF -DNATIVE_BUILD_DOCS=ON
 cmake --build build/docs --target native_docs
 ```
 
-Open `build/docs/docs/html/index.html`. Warnings fail the build. With Python
-available, `python tests/api/audit_docs.py build/docs/docs/xml` checks indexed
-public callable documentation; it rejects missing descriptions and empty input.
-The [example project](../tests/api/README.md) compiles the snippets against an
-installed package. Generation alone does not compile examples or qualify an ISA.
+Open `build/docs/docs/html/index.html`. The published reference contains the
+library guides and API contracts. Test projects and their READMEs stay in the
+source tree.
 
-The Documentation workflow builds this reference for relevant pull-request and
-`main` changes without enabling a C++ compiler. It checks callable descriptions, module
-navigation, and local page and fragment links, and retains HTML and diagnostics
-as an Actions artifact. Successful `main` builds publish the same HTML to
-[GitHub Pages](https://ekmett.github.io/native/). Pull requests do not deploy.
-
-Run the generated-site checks locally with:
+Warnings fail the documentation build. Check the generated links with:
 
 ```sh
-python doc/test_module_anchors.py
-python doc/test_links.py
 python doc/check_links.py build/docs/docs/html
 ```
-
-The minimal target exports `NATIVE_MINIMAL_HAS_AVX2`, `NATIVE_MINIMAL_HAS_AVX512`,
-`NATIVE_MINIMAL_HAS_AVX512_BF16`, `NATIVE_MINIMAL_HAS_AVX512_FP16`, `NATIVE_MINIMAL_HAS_NEON_FP16` and
-`NATIVE_MINIMAL_HAS_NEON_BF16` as 0/1 compile
-definitions from feature probes using the selected options. The NEON FP16 probe
-compiles native arithmetic intrinsics because feature macros alone can survive
-an explicit target-feature disable. Admission tests can distinguish the
-intentional project minimum from accidental propagation of a stronger profile.

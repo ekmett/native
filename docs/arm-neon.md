@@ -31,16 +31,6 @@ All six require NEON storage and the NEON feature in `Arch`; they have no scalar
 or runtime fallback overload. Their constexpr paths compute the same lane values.
 These instructions do not read or change FPSR, including sticky QC.
 
-The bit fixture adds 46 concrete operation/shape forms. On little-endian
-AArch64 with Clang 23, each raw ACLE leaf and its public wrapper compile to the
-same single instruction and return, including the padded two-word shapes.
-The fixture checks exact independent results, byte-exhaustive inputs, explicit
-constant examples, all three public module imports, architecture preservation,
-feature/target/shape rejection, and preservation of clear or populated FPSR.
-See [the bit-operation fixture](../tests/arm_neon/README.md) for scope and commands.
-These additions have native Apple M3 execution evidence; no new big-endian
-execution or code-generation claim is made for them.
-
 A shift-count vector always has signed elements of the same width as the value
 lanes, including unsigned value instructions. Only the signed low byte of each
 count lane is used. Positive counts shift left; negative counts shift right.
@@ -114,23 +104,11 @@ when the underlying storage shape is available; runtime operands are rejected.
 
 The 64-bit two-word shapes retain the library's existing padded storage. Bridges
 select only their logical low half and initialize padding without adding
-instructions to the paired codegen leaves. One-lane 64-bit forms use the scalar
+instructions. One-lane 64-bit forms use the scalar
 D-register encodings. Raw NEON types stay in implementation helpers.
 
 The [Arm ACLE intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html)
-lists the corresponding instruction forms. `tests/arm_neon` checks 122 concrete
-operation/shape forms with constant assertions, an independent wide-integer
-reference, randomized native execution, FPSR.QC tests and identical raw/public
-assembly streams. It also checks feature, caller-target, shape and signedness
-boundaries, preserved architecture tags, and public module imports. The same
-fixture is an installed-package consumer through `find_package(native)`.
-
-Big-endian compiler validation compares all 122 instruction shapes and their
-storage bridges with Clang's ACLE lowering. It symbolically checks register-bit
-permutations and the sticky QC contributions, including low/high narrowing and
-padded two-word storage. The 128-bit inline-assembly boundary reverses the complete
-register byte order; 64-bit operands already have the ACLE representation.
-This is cross-compiled layout evidence, not execution on a big-endian host.
+lists the corresponding instruction forms.
 
 On big-endian AArch64, two-lane 64-bit `sqadd`, `uqadd`, `sqsub`, `uqsub`,
 and all eight variable-shift operations are available with a documented exception
@@ -138,10 +116,3 @@ to the zero-overhead guarantee. LLVM 23 emits five extra register-permutation
 instructions for each of these twelve forms compared with the equivalent ACLE
 leaf that retains its QC effect. These are register operations, with no scalar
 fallback or extra memory accesses. Little-endian targets do not incur this cost.
-
-The big-endian compiler check validates all 122 shapes and records the extra
-instruction counts, rejecting additional overhead beyond these known permutations.
-It also verifies the resulting register bits and sticky QC effects against ACLE;
-this remains compiler evidence rather than big-endian hardware execution.
-Public shape checks cover constant and runtime participation of the twelve forms,
-other vector widths and scalar forms.

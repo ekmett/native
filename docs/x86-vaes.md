@@ -46,9 +46,7 @@ including prerequisites. Constant evaluation computes exact AES rounds and
 preserves the architecture tag. Raw registers, mixed tags and other vector
 shapes are rejected. There is no runtime software fallback.
 
-The [fixture](../tests/x86_vaes/README.md) documents independent FIPS table
-references, block-isolation tests, admission, rejection controls and raw/public
-assembly comparisons. Semantics and encoding requirements follow Intel's
+Semantics and encoding requirements follow Intel's
 [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
 Intrinsic signatures follow Clang's
 [VAES header](https://clang.llvm.org/doxygen/vaesintrin_8h_source.html).

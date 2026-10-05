@@ -45,8 +45,6 @@ overloads with native runtime paths. Tags lacking instruction features use
 AVX for 256 bits, or AVX512F for 512 bits, including their prerequisites. They
 preserve the architecture tag and do not provide a software runtime fallback.
 
-The [fixture](../tests/x86_bitalg/README.md) documents the constant and runtime
-references, feature rejection checks, and raw/public assembly comparisons.
 Instruction semantics follow Intel's [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
 Intrinsic forms are documented in Clang's
 [BITALG](https://clang.llvm.org/doxygen/avx512bitalgintrin_8h_source.html) and

@@ -75,14 +75,6 @@ runtime fallback. These integer instructions do not read or modify FPCR, FPSR
 or NZCV. Constant-evaluation substitution tables are not a runtime cipher
 implementation or a timing guarantee.
 
-The [validation fixture](../tests/arm_sm_crypto/README.md) covers all nine
-operations and all four TT lane immediates: 21 exact raw/public assembly pairs,
-2,016 independent reference inputs evaluated with strong and weak feature tags,
-complete SM3 and SM4 known answers, feature/target/shape/immediate rejection,
-compiler minimum metadata, and installed named-module consumers. Hardware
-execution is gated by the whole compiler target; a skip records missing
-admission and does not establish hardware execution.
-
 Instruction semantics follow Arm's
 [A64 instruction specification](https://documentation-service.arm.com/static/67e40f3398aa3c3b6eea6a85)
 and [ACLE intrinsic mapping](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html).

@@ -51,8 +51,7 @@ storage: SSE2 for 128 bits, AVX for 256 bits or AVX512F for 512 bits, including
 their prerequisites. These overloads preserve the tag and do not introduce a
 software fallback for runtime values.
 
-The [fixture](../tests/x86_vbmi/README.md) describes semantic, feature-boundary
-and assembly checks. Semantics follow Intel's
+Semantics follow Intel's
 [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf)
 and Clang's [VBMI intrinsic definitions](https://clang.llvm.org/doxygen/avx512vbmiintrin_8h_source.html).
 

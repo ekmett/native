@@ -47,8 +47,6 @@ SSE2 for 128 bits, AVX for 256 bits or AVX512F for 512 bits, with prerequisites.
 They preserve the tag and provide no runtime software fallback. The constant
 implementation uses 26-bit limbs and does not require a 128-bit integer type.
 
-The [fixture](../tests/x86_ifma/README.md) describes independent product
-references, masks, feature/target boundaries and raw/public assembly pairs.
 Instruction semantics follow Intel's
 [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf);
 intrinsic forms follow Clang's

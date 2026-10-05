@@ -17,7 +17,8 @@ exception setting or sanitizer configuration. Numerical fixtures set and restore
 their own floating-point controls; raw operations retain the active environment's
 semantics.
 
-Focused standalone projects document their commands in adjacent READMEs.
+The [validation guide](validation.md) describes CI coverage, numerical checks
+and compiler limitations. Focused projects document their commands in adjacent READMEs.
 The optional [AVX512 FP16 fixture](avx512_fp16/README.md) checks baseline admission,
 native code generation and relocated consumers sharing one baseline hub BMI,
 even on hosts where native execution reports an unsupported-profile skip.

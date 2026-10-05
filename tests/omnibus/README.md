@@ -50,5 +50,5 @@ A separate Apple M3 run at source `53d9a44` passes all three NEON-only consumer
 tests, plus 30 producer tests and one granular relocated consumer. It uses the
 same compiler/CMake versions, exceptions, PCH and native ThinLTO; baseline
 executables have IPO disabled. Source hashes and the granular numerical packet
-are unchanged. See [validation](../../docs/validation.md) for the exact source
+are unchanged. See [validation](../validation.md) for the exact source
 and receipt pins. Neither platform run is a GPU or throughput measurement.

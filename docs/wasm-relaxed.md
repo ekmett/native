@@ -57,20 +57,10 @@ in constant evaluation. Constant results need not agree bit-for-bit with an
 engine's relaxed instructions. They also do not implement the optional Wasm
 *deterministic profile*, which chooses unfused multiply-add.
 
-The [focused checks](../tests/wasm_relaxed/README.md) distinguish public-wrapper
-validation from raw-engine conformance probes. Exact raw/public comparisons
-check compiled Wasm bytecode, not engine JIT machine code or execution overhead.
-Full-bit dot operands and partial 16-bit lane-selection masks expose
-engine/specification disagreements
-in tested runtimes. Seven-bit second operands avoid the dot ambiguity, and
-canonical zero/all-one masks have exact lane-selection semantics.
-
-CI reports library qualification and advisory raw-engine conformance independently.
-Raw probes use the same built modules. Their failures are recorded in warnings,
-job summaries and artifacts, and do not fail the workflow or block qualification.
-The public wrappers inherit the documented engine deviations on affected inputs;
-passing the library checks does not establish full runtime specification
-conformance on those engines.
+Some engines disagree with the specification for full-bit dot operands and
+partial 16-bit lane-selection masks. The wrappers inherit that behavior.
+Keep the second dot operand within seven bits and use canonical zero/all-one
+mask lanes when you need agreement across engines.
 
 The semantic reference is the [WebAssembly core numerics specification](https://webassembly.github.io/spec/core/exec/numerics.html#relaxed-ops),
 pinned for these checks at [revision ba9fd9f5](https://github.com/WebAssembly/spec/blob/ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0/document/core/exec/numerics.rst).

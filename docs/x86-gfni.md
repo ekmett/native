@@ -97,20 +97,3 @@ bool try_multiply(std::uint8_t* out, std::uint8_t const* a, std::uint8_t const* 
   return true;
 }
 ```
-
-## Validation
-
-`tests/x86_gfni` uses the granular module and hub from baseline
-translation units. It compares multiplication, affine and inverse-affine
-results with independent scalar polynomial and binary-matrix calculations,
-using selected byte and matrix cases plus deterministic random vectors.
-Runtime tests check CPU and OS support before executing optional instructions.
-
-Both private register probes and public SIMD probes check instruction selection.
-Compiler fixtures check feature constraints, constant immediate bounds and
-target mismatches. Assembly checks distinguish legacy XMM, VEX YMM and EVEX
-forms with optional features disabled at the translation-unit baseline.
-They establish instruction selection, not performance.
-The installed consumer fixture rebuilds module interfaces from a relocated
-package. A machine without AVX-512 validates those forms by compilation and
-assembly inspection and reports their execution as skipped.

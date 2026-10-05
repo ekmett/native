@@ -100,6 +100,46 @@ BF16 `dot2` is constant-evaluable with the architecture's instruction semantics.
 ARM uses legacy BFDOT behavior with EBF clear; x86 retains VDPBF16PS's
 high-product-first ordering. Their fixed rounding and denormal rules differ.
 
+## Half-precision values
+
+`fp16` and `bf16` store 16-bit floating-point representations. Storage support
+does not imply arithmetic support. In particular, base NEON can load and store
+both formats without enabling their optional arithmetic instructions.
+
+| Profile | Element and lane counts | Arithmetic |
+| --- | --- | --- |
+| `neon_fp16` | `fp16`, 8 lanes | `+`, `-`, `*`, `/`, `sqrt`, `fma`, comparisons and selection |
+| `avx512_fp16` | `fp16`, 32 lanes | The same operations, with a compact predicate mask |
+| `avx512_bf16` | `bf16`, 8, 16 or 32 lanes | `dot2` into 4, 8 or 16 FP32 lanes |
+| `neon_bf16` | See [ARM BF16](arm-bf16.md) | Pair dots, matrices and widening multiply-adds |
+
+FP16 arithmetic rounds in binary16; FMA rounds once after the product and sum.
+Runtime rounding and exception behavior follow FPCR on ARM and MXCSR on x86.
+ARM's FZ16 controls half subnormal flushing. AVX-512 FP16 uses gradual underflow
+regardless of MXCSR's DAZ/FTZ bits. Neither backend changes the control register.
+
+For x86 BF16, use matching input and accumulator shapes inside a function
+compiled for `avx512_bf16`:
+
+```cpp
+#include <native/targets.h>
+import native;
+
+NATIVE_TARGET_PUSH(avx512_bf16)
+using B = native::simd<native::bf16,32,native::avx512_bf16>;
+using F = native::simd<float,16,native::avx512_bf16>;
+F accumulate_pairs(B a, B b, F accumulator) noexcept {
+  return native::dot2(a,b,accumulator);
+}
+NATIVE_TARGET_POP()
+```
+
+`dot2(a,b,accumulator)` first accumulates each odd-lane product, then the even-lane
+product. Each step rounds to nearest-even in FP32. The instruction flushes
+subnormal inputs and outputs and neither reads nor changes MXCSR. This is not
+a single-rounding sum of three terms, nor does it supply elementwise BF16
+arithmetic. ARM BF16 has different rounding rules; see its family guide.
+
 ## Masks and memory
 
 `V::mask` is the type produced by comparisons of `V`. AVX2 and NEON use vector
@@ -329,11 +369,11 @@ the [tuning rationale](transcendentals.md#register-count-recommendations).
 seven, defaulting to six, with nearest-even range reduction. Range
 comparisons run independently of that arithmetic: lower-cutoff and overflow
 flags select zero or infinity at the finish rather than clamping the input.
-Inputs at or above `88.3762664794921875f` return positive infinity. This deliberately
-gives up the last finite interval below true binary32 exp overflow.
+Inputs above `88.72283172607421875f` return positive infinity. The reconstruction
+accepts the reduced exponent 128, so it retains the finite upper end of the range.
 
-ARM and x86 software reconstruction construct one power-of-two factor and apply
-one multiplication. ARM's defined `fcvtzu` conversion maps a negative biased
+ARM and AVX2 construct a power-of-two factor. For reduced exponent 128 they
+split the scale into `2^127` and `2`, avoiding an infinite intermediate factor. ARM's defined `fcvtzu` conversion maps a negative biased
 exponent or NaN to zero. AVX2 uses `VCVTTPS2DQ`, clamps the signed integer to zero
 with `VPMAXSD`, then shifts it into the exponent field. NaN polynomial values
 propagate through the multiplication without a NaN check or operand masks.
@@ -352,13 +392,11 @@ argument to natural-log units. Its intentional early overflow cutoff is 127.5;
 `Flush=true` selects zero below -126. `log2` separates the binary exponent from
 a mantissa close to one (approximately `[1/sqrt(2),sqrt(2))`), approximates
 its base-two logarithm and adds the
-exponent. Both use Sollya-generated binary32 coefficients with scripts retained
-in the [base-two math tests](../tests/transcendentals/base2/README.md).
+exponent. Both use Sollya-generated binary32 coefficients.
 
-Trig retains the finite `|x| < 8192` domain, coefficients, quadrant selection and
-signed-zero behavior. [The Wasm math fixture](../tests/wasm_math/README.md) checks
-these distinct rounding semantics and sampled error budgets; it is not an
-exhaustive accuracy proof.
+The trigonometric kernels require finite `|x| < 8192` and preserve signed zero.
+Wasm uses separately rounded multiply/add stages, so its results can differ
+from the fused x86 and ARM kernels.
 
 Binary32 arithmetic, comparisons, selection, fused multiply-add, square root,
 rounding support constant evaluation, including short vectors. Exponent scaling
@@ -445,7 +483,7 @@ SIMD coefficients must match the input's register type. `wide::horner` is an
 alias. Coefficients may also be arrays or `wide` packs matching the input's
 extent, including coefficients selected by per-lane masks. A packed float
 coefficient broadcasts within its corresponding register; shared coefficients
-remain shared. See [polynomial evaluation](transcendentals.md#current-implementation-cost)
+remain shared. See [polynomial evaluation](transcendentals.md#polynomials)
 for its multiply-add and constant-polynomial behavior.
 
 `math::log`, `math::log1p`, `math::expm1`, `math::damping_gain`, `math::tanh`,
@@ -462,7 +500,7 @@ Wasm SIMD128 uses separate multiply and add and has its own accuracy checks.
 | `log2(x)` | Normal powers of two return their exact integer exponents; `log2(1)` is positive zero. Zero, subnormal, negative and nonfinite inputs follow `log`. |
 | `log(x)` | Signed zero and subnormal inputs give `-inf`; negative normal inputs give NaN; `+inf` is preserved. |
 | `log1p(x)` | `-1` gives `-inf`; inputs below `-1` give NaN; `+inf` is preserved. Inputs with `abs(x) <= 2^-25` retain their bits. |
-| `expm1(x)` | Computes `exp(x)-1` without cancellation near zero. Signed zero and tiny subnormals are preserved; `-inf` gives `-1`; positive overflow follows `exp`. |
+| `expm1(x)` | Computes `exp(x)-1` without cancellation near zero. Signed zero and tiny subnormals are preserved; `-inf` gives `-1`; inputs above `88.37625885009765625f` give `+inf`. |
 | `damping_gain(x)` | Computes `-expm1(-x)` with the same graph; nonnegative inputs approach one. |
 | `tanh(x)` | Signed zero and inputs with `abs(x) <= 2^-12` retain their bits. Large magnitudes and infinities saturate to signed one. |
 | `atan2(y,x)` | Returns radians with signed axes and the usual infinity quadrants. Subnormal inputs are treated as signed zero; tiny outputs follow the caller's FP mode. Both operands must have the same shape and type. |
@@ -491,7 +529,7 @@ auto a = math::atan2(std::array{V(1.f), V(-1.f)},
 
 Sampled 256-bit MPFR checks for these two kernels reached a maximum of 2 ULP
 on ARM. This is a measured sample result, not an exhaustive error bound. See
-[transcendental validation and plans](transcendentals.md) for the distinction
+[math kernels](transcendentals.md) for the distinction
 between numerical accuracy, backend agreement and throughput.
 
 `math::exp<true>` uses the existing early underflow cutoff. Both variants retain
@@ -551,7 +589,7 @@ absent. Admission requires every feature to be both observed and present.
 X86 also requires the enabled XCR0 register state needed by the selected ISA.
 The nested `raw` fields retain diagnostics; editing them does not update the
 normalized feature sets. Fill the typed sets explicitly in synthetic native
-snapshots. Structural raw fixtures passed to `classify_isa` use the decoder.
+snapshots. Raw capability snapshots passed to `classify_isa` use the decoder.
 
 ARM crypto hardware features are independent even where Clang enables a bundle:
 its `aes` target includes AES and PMULL, for example. Admit the whole compiler
@@ -612,8 +650,6 @@ the header and modules, or use `A.has(feature)` for feature checks. Module-only
 property reads and writes are checked with warnings treated as errors.
 Direct property expressions in constraints
 also have a Clang mangling limitation; use `has` or a named concept there.
-The [tooling record](validation.md#isa-value-api-tooling) gives the scope of
-these compiler limitations.
 
 ## Extending the element type
 
@@ -646,8 +682,3 @@ overloads. Native intrinsic interoperation is available through `to_native()`
 and `from_native()` when needed: include the platform intrinsic header before
 importing and compile the containing function for its instructions. Ordinary
 instruction-family calls already take `simd` values and need no such conversion.
-
-The [source guide](../src/README.md) describes definition ownership. The
-[compiled examples](../tests/api/README.md) exercise the value interfaces;
-[validation](validation.md) records what was compiled or executed and on which
-configurations.

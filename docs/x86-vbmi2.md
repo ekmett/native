@@ -78,8 +78,7 @@ tags provide `consteval` operations when their storage exists: SSE2 for
 Memory forms preserve the same extent and empty/null contract during constant
 evaluation. These overloads do not add a software fallback for runtime calls.
 
-See the [fixture](../tests/x86_vbmi2/README.md) for semantic, memory, admission
-and assembly validation. Semantics follow Intel's
+Semantics follow Intel's
 [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf)
 and Clang's [VBMI2 intrinsic definitions](https://clang.llvm.org/doxygen/avx512vbmi2intrin_8h_source.html).
 

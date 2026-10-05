@@ -77,6 +77,3 @@ and [CPUID feature table](https://cdrdv2-public.intel.com/868136/252046-081-sdm-
 LLVM's [intrinsic declarations](https://clang.llvm.org/doxygen/vpclmulqdqintrin_8h_source.html)
 and [target dependencies](https://github.com/llvm/llvm-project/blob/main/llvm/lib/TargetParser/X86TargetParser.cpp)
 determine the compiler requirements.
-
-The [fixture](../tests/x86_pclmul/README.md) records execution, compile-failure,
-disassembly and installed-package coverage.

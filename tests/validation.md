@@ -52,7 +52,7 @@ Separate raw-engine jobs verify the built modules' source revision and hashes
 before testing Node and Wasmtime. Engine conformance probes are advisory: failures
 produce warnings and job summaries, with full test results retained as artifacts.
 They do not fail the workflow or block library qualification. Setup and provenance
-checks remain gating. The [relaxed SIMD checks](../tests/wasm_relaxed/README.md)
+checks remain gating. The [relaxed SIMD checks](wasm_relaxed/README.md)
 document the known discrepancies; passing library checks does not establish full
 engine conformance.
 New manual Wasm runs cancel older runs on the same ref. Library and engine

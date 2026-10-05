@@ -59,9 +59,4 @@ instruction width. None of these wrappers exposes the instruction's flags.
 The existing generic scalar/vector `popcount` operations keep their own API;
 `popcnt` is the explicit x86 feature-gated spelling.
 
-`tests/x86_popcnt` checks the header, direct module and main import, along with
-feature constraints and runtime admission. It compares zero, all-one,
-single-bit and random inputs with `std::popcount`. Assembly checks cover all
-three widths with optional ISA features disabled outside the target scopes.
-
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

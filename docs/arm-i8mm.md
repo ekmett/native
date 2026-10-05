@@ -83,25 +83,4 @@ The Windows detector queries `PF_ARM_V82_I8MM_INSTRUCTIONS_AVAILABLE`
 independently; an SVE I8MM query does not establish this instruction family's
 availability.
 
-`tests/arm_i8mm` checks the granular module and main hub against
-independent scalar references with unsigned modular accumulation. It covers
-matrix row/column sentinels, all 256 single-product positions, integer extremes,
-10,000 deterministic random cases, both register widths, and all 24 indexed
-signedness/width/lane combinations. Compile checks reject runtime operands with a missing feature,
-an incompatible caller target and an invalid lane. A separately targeted
-object is disassembled to verify matrix and mixed-dot instructions, indexed
-immediates, and a baseline control. Runtime tests return the CTest skip code 77
-when capability admission fails; compilation alone is not an execution claim.
-
-Paired assembly checks compare the public `simd` call with its private native
-helper under identical target attributes and register signatures. The complete
-instruction sequences must match, including moves, loads, stores and calls.
-This checks abstraction overhead in the tested leaf contexts; it is not a
-benchmark or a guarantee about surrounding application code.
-
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
-
-Generated properties cover all 29 matrix, dot and indexed forms. Forty
-constant-evaluated cases per form agree with native execution and an independent
-wide-integer reference. Additional runtime cases accept `NATIVE_TEST_SEED` and
-`NATIVE_TEST_CASES`, and report the seed, case index and operands on failure.

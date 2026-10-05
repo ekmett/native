@@ -77,11 +77,4 @@ only overloads when their SIMD storage is available. Calling those overloads
 with runtime values is ill-formed; they never introduce scalar runtime gathers
 or scatters.
 
-The fixture compares 480 public-wrapper instruction bodies with the matching
-raw intrinsic, covering every hardware shape, byte scale and signed/unsigned
-data type under minimal and broad caller feature sets. It separately checks semantic constant evaluation, runtime memory
-results, protected inactive addresses, unaligned accesses and overlapping
-stores, and rejects invalid shapes, masks, scales, runtime feature tags and
-target scopes. See the [fixture](../tests/x86_memory/README.md).
-
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

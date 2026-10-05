@@ -35,7 +35,7 @@ Choose them before choosing a register width.
 | --- | --- | --- |
 | Byte or word products accumulated into integers | [VNNI](x86-vnni.md): byte/word groups, signedness variants, wrapping or saturation | [DotProd](arm-dotprod.md): four-byte groups with wrapping accumulation |
 | Small byte matrices or mixed-sign byte dots | VNNI supplies grouped dot products | [I8MM](arm-i8mm.md): 2×8 by 8×2 matrices and mixed-sign byte dots |
-| BF16 products accumulated into FP32 | [AVX-512 BF16 profile](../tests/bf16_profile/README.md) | [BF16](arm-bf16.md): pair dots, 2×4 by 4×2 matrices and widening multiply-adds |
+| BF16 products accumulated into FP32 | [AVX-512 BF16](modules.md#half-precision-values): paired BF16 products | [BF16](arm-bf16.md): pair dots, 2×4 by 4×2 matrices and widening multiply-adds |
 
 Matrix instructions require a specific row/column packing; a row-major right
 matrix may need rearrangement. Saturating and wrapping integer accumulations
@@ -88,8 +88,7 @@ sets sticky FPSR.QC. [FCMA](arm-fcma.md) operates on adjacent real/imaginary
 pairs. A full complex multiply-add needs two partial operations, with the
 corresponding two rounding stages.
 
-For elementwise half arithmetic, use the [AVX-512 FP16](../tests/avx512_fp16/README.md)
-or [NEON FP16](../tests/neon_fp16/README.md) profile. Base NEON already supports
+For elementwise half arithmetic, use the [AVX-512 FP16 or NEON FP16](modules.md#half-precision-values) profile. Base NEON already supports
 four- and eight-lane `fp16` and `bf16` storage and transfer, without either
 arithmetic extension. The operation's feature requirements still apply.
 Floating-point control and status remain
@@ -173,10 +172,6 @@ families and feature observation link `native::minimal`. The
 Runtime calls do not dispatch or provide a software fallback internally.
 Keep an optional kernel behind admission and select another implementation when
 its requirements are unavailable.
-
-Each guide links its validation fixture. Compile and assembly checks establish
-compiler behavior; runtime tests execute only after admission. An unsupported
-runtime skip does not qualify the instruction's behavior on that machine.
 
 ## Constant evaluation
 

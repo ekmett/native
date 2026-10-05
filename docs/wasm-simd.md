@@ -104,15 +104,6 @@ cmake --build build-wasm
 ctest --test-dir build-wasm -LE engine-conformance --output-on-failure
 ```
 
-The SIMD128 tests compile constant assertions, execute seeded integer,
-conversion, permutation, bounded-memory and floating-edge cases through Node's
-WASI preview1 runtime, and validate the final module before instantiation. The
-wide client checks empty and nonempty packs. Paired codegen tests compare typed
-operations against intrinsic leaves at the same ABI; the [coverage inventory](../tests/wasm_simd/README.md)
-records primitive families and composed operations. These comparisons check
-compiled Wasm bytecode, not engine JIT machine code or execution overhead.
-Tests do not enable engine feature flags.
-
 ## Promoted binary32 math
 
 `import native.math;` adds `math::exp`, `expm1`, `log`, `log1p`, `damping_gain`,
@@ -129,7 +120,5 @@ the existing early cutoff. Trig requires finite lanes with `|x| < 8192` radians.
 Both zero signs are preserved for sine; cosine of either zero is one. No runtime
 feature dispatch or scalar lane/libm fallback occurs inside these kernels.
 
-The [math fixture](../tests/wasm_math/README.md) qualifies public/module and
-installed-consumer forms, accuracy samples, constant/runtime agreement, and
-call-free vector bytecode. The public API does not provide general-purpose
-SIMD128 FMA or exponent-scaling operations.
+The public API does not provide general-purpose SIMD128 FMA or
+exponent-scaling operations.

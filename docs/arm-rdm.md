@@ -70,11 +70,6 @@ mapping. Lane indices retain ACLE numbering. This does not enable any
 additional ISA feature. Generated assembly is compared with ACLE to check the
 byte-order handling; native big-endian execution remains untested.
 
-The [tests](../tests/arm_rdm/README.md) cover all thirty-six overloads, every
-legal lane, signed ties, cancellation, saturation and FPSR.QC effects. Separate
-compilation checks exercise the feature constraints and instruction selection
-from a baseline AArch64 translation unit.
-
 Paired assembly checks compare the public `simd` call with its private native
 helper under identical target attributes and register signatures. The complete
 instruction sequences must match, including moves, loads, stores and calls.

@@ -77,7 +77,3 @@ with BF16 widening defined by `make_fp32` in VDPBF16PS. Older extension referenc
 claimed BF16 widening flushes subnormals; that sentence is absent from the current
 SDM, whose operation preserves their bits. F16C has a different floating-point
 exception and MXCSR contract; these APIs do not change it.
-
-[The focused fixture](../tests/x86_avxneconvert/README.md) checks module imports,
-constant semantics, constraints, memory extent, and exact raw/public codegen.
-Its hardware test runs only after CPU/OS admission and reports a skip otherwise.

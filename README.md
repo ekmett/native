@@ -122,8 +122,8 @@ in the [value guide](docs/modules.md#promoted-math-batches). The
 compile-time recommendations `native::exp_width<T,K,A>`,
 `atan2_width<T,K,A>` and their counterparts choose a starting register count
 for `wide<simd<T,K,A>, N>`; callers can always choose another extent.
-The [transcendental plan](docs/transcendentals.md) covers prospective kernels and their
-accuracy and performance checks. Floating-point
+The [math guide](docs/transcendentals.md) describes polynomial degrees, accuracy
+and register-count recommendations. Floating-point
 controls remain under application ownership. Wasm SIMD128 promoted kernels use
 separately rounded multiply/add stages; x86 and ARM use fused stages. The separate
 FTZ package builds reproducible binary32 arithmetic on this library's element
@@ -144,12 +144,6 @@ validation callback or an optional JavaScript adapter. On Wasm compiler targets,
 from runtime engine support. Applications compile and load separate modules
 when they need different feature levels: an engine validates the complete
 module, including instructions behind branches that are never taken.
-
-[Compiled examples](tests/api/README.md) exercise the public API. The
-[validation record](docs/validation.md) distinguishes compilation, native
-execution and numerical checks; the [source guide](src/README.md) explains where
-definitions belong. The [dispatch guide](docs/omnibus.md#native-intrinsics-and-packages)
-also covers intrinsic interoperation and package requirements.
 
 ## License and contact
 
