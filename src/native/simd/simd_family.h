@@ -1259,6 +1259,9 @@ namespace NATIVE_BACKEND_NAMESPACE {
         return _mm256_slli_epi64(a, S);
     }
   }
+  native_nodiscard native_inline native_const __m256i integer_shift_left_variable(__m256i a,__m256i counts) noexcept {
+    return _mm256_sllv_epi32(a,counts);
+  }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
   native_nodiscard native_inline native_const __m256i integer_right(__m256i a) noexcept {
@@ -1379,6 +1382,9 @@ namespace NATIVE_BACKEND_NAMESPACE {
       else if constexpr (sizeof(T) == 8)
         return _mm512_slli_epi64(a, S);
     }
+  }
+  native_nodiscard native_inline native_const __m512i integer_shift_left_variable(__m512i a,__m512i counts) noexcept {
+    return _mm512_sllv_epi32(a,counts);
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
@@ -1866,6 +1872,9 @@ namespace NATIVE_BACKEND_NAMESPACE {
         return vreinterpretq_u8_u64(vshlq_n_u64(vreinterpretq_u64_u8(a), S));
       }
     }
+  }
+  native_nodiscard native_inline native_const uint8x16_t integer_shift_left_variable(uint8x16_t a,uint8x16_t counts) noexcept {
+    return vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(a),vreinterpretq_s32_u32(counts)));
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
@@ -2896,6 +2905,20 @@ namespace native {
       requires(K < sizeof(T) * 8)
     native_nodiscard friend native_inline constexpr native_const simd operator<<(simd a, imm_t<K>) noexcept {
       return a.template left<K>();
+    }
+    /// Shift each unsigned 32-bit lane by its corresponding count, which must be less than 32.
+    native_nodiscard friend native_inline constexpr native_const simd operator<<(simd a,simd counts) noexcept
+      requires std::same_as<T,std::uint32_t> && requires(native_type x) {
+        ::NATIVE_BACKEND_NAMESPACE::integer_shift_left_variable(x,x);
+      }
+    {
+      if consteval {
+        auto values=__builtin_bit_cast(std::array<std::uint32_t,N>,a.value);
+        auto shifts=__builtin_bit_cast(std::array<std::uint32_t,N>,counts.value);
+        for(std::size_t i=0;i<N;++i) values[i]=shifts[i]<32 ? values[i]<<shifts[i] : 0;
+        return simd(values);
+      }
+      return from_native(::NATIVE_BACKEND_NAMESPACE::integer_shift_left_variable(a.value,counts.value));
     }
     /// Shift every lane right by K; signed lanes extend the sign, unsigned lanes shift in zero. Require K smaller than the lane bit width.
     template <std::size_t K>

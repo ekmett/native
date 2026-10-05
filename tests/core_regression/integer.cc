@@ -53,6 +53,7 @@ concept has_runtime_shift = requires(V a, unsigned n) {
   a << n;
   a >> n;
 };
+template<class V> concept has_vector_left_shift = (V::lanes > 1) && requires(V a) { a << a; };
 template<class V,class U> concept mixed_add = requires(V a,U b){a+b;b+a;};
 static_assert(!mixed_add<test_vec<int32_t,1>,bool>);
 static_assert(!mixed_add<test_vec<int32_t,1>,float>);
@@ -61,6 +62,21 @@ template <class V>
 concept has_bad_shift = requires(V a) { a << imm<sizeof(typename V::value_type) * 8>; };
 template<class V>
 concept has_bad_right_shift = requires(V a) { a >> imm<sizeof(typename V::value_type) * 8>; };
+template<class V> void variable_left_shift() requires has_vector_left_shift<V> {
+  constexpr std::array<std::uint32_t,8> values{1u,0xffffffffu,0x80000001u,0x12345678u,0x80000000u,3u,0xabcdef01u,0u};
+  constexpr std::array<std::uint32_t,8> counts{0u,1u,31u,7u,2u,16u,30u,3u};
+  std::array<std::uint32_t,V::lanes> x{},n{};
+  for(std::size_t i=0;i<V::lanes;++i) { x[i]=values[i%values.size()]; n[i]=counts[i%counts.size()]; }
+  auto shifted=V::load(x.data()) << V::load(n.data());
+  std::array<std::uint32_t,V::lanes> actual{}; shifted.store(actual.data());
+  for(std::size_t i=0;i<V::lanes;++i) check(actual[i] == (x[i]<<n[i]));
+}
+#if defined(__AVX2__)
+static_assert(has_vector_left_shift<test_vec<std::uint32_t,8>>);
+#endif
+#if defined(__AVX512F__) && defined(__AVX512DQ__)
+static_assert(has_vector_left_shift<test_vec<std::uint32_t,16>>);
+#endif
 template <class T, std::size_t N, std::size_t... K>
 void shifts(test_vec<T, N> value, std::array<T, N> const &a, std::index_sequence<K...>) {
   (result(value >> imm<K>, a, a, [](T x, T) { return right<T, K>(x); }), ...);
@@ -71,6 +87,7 @@ template <class T, std::size_t N> void test() {
   static_assert(!has_divide<V> && !has_remainder<V> && !has_runtime_shift<V> && !has_bad_shift<V> && !has_bad_right_shift<V>);
   static_assert(sizeof(V) == sizeof(T) * N);
   static_assert(std::is_trivially_copyable_v<V>);
+  if constexpr (std::same_as<T,std::uint32_t> && has_vector_left_shift<V>) variable_left_shift<V>();
   std::array<T, N> a{}, b{};
   for (unsigned round = 0; round < 257; ++round) {
     for (std::size_t i = 0; i < N; ++i) {
@@ -164,6 +181,24 @@ static_assert((test_vec<uint16_t,1>(65535u)*test_vec<uint16_t,1>(65535u)).value=
 static_assert((test_vec<int32_t,1>(0x7fffffffu)+1).value==std::numeric_limits<int32_t>::min());
 static_assert((test_vec<int64_t,1>(-1)>>imm<63>).value==-1);
 static_assert(any(test_vec<int32_t,1>(-1)<test_vec<int32_t,1>(0)));
+#if defined(__AVX2__)
+extern "C" __attribute__((noinline)) void native_variable_left_shift_avx2(
+    std::uint32_t * out,std::uint32_t const * x,std::uint32_t const * counts) {
+  (test_vec<std::uint32_t,8>::load(x)<<test_vec<std::uint32_t,8>::load(counts)).store(out);
+}
+#endif
+#if defined(__AVX512F__) && defined(__AVX512DQ__)
+extern "C" __attribute__((noinline)) void native_variable_left_shift_avx512(
+    std::uint32_t * out,std::uint32_t const * x,std::uint32_t const * counts) {
+  (test_vec<std::uint32_t,16>::load(x)<<test_vec<std::uint32_t,16>::load(counts)).store(out);
+}
+#endif
+#if defined(__ARM_NEON)
+extern "C" __attribute__((noinline)) void native_variable_left_shift_neon(
+    std::uint32_t * out,std::uint32_t const * x,std::uint32_t const * counts) {
+  (test_vec<std::uint32_t,4>::load(x)<<test_vec<std::uint32_t,4>::load(counts)).store(out);
+}
+#endif
 int main() {
   static_assert(std::same_as<decltype(test_vec<int32_t,1>{int32_t(1)}), test_vec<int32_t, 1>>);
 #if defined(__AVX2__) || defined(__ARM_NEON)
