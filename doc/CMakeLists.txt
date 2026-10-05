@@ -137,6 +137,21 @@ foreach(page IN LISTS docs_pages)
   if(page STREQUAL "LICENSE.md")
     string(REPLACE "``" "\\`\\`" docs_markdown "${docs_markdown}")
   endif()
+  # Index lists define the page tree. Keep ordinary Markdown links in GitHub;
+  # give Doxygen the corresponding parent/child links in the rendering copy.
+  if(page MATCHES "^docs/(index|x86|arm|wasm)\\.md$")
+    string(REGEX REPLACE "\n- \\[([^]]+)\\]\\(([a-z0-9-]+)\\.md\\)"
+      "\n- \\\\subpage md_docs_2\\2 \"\\1\"" docs_markdown "${docs_markdown}")
+    string(REPLACE "[Building and installation](../doc/building.md)"
+      "\\subpage md_doc_2building \"Building and installation\""
+      docs_markdown "${docs_markdown}")
+  elseif(page STREQUAL "docs/instructions.md")
+    string(REGEX REPLACE "\n- \\[([^]]+)\\]\\((x86|arm|wasm)\\.md\\)"
+      "\n- \\\\subpage md_docs_2\\2 \"\\1\"" docs_markdown "${docs_markdown}")
+  elseif(page STREQUAL "README.md")
+    string(REPLACE "[Documentation](docs/index.md)"
+      "\\subpage md_docs_2index \"Documentation\"" docs_markdown "${docs_markdown}")
+  endif()
   get_filename_component(page_directory "${docs_markdown_root}/${page}" DIRECTORY)
   file(MAKE_DIRECTORY "${page_directory}")
   file(WRITE "${docs_markdown_root}/${page}" "${docs_markdown}")
@@ -155,6 +170,7 @@ set(DOXYGEN_INTERACTIVE_SVG YES)
 set(DOXYGEN_DOT_GRAPH_MAX_NODES 100)
 set(DOXYGEN_CALLER_GRAPH YES)
 set(DOXYGEN_GENERATE_TREEVIEW YES)
+set(DOXYGEN_HTML_INDEX_NUM_ENTRIES 1)
 # Static menus avoid Doxygen 1.18 links to absent short-list/tilde sections.
 # API pages, alphabetical indices and the navigation tree remain available.
 set(DOXYGEN_HTML_DYNAMIC_MENUS NO)
@@ -189,5 +205,10 @@ add_dependencies(native_docs native_docs_clean)
 # Module summaries need aliases for Doxygen 1.18 crawler/navigation destinations.
 add_custom_command(TARGET native_docs POST_BUILD
   COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/fix_module_anchors.py"
+    "${PROJECT_BINARY_DIR}/docs/html"
+  VERBATIM)
+
+add_custom_command(TARGET native_docs POST_BUILD
+  COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/check_guides.py"
     "${PROJECT_BINARY_DIR}/docs/html"
   VERBATIM)

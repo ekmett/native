@@ -1,54 +1,60 @@
-# SHA-1 and SHA-256 instruction primitives
+# x86 SHA: SHA-1 and SHA-256 rounds
 
-`import native.x86.sha;` provides the seven Intel SHA instruction primitives.
-Link `native::native`; the `native.x86` and `native` hubs also export them.
-Every argument and result is `simd<std::uint32_t,4,Arch>`. The four dwords
-contain parts of one hash state or message schedule, rather than four hashes.
+[x86 instruction sets](x86.md)
+
+## Why use it
+
+SHA compression repeatedly applies the same round and message-schedule
+functions. The SHA extension groups that work into instructions for one hash
+state, reducing the rotations, Boolean operations and additions needed by a
+compression implementation.
+
+## Operations
+
+`import native.x86.sha;` supplies seven primitives through `native::native`.
+`native.x86` and `native` also export them. All arguments and results are
+`simd<std::uint32_t,4,Arch>`.
 
 | Operation | Meaning |
 | --- | --- |
-| `sha1rnds4<Arch,Selector>(state, message)` | Four SHA-1 rounds; selector 0–3 chooses the function and round constant |
-| `sha1nexte<Arch>(state, message)` | Add the derived E value to the high message dword |
-| `sha1msg1<Arch>(a, b)` | First step in computing four SHA-1 schedule words |
-| `sha1msg2<Arch>(a, b)` | Final step in computing four SHA-1 schedule words |
+| `sha1rnds4<Arch, Selector>(state, message)` | Four SHA-1 rounds; selector 0–3 chooses the function and constant |
+| `sha1nexte<Arch>(state, message)` | Add the derived E value to the high message word |
+| `sha1msg1<Arch>(a, b)` | First step for four SHA-1 schedule words |
+| `sha1msg2<Arch>(a, b)` | Final step for four SHA-1 schedule words |
 | `sha256rnds2<Arch>(cdgh, abef, message)` | Two SHA-256 rounds, returning updated ABEF |
-| `sha256msg1<Arch>(a, b)` | First step in computing four SHA-256 schedule words |
-| `sha256msg2<Arch>(a, b)` | Final step in computing four SHA-256 schedule words |
+| `sha256msg1<Arch>(a, b)` | First step for four SHA-256 schedule words |
+| `sha256msg2<Arch>(a, b)` | Final step for four SHA-256 schedule words |
 
-SHA-1 state is `[D,C,B,A]` in increasing dword order. The message operand of
-`sha1rnds4` is `[W3,W2,W1,W0+E]`. The instruction includes its phase constant;
-selectors 0, 1, 2 and 3 correspond to rounds 0–19, 20–39, 40–59 and 60–79.
-`sha1nexte` preserves message dwords 0–2 and adds `rotr(state[3],2)` to dword 3.
-SHA-1 schedule inputs and outputs put their earliest word in the high dword.
+SHA-1 state is `[D,C,B,A]` in increasing lane order. `sha1rnds4` takes
+`[W3,W2,W1,W0+E]`; selectors 0–3 correspond to rounds 0–19, 20–39, 40–59 and
+60–79. `sha1nexte` keeps message lanes 0–2 and adds `rotr(state[3],2)` to
+lane 3. SHA-1 schedules place the earliest word in the high lane.
 
-SHA-256 uses `cdgh=[H,G,D,C]` and `abef=[F,E,B,A]`. The message operand contains
-`[W0+K0,W1+K1,unused,unused]`; its high two dwords do not participate.
-The result is the updated `[F,E,B,A]`. The previous ABEF becomes CDGH after
-those two rounds. SHA-256 schedule operands place the earliest word in the low
-dword. Message primitives are partial schedule steps: SHA-1 also needs an XOR
-with the intervening words, and SHA-256 needs an addition of the intervening
-words between its two primitives.
+SHA-256 uses `cdgh=[H,G,D,C]` and `abef=[F,E,B,A]`. The message holds
+`[W0+K0,W1+K1,unused,unused]`. The returned ABEF is `[F,E,B,A]`; the old ABEF
+becomes CDGH after two rounds. SHA-256 schedules place the earliest word low.
 
-Use `target_features<native::x86>("sha")`. Runtime calls require SHA, complete
-SSE2 register storage, and a caller compiled for `"sha"`. SHA is independently
-decoded from CPUID leaf 7, subleaf 0, EBX bit 29. It does not require AVX or OS
-AVX state, and is not added to the general `avx2` or `avx512` profiles. Admit
-the target with `classify_isa` before entering an instruction-bearing function.
-The instructions have no writemask forms.
+## Caveats
 
-Instruction-bearing tags use `constexpr` overloads with native runtime paths.
-Tags lacking SHA use `consteval` overloads, while still requiring complete
-128-bit storage. All arithmetic wraps modulo 2³². `Selector` is an unsigned
-compile-time value in 0–3; other selectors, raw registers, mixed architecture
-tags and other vector shapes are rejected. These operations do not add a
-runtime software hash implementation or perform padding, endian conversion,
-feed-forward, or complete hashing on behalf of the caller.
+The four lanes are parts of one hash, not four independent hashes. Message
+primitives are partial schedule steps: SHA-1 also needs XOR with intervening
+words, and SHA-256 needs an addition between its two primitives. The caller
+supplies padding, byte-order conversion, feed-forward and the complete hash.
+SHA-1's instruction support does not make it suitable for collision-resistant
+applications.
 
-Packing and instruction semantics follow Intel's
-[SHA extensions description](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sha-extensions.html)
-and [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
-Algorithm equations follow [FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf),
-sections 4.1, 4.2, 6.1 and 6.2; intrinsic signatures follow Clang's
-[SHA header](https://clang.llvm.org/doxygen/shaintrin_8h_source.html).
+Runtime calls require SHA, SSE2 storage and a `"sha"` caller target. Use
+`target_features<native::x86>("sha")` and admit it before entry. AVX and OS AVX
+state are unnecessary. The general AVX2 and AVX-512 profiles do not imply SHA;
+there are no writemasks.
+
+Feature-bearing overloads are `constexpr` with native runtime paths. Without
+SHA, complete 128-bit storage permits `consteval` calls only. Arithmetic wraps
+modulo 2³²; `Selector` must be a compile-time unsigned value in 0–3. Inputs
+must have the same tag and shape.
+
+See Intel's [SHA extensions description](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sha-extensions.html),
+[FIPS 180-4](https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf)
+and Clang's [SHA header](https://clang.llvm.org/doxygen/shaintrin_8h_source.html).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

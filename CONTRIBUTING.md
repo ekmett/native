@@ -38,6 +38,28 @@ Several library dependencies are not offered under these terms:
 - `spdlog` is MIT licensed.
 - `mathjax` is licensed via Apache 2.0
 
+## Instruction documentation
+
+An instruction-family guide answers three questions, in order:
+
+- **Why use it:** what problem these instructions solve, and when they help.
+- **Operations:** the module to import, then the public operations with their
+  operand shapes, feature requirements and compile-time arguments. Use a table
+  when the names and signatures need comparing. Keep examples short.
+- **Caveats:** the details that can invalidate an otherwise reasonable use:
+  packing, rounding, saturation, mask semantics, target admission, side effects,
+  or extra instructions. Don't bury these in a test report.
+
+Use the title `Architecture Extension: purpose`, with `x86`, `ARM`, or
+`WebAssembly` as the architecture and sentence case for the purpose. Use
+`Why use it`, `Operations`, and `Caveats` as the three level-two headings;
+subdivide those sections when necessary. Link back to the architecture index
+below the title, and add the guide to that index under `docs/`. Those index
+links also define the published sidebar.
+
+Document the current library. Test projects, benchmark logs and implementation
+history belong with the development material, not in the user's navigation.
+
 ## SPDX Documentation
 
 All files should contain [SPDX identifiers](https://spdx.dev/learn/handling-license-info/) specifying the license and

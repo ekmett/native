@@ -55,6 +55,8 @@ the others. Applications with several kernels can make this choice once at
 startup; the [dispatch guide](docs/omnibus.md) shows how to compile and select a
 list of variants.
 
+[Documentation](docs/index.md) · [Instruction sets](docs/instructions.md)
+
 ## Build and use
 
 The tested toolchain is Clang 23, CMake 4.4 and Ninja. Configuration checks C++26

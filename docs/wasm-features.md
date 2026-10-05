@@ -1,4 +1,6 @@
-# WebAssembly feature observations
+# WebAssembly: feature detection
+
+[WebAssembly instruction sets](wasm.md)
 
 `import native.wasm.features;` exposes WebAssembly capability observations and
 shared ISA admission without depending on the SIMD implementation or a Wasm SDK.

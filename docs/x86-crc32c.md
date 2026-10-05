@@ -1,84 +1,51 @@
-# x86 CRC32C
+# x86 CRC32C: Castagnoli checksum updates
 
-`native::crc32c<Arch>(accumulator, value)` updates a CRC32C remainder with one
-integer operand. Import `native.x86.crc32c`, `native.x86`, or `native` to use it.
-Source-tree header consumers can include `<native/x86/crc32c.h>`; installed
-consumers use the named modules. The granular module belongs to `native::minimal`.
+[x86 instruction sets](x86.md)
 
-Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
-their owning module is compiled. A function target attribute on the caller
-does not change that captured value.
-Explicit `Arch` arguments are supported, and standalone headers require them.
+## Why use it
 
-`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
-All operand widths support constant evaluation. If `Arch` lacks the feature,
-the selected overload is `consteval`: a constant call is accepted, while a call
-with runtime inputs is ill-formed. With the feature present, the overload is
-`constexpr` and uses the instruction implementation at runtime. Runtime calls
-still require a matching compiler target and admitted CPU support; there is
-no runtime software fallback.
+CRC32C detects accidental corruption in buffers and records. The instruction
+updates a running remainder with up to eight bytes at once, avoiding a lookup
+table for a short checksum loop. It is a checksum primitive, with no
+cryptographic authentication property.
 
-The accumulator and result are always `std::uint32_t`:
+## Operations
 
-| Operand type | Bits consumed | Execution mode |
-| --- | --- | --- |
-| `std::uint8_t` | 8 | x86 |
-| `std::uint16_t` | 16 | x86 |
-| `std::uint32_t` | 32 | x86 |
-| `std::uint64_t` | 64 | x86-64 only |
+`import native.x86.crc32c;` provides
+`native::crc32c<Arch>(accumulator, value)`. It belongs to `native::minimal`
+and is re-exported by `native.x86` and `native`.
 
-The package currently supports x86-64 builds. The 64-bit operand overload also
-has an explicit x86-64 declaration guard.
-
-The update uses the Castagnoli polynomial `0x1edc6f41`, whose reflected
-representation is `0x82f63b78`. It consumes the numeric operand from least
-significant bit to most significant bit. A wider update therefore equals
-successive byte updates from least significant byte to most significant byte:
-`std::uint16_t{0x3231}` consumes `0x31`, then `0x32`. The API works on values;
-callers choose how to load buffers and convert their byte order.
-
-No initial or final complement is implicit. All 32 seed bits participate.
-The 64-bit instruction zeroes the upper half of its destination; its wrapper
-accepts a 32-bit seed and returns the 32-bit remainder. These semantics and the
-CPUID requirement follow the CRC32 entry in
-[Intel's instruction reference](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
-
-The runtime overloads are side-effect-free, `noexcept`, always inline, constrained by
-`Arch.has(native::x86_feature::crc32)`, and targeted to `"crc32"`.
-The feature maps to CPUID leaf 1 ECX bit 20, with no POPCNT, SIMD or OS vector
-state prerequisite. The `sse42` feature represents a broader compiler
-bundle; its closure includes `crc32`. The independent feature matches
-[Clang's CRC intrinsic target](https://clang.llvm.org/doxygen/crc32intrin_8h.html)
-and [LLVM's separate CRC32 feature](https://reviews.llvm.org/D105462).
-
-Importing the API leaves the caller's compiler target unchanged. Use a
-matching target scope and check CPU support before calling it. This example
-supplies the conventional initial seed and final complement explicitly:
+The accumulator and result are `std::uint32_t`. The value can be
+`std::uint8_t`, `std::uint16_t`, `std::uint32_t` or, on x86-64,
+`std::uint64_t`. An update consumes the numeric operand from its least
+significant byte to its most significant byte. Thus `uint16_t{0x3231}`
+consumes `0x31`, then `0x32`.
 
 ```cpp
-#include <cstdint>
-#include <native/targets.h>
-import native.x86.crc32c;
-
-#define NATIVE_TARGET_checksum "crc32"
-constexpr native::isa<native::x86> checksum_isa{native::x86_feature::crc32};
-
-NATIVE_TARGET_PUSH(checksum)
-std::uint32_t checksum_example() noexcept {
-  constexpr std::uint8_t bytes[]{'1', '2', '3', '4', '5', '6', '7', '8', '9'};
-  std::uint32_t crc = 0xffffffffu;
-  for (auto byte : bytes)
-    crc = native::crc32c<checksum_isa>(crc, byte);
-  return crc ^ 0xffffffffu;
-}
-NATIVE_TARGET_POP()
-
-int main() {
-  auto cpu = native::observe_x86_capabilities();
-  if (!native::classify_isa(cpu, checksum_isa, NATIVE_TARGET_MINIMUM).admitted())
-    return 0;
-  return checksum_example() == 0xe3069283u ? 0 : 1;
-}
+std::uint32_t crc = 0xffffffffu;
+for (auto byte : bytes)
+  crc = native::crc32c<arch>(crc, byte);
+crc ^= 0xffffffffu;
 ```
+
+The conventional initial seed and final complement are explicit here.
+The operation itself applies neither. All 32 seed bits participate.
+
+## Caveats
+
+CRC32C uses the Castagnoli polynomial `0x1edc6f41`, reflected as `0x82f63b78`.
+It differs from the CRC-32 polynomial used by ZIP and Ethernet. Wider updates
+follow numeric byte order, so the caller chooses buffer loads and byte-order
+conversion.
+
+Runtime calls require `x86_feature::crc32`, a `"crc32"` compiler target and
+CPU admission. This scalar instruction needs no SIMD or vector OS state.
+The broader `sse42` compiler bundle includes it. Calls are `noexcept`.
+The module default `Arch` is the provider's `NATIVE_BASELINE`; caller target
+attributes do not change it. With the feature, overloads are `constexpr` and
+use native runtime instructions. Without it, only `consteval` calls exist.
+
+See Intel's [CRC32 instruction reference](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf)
+and Clang's [CRC intrinsics](https://clang.llvm.org/doxygen/crc32intrin_8h.html).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

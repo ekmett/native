@@ -1,4 +1,15 @@
-# WebAssembly relaxed SIMD
+# WebAssembly relaxed SIMD: host-dependent vector operations
+
+[WebAssembly instruction sets](wasm.md)
+
+## Why use it
+
+Relaxed SIMD gives the engine latitude to use its host's instructions directly.
+It is useful for dot products, multiply-add chains and byte shuffles when your
+algorithm can tolerate the specified variation in rounding or exceptional
+inputs. Decide which variations are acceptable before choosing the operation.
+
+## Operations
 
 Import `native.wasm.relaxed`, `native.wasm`, or `native` and link
 `native::native`. The family exposes the 20 finalized relaxed SIMD operations
@@ -38,6 +49,8 @@ raw `v128_t` operands.
 | `i16x8_relaxed_dot_i8x16_i7x16` | `int8_t × 16`, `uint8_t × 16`; `int16_t × 8` result |
 | `i32x4_relaxed_dot_i8x16_i7x16_add` | Same byte inputs plus `int32_t × 4` accumulator/result |
 
+## Caveats
+
 Lane selection accepts integer masks so partial-bit masks retain their relaxed
 semantics. Canonical masks can be converted with `mask_bits<U>(mask)`, where `U`
 is the unsigned lane type. Zero and all-one mask lanes select the second and
@@ -63,7 +76,7 @@ Keep the second dot operand within seven bits and use canonical zero/all-one
 mask lanes when you need agreement across engines.
 
 The semantic reference is the [WebAssembly core numerics specification](https://webassembly.github.io/spec/core/exec/numerics.html#relaxed-ops),
-pinned for these checks at [revision ba9fd9f5](https://github.com/WebAssembly/spec/blob/ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0/document/core/exec/numerics.rst).
+at [revision ba9fd9f5](https://github.com/WebAssembly/spec/blob/ba9fd9f5c23e569201265d5bda6fb8dde18ad8c0/document/core/exec/numerics.rst).
 The native mappings use [Clang's `wasm_simd128.h`](https://clang.llvm.org/doxygen/wasm__simd128_8h_source.html).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

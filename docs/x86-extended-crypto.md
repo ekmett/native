@@ -1,37 +1,50 @@
-# X86 SHA512, SM3 and SM4
+# x86 SHA512/SM3/SM4: hash and cipher rounds
 
-`native.x86.sha512`, `native.x86.sm3` and `native.x86.sm4` export individual
-instruction primitives through `native.x86` and `native`. Vector operands and
-results are `native::simd`; the ISA tag is deduced from those operands.
+[x86 instruction sets](x86.md)
 
-| Module | Operations | Vector words |
+## Why use it
+
+These extensions accelerate the repetitive round and schedule work inside
+SHA-512, SM3 and SM4. They let an implementation retain the algorithm's state
+in vectors while delegating several rounds or schedule steps to one operation.
+
+## Operations
+
+`import native.x86.sha512;`, `import native.x86.sm3;` and
+`import native.x86.sm4;` provide the following primitives. `native.x86` and
+`native` re-export them. Operands and results are `simd` values; their tag is
+deduced from the operands.
+
+| Module | Operations | Shape |
 | --- | --- | --- |
-| `native.x86.sha512` | `sha512msg1`, `sha512msg2`, `sha512rnds2` | Four `uint64_t` result lanes; `msg1`'s second operand and `rnds2`'s third operand have two lanes |
+| `native.x86.sha512` | `sha512msg1`, `sha512msg2`, `sha512rnds2` | Four `uint64_t` result lanes; `msg1` operand 2 and `rnds2` operand 3 have two lanes |
 | `native.x86.sm3` | `sm3msg1`, `sm3msg2`, `sm3rnds2<Arch, Imm8>` | Four `uint32_t` lanes |
 | `native.x86.sm4` | `sm4key4`, `sm4rnds4` | Four or eight `uint32_t` lanes |
 
-SHA-512 and SM3 round states use high-to-low ABEF/CDGH packing. SHA-512 message
-words use ascending lanes. SM3's CDGH input contains the unrotated previous ABEF
-state; the instruction rotates C/D and G/H before its two rounds. Its immediate
-accepts 0–255 and selects the first round with `Imm8 & 0x3e`. SM4 state, keys
-and constants use ascending lanes, with independent four-word blocks in the
-256-bit forms. The SM4 argument order is state first, keys/constants second.
+SHA-512 and SM3 rounds use high-to-low ABEF/CDGH packing. SHA-512 message words
+use ascending lanes. SM3's CDGH input contains the unrotated previous ABEF
+state: the instruction rotates C/D and G/H before its two rounds. SM3's
+compile-time byte `Imm8` selects the first round with `Imm8 & 0x3e`.
 
-The independent feature bits are `x86_feature::sha512`, `sm3` and `sm4`, from
-CPUID leaf 7 subleaf 1 EAX bits 0, 1 and 2. All require AVX and OS-enabled XMM/YMM
-state. Clang's `sha512` and `sm4` compiler targets additionally enable AVX2;
-`target_features<x86>("sha512")` and `target_features<x86>("sm4")` record that
-compiler prerequisite separately from the hardware bit. These features do not
-imply the older SHA-1/SHA-256 extension.
+SM4 state, keys and constants use ascending lanes. Its calls take state first,
+keys or constants second; 256-bit forms contain independent four-word blocks.
 
-Runtime operations require the instruction feature and a matching caller target.
-For example, an SHA512 leaf uses `target_features<x86>("sha512")` for its vector
-ISA and a `sha512` target scope. No instruction wrapper dispatches at runtime.
-Constant evaluation implements the same lane semantics with unsigned modular
-arithmetic. Feature-absent forms are consteval-only and still require storage
-for the specified vector shapes. Raw registers, mixed ISA tags, wrong element
-or lane counts, and out-of-range SM3 immediates are rejected.
+## Caveats
 
-The operations implement the [Intel instruction specification](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).
-They neither inspect nor modify floating-point control or status. These are
-instruction leaves, not complete hashing, encryption or protocol APIs.
+These are round and schedule primitives. The caller still supplies complete
+hashing or encryption, including padding, key schedules, byte-order changes
+and any protocol. All integer arithmetic wraps; the operations leave FP
+control and status unchanged.
+
+SHA512, SM3 and SM4 have independent feature bits and require AVX plus enabled
+XMM/YMM state. They do not imply the older SHA-1/SHA-256 extension. Use the
+corresponding `target_features<native::x86>("sha512")`, `"sm3"` or `"sm4"`
+and admit that matching caller target before entry. Clang's SHA512 and SM4
+targets also enable AVX2; `target_features` records those prerequisites.
+
+Feature-bearing overloads are `constexpr` with native runtime paths. Weaker
+tags have `consteval` overloads only, with complete storage for the documented
+shapes. Inputs must have matching tags, exact element types and lane counts;
+SM3 immediates must be in 0–255. Calls do not dispatch at runtime.
+
+See Intel's [instruction specification](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf).

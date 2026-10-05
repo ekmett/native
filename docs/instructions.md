@@ -1,218 +1,135 @@
-# Choosing an instruction family
+# Instruction sets
 
-The general SIMD interface supplies arithmetic, masks and memory operations.
-Use an instruction family when the algorithm needs a particular operation or
-its exact arithmetic contract: a saturating dot product, a carry-less product,
-a conversion with specified rounding, or a checksum update.
+- [x86 instruction sets](x86.md)
+- [ARM instruction sets](arm.md)
+- [WebAssembly instruction sets](wasm.md)
 
-Import the family module directly, or use `native.x86`, `native.arm`, `native.wasm`, or the
-host's `native` hub. Vector operands and results use `simd<T,N,Arch>`; scalar
-forms use ordinary C++ values. Operations constrain the feature bits in `Arch`
-and require a compatible compiler target. Different ISA values remain different
-vector types even when their storage matches.
+Start with the ordinary `simd` operations. Reach for an instruction family when
+its particular operation or arithmetic contract does useful work for you.
 
-A feature bit, compiler target and runtime observation answer different questions.
-The bit permits an API operation; the target permits generated instructions;
-runtime admission establishes whether the CPU and OS can execute them. Check
-all requirements of the containing function before entering it. Importing a
-module does not enable a compiler target or perform runtime dispatch. See
-[the call-boundary example](modules.md#features-compiler-targets-and-runtime-admission)
-and [target-list dispatch](omnibus.md).
+## Choosing a family
 
-On WebAssembly, the engine admits the complete module before execution.
-[SIMD128](wasm-simd.md) supplies the ordinary 128-bit integer and floating
-instruction families. [Relaxed SIMD](wasm-relaxed.md) adds operations whose
-results can depend on the engine and its host. Build separate modules for
-different feature levels; a branch inside a module cannot hide an unsupported
-instruction from validation.
+### Dot products and small matrices
 
-## Dot products and small matrices
+Packed dot products do several multiplies and additions per result lane. They
+are useful for quantized inference, small matrix kernels and reductions where
+the input precision is lower than the accumulator precision. Choose the input
+signedness and accumulation rule before choosing a register width.
 
-The input element type, grouping and accumulation rule are part of the operation.
-Choose them before choosing a register width.
+- [x86 VNNI](x86-vnni.md): byte and word products, wrapping or saturating accumulation.
+- [ARM DotProd](arm-dotprod.md): four-byte dot products.
+- [ARM I8MM](arm-i8mm.md): byte matrix products and mixed-sign dot products.
+- [ARM BF16](arm-bf16.md) and [x86 AVX-512 BF16](modules.md#half-precision-values): BF16 products accumulated into FP32.
 
-| Algorithm needs | x86 | AArch64 |
-| --- | --- | --- |
-| Byte or word products accumulated into integers | [VNNI](x86-vnni.md): byte/word groups, signedness variants, wrapping or saturation | [DotProd](arm-dotprod.md): four-byte groups with wrapping accumulation |
-| Small byte matrices or mixed-sign byte dots | VNNI supplies grouped dot products | [I8MM](arm-i8mm.md): 2×8 by 8×2 matrices and mixed-sign byte dots |
-| BF16 products accumulated into FP32 | [AVX-512 BF16](modules.md#half-precision-values): paired BF16 products | [BF16](arm-bf16.md): pair dots, 2×4 by 4×2 matrices and widening multiply-adds |
+### Integer products and carry chains
 
-Matrix instructions require a specific row/column packing; a row-major right
-matrix may need rearrangement. Saturating and wrapping integer accumulations
-are distinct operations. BF16 pair accumulation also differs from a chain of
-ordinary FP32 fused multiply-adds. The family guides specify those boundaries,
-including the effects of ARM's enhanced BF16 mode.
+Large integers need products and carries that ordinary lane-wise arithmetic
+cannot express. These operations expose the pieces without choosing a big
+integer representation for you.
 
-## Integer products and carry chains
+- [x86 IFMA](x86-ifma.md): accumulate halves of 52-bit products in 64-bit lanes.
+- [x86 ADX](x86-adx.md): scalar unsigned addition with carry.
+- [x86 BMI2](x86-bmi2.md): wide scalar products, alongside bit deposit/extract.
 
-[IFMA](x86-ifma.md) multiplies the low 52 bits of unsigned 64-bit vector
-lanes, then adds either half of the 104-bit product to the corresponding
-64-bit accumulator modulo 2⁶⁴. AVX-IFMA provides unmasked 128/256-bit forms;
-AVX512IFMA adds EVEX forms and hardware masks with width-specific requirements.
-Carries do not propagate between lanes.
+### Conversions, fixed-point and complex arithmetic
 
-[Addition with carry](x86-adx.md) takes ordinary 32-bit or 64-bit unsigned
-values and writes a modular sum through an output pointer, returning a
-normalized carry byte. Its ADX feature requirement is independent of SIMD.
-The public operation matches Clang's `addcarryx` intrinsic, which currently
-uses ADD/ADC in the tested callers; independently scheduled ADCX/ADOX chains
-are not exposed.
+Conversions often sit at the boundary between compact storage and a wider
+calculation. Fixed-point and complex instructions combine arithmetic steps
+with a particular rounding or packing convention.
 
-## Conversions, fixed-point and complex arithmetic
+- [ARM NEON](arm-neon.md): integer conversions, saturation, narrowing, multiply-high and shifts.
+- [x86 F16C](x86-f16c.md): binary16/binary32 conversion.
+- [x86 AVX-NE-CONVERT](x86-avxneconvert.md): FP16/BF16 memory conversion.
+- [ARM FHM](arm-fp16fml.md): FP16 products accumulated into FP32.
+- [ARM RDM](arm-rdm.md): rounded, saturating fixed-point accumulation.
+- [ARM FCMA](arm-fcma.md): arithmetic on adjacent real/imaginary pairs.
+- [ARM JSCVT](arm-jscvt.md): scalar double conversion with JavaScript integer semantics.
+- [Half-precision profiles](modules.md#half-precision-values): elementwise FP16 arithmetic and BF16 storage.
 
-[Base NEON instructions](arm-neon.md) provide `fcvtzs` and `fcvtzu` conversion with
-defined NaN and saturation results, as well as saturating add/subtract,
-saturating narrowing, signed multiply-high and per-lane variable shifts with
-rounding and saturation variants. Vector forms require `arm_feature::neon`.
-Saturating integer arithmetic preserves its sticky FPSR.QC effects,
-including discarded results. Floating-to-integer conversions have their own
-floating-point exception effects rather than setting QC.
+### Bits and rearrangement
 
-[AVX-NE-CONVERT](x86-avxneconvert.md) supplies all fourteen binary16/BF16
-memory-widening and binary32-to-BF16 narrowing forms, without floating-point
-exceptions or MXCSR dependence. Public inputs and outputs retain typed SIMD
-storage, with explicit interleaved memory extents.
+Bit counts, extraction and permutation are useful for packed data structures,
+parsers and moving selected elements into the next stage of a calculation.
+Conflict detection finds repeated destinations before an indexed update.
 
-[F16C](x86-f16c.md) converts between binary32 and IEEE binary16 on x86. It does
-not supply half-precision arithmetic. Its immediate controls rounding, and
-conversion may update MXCSR or trap according to the caller's exception masks.
+- [x86 BMI1](x86-bmi1.md) and [BMI2](x86-bmi2.md): bit fields, lowest-bit operations and deposit/extract.
+- [x86 POPCNT](x86-popcnt.md) and [LZCNT](x86-lzcnt.md): scalar counts.
+- [x86 VPOPCNTDQ](x86-vpopcntdq.md) and [BITALG](x86-bitalg.md): packed counts and bit selection.
+- [x86 VBMI](x86-vbmi.md): byte permutations and bit windows.
+- [x86 VBMI2](x86-vbmi2.md): compaction and double-source shifts.
+- [x86 AVX-512CD](x86-avx512cd.md): conflict detection and leading-zero counts.
+- [ARM NEON](arm-neon.md): bit counts and reversals.
 
-[ARM JSCVT](arm-jscvt.md) converts a scalar double to a signed 32-bit word
-with truncation and modular wrap, including defined results for infinities and
-NaNs. It requires `jsconv` independently of vector arithmetic.
+### Polynomials, checksums and cryptography
 
-On AArch64, [FHM](arm-fp16fml.md) multiplies FP16 inputs and accumulates directly
-into FP32 with one fused rounding per result. [RDM](arm-rdm.md) combines a
-fixed-point product and accumulator before rounding and saturation; saturation
-sets sticky FPSR.QC. [FCMA](arm-fcma.md) operates on adjacent real/imaginary
-pairs. A full complex multiply-add needs two partial operations, with the
-corresponding two rounding stages.
+Carry-less products implement polynomial multiplication over GF(2), rather
+than ordinary integer multiplication. CRC instructions update a checksum;
+cryptographic instructions expose round and schedule steps. They save work
+inside an algorithm but do not supply a complete hash or cipher mode.
 
-For elementwise half arithmetic, use the [AVX-512 FP16 or NEON FP16](modules.md#half-precision-values) profile. Base NEON already supports
-four- and eight-lane `fp16` and `bf16` storage and transfer, without either
-arithmetic extension. The operation's feature requirements still apply.
-Floating-point control and status remain
-under application ownership; `noexcept` does not mask hardware exceptions.
+- [x86 PCLMULQDQ/VPCLMULQDQ](x86-pclmul.md): carry-less products.
+- [x86 GFNI](x86-gfni.md): byte-field multiplication and affine maps.
+- [ARM CRC](arm-crc.md) and [x86 CRC32C](x86-crc32c.md): checksum updates.
+- [x86 AES](x86-aes.md) and [VAES](x86-vaes.md): AES rounds and key helpers.
+- [x86 SHA](x86-sha.md): SHA-1/SHA-256 primitives.
+- [x86 SHA512/SM3/SM4](x86-extended-crypto.md): round and schedule operations.
+- [ARM AES/PMULL/SHA](arm-crypto.md): cipher rounds, polynomial products and hash primitives.
+- [ARM SM3/SM4](arm-sm-crypto.md): hash and cipher primitives.
 
-## Bits, polynomials and checksums
+### Indexed memory and waiting
 
-[NEON bit operations](arm-neon.md) count leading zeros or redundant sign bits,
-reverse bits within bytes, and reverse element order within 16-, 32- or 64-bit
-groups. These are integer register operations and do not change FPSR.QC.
+Gather/scatter follow several indices at once, where a contiguous load cannot.
+Wait instructions let a polling loop give back execution resources while it
+waits for a condition to change.
 
-For scalar x86 integers, [BMI1](x86-bmi1.md) and [BMI2](x86-bmi2.md) provide bit
-field operations, deposit/extract and related primitives. [POPCNT](x86-popcnt.md)
-and [LZCNT](x86-lzcnt.md) have independent feature requirements.
-[VPOPCNTDQ](x86-vpopcntdq.md) counts bits in 32- or 64-bit vector lanes and has
-its own width and masking requirements. [BITALG](x86-bitalg.md) counts bits in
-byte/word lanes and selects source bits into compact predicates.
-[VBMI](x86-vbmi.md) permutes bytes across one or two whole vectors and extracts
-wrapping bit windows from qwords. [VBMI2](x86-vbmi2.md) adds byte/word
-compaction, packed memory transfers and double-source shifts.
-[AVX-512CD](x86-avx512cd.md) supplies leading-zero counts and masks identifying equal earlier lanes. Conflict
-detection compares across the whole vector, including masked-off source lanes.
+- [x86 indexed memory](x86-memory.md): gathers and scatters with inactive-lane memory suppression.
+- [x86 WAITPKG/MWAITX](x86-wait.md): monitored waits, TSC deadlines and a spin-loop fallback.
 
-For polynomial arithmetic, [PCLMULQDQ and VPCLMULQDQ](x86-pclmul.md) on x86 and
-[PMULL](arm-crypto.md#aes-and-polynomial-state) on ARM multiply polynomials over
-GF(2), without integer carries or modular reduction. [GFNI](x86-gfni.md) supplies
-byte field multiplication and affine maps; its field multiplication includes
-reduction in the specified byte field.
+### WebAssembly
 
-[ARM CRC](arm-crc.md) supplies both IEEE CRC32 and Castagnoli CRC32C updates.
-[X86 CRC32C](x86-crc32c.md) supplies only Castagnoli updates, despite the
-instruction's `crc32` name. Both APIs update an accumulator without adding an
-initial or final complement. Operand byte order and memory bounds belong to
-the caller.
+WebAssembly packages vector operations behind a portable instruction format.
+SIMD128 gives a fixed 128-bit vocabulary; relaxed SIMD permits host-dependent
+results for operations where that latitude can avoid extra work.
 
-[X86 AES-NI](x86-aes.md) and [ARM AES and SHA](arm-crypto.md) expose round,
-state and schedule operations. X86 and ARM AES rounds add their keys at
-different stages, so their round sequences are not interchangeable.
-They do not assemble a cipher mode, key schedule, message padding or a complete
-hash. ARM's hardware feature bits are independent. Clang's ARM `aes`, `sha2` and
-`sha3` targets enable bundles, so admission must cover each whole compiler
-target even when the source calls only one of its operations.
+- [SIMD128](wasm-simd.md): integer and floating arithmetic, memory, conversions and rearrangement.
+- [Relaxed SIMD](wasm-relaxed.md): fused arithmetic, selection, conversion and dot products with explicitly permitted variation.
 
-The x86 [SHA primitives](x86-sha.md) implement SHA-1/SHA-256 round and message
-schedule steps on four-dword states. [Vector AES](x86-vaes.md) processes one, two
-or four independent 128-bit AES states per operation, with width-specific
-feature requirements. These operations expose round primitives; callers own
-message padding, schedules and complete algorithms.
+## Common caveats
 
-[ARM SM3 and SM4](arm-sm-crypto.md) supply hash-round, message-schedule,
-data-round and key-schedule instructions on four-word vectors. Their hardware
-bits are independent; Clang's `sm4` target enables both and admission covers
-that complete pair together with NEON.
+Import the family module directly, or use `native.x86`, `native.arm`,
+`native.wasm`, or the host's `native` hub. Vector operands and results use
+`simd<T,N,Arch>`; scalar forms use ordinary C++ values. Vector families link
+`native::native`; scalar-only families and feature observation link
+`native::minimal`. See [imports and build targets](modules.md#imports-and-build-targets).
 
-## Indexed memory
+An ISA tag, a compiler target and runtime admission do different jobs. The tag
+permits the API operation, the target permits generated instructions, and
+admission establishes whether the CPU and OS can execute them. Importing a
+module does none of the latter two. Admit the whole containing function, not
+just the one operation you happened to call. See [target selection](omnibus.md).
 
-[X86 gather and scatter](x86-memory.md) load or store lanes at a base address
-plus signed vector indices multiplied by a byte scale. AVX2 supplies gathers
-with full-vector sign-bit masks. AVX-512 supplies predicate-masked gathers and
-scatters, with AVX512VL required for the narrow forms. Inactive lanes do not
-access memory; overlapping scatter writes follow increasing lane order.
+WebAssembly validates the complete linked module. A runtime branch cannot hide
+unsupported instructions; build and load separate modules for different feature
+levels. Relaxed operations can produce different permitted results on different
+hosts.
 
-## Shapes, masks and execution
+Shapes, signedness and masks are part of the contract. Equal register sizes do
+not make vector types interchangeable. AVX-512 instruction masks use
+`predicate<N,Arch>`; AVX2 gathers instead use full-vector sign-bit masks. The
+family guides spell out packing, rounding, side effects and any extra work.
 
-The family guides list supported element types, lane counts and compile-time
-immediates. A vector's logical shape matters even if another shape has the same
-register size; converting signedness or reinterpreting elements must be explicit.
-Scalar RDM lane forms, for example, still take a `simd` value for their vector
-lane source.
-
-AVX-512 masked instruction forms take `predicate<N,Arch>`, with one meaningful bit
-per documented mask lane. Merge and zero forms differ in what happens to
-inactive lanes. Use the exact predicate type required by the operation; a full
-vector comparison mask may have a different representation under a minimal
-feature set. AVX2 gathers instead take signed integer SIMD masks and test each
-lane's sign bit, matching their instruction's mask representation.
-
-Vector families link `native::native` and import `native.simd`. Scalar-only
-families and feature observation link `native::minimal`. The
-[module guide](modules.md#imports-and-build-targets) gives the common imports.
-Runtime calls do not dispatch or provide a software fallback internally.
-Keep an optional kernel behind admission and select another implementation when
-its requirements are unavailable.
-
-## Constant evaluation
-
-Instruction families provide semantic implementations for constant evaluation.
+Instruction families have semantic implementations for constant evaluation.
 With the required features in `Arch`, the same `constexpr` overload evaluates
 at compile time or emits the native instruction at runtime. Without those
-features, a separate `consteval` overload accepts constant inputs only.
-Vector storage must still exist for the element type, lane count and architecture
-tag. Constant evaluation does not grant a vector type registers that its tag
-does not supply.
+features, a separate `consteval` overload accepts constant inputs only. Vector
+storage must still exist for the element type, lane count and architecture tag.
+An unevaluated `requires` check can see the immediate-only overload; that does
+not make a later runtime call valid.
 
-The immediate-only overload may appear in an unevaluated `requires` expression;
-that does not establish that a later call with runtime inputs is valid. Feature
-constraints and runtime admission remain necessary for executable kernels.
-
-Floating-point constant evaluation uses nearest-even rounding, gradual
-underflow and masked exceptions, with ARM's DN, AHP, AH and EBF controls clear.
-An instruction's fixed rules or rounding immediate take precedence: legacy ARM
-BF16 dot products, for example, round to odd and flush subnormals. The family
-guides specify NaN selection and other instruction-specific details. Constant
-evaluation neither reads nor changes the calling thread's floating-point
-environment; runtime operations retain that environment's behavior.
-
-Hardware observations, waits and control-register operations remain runtime
-operations. A semantic result at compile time does not reproduce a hardware
-side effect such as a sticky saturation or floating-point exception flag.
+Floating constant evaluation uses nearest-even rounding, gradual underflow and
+masked exceptions, with ARM's DN, AHP, AH and EBF controls clear. An instruction's
+fixed rules or rounding immediate take precedence. Constant evaluation does not
+read or update the thread's floating-point environment; runtime operations do.
+Hardware observations, waits and control-register operations remain runtime-only.
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
-
-### Waiting with a TSC deadline
-
-`native.x86.wait` exports `tpause<Arch, Control>(deadline)`, where the scalar
-`deadline` is an absolute 64-bit TSC value and `Control` is 0 (permit C0.2) or
-1 (request C0.1, the default). `Arch` defaults to the provider's compiler
-baseline and must contain `x86_feature::waitpkg`; the caller must also enable
-the `waitpkg` compiler target and admit that feature before execution. The
-operation returns the intrinsic carry status. It needs no monitor, may wake
-early and is subject to OS time limits. It supplies no memory ordering.
-`umwait::mwait(deadline)` accepts the same full 64-bit deadline after
-`umwait::monitor` has been armed. Wait operations have no constant-evaluation
-substitute.
-
-[SHA512, SM3 and SM4](x86-extended-crypto.md) supply the VEX crypto families
-with typed vector operands and exact constant-evaluation semantics.

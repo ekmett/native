@@ -1,56 +1,58 @@
-# Integer fused multiply-add of 52-bit values
+# x86 AVX-IFMA/AVX-512IFMA: 52-bit multiply-add
 
-`import native.x86.ifma;` provides `madd52lo` and `madd52hi` on
-`simd<std::uint64_t,N,Arch>`, for `N` equal to 2, 4 or 8. Link `native::native`;
-the `native.x86` and `native` hubs also export these operations.
+[x86 instruction sets](x86.md)
 
-Each lane multiplies the low 52 bits of `a` and `b`, producing an unsigned
-104-bit product. `madd52lo<Arch>(accumulator,a,b)` adds product bits 0–51 to the
-full 64-bit accumulator. `madd52hi` adds product bits 52–103 instead. Both
-additions wrap modulo 2⁶⁴; neither saturates or propagates carry to another
-lane. The upper 12 bits of each multiplicand are ignored, while every
-accumulator bit participates.
+## Why use it
 
-EVEX forms provide hardware masks:
+A 52-bit limb leaves twelve spare bits in a qword for accumulation. IFMA
+multiplies two such limbs and adds either half of their 104-bit product into
+64-bit lanes. This is useful for batched multi-precision multiplication and
+modular arithmetic, where the algorithm controls carry propagation.
 
-- `mask_madd52lo<Arch>(accumulator,mask,a,b)` retains the accumulator in
-  inactive lanes; `mask_madd52hi` does the same for high products.
-- `maskz_madd52lo<Arch>(mask,accumulator,a,b)` clears inactive lanes;
-  `maskz_madd52hi` does the same for high products.
+## Operations
 
-The mask is `predicate<N,Arch>`. Bit `i` controls result lane `i`; bits above
-the lane count do not affect the result.
+`import native.x86.ifma;` supplies operations on
+`simd<std::uint64_t,N,Arch>` with `N = 2, 4, 8`. Link `native::native`;
+`native.x86` and `native` also export them.
 
-| Forms | Required architecture features | Caller target |
+| Operation | Per-lane result |
+| --- | --- |
+| `madd52lo<Arch>(accumulator, a, b)` | Add product bits 0–51 to the accumulator |
+| `madd52hi<Arch>(accumulator, a, b)` | Add product bits 52–103 to the accumulator |
+
+The unsigned product uses only the low 52 bits of each multiplicand.
+Every accumulator bit participates, and addition wraps modulo 2⁶⁴.
+
+Both names have `mask_NAME<Arch>(accumulator, mask, a, b)` to retain inactive
+accumulator lanes and `maskz_NAME<Arch>(mask, accumulator, a, b)` to clear them.
+Masks are `predicate<N,Arch>`.
+
+## Caveats
+
+There is no carry propagation between lanes, saturation or modular reduction.
+The caller must account for accumulated carries before a 64-bit lane wraps.
+The top twelve bits of multiplicands are ignored even when they contain a carry.
+
+| Form | Runtime features | Caller target |
 | --- | --- | --- |
-| Unmasked 128/256-bit VEX | AVX-IFMA and AVX | `"avxifma"` |
-| 128/256-bit EVEX, all mask modes | AVX512IFMA, AVX512F and AVX512VL | `"avx512ifma,avx512vl"` |
-| 512-bit EVEX, all mask modes | AVX512IFMA and AVX512F | `"avx512ifma"` |
+| Unmasked 128/256-bit VEX | AVX-IFMA, AVX | `"avxifma"` |
+| 128/256-bit EVEX, all mask modes | AVX512IFMA, AVX512F, AVX512VL | `"avx512ifma,avx512vl"` |
+| 512-bit EVEX, all mask modes | AVX512IFMA, AVX512F | `"avx512ifma"` |
 
-Unmasked short forms prefer the AVX-IFMA overload when the architecture tag
-contains its features, following the VNNI family convention. Masked runtime
-forms always require the EVEX features. AVX512BW and AVX512DQ are independent
-and unnecessary. Use `target_features<native::x86>(target)` and admit the
-complete target, including OS vector state, before entering the caller.
+Short unmasked forms prefer AVX-IFMA when the tag supports it. Masked runtime
+forms always need EVEX features. BW and DQ are unnecessary. AVX-IFMA and
+AVX512IFMA are independent features, absent from the general AVX2 and AVX-512
+profiles. Clang's AVX-IFMA target also enables AVX2; use `target_features` to
+include the compiler prerequisites. Admit the complete target and OS vector
+state before entering a matching caller.
 
-`x86_feature::avx512ifma` uses CPUID leaf 7, subleaf 0, EBX bit 21. The separate
-`avxifma` feature uses leaf 7, subleaf 1, EAX bit 23; an unobserved subleaf does
-not establish support. Hardware AVX-IFMA requires AVX, while Clang 23's target
-also enables AVX2. The library records that distinction between
-`feature_closure` and `target_features`. Neither extension is added to the
-general `avx2` or `avx512` profiles.
+Feature-bearing overloads are `constexpr` with native runtime paths. Weaker
+tags have `consteval` overloads if the chosen SSE2, AVX or AVX512F register
+storage exists, with prerequisites. Constant evaluation gives exact integer
+results and preserves the tag.
 
-All forms support exact constant evaluation. Strong tags use `constexpr`
-overloads with native runtime paths; tags missing instruction features use
-`consteval` overloads. Weak forms still require complete register storage:
-SSE2 for 128 bits, AVX for 256 bits or AVX512F for 512 bits, with prerequisites.
-They preserve the tag and provide no runtime software fallback. The constant
-implementation uses 26-bit limbs and does not require a 128-bit integer type.
-
-Instruction semantics follow Intel's
-[Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf);
-intrinsic forms follow Clang's
-[AVX-IFMA](https://clang.llvm.org/doxygen/avxifmaintrin_8h_source.html),
+See Intel's [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf)
+and Clang's [AVX-IFMA](https://clang.llvm.org/doxygen/avxifmaintrin_8h_source.html),
 [AVX512IFMA](https://clang.llvm.org/doxygen/avx512ifmaintrin_8h_source.html) and
 [VL IFMA](https://clang.llvm.org/doxygen/avx512ifmavlintrin_8h_source.html) headers.
 

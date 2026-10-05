@@ -1,69 +1,42 @@
-# ARM complex arithmetic
+# ARM FCMA: complex arithmetic
 
-FCMA operates on complex numbers stored as adjacent `(real,imaginary)`
-lanes in `native::simd<T, N, Arch>`. Import `native.arm.fcma`, `native.arm`, or `native`
-for `fcadd<Arch,Rotation>`, `fcmla<Arch,Rotation>`, and
-`fcmla_lane<Arch,Rotation,Lane>`. All operands and results share their element
-type and `Arch`. Raw NEON registers are private implementation details.
+[ARM instruction sets](arm.md)
 
-| Vector shape | Complex pairs | Required feature bits |
+## Why use it
+
+Complex multiplication otherwise needs component shuffles, sign changes and
+separate real arithmetic. FCMA works directly on adjacent `(real,imaginary)`
+pairs. Two partial multiply-adds accumulate a full complex product, making the
+operation useful in filters, Fourier transforms and other complex kernels.
+
+## Operations
+
+Import `native.arm.fcma`, or use the `native.arm` or `native` hub.
+All operands use `native::simd<T,N,Arch>` with the same element type and `Arch`.
+
+- `fcadd<Arch,Rotation>(a,b)` adds `b` rotated by 90 or 270 degrees.
+- `fcmla<Arch,Rotation>(acc,a,b)` accumulates a partial complex product, with
+  rotation 0, 90, 180 or 270.
+- `fcmla_lane<Arch,Rotation,Lane>(acc,a,b)` selects one complex pair from `b`
+  and broadcasts it to every destination pair.
+
+The non-indexed operations accept `simd<float,2,Arch>`, `simd<float,4,Arch>`,
+`simd<double,2,Arch>`, `simd<fp16,4,Arch>` and `simd<fp16,8,Arch>`.
+Indexed operations accept the FP16 and FP32 shapes; source and destination
+widths may differ within the same format. `Lane` indexes pairs, so four floats
+contain two selectable pairs and eight halves contain four. There is no indexed
+FP64 form. Rotations and pair indices are compile-time immediates.
+
+For `a=(ar,ai)`, `b=(br,bi)` and `acc=(cr,ci)`:
+
+| Operation | Rotation | Result |
 | --- | --- | --- |
-| `simd<float, 2, Arch>` | 1 | `complxnum` |
-| `simd<float, 4, Arch>` | 2 | `complxnum` |
-| `simd<double, 2, Arch>` | 1 | `complxnum` |
-| `simd<fp16, 4, Arch>` | 2 | `complxnum` and `neon_fp16` |
-| `simd<fp16, 8, Arch>` | 4 | `complxnum` and `neon_fp16` |
-
-The feature is FEAT_FCMA. Runtime admission adds the compiler prerequisites,
-including baseline NEON. FP32/FP64 calls target `"complxnum"`; FP16 calls target
-`"complxnum,fullfp16"`. FHM, BF16 and FP16 alone do not supply FCMA. Runtime calls with missing features, incompatible element types or architectures, raw register arguments,
-and invalid immediates are rejected at compile time.
-
-
-Constant evaluation uses a fixed floating-point environment: nearest-even
-rounding, gradual inputs and results, payload-preserving NaNs, standard IEEE
-half precision, and masked exceptions. FPCR controls DN, AH, AHP, FZ, FZ16, FIZ,
-and EBF are zero. No status flags, traps, or control-register accesses occur.
-An architecture tag lacking the instruction feature admits a `consteval`-only
-overload when every operand/result storage type is complete; runtime inputs
-remain compile-time errors. Lane, rotation, element-type and architecture
-requirements still apply. With the feature present, the same function is
-`constexpr` and its runtime branch executes the native instruction.
-
-For one pair `a=(ar,ai)` and `b=(br,bi)`, `fcadd` permits rotations 90 and 270:
-
-| Rotation | Result |
-| --- | --- |
-| 90 | `(ar-bi, ai+br)` |
-| 270 | `(ar+bi, ai-br)` |
-
-`fcmla` performs one partial complex multiply-add per call. For accumulator
-`c=(cr,ci)`, the components are computed as follows:
-
-| Rotation | Result |
-| --- | --- |
-| 0 | `(fma(ar,br,cr), fma(ar,bi,ci))` |
-| 90 | `(fma(ai,-bi,cr), fma(ai,br,ci))` |
-| 180 | `(fma(ar,-br,cr), fma(ar,-bi,ci))` |
-| 270 | `(fma(ai,bi,cr), fma(ai,-br,ci))` |
-
-Each component has one fused product and one rounding in its destination
-format. A call at rotation 0 followed by one at rotation 90 accumulates a full
-complex product, with two successive fused rounding stages. It is not an
-infinitely precise complex product rounded once. The other real/imaginary
-component of `a` is not multiplied in that individual call.
-
-The lane forms cover the FP16 and FP32 register shapes above. `Lane` indexes
-complex pairs in `b`, so a four-float source has two selectable pairs, and an
-eight-half source has four. Source and destination register widths may differ
-within each format. The chosen pair is broadcast to every destination pair.
-FP32 two-element results use a selected 64-bit pair and the vector instruction;
-other shapes use the indexed instruction. A 64-bit half result selecting either
-upper pair of a 128-bit source first extracts the upper 64 bits. There is no
-indexed FP64 overload. Rotations and pair indices are compile-time immediates.
-
-Compile the caller for its target and check CPU support before entering it.
-An import or template argument alone does neither:
+| `fcadd(a,b)` | 90 | `(ar-bi, ai+br)` |
+| `fcadd(a,b)` | 270 | `(ar+bi, ai-br)` |
+| `fcmla(acc,a,b)` | 0 | `(fma(ar,br,cr), fma(ar,bi,ci))` |
+| `fcmla(acc,a,b)` | 90 | `(fma(ai,-bi,cr), fma(ai,br,ci))` |
+| `fcmla(acc,a,b)` | 180 | `(fma(ar,-br,cr), fma(ar,-bi,ci))` |
+| `fcmla(acc,a,b)` | 270 | `(fma(ai,bi,cr), fma(ai,-br,ci))` |
 
 ```cpp
 #include <native/targets.h>
@@ -74,36 +47,46 @@ constexpr auto complex_isa = NATIVE_TARGET_ISA(complex_float);
 
 NATIVE_TARGET_PUSH(complex_float)
 void complex_float(float* output, float const* a, float const* b) noexcept {
-  using vector = native::simd<float, 4, complex_isa>;
+  using vector = native::simd<float,4,complex_isa>;
   auto va = vector::load_memory(a), vb = vector::load_memory(b);
-  auto partial = native::fcmla<complex_isa, 0>(vector(0.0f), va, vb);
-  native::fcmla<complex_isa, 90>(partial, va, vb).store_memory(output);
+  auto partial = native::fcmla<complex_isa,0>(vector(0.0f), va, vb);
+  native::fcmla<complex_isa,90>(partial, va, vb).store_memory(output);
 }
 NATIVE_TARGET_POP()
-
-// Before calling complex_float, after satisfying the process minimum:
-// auto cpu = native::observe_arm_capabilities();
-// if(native::classify_isa(cpu, complex_isa, NATIVE_TARGET_MINIMUM).admitted())
-//   complex_float(output, a, b);
 ```
 
-FPCR remains unchanged. Rounding, subnormal handling, NaNs and signed zeros
-follow the instruction and caller's controls; applicable exceptions accumulate
-in FPSR. No software normalization, flag reset or environment installation
-occurs. Hardware traps are not masked by `noexcept`. Surrounding code that
-changes or observes the floating environment needs the compiler's corresponding
-support.
+## Caveats
 
-Clang 23's ACLE wrappers and underlying builtins require the whole Armv8.3-A
-bundle. The implementation instead uses the exact native instruction under its
-independent target attribute. Volatile assembly preserves FPSR effects even
-when the result is discarded, and a compiler memory barrier orders surrounding
-memory-based environment operations. This barrier is not a CPU memory fence.
-The operations carry neither `pure` nor `const`. A shared private helper handles
-Clang's different 64-bit and 128-bit big-endian asm register coercions, including
-bytes within each floating element.
+Each `fcmla` component has one fused product and one destination-format
+rounding. Rotation 0 followed by rotation 90 accumulates the full complex
+product with two successive fused rounding stages. The unselected component
+of `a` does not participate in an individual call.
+
+Runtime calls require `arm_feature::complxnum` and a `"complxnum"` caller
+target. FP16 calls additionally require `arm_feature::neon_fp16` and
+`"complxnum,fullfp16"`. Admission includes NEON. Check the target requirement
+and `NATIVE_TARGET_MINIMUM` before entering the function. FP16, FHM and BF16
+do not imply FCMA; importing a module does not enable the target or dispatch.
+
+Runtime arithmetic follows the caller's FPCR controls and accumulates applicable
+exceptions in FPSR. The wrappers leave FPCR unchanged and retain instruction
+execution even when the result is discarded. They do not mask hardware traps;
+`noexcept` concerns C++ exceptions. Surrounding code that observes or changes
+the environment still needs the compiler's floating-environment support.
+The compiler memory barrier orders memory-based environment accesses and adds
+no CPU memory fence.
+
+Constant evaluation uses nearest-even rounding, gradual inputs and results,
+payload-preserving NaNs, IEEE half precision and masked exceptions, with
+DN=AH=AHP=FZ=FZ16=FIZ=EBF=0 and no machine status effects. Without FCMA,
+`consteval`-only overloads remain available when the SIMD storage types exist.
+They provide no runtime fallback.
+
+For indexed FP32 two-element results, the implementation selects a 64-bit pair
+and uses the vector instruction. An indexed 64-bit FP16 result selecting an
+upper pair of a 128-bit source first extracts the upper 64 bits.
 
 See the [Arm Neon complex-operation reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#complex-operations-from-armv83-a)
-and the [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).
+and [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

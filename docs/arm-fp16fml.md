@@ -1,36 +1,32 @@
-# ARM FP16 widening fused multiply-add
+# ARM FHM: FP16 products with FP32 accumulation
 
-`fmlal<Arch>(acc,a,b)` adds binary16 products directly to binary32 accumulators;
-`fmlsl` subtracts them. Import `native.arm.fp16fml`, `native.arm`, or `native`
-for these operations, their upper-half forms `fmlal2` and `fmlsl2`, and the
-corresponding `_lane` forms. Accumulators and results use
-`native::simd<float, N, Arch>`; inputs use `native::simd<native::fp16, M, Arch>`.
-Every operand shares `Arch`. Raw NEON registers are private implementation details.
+[ARM instruction sets](arm.md)
 
-For a result with `N` lanes, the inputs have `2*N` half lanes. The unsuffixed
-instructions select lanes `[0,N)`, and the `2` variants select `[N,2*N)`. Each
-result component is one fused operation with one binary32 rounding. There is no intermediate binary16 product or binary32
-multiply rounding. These are FEAT_FHM operations; ordinary FP16 arithmetic and
-BF16 arithmetic have different feature requirements and numerical contracts.
+## Why use it
 
-| Operation shape | Accumulator/result | Multiplicands | Selected lanes |
+Half-precision inputs reduce storage, but rounding each product to half
+precision can lose information before accumulation begins. FHM multiplies
+binary16 inputs and accumulates directly into binary32, with one fused FP32
+rounding per output lane.
+
+## Operations
+
+Import `native.arm.fp16fml`, or use the `native.arm` or `native` hub.
+`fmlal<Arch>(acc,a,b)` adds products; `fmlsl<Arch>(acc,a,b)` subtracts them.
+`fmlal2` and `fmlsl2` select the upper half of the input vectors.
+All operands share `Arch`.
+
+| Operation | Accumulator/result | Multiplicands | Selected input lanes |
 | --- | --- | --- | --- |
-| `fmlal`, `fmlsl` | `simd<float, 2, Arch>` | `simd<fp16, 4, Arch>` | 0–1 |
-| `fmlal2`, `fmlsl2` | `simd<float, 2, Arch>` | `simd<fp16, 4, Arch>` | 2–3 |
-| `fmlal`, `fmlsl` | `simd<float, 4, Arch>` | `simd<fp16, 8, Arch>` | 0–3 |
-| `fmlal2`, `fmlsl2` | `simd<float, 4, Arch>` | `simd<fp16, 8, Arch>` | 4–7 |
+| `fmlal`, `fmlsl` | `simd<float,2,Arch>` | Two `simd<fp16,4,Arch>` vectors | 0–1 |
+| `fmlal2`, `fmlsl2` | `simd<float,2,Arch>` | Two `simd<fp16,4,Arch>` vectors | 2–3 |
+| `fmlal`, `fmlsl` | `simd<float,4,Arch>` | Two `simd<fp16,8,Arch>` vectors | 0–3 |
+| `fmlal2`, `fmlsl2` | `simd<float,4,Arch>` | Two `simd<fp16,8,Arch>` vectors | 4–7 |
 
-Every `_lane<Arch,Lane>(acc,a,b)` form selects the same lanes of `a` and broadcasts
-one scalar half from `b`. The source `b` may have four or eight half lanes;
-`Lane` is an immediate less than four or eight respectively. Invalid lane
-indices are rejected at compile time. The widening result has the same
-binary32 shape as `acc`.
-
-Runtime calls require `Arch.has(arm_feature::fp16fml)` and a `"fp16fml"` compiler
-target. Runtime admission includes the compiler prerequisites NEON and FP16.
-The `neon_fp16` preset, BF16 and FCMA do not supply the FHM feature. Compile the
-caller for the matching target and check its requirements before entering it;
-importing the module does neither:
+Each name has a `_lane<Arch,Lane>(acc,a,b)` form. It selects the same lanes of
+`a` and broadcasts one scalar half from `b`, which may have four or eight half
+lanes independently of the output width. `Lane` is a compile-time immediate
+within that source's range.
 
 ```cpp
 #include <native/targets.h>
@@ -41,50 +37,41 @@ constexpr auto widen_isa = NATIVE_TARGET_ISA(widen);
 
 NATIVE_TARGET_PUSH(widen)
 void widen(float* output, native::fp16 const* a, native::fp16 const* b) noexcept {
-  using input = native::simd<native::fp16, 8, widen_isa>;
-  using result = native::simd<float, 4, widen_isa>;
+  using input = native::simd<native::fp16,8,widen_isa>;
+  using result = native::simd<float,4,widen_isa>;
   native::fmlal<widen_isa>(result(0.0f), input::load_memory(a),
     input::load_memory(b)).store_memory(output);
 }
 NATIVE_TARGET_POP()
-
-// Before calling widen, after satisfying the configured process minimum:
-// auto cpu = native::observe_arm_capabilities();
-// if(native::classify_isa(cpu, widen_isa, NATIVE_TARGET_MINIMUM).admitted())
-//   widen(output, a, b);
 ```
 
+## Caveats
 
-Constant evaluation uses a fixed floating-point environment: nearest-even
-rounding, gradual inputs and results, payload-preserving NaNs, standard IEEE
-half precision, and masked exceptions. FPCR controls DN, AH, AHP, FZ, FZ16, FIZ,
-and EBF are zero. No status flags, traps, or control-register accesses occur.
-An architecture tag lacking the instruction feature admits a `consteval`-only
-overload when every operand/result storage type is complete; runtime inputs
-remain compile-time errors. Lane, rotation, element-type and architecture
-requirements still apply. With the feature present, the same function is
-`constexpr` and its runtime branch executes the native instruction.
+Each output is one fused binary32 operation. There is no intermediate binary16
+product or separately rounded binary32 multiplication. These are FEAT_FHM
+operations, with a different contract from ordinary FP16 and BF16 arithmetic.
 
-The instructions retain their architectural floating-point behavior at runtime: FPCR is
-read and left unchanged, and applicable exception flags accumulate in FPSR.
-The wrappers do not install a rounding mode, flush subnormals in software,
-canonicalize NaNs, clear flags, or save/restore the environment. Signed zero,
-NaNs, infinities and subnormal handling follow the instruction and caller's
-controls. An enabled hardware exception is not a C++ exception suppressed by
-`noexcept`. Use the compiler's floating-environment support when surrounding
-code changes or observes that environment.
+Runtime calls require `arm_feature::fp16fml` and a `"fp16fml"` caller target.
+Admission includes NEON and FP16. The `neon_fp16` preset, BF16 and FCMA do not
+supply FHM. Admit the target requirement and `NATIVE_TARGET_MINIMUM` before
+entering the function; importing the module does not enable instructions or
+perform dispatch.
 
-Clang 23 can discard an unused ACLE FHM result even with floating-environment
-access enabled. These wrappers therefore use volatile native instructions and
-a compiler memory barrier, preserving instruction execution and FPSR effects
-when the result is discarded. They have no `pure` or `const` annotation. The
-barrier also orders surrounding memory-based floating-environment operations;
-it is not a general CPU memory fence. The implementation normalizes Clang's
-big-endian register coercion separately for 64-bit and 128-bit vectors.
+Runtime arithmetic follows FPCR, leaves it unchanged, and accumulates applicable
+exception flags in FPSR. Signed zeros, NaNs, infinities and subnormals retain
+the instruction's behavior under the active controls. The wrappers retain
+instruction execution and FPSR effects even for discarded results. They do not
+mask hardware traps. Surrounding code that observes or changes the environment
+needs the compiler's floating-environment support. The compiler memory barrier
+orders memory-based environment accesses and adds no CPU memory fence.
 
-The API follows the FHM entries in the
-[Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#fp16-armv84-a)
-and the floating-point instruction semantics in the
-[Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).
+Constant evaluation uses nearest-even rounding, gradual inputs and results,
+payload-preserving NaNs, IEEE half precision and masked exceptions, with
+DN=AH=AHP=FZ=FZ16=FIZ=EBF=0 and no machine status effects. A tag without FHM
+permits only `consteval` calls when the SIMD storage types exist. There is no
+runtime software fallback.
+
+See the [Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#fp16-armv84-a)
+and [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

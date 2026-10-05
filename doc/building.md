@@ -1,4 +1,4 @@
-# Building and consuming native
+# Building and installation
 
 Use Clang 23, CMake 4.4 and Ninja. On Windows use `clang-cl` with a configured
 MSVC SDK environment; on macOS select an LLVM toolchain explicitly instead of
@@ -114,6 +114,20 @@ installed package does not choose the consumer's launcher. Set
 `-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear it in an existing build.
 Module and PCH caching depend on the sccache version and compiler driver.
 Check `sccache --show-stats` to see which compilations are actually cached.
+
+## WebAssembly
+
+The C++26 named-module build requires the same structured-binding-pack and
+property checks as native targets. With WASI SDK 34, CMake 4.4 and Ninja:
+
+```sh
+cmake -S . -B build-wasm -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
+  -DNATIVE_TEST_ISA=WASM_SIMD128 -DNATIVE_PROFILES=WASM_SIMD128 \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build-wasm
+ctest --test-dir build-wasm -LE engine-conformance --output-on-failure
+```
 
 ## API documentation
 

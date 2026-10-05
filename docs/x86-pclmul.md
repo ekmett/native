@@ -1,79 +1,58 @@
-<!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
-# Carry-less polynomial multiplication
+# x86 PCLMULQDQ/VPCLMULQDQ: carry-less polynomial products
 
-`native.x86.pclmul` exports `pclmulqdq<Arch, Imm8>` for
-`simd<std::uint64_t,2,Arch>`. `native.x86.vpclmul` exports
-`vpclmulqdq<Arch, Imm8>` for `simd<std::uint64_t,N,Arch>` with N = 2, 4 or 8.
-Both belong to `native::native`, import the SIMD provider, and are reexported
-by `native.x86` and `native`. Raw register helpers are implementation details.
-Use `target_features<native::x86>(...)` or `feature_closure(...)` for the architecture tag,
-including the register prerequisites.
+[x86 instruction sets](x86.md)
 
-Each input bit is a coefficient of a polynomial over GF(2). The operation
-multiplies two selected 64-bit polynomials and returns their exact 128-bit
-product. Addition is XOR: there is no integer carry or polynomial reduction.
-The coefficient of degree 127 is always zero. Wider registers contain two or
-four independent products; there are no cross-128-bit-lane products.
+## Why use it
 
-`Imm8` is an unsigned template argument in 0–255. Bit 0 selects the half of
-`a`, and bit 4 selects the half of `b`; 0 selects the low half and 1 the high
-half. The four meaningful selectors are `0x00`, `0x01`, `0x10`, and `0x11`.
-Other bits are ignored, so `0xee` means the same as `0x00`. Out-of-range,
-overflowing and runtime immediates are rejected. Operands must have the exact
-unsigned 64-bit element type, architecture tag and lane count. Floating-point
-vectors, raw registers and mixed tags are rejected.
+Binary polynomials add with XOR instead of carry. Carry-less multiplication
+provides the product used by CRC folding and binary-field arithmetic, including
+the multiplication stage of GHASH. Vector forms handle several independent
+products in one register.
 
-All forms support constant evaluation with the same lane and mask semantics.
-When `Arch` supplies the instruction features, the overload is `constexpr` and
-runtime calls still use the native instruction. A tag without those features
-can use a `consteval` overload if its SIMD storage exists: SSE2 for 128 bits,
-AVX for 256 bits, or AVX512F for 512 bits, including their register prerequisites.
-The result retains the exact input tag. These weaker tags accept compile-time
-operands only; they do not provide a software fallback for runtime data.
+## Operations
 
-| Operation | Vector | Runtime `Arch` bits | Function target |
+`import native.x86.pclmul;` provides `pclmulqdq<Arch, Imm8>` on
+`simd<std::uint64_t,2,Arch>`. `import native.x86.vpclmul;` provides
+`vpclmulqdq<Arch, Imm8>` on `simd<std::uint64_t,N,Arch>` for `N = 2, 4, 8`.
+Both belong to `native::native` and are re-exported by `native.x86` and `native`.
+
+Each input bit is a GF(2) polynomial coefficient. The operation multiplies two
+selected 64-bit polynomials and returns their exact 128-bit product. Bit 0 of
+`Imm8` selects the half of `a`; bit 4 selects the half of `b`. Zero means the
+low half, one the high half. The useful selectors are `0x00`, `0x01`, `0x10`
+and `0x11`; other immediate bits are ignored. `Imm8` must be in 0–255.
+
+Wider forms contain two or four independent products, one per 128-bit block.
+For example, `vpclmulqdq<arch, 0x10>(a, b)` multiplies the low qword of each
+`a` block by the high qword of the corresponding `b` block.
+
+## Caveats
+
+The product has no integer carry or polynomial reduction. Its degree is at
+most 126, so output bit 127 is zero. The caller supplies reduction and any
+byte/bit-order changes required by a CRC or field representation. There are
+no cross-block products or writemasks.
+
+| Operation | Width | Runtime features | Caller target |
 | --- | --- | --- | --- |
-| `pclmulqdq` | `simd<uint64_t,2,Arch>` | `pclmul` | `pclmul` |
-| `vpclmulqdq` | `simd<uint64_t,2,Arch>` | `pclmul`, `avx` | `avx,pclmul` |
-| `vpclmulqdq` | `simd<uint64_t,4,Arch>` | `vpclmulqdq`, `avx` | `avx,vpclmulqdq` |
-| `vpclmulqdq` | `simd<uint64_t,8,Arch>` | `vpclmulqdq`, `avx512f` | `avx512f,vpclmulqdq` |
+| `pclmulqdq` | 128 | PCLMUL | `"pclmul"` |
+| `vpclmulqdq` | 128 | PCLMUL, AVX | `"avx,pclmul"` |
+| `vpclmulqdq` | 256 | VPCLMULQDQ, AVX | `"avx,vpclmulqdq"` |
+| `vpclmulqdq` | 512 | VPCLMULQDQ, AVX512F | `"avx512f,vpclmulqdq"` |
 
-The 256-bit form needs neither AVX2 nor AVX-512. The 512-bit form needs no
-AVX512BW, AVX512DQ or AVX512VL. These instructions have no write-mask forms.
-LLVM uses the same narrow intrinsics for VEX and EVEX encodings: an EVEX
-128/256-bit encoding additionally requires VPCLMULQDQ and AVX512VL. Stronger
-callers may select it; the API does not force an encoding. A baseline PCLMUL
-caller uses legacy SSE, and an AVX caller may use VEX.
+The 256-bit form needs no AVX2; the 512-bit form needs no BW, DQ or VL.
+Narrow EVEX encodings additionally require VPCLMULQDQ and AVX512VL; the compiler
+may choose an encoding permitted by the caller. `target_features` includes the
+compiler prerequisites. Admit the matching target and OS vector state before
+entry. PCLMUL and VPCLMULQDQ are independent CPU feature bits.
 
-The capability `x86_feature::vpclmulqdq` records CPUID.7.0:ECX bit 10,
-independently of `pclmul` at CPUID.1:ECX bit 1. Presence does not establish OS
-support. Compiler closure for `vpclmulqdq` adds AVX and PCLMUL, matching Clang's
-target dependencies; it does not add AVX2. `NATIVE_TARGET_MINIMUM` recognizes
-`__VPCLMULQDQ__`. Unknown compiler features still fail closed.
+Feature-bearing overloads are `constexpr` with native runtime paths. Weaker
+tags accept `consteval` calls with complete SSE2, AVX or AVX512F storage for
+the chosen width. Inputs must have the same tag and unsigned qword shape;
+results preserve that tag. These integer operations leave FP status unchanged.
 
-Check `classify_isa` before calling a matching targeted function. AVX needs
-observed XCR0 bits 1 and 2; AVX-512 also needs bits 5, 6 and 7. Imports enable
-no instructions in the caller. All four overloads are pure integer operations
-and leave floating-point status unchanged.
+See Intel's [PCLMULQDQ reference](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf),
+[VPCLMULQDQ reference](https://kib.kiev.ua/x86docs/Intel/ISAFuture/319433-031.pdf)
+and Clang's [intrinsic declarations](https://clang.llvm.org/doxygen/vpclmulqdqintrin_8h_source.html).
 
-```cpp
-#include <cstdint>
-#include <native/attributes.h>
-import native.x86.vpclmul;
-
-constexpr auto requirements = native::target_features<native::x86>("avx,vpclmulqdq");
-using polynomials = native::simd<std::uint64_t,4,requirements>;
-native_target("avx,vpclmulqdq")
-polynomials products(polynomials a, polynomials b) {
-  return native::vpclmulqdq<requirements, 0x10>(a, b);
-}
-// Enter products only after classify_isa(observe_x86_capabilities(),
-// requirements).admitted() succeeds.
-```
-
-The contracts follow Intel's [PCLMULQDQ instruction reference](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf),
-[VPCLMULQDQ extension reference, pages 2-25–2-27](https://kib.kiev.ua/x86docs/Intel/ISAFuture/319433-031.pdf),
-and [CPUID feature table](https://cdrdv2-public.intel.com/868136/252046-081-sdm-change-document.pdf).
-LLVM's [intrinsic declarations](https://clang.llvm.org/doxygen/vpclmulqdqintrin_8h_source.html)
-and [target dependencies](https://github.com/llvm/llvm-project/blob/main/llvm/lib/TargetParser/X86TargetParser.cpp)
-determine the compiler requirements.
+<!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

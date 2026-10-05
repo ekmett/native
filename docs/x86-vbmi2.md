@@ -1,85 +1,87 @@
-# Packed compaction and double-source shifts
+# x86 AVX-512VBMI2: compaction and double-source shifts
 
-`import native.x86.vbmi2;` exposes AVX512VBMI2 through `simd` values,
-`predicate` masks and typed memory pointers. Link `native::native`; the
-`native.x86` and `native` hubs also export this module. Every operation has
-128, 256 and 512-bit forms with matching vector and mask architecture tags.
+[x86 instruction sets](x86.md)
 
-| Operation | Element type | Result |
+## Why use it
+
+Filtering a vector leaves holes. Byte and word compaction closes them, producing
+a dense prefix that can be stored without a scalar loop. Expansion puts that
+prefix back into selected positions. Double-source shifts assemble bit fields
+from adjacent pieces held in corresponding lanes.
+
+## Operations
+
+`import native.x86.vbmi2;` exports these operations through `native::native`.
+`native.x86` and `native` also export them. All families have 128-, 256- and
+512-bit forms with matching `simd` and `predicate` architecture tags.
+
+| Operation family | Unsigned element | Meaning |
 | --- | --- | --- |
-| `vpcompressb`, `vpcompressw` masked forms | `uint8_t`, `uint16_t` | Pack selected input lanes into a contiguous prefix |
-| `vpexpandb`, `vpexpandw` masked forms | `uint8_t`, `uint16_t` | Expand a packed prefix into selected result lanes |
-| `vpshldw`, `vpshldd`, `vpshldq` | `uint16_t`, `uint32_t`, `uint64_t` | Shift `a` left, bringing high bits of `b` into the low end |
-| `vpshrdw`, `vpshrdd`, `vpshrdq` | `uint16_t`, `uint32_t`, `uint64_t` | Shift `a` right, bringing low bits of `b` into the high end |
-| `vpshldvw`, `vpshldvd`, `vpshldvq` | Same unsigned types | Per-lane variable left shifts |
-| `vpshrdvw`, `vpshrdvd`, `vpshrdvq` | Same unsigned types | Per-lane variable right shifts |
+| `vpcompressb`, `vpcompressw` masked forms | `uint8_t`, `uint16_t` | Pack selected lanes into a prefix |
+| `vpexpandb`, `vpexpandw` masked forms | `uint8_t`, `uint16_t` | Expand a prefix into selected positions |
+| `vpshldw`, `vpshldd`, `vpshldq` | `uint16_t`, `uint32_t`, `uint64_t` | Immediate double-source left shift |
+| `vpshrdw`, `vpshrdd`, `vpshrdq` | Same widths | Immediate double-source right shift |
+| `vpshldvw`, `vpshldvd`, `vpshldvq` | Same widths | Per-lane variable left shift |
+| `vpshrdvw`, `vpshrdvd`, `vpshrdvq` | Same widths | Per-lane variable right shift |
 
-## Compaction
+### Compaction
 
-Register compaction takes `mask_vpcompressb(source, mask, value)` or
-`maskz_vpcompressb(mask, value)`, with word analogues. Selected input lanes
-are packed in increasing lane order across the complete vector. Merging
-preserves `source` above the packed prefix; zeroing clears that suffix.
-For example, mask bits 1 and 5 select `value[1]` and `value[5]` into result
-lanes 0 and 1. The merging suffix begins at lane 2, irrespective of mask bits.
+`mask_vpcompressb(source, mask, value)` packs active input lanes in increasing
+order across the whole vector and keeps `source` above the packed prefix.
+`maskz_vpcompressb(mask, value)` zeros that suffix. Word forms work the same
+way. Mask bits 1 and 5, for example, place `value[1]` and `value[5]` in result
+lanes 0 and 1; the merge suffix starts at lane 2.
 
-Register expansion uses `mask_vpexpandb(source, mask, value)` or
-`maskz_vpexpandb(mask, value)`, again with word analogues. It consumes the
-first `popcount(mask)` input lanes and writes them in order to active output
-positions. Inactive positions retain `source` or become zero.
+`mask_vpexpandb(source, mask, value)` consumes the first `popcount(mask)` input
+lanes and places them in active result positions. Inactive positions keep
+`source`; `maskz_vpexpandb(mask, value)` clears them. Word forms are analogous.
 
-The same names provide typed memory overloads:
+Typed memory overloads use the same names:
 
-- `mask_vpcompressb(destination, mask, value)` writes a packed byte prefix;
-  the word overload takes `std::uint16_t*`.
-- `mask_vpexpandb(source, mask, memory)` and
-  `maskz_vpexpandb(mask, memory)` read a packed byte prefix and expand it;
-  the word overloads read `std::uint16_t` elements.
+- `mask_vpcompressb(destination, mask, value)` writes a packed byte prefix and
+  returns `void`; the word form takes `std::uint16_t*`.
+- `mask_vpexpandb(source, mask, memory)` and `maskz_vpexpandb(mask, memory)` read
+  a packed prefix; word forms read `std::uint16_t` elements.
 
-The pointer must identify at least `popcount(mask)` live elements of the
-matching unsigned type. Stores require writable elements. Loads accept
-mutable or const pointers. Volatile, raw `void*`, unrelated element types
-and mismatched masks are rejected. Exactly the packed prefix is accessed;
-no full-vector alignment is required beyond ordinary element alignment.
-A typed null pointer is valid when the logical mask is empty, including when
-unused high bits were supplied to `predicate::from_bitset`. Stores return
-`void`. These instruction forms have no capacity argument; the generic
-`compress_store` API supplies a separate bounded-store contract.
+Memory forms access exactly `popcount(mask)` elements. A typed null pointer is
+valid for an empty logical mask. Loads accept const or mutable pointers;
+stores need writable elements. Ordinary element alignment is sufficient.
 
-## Double-source shifts
+### Double-source shifts
 
-Immediate shifts use an unsigned byte template argument after the architecture:
-`vpshldw<Arch, 7>(a, b)`. Values from 0 through 255 are accepted; other values
-are rejected. Variable shifts take `a, b, counts`, with all three operands
-using the same unsigned element type and vector shape.
+Immediate forms take `<Arch, Imm8>(a, b)` with `Imm8` in 0–255. Variable forms
+take `<Arch>(a, b, counts)` with identical unsigned element types and shapes.
+Counts wrap modulo the lane's bit width. Zero returns `a`; for nonzero `c`:
 
-Counts wrap modulo the element's bit width. A wrapped zero returns `a`.
-For a nonzero count `c`, left shifts return `(a << c) | (b >> (bits - c))`,
-and right shifts return `(a >> c) | (b << (bits - c))`, truncated to the
-unsigned element width. Counts never move data between lanes.
+- Left: `(a << c) | (b >> (bits - c))`.
+- Right: `(a >> c) | (b << (bits - c))`.
 
-Every shift has ordinary, merging and zeroing forms. Immediate merging forms
-take `source, mask, a, b`; variable merging forms take `a, mask, b, counts`
-and retain inactive lanes from `a`, matching the instruction's destination.
-Each `maskz_` form takes its mask first and clears inactive lanes.
+Results are truncated to the lane width. Immediate merging forms take
+`source, mask, a, b`; variable merging forms take `a, mask, b, counts` and keep
+inactive lanes from `a`. Zeroing forms put the mask first.
 
-## Features and constant evaluation
+## Caveats
 
-Use `target_features<native::x86>("avx512vbmi2")` for 512-bit forms or add
-`,avx512vl` for shorter forms. Runtime overloads require F/BW/VBMI2 and, for
-128/256 bits, VL. BW reflects Clang's VBMI2 target prerequisites. DQ, VBMI,
-BITALG and VPOPCNTDQ remain independent. CPUID leaf 7, subleaf 0, ECX bit 6
-identifies VBMI2; callers must also admit OS AVX-512 state before entering a
-matching compiler target.
+Compaction's mask chooses input lanes; expansion's mask chooses output lanes.
+A compression merge keeps the suffix above the packed count, rather than the
+positions whose mask bits were clear. Double-source shifts never move bits
+between lanes.
 
-Strong tags provide `constexpr` operations with native runtime paths. Weaker
-tags provide `consteval` operations when their storage exists: SSE2 for
-128 bits, AVX for 256 bits or AVX512F for 512 bits, including prerequisites.
-Memory forms preserve the same extent and empty/null contract during constant
-evaluation. These overloads do not add a software fallback for runtime calls.
+Memory forms have no capacity argument. The prefix must fit in live objects
+of the exact element type; volatile, `void*` and unrelated pointers are rejected.
+Use generic `compress_store` for its separate bounded-store contract.
 
-Semantics follow Intel's
-[Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf)
-and Clang's [VBMI2 intrinsic definitions](https://clang.llvm.org/doxygen/avx512vbmi2intrin_8h_source.html).
+Runtime wrappers need AVX512F, AVX512BW and AVX512VBMI2, plus AVX512VL for
+128/256 bits. Use `target_features<native::x86>("avx512vbmi2")`, adding
+`avx512vl` for short forms. BW reflects Clang's target prerequisites. VBMI,
+BITALG, DQ and VPOPCNTDQ are independent. Admit the matching compiler target
+and OS AVX-512 state before entry.
+
+Feature-bearing overloads are `constexpr` with native runtime paths; weaker
+tags have `consteval` overloads with complete storage for the chosen width.
+Constant evaluation retains the same memory extent and empty/null rules.
+
+See Intel's [Software Developer's Manual](https://cdrdv2-public.intel.com/868137/325462-089-sdm-vol-1-2abcd-3abcd-4.pdf)
+and Clang's [VBMI2 definitions](https://clang.llvm.org/doxygen/avx512vbmi2intrin_8h_source.html).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

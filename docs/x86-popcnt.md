@@ -1,62 +1,37 @@
-# x86 POPCNT
+# x86 POPCNT: scalar population counts
 
-`native::popcnt<Arch>(value)` counts the set bits of an unsigned integer.
-Zero returns zero; an all-one input returns its width. The overloads accept
-`std::uint16_t`, `std::uint32_t`, or `std::uint64_t` and return the same type.
+[x86 instruction sets](x86.md)
 
-Import `native.x86.popcnt`, `native.x86`, or `native` to use them. Source-tree
-header consumers can include `<native/x86/popcnt.h>`; the installed public API
-uses the named modules.
+## Why use it
 
-Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
-their owning module is compiled. A function target attribute on the caller
-does not change that captured value.
-Explicit `Arch` arguments are supported, and standalone headers require them.
+A population count gives the size of a bitset without visiting each bit.
+Applied to XOR it gives Hamming distance; applied to AND it counts an
+intersection. POPCNT exposes that operation on a single unsigned integer.
 
-`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
-All operand widths support constant evaluation. If `Arch` lacks the feature,
-the selected overload is `consteval`: a constant call is accepted, while a call
-with runtime inputs is ill-formed. With the feature present, the overload is
-`constexpr` and uses the instruction implementation at runtime. Runtime calls
-still require a matching compiler target and admitted CPU support; there is
-no runtime software fallback.
+## Operations
 
-Intel defines 16-, 32- and 64-bit forms, admitted by CPUID leaf 1 ECX bit 23.
-SSE, BMI and vector OS state are not prerequisites.
-See the POPCNT entry in [Intel's instruction reference, Volume 2B](https://cdrdv2-public.intel.com/782151/253667-sdm-vol-2b.pdf#page=401)
-and the [current Intel manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html).
+`import native.x86.popcnt;` provides `native::popcnt<Arch>(value)`.
+`native.x86` and `native` re-export it. The overloads accept `std::uint16_t`,
+`std::uint32_t` or `std::uint64_t` and return the same unsigned type.
 
-Each runtime overload is `noexcept` and always inline, with target `"popcnt"` and the
-constraint `Arch.has(native::x86_feature::popcnt)`. Supplying the feature in
-`Arch` does not change the caller's compiler target or check the CPU. The
-caller still needs a matching target scope and a runtime capability check:
+Zero returns zero. An all-one value returns its width. Calls are `noexcept`.
 
-```cpp
-#include <cstdint>
-#include <native/targets.h>
-import native.x86.popcnt;
+## Caveats
 
-#define NATIVE_TARGET_count_bits "popcnt"
-constexpr auto count_isa = NATIVE_TARGET_ISA(count_bits);
+Runtime calls need `x86_feature::popcnt`, a `"popcnt"` caller target and CPU
+admission. POPCNT is independent of SSE and BMI and needs no vector OS state.
+The 16-bit overload counts a zero-extended value through Clang's 32-bit
+intrinsic; the public result remains a 16-bit count.
 
-NATIVE_TARGET_PUSH(count_bits)
-std::uint64_t count_bits(std::uint64_t value) noexcept {
-  return native::popcnt<count_isa>(value);
-}
-NATIVE_TARGET_POP()
+`Arch` is an `isa<x86>`. Its scalar default is the provider's
+`NATIVE_BASELINE`, unaffected by target attributes in the importer.
+Feature-bearing overloads are `constexpr` with native runtime paths;
+tags without POPCNT have `consteval` overloads only. No instruction-flags or
+exact-encoding promise follows from the spelling.
 
-int main() {
-  auto cpu = native::observe_x86_capabilities();
-  if (!native::classify_isa(cpu, count_isa, NATIVE_TARGET_MINIMUM).admitted())
-    return 0;
-  return count_bits(0xf0f0) == 8 ? 0 : 1;
-}
-```
+Generic `popcount` covers portable scalar and vector code. Use `popcnt` when
+the x86 feature is part of the algorithm's target contract.
 
-The 16-bit overload counts a zero-extended operand through Clang's 32-bit
-intrinsic. Its value contract is 16-bit; optimization may choose a different
-instruction width. None of these wrappers exposes the instruction's flags.
-The existing generic scalar/vector `popcount` operations keep their own API;
-`popcnt` is the explicit x86 feature-gated spelling.
+See Intel's [POPCNT instruction entry](https://cdrdv2-public.intel.com/782151/253667-sdm-vol-2b.pdf#page=401).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

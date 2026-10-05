@@ -1,4 +1,4 @@
-# Transcendental kernels
+# Math kernels
 
 The promoted `math` API accepts a binary32 scalar, `simd`, an array or a `wide`
 pack and preserves that shape. A pack advances all independent registers through

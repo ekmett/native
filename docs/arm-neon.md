@@ -1,92 +1,63 @@
-# NEON integer instructions and conversions
+# ARM NEON: saturation, shifts, bit operations and conversions
 
-`import native.arm.neon;`, `import native.arm;` and `import native;` expose typed
-NEON integer instructions on AArch64. Operands use `native::simd<T,N,Arch>`;
-all operands retain the same `Arch`, which must contain `arm_feature::neon` for
-runtime calls. The instruction target is `neon`, with no additional extension
-bit. The public names follow the architecture mnemonics used by the other ARM
-instruction modules.
+[ARM instruction sets](arm.md)
+
+## Why use it
+
+Packed integer kernels often need saturation, per-lane shifts or narrowing
+rather than C++'s ordinary arithmetic. These NEON operations expose those
+choices directly. The floating-to-integer conversions also give defined results
+for every binary32 encoding, including overflow and NaNs.
+
+## Operations
+
+Import `native.arm.neon`, or use the `native.arm` or `native` hub.
+Vector operands use `native::simd<T,N,Arch>` with a common `Arch`.
+The conversion names are also exported by `native.simd`.
 
 | Operations | Shapes and behavior |
-|---|---|
-| `fcvtzs` | Binary32 to signed 32-bit integer, truncating toward zero; ordinary `float` and `simd<float,N,Arch>` with 1–4 lanes |
-| `fcvtzu` | The corresponding unsigned conversion; NaNs and negative inputs produce zero, positive overflow produces `UINT32_MAX` |
-| `sqadd`, `uqadd`, `sqsub`, `uqsub` | Saturating signed/unsigned addition and subtraction; 8-, 16-, 32- and 64-bit lanes in 64 or 128 logical bits |
-| `sqxtn`, `uqxtn`, `sqxtun` | Saturating signed-to-signed, unsigned-to-unsigned and signed-to-unsigned narrowing; 128 input bits become 64 output bits, with 16→8, 32→16 or 64→32-bit lanes |
-| `sqxtn_high`, `uqxtn_high`, `sqxtun_high` | Preserve a 64-bit low argument and append the narrowed source above it, producing 128 bits |
+| --- | --- |
+| `fcvtzs`, `fcvtzu` | Scalar `float` or `simd<float,N,Arch>` with 1–4 lanes to signed/unsigned 32-bit integers, truncating toward zero |
+| `sqadd`, `uqadd`, `sqsub`, `uqsub` | Saturating signed/unsigned add and subtract; 8-, 16-, 32- or 64-bit lanes in 64 or 128 logical bits |
+| `sqxtn`, `uqxtn`, `sqxtun` | Saturating signed-to-signed, unsigned-to-unsigned or signed-to-unsigned narrowing; 128 input bits to 64 output bits, with 16→8, 32→16 or 64→32-bit lanes |
+| `sqxtn_high`, `uqxtn_high`, `sqxtun_high` | Preserve a 64-bit low argument and append the narrowed source, producing 128 bits |
 | `sqdmulh`, `sqrdmulh` | Saturating signed doubled multiply-high, without/with rounding; 16- or 32-bit lanes in 64 or 128 logical bits |
 | `sshl`, `ushl`, `srshl`, `urshl` | Per-lane signed-count shifts, without/with right-shift rounding; all integer widths in 64 or 128 logical bits |
-| `sqshl`, `uqshl`, `sqrshl`, `uqrshl` | The corresponding saturating left-shift forms, without/with right-shift rounding |
-| `clz` | Count leading zero bits in signed or unsigned 8-, 16- or 32-bit lanes; zero returns the lane width |
+| `sqshl`, `uqshl`, `sqrshl`, `uqrshl` | Corresponding saturating left shifts, without/with right-shift rounding |
+| `clz` | Count leading zeros in signed or unsigned 8-, 16- or 32-bit lanes; zero returns the lane width |
 | `cls` | Count leading sign bits after the sign bit in signed 8-, 16- or 32-bit lanes; zero and minus one return width minus one |
 | `rbit` | Reverse bits within each signed or unsigned byte lane |
-| `rev16`, `rev32`, `rev64` | Reverse the order of integer lanes within each 16-, 32- or 64-bit block; the lane width must be smaller than the block width |
+| `rev16`, `rev32`, `rev64` | Reverse integer lanes within each 16-, 32- or 64-bit block; lane width must be smaller than block width |
 
-The six bit operations accept 64 or 128 logical bits, return the same
-`simd<T,N,Arch>` type, and preserve the complete architecture tag. `rev32` on
-halfwords swaps adjacent halfwords; it does not reverse bits or bytes inside
-those halfwords. `rev64` similarly reverses byte, halfword or word lanes within
-each separate 64-bit block. There are no 64-bit-lane forms of these operations.
-All six require NEON storage and the NEON feature in `Arch`; they have no scalar
-or runtime fallback overload. Their constexpr paths compute the same lane values.
-These instructions do not read or change FPSR, including sticky QC.
+The six bit operations accept 64 or 128 logical bits and return the same vector
+type. `rev32` on halfwords swaps adjacent halfwords without reversing their
+internal bits or bytes. `rev64` reverses byte, halfword or word lanes within
+each separate 64-bit block. These bit operations have no 64-bit-lane forms.
 
-A shift-count vector always has signed elements of the same width as the value
-lanes, including unsigned value instructions. Only the signed low byte of each
-count lane is used. Positive counts shift left; negative counts shift right.
-Counts are not reduced modulo the element width. Arithmetic right shifts extend
-the sign, logical right shifts insert zero, and rounding adds one when the most
-significant discarded bit was set. Excessive shifts retain the architectural
-zero/sign-extension, rounding and saturation behavior.
+Shift-count vectors always have signed elements of the same width as the value
+lanes. Only the signed low byte of each count is used. Positive counts shift
+left; negative counts shift right. Counts are not reduced modulo lane width.
+Arithmetic right shifts extend the sign; logical right shifts insert zeros.
+Rounding adds one when the most significant discarded bit is set. Excessive
+shifts retain the instruction's zero/sign-extension, rounding and saturation
+behavior.
 
-`fcvtzs` returns `std::int32_t` for a
-scalar float, or `simd<std::int32_t,N,Arch>` for a vector. NaNs produce zero;
-positive overflow and positive infinity produce `INT32_MAX`, while negative
-overflow and negative infinity produce `INT32_MIN`. Fractional inputs truncate
-toward zero independently of the rounding mode. Unlike an ordinary C++ cast,
-the instruction has defined results for every binary32 encoding.
+`fcvtzs` returns `std::int32_t` or `simd<std::int32_t,N,Arch>`. NaNs produce
+zero; positive overflow and infinity produce `INT32_MAX`, negative overflow
+and infinity produce `INT32_MIN`. `fcvtzu` returns the corresponding unsigned
+type: NaNs and negative inputs produce zero; positive overflow produces
+`UINT32_MAX`. Fractional inputs truncate independently of the rounding mode.
 
-Both conversion names are exported by `native.simd`. The scalar overload
-defaults its architecture to the compiler baseline; a one-lane vector also
-accepts the scalar architecture. Multi-lane forms require
-NEON. Runtime calls use `vcvts_s32_f32` for scalar storage and
-`vcvtq_s32_f32` for a four-lane register (`vcvts_u32_f32` and `vcvtq_u32_f32`
-for unsigned results), including the existing padded two-
-and three-lane shapes. The wrapper adds no comparisons, branches or memory
-operations. Floating-point status effects belong to the executed instruction;
-constant evaluation computes the same integer result without accessing status.
-The separate `convert<std::int32_t>` operation retains its finite,
-representable-input precondition.
-
-Binary32 vector comparisons use `FCMEQ`, `FCMGT` and `FCMGE` directly, including
-under `-frounding-math`. Binary16 comparisons use the corresponding eight-lane
-instructions. `!=` complements equality; `<` and `<=` reverse the operands of
-`>` and `>=`. NaNs compare unordered, signed zeros compare equal, and the active
-FPCR denormal controls apply. Equality raises invalid for signaling NaNs;
-ordered inequalities also raise invalid for quiet NaNs. Existing sticky FPSR
-flags are retained, including when the comparison result is discarded. There
-are no status-register reads, writes or CPU fences around the comparison.
-Constant evaluation computes the mask without accessing machine status.
-Two- and three-lane binary32 masks retain their zero-padding normalization.
-
-On little-endian AArch64 a full register comparison adds no instructions beyond
-the comparison itself (`!=` also inverts its result). Big-endian Clang 23 needs
-six additional register-permutation instructions around these floating-point
-assembly wrappers compared with ACLE. That is an exception to zero overhead;
-the wrapper does not add loads, stores or scalar comparisons. The endian result
-is checked by cross-compilation, not execution on a big-endian machine.
-
-For multiply-high, compute the doubled full product and take its high half;
-the rounded form adds half a unit before truncating. The minimum-times-minimum
-case saturates to the maximum signed lane. Narrowing consumes 128 logical bits
-and saturates each source lane before changing width. The high forms explicitly
-preserve their low argument.
+Binary32 and binary16 vector comparisons use the floating comparison
+instructions. `!=` complements equality; `<` and `<=` reverse the operands
+of `>` and `>=`. NaNs compare unordered and signed zeros compare equal.
 
 ```cpp
 #include <cstdint>
 import native.arm.neon;
+
 constexpr auto requirement = native::feature_closure(native::arm_feature::neon);
-using samples = native::simd<std::int16_t, 8, requirement>;
+using samples = native::simd<std::int16_t,8,requirement>;
 
 __attribute__((target("neon")))
 samples saturated_sum(samples a, samples b) {
@@ -94,25 +65,37 @@ samples saturated_sum(samples a, samples b) {
 }
 ```
 
-Saturating runtime instructions can set sticky `FPSR.QC`, even when their result
-is discarded. They preserve existing QC and do not save, clear or restore FPSR.
-Exact volatile instructions retain these effects without memory clobbers or
-per-operation status-register traffic. The wrappers make no `pure` or `const`
-attribute promise. Constant evaluation computes lane values only and does not
-observe or modify machine status. Feature-absent constant-only overloads exist
-when the underlying storage shape is available; runtime operands are rejected.
+## Caveats
 
-The 64-bit two-word shapes retain the library's existing padded storage. Bridges
-select only their logical low half and initialize padding without adding
-instructions. One-lane 64-bit forms use the scalar
-D-register encodings. Raw NEON types stay in implementation helpers.
+Runtime integer operations require NEON storage, `arm_feature::neon` and a
+`"neon"` caller target. Scalar conversions default to the compiler baseline;
+a one-lane conversion also accepts scalar storage. Multi-lane conversions
+require NEON. The separate `convert<std::int32_t>` retains its finite,
+representable-input precondition.
 
-The [Arm ACLE intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html)
-lists the corresponding instruction forms.
+Doubled multiply-high takes the high half of the full doubled product; the
+rounded form adds half a unit before truncation. Minimum-times-minimum saturates
+to the maximum signed lane. Narrowing saturates before changing width.
 
-On big-endian AArch64, two-lane 64-bit `sqadd`, `uqadd`, `sqsub`, `uqsub`,
-and all eight variable-shift operations are available with a documented exception
-to the zero-overhead guarantee. LLVM 23 emits five extra register-permutation
-instructions for each of these twelve forms compared with the equivalent ACLE
-leaf that retains its QC effect. These are register operations, with no scalar
-fallback or extra memory accesses. Little-endian targets do not incur this cost.
+Saturating runtime instructions can set sticky `FPSR.QC`, including when results
+are discarded. They preserve existing QC and do not save, clear or restore
+FPSR. Bit operations leave FPSR unchanged. Conversion and comparison status
+effects belong to the executed instruction. Comparisons honor active FPCR
+denormal controls; equality raises invalid for signaling NaNs, and ordered
+inequalities also raise invalid for quiet NaNs. Existing sticky flags remain
+set even when a comparison result is discarded.
+
+Constant evaluation computes values or masks without machine status effects.
+Feature-absent `consteval` overloads exist for saturation and shift operations
+when their storage shapes are available; runtime operands are rejected. The six
+bit operations retain their NEON feature requirement at constant evaluation.
+
+Two- and three-lane binary32 values and masks retain zero-padding normalization.
+On little-endian AArch64 a full-register floating comparison needs only the
+comparison instruction (`!=` also inverts the result). Big-endian Clang 23
+requires six extra register permutations around these wrappers relative to ACLE.
+Its two-lane 64-bit saturating add/subtract and eight variable-shift forms require
+five extra register permutations per operation. These endian adjustments add no
+memory accesses or scalar fallback.
+
+See the [Arm ACLE intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html).

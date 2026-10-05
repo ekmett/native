@@ -1,4 +1,4 @@
-# One hub, source-level target selection
+# Target selection and dispatch
 
 `import native;` exposes every implemented ISA family for the host architecture.
 It compiles at the configured project minimum. AVX-512, FP16 and BF16 operations

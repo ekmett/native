@@ -1,62 +1,37 @@
-# x86 LZCNT
+# x86 LZCNT: leading-zero counts
 
-`native::lzcnt<Arch>(value)` counts zero bits before the most significant set
-bit. A zero input returns its width: 16, 32 or 64. An input whose most significant
-bit is set returns zero. The overloads accept `std::uint16_t`, `std::uint32_t`,
-or `std::uint64_t` and return the same unsigned type.
+[x86 instruction sets](x86.md)
 
-Import `native.x86.lzcnt`, `native.x86`, or `native` to use them. Source-tree
-header consumers can include `<native/x86/lzcnt.h>`; the installed public API
-uses the named modules.
+## Why use it
 
-Imported scalar operations default `Arch` to `NATIVE_BASELINE` as captured when
-their owning module is compiled. A function target attribute on the caller
-does not change that captured value.
-Explicit `Arch` arguments are supported, and standalone headers require them.
+The highest set bit determines an unsigned integer's magnitude. A leading-zero
+count turns that position into a direct calculation for normalization,
+bit-width selection and radix bucketing, including a defined result for zero.
 
-`Arch` has type `native::isa<native::x86>`; ARM and Wasm tags are rejected.
-All operand widths support constant evaluation. If `Arch` lacks the feature,
-the selected overload is `consteval`: a constant call is accepted, while a call
-with runtime inputs is ill-formed. With the feature present, the overload is
-`constexpr` and uses the instruction implementation at runtime. Runtime calls
-still require a matching compiler target and admitted CPU support; there is
-no runtime software fallback.
+## Operations
 
-Intel defines all three operand widths. The required feature is LZCNT,
-reported by extended CPUID leaf 0x80000001 ECX bit 5; it requires no BMI or
-vector OS state. On a CPU without LZCNT, the same instruction encoding executes
-BSR with different semantics. See the LZCNT entry in
-[Intel's instruction reference, Volume 2A](https://cdrdv2-public.intel.com/922480/253666-092-sdm-vol-2a.pdf#page=696)
-and the [current Intel manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html).
+`import native.x86.lzcnt;` provides `native::lzcnt<Arch>(value)`.
+`native.x86` and `native` re-export it. The overloads accept `std::uint16_t`,
+`std::uint32_t` or `std::uint64_t` and return the same unsigned type.
 
-Each runtime overload is `noexcept` and always inline, with target `"lzcnt"` and the
-constraint `Arch.has(native::x86_feature::lzcnt)`. The caller needs both a
-matching compiler target and a runtime capability check:
+Zero returns 16, 32 or 64; a value with its highest bit set returns zero.
+All calls are `noexcept`.
 
-```cpp
-#include <cstdint>
-#include <native/targets.h>
-import native.x86.lzcnt;
+## Caveats
 
-#define NATIVE_TARGET_leading_zeroes "lzcnt"
-constexpr auto leading_isa = NATIVE_TARGET_ISA(leading_zeroes);
+Runtime calls need `x86_feature::lzcnt`, a `"lzcnt"` caller target and CPU
+admission. LZCNT is independent of BMI and needs no vector OS state. On a CPU
+without the feature, its encoding can execute as BSR, with different semantics.
 
-NATIVE_TARGET_PUSH(leading_zeroes)
-std::uint16_t leading_zeroes(std::uint16_t value) noexcept {
-  return native::lzcnt<leading_isa>(value);
-}
-NATIVE_TARGET_POP()
+`Arch` is an `isa<x86>`. The scalar default is the provider's
+`NATIVE_BASELINE`; a caller target attribute does not change that default.
+Feature-bearing overloads are `constexpr` with native runtime paths. Tags
+without LZCNT have `consteval` overloads only. The wrappers return the count,
+without an instruction-flags contract.
 
-int main() {
-  auto cpu = native::observe_x86_capabilities();
-  if (!native::classify_isa(cpu, leading_isa, NATIVE_TARGET_MINIMUM).admitted())
-    return 0;
-  return leading_zeroes(0) == 16 ? 0 : 1;
-}
-```
+Use `std::countl_zero` when the algorithm should work across architectures;
+`lzcnt` is the explicit x86 feature-gated spelling.
 
-The wrappers preserve the zero-input behavior at every width and expose the
-count, not the instruction's flags. Constant folding and instruction selection
-remain compiler decisions; the API does not promise an exact encoding.
+See Intel's [LZCNT instruction entry](https://cdrdv2-public.intel.com/922480/253666-092-sdm-vol-2a.pdf#page=696).
 
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

@@ -1,4 +1,4 @@
-# SIMD values, masks and application dispatch
+# SIMD values and masks
 
 `import native;` provides the host's SIMD types, instruction families and common
 utilities. This guide starts with values and their memory contracts, then shows

@@ -1,4 +1,15 @@
-# WebAssembly SIMD values
+# WebAssembly SIMD128: vector operations
+
+[WebAssembly instruction sets](wasm.md)
+
+## Why use it
+
+SIMD128 processes sixteen bytes at a time without tying the program to an x86
+or ARM register type. Use it for bulk arithmetic, image and audio processing,
+byte classification, and the load/shuffle/convert work around those kernels.
+The engine chooses how to lower each Wasm operation to its host instructions.
+
+## Operations
 
 On WebAssembly compiler targets, `import native.simd;`, `import native.wasm;`
 and `import native;` provide complete 16-byte vectors of signed/unsigned 8-,
@@ -16,15 +27,6 @@ __attribute__((target("simd128")))
 words sum(words a, words b) { return a + b; }
 ```
 
-The provider remains at the configured baseline. SIMD operations carry a
-`simd128` function target. The caller must enable the instructions it uses;
-an architecture tag records requirements and does not retarget the caller.
-The baseline `simd<T,N>` default belongs to the module provider; use explicit
-tags for optional kernels. Raw `v128_t` is an implementation bridge and is not
-an implicit vector conversion or an instruction-family operand type.
-
-## Operations
-
 | Family | Public operations |
 |---|---|
 | Transfer and lanes | constructors, `load`, `store`, `get<I>`, `replace<I>`, `load_splat`, `load_zero`, `load_widened`, `load_lane<I>`, `store_lane<I>` |
@@ -36,6 +38,19 @@ an implicit vector conversion or an instruction-family operand type.
 | Shifts and rearrangement | scalar-count shifts, `imm<K>` shifts, `broadcast`, `shuffle<I...>`, byte `swizzle` |
 | Floating point | `abs`, `sqrt`, `floor`, `ceil`, `trunc`, `round_even`, `min`, `max`, `pmin`, `pmax` |
 | Conversion | `convert<To>` and `trunc_sat<To>` |
+
+`wide<simd<T,N,A>,R>` batches several registers, including empty packs.
+Import `native.math` for the [math kernels](transcendentals.md), including
+`exp`, `exp2`, `log`, `log2`, `log1p`, `expm1`, `tanh`, `atan2`, and `sincos`.
+
+## Caveats
+
+The provider remains at the configured baseline. SIMD operations carry a
+`simd128` function target. The caller must enable the instructions it uses;
+an architecture tag records requirements and does not retarget the caller.
+The baseline `simd<T,N>` default belongs to the module provider; use explicit
+tags for optional kernels. Raw `v128_t` is an implementation bridge and is not
+an implicit vector conversion or an instruction-family operand type.
 
 Shift counts are reduced modulo the lane width, including immediate counts.
 `shuffle` takes exactly one output register's lane indices from two concatenated
@@ -63,12 +78,6 @@ There is no SIMD128 byte-multiply, vector integer-division, or fused floating
 multiply-add instruction. No such instruction is claimed by the baseline API.
 Unsigned 64-bit comparisons/min/max and reductions use explicit compositions.
 The integer popcount operation composes byte counts for wider lanes.
-`wide<simd<T,N,A>,R>` construction and element arithmetic use the SIMD128 target
-scope, including empty packs. Import `native.math` for the
-[promoted exponential and trigonometric kernels](#promoted-binary32-math).
-
-## Floating-point and constant semantics
-
 WebAssembly uses nearest-even arithmetic, gradual underflow and no observable
 host floating-point control/status register. All supported value operations
 have constant evaluation, using the shared IEEE binary-format implementation
@@ -83,8 +92,6 @@ opposite zeros is negative zero and maximum is positive zero. `pmin` selects
 and equal cases therefore preserve the first operand. `abs` clears only the
 sign bit.
 
-## Compilation and engine admission
-
 A WebAssembly engine validates the complete linked module. An uncalled function
 or runtime branch cannot hide unsupported instructions. Applications own
 separate baseline, SIMD128 and relaxed-SIMD compilation/loading decisions.
@@ -92,33 +99,9 @@ Importing a module exposes templates and does not instantiate optional opcodes.
 The [capability observer](wasm-features.md) admits features for the selected
 engine configuration; loading still validates the entire final module.
 
-The C++26 named-module build requires the same structured-binding-pack and
-property checks as native targets. With WASI SDK 34, CMake 4.4 and Ninja:
+SIMD128 math uses separately rounded multiply/add stages, even when relaxed
+SIMD is available. Results can therefore differ from x86 and ARM's fused
+kernels. Constant evaluation follows the same Wasm evaluation order.
+The API provides no general-purpose SIMD128 FMA or exponent-scaling instruction.
 
-```sh
-cmake -S . -B build-wasm -G Ninja \
-  -DCMAKE_TOOLCHAIN_FILE="$WASI_SDK_PATH/share/cmake/wasi-sdk-p1.cmake" \
-  -DNATIVE_TEST_ISA=WASM_SIMD128 -DNATIVE_PROFILES=WASM_SIMD128 \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build build-wasm
-ctest --test-dir build-wasm -LE engine-conformance --output-on-failure
-```
-
-## Promoted binary32 math
-
-`import native.math;` adds `math::exp`, `expm1`, `log`, `log1p`, `damping_gain`,
-`tanh`, `atan2`, `sin`, `cos`, and `sincos` to the SIMD128
-values, arrays and `native::wide` batches. `native::math` provides equivalent
-Wasm overloads. These kernels require only `simd128`; `relaxed_simd` does not
-change their arithmetic. SIMD128 lacks FMA, so each polynomial multiply and add
-rounds separately. Scalar, x86 and ARM kernels use fused multiply-add stages.
-Wasm constant evaluation uses the same separate-rounding graph as execution.
-
-Exponential preserves NaNs, returns positive infinity on overflow and positive
-zero below its cutoff, and retains gradual underflow unless `exp<true>` selects
-the existing early cutoff. Trig requires finite lanes with `|x| < 8192` radians.
-Both zero signs are preserved for sine; cosine of either zero is one. No runtime
-feature dispatch or scalar lane/libm fallback occurs inside these kernels.
-
-The public API does not provide general-purpose SIMD128 FMA or
-exponent-scaling operations.
+See [building for WebAssembly](../doc/building.md#webassembly) for the toolchain.

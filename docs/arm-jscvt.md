@@ -1,22 +1,26 @@
-# JavaScript integer conversion
+# ARM JSCVT: JavaScript integer conversion
 
-`import native.arm.jscvt;` exposes `native::jcvt<Arch>(double)` on AArch64.
-The result is a `std::int32_t`: truncate toward zero, then reduce the integer
-modulo 2³² and interpret that word as signed. NaNs, infinities and signed zeros
-produce zero. This differs from a C++ floating-to-integer cast for out-of-range
-inputs.
+[ARM instruction sets](arm.md)
 
-The operation requires `arm_feature::jsconv` and Clang's `"jsconv"` function
-target. The module name follows the architecture's JSCVT extension spelling;
-the feature and target use Clang's spelling. Import through `native.arm` or
-`native` for the complete architecture hub, or link `native::minimal` when using
-the scalar module alone.
+## Why use it
+
+JavaScript's conversion to a signed word is defined even when the input is a
+NaN, infinity or far outside the integer range. JSCVT implements that conversion
+in one instruction. It is useful whenever the desired result is the low 32 bits
+of a truncated binary64 value.
+
+## Operations
+
+Import `native.arm.jscvt`, or use the `native.arm` or `native` hub.
+`native::jcvt<Arch>(double)` returns `std::int32_t`: truncate toward zero,
+reduce modulo 2³², then interpret the word as signed. NaNs, infinities and
+signed zeros produce zero.
 
 ```cpp
 #include <cstdint>
 import native.arm.jscvt;
 
-constexpr auto requirement = native::target_features("jsconv");
+constexpr auto requirement = native::target_features<native::arm>("jsconv");
 
 __attribute__((target("jsconv")))
 std::int32_t integer_word(double x) {
@@ -26,13 +30,20 @@ std::int32_t integer_word(double x) {
 static_assert(native::jcvt<native::isa<native::arm>{}>(4294967297.0) == 1);
 ```
 
-As with other scalar instruction APIs, omitted `Arch` uses the baseline captured
-when the module was compiled. A weaker tag accepts constant inputs through a
-`consteval` overload and rejects runtime inputs. Runtime calls require admission
-before entering the target function; importing the module does not check the CPU.
+## Caveats
 
-Constant evaluation decodes binary64 bits and never makes an out-of-range C++
-cast. Runtime calls lower directly to FJCVTZS and retain the instruction's
-floating-point environment behavior. Constant evaluation computes the numerical
-result without changing FP status. See the [Arm ACLE conversion
-contract](https://arm-software.github.io/acle/main/acle.html#floating-point-data-processing-intrinsics).
+An out-of-range C++ floating-to-integer cast does not have this contract.
+Constant evaluation decodes binary64 bits rather than making such a cast.
+Runtime calls execute FJCVTZS with its floating-point environment behavior;
+constant evaluation computes the integer result without changing FP status.
+
+Runtime calls require `arm_feature::jsconv` and a `"jsconv"` caller target.
+The module uses the extension's JSCVT spelling; the feature and target use
+Clang's spelling. Check runtime admission before entering the target function.
+Importing a module does not check the CPU or enable instructions.
+
+Omitting `Arch` uses the baseline captured when the module was compiled. An
+importer's target attribute does not change that default. A tag without JSCVT
+permits only `consteval` calls; it supplies no runtime fallback.
+
+See the [Arm ACLE conversion contract](https://arm-software.github.io/acle/main/acle.html#floating-point-data-processing-intrinsics).

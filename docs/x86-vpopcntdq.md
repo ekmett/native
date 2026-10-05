@@ -1,82 +1,48 @@
-# Packed population counts
+# x86 AVX-512VPOPCNTDQ: packed population counts
 
-VPOPCNTDQ counts the set bits in each 32-bit or 64-bit integer lane.
-`import native.x86.vpopcntdq;` provides these operations through
-`native::native`; `native.x86` and `native` re-export them. The implementation
-header is `native/x86/vpopcntdq.h`. Installed consumers import the modules;
-the package keeps implementation headers private for BMI regeneration.
+[x86 instruction sets](x86.md)
 
-Every operation takes a `template<native::isa<native::x86> Arch>` argument and typed
-`native::simd` vectors. Use `target_features<native::x86>(...)` or `feature_closure(...)`
-to include register prerequisites in the tag. At runtime, `Arch` must contain `avx512f` and `avx512vpopcntdq`;
-128-bit and 256-bit overloads also require `avx512vl`.
+## Why use it
 
-| Operation | Result in each lane |
-| --- | --- |
-| `vpopcntd<Arch>(value)` | Number of set bits in a 32-bit lane, from 0 to 32 |
-| `vpopcntq<Arch>(value)` | Number of set bits in a 64-bit lane, from 0 to 64 |
-| `mask_vpopcntd<Arch>(source, mask, value)` | Count where the mask bit is set; otherwise retain `source` |
-| `mask_vpopcntq<Arch>(source, mask, value)` | Same merge rule for 64-bit lanes |
-| `maskz_vpopcntd<Arch>(mask, value)` | Count where the mask bit is set; otherwise zero |
-| `maskz_vpopcntq<Arch>(mask, value)` | Same zero rule for 64-bit lanes |
+When bitsets occupy several words, a packed population count handles each word
+without unpacking the vector into scalar registers. XOR followed by counting
+measures Hamming distance; AND followed by counting measures intersections.
+The caller can then reduce the lane counts or keep one result per word.
 
-The dword operations accept `simd<std::uint32_t,N,Arch>` with N = 4, 8 or 16;
-the qword operations accept `simd<std::uint64_t,N,Arch>` with N = 2, 4 or 8.
-Masks use `native::predicate<N,Arch>` for the corresponding lane count. Bit zero controls
-the lowest lane; constructing a mask clears bits above its logical lane count. Counts retain
-their lane width. Operations are `noexcept`, have no memory or flag effects,
-and carry constant-function and target attributes. The intrinsic definitions
-follow LLVM's [512-bit](https://clang.llvm.org/doxygen/avx512vpopcntdqintrin_8h_source.html)
-and [VL](https://clang.llvm.org/doxygen/avx512vpopcntdqvlintrin_8h_source.html)
-interfaces.
+## Operations
 
-All forms support constant evaluation with the same lane and mask semantics.
-When `Arch` supplies the instruction features, the overload is `constexpr` and
-runtime calls still use the native instruction. A tag without those features
-can use a `consteval` overload if its SIMD storage exists: SSE2 for 128 bits,
-AVX for 256 bits, or AVX512F for 512 bits, including their register prerequisites.
-The result retains the exact input tag. These weaker tags accept compile-time
-operands only; they do not provide a software fallback for runtime data.
+`import native.x86.vpopcntdq;` exports the operations below through
+`native::native`. `native.x86` and `native` re-export the module.
 
-```cpp
-#include <cstdint>
-#include <native/targets.h>
-import native.x86.vpopcntdq;
+| Operation | Input and result | Lane counts | Count range |
+| --- | --- | --- | --- |
+| `vpopcntd<Arch>(value)` | `simd<std::uint32_t,N,Arch>` | 4, 8, 16 | 0–32 |
+| `vpopcntq<Arch>(value)` | `simd<std::uint64_t,N,Arch>` | 2, 4, 8 | 0–64 |
 
-#define NATIVE_TARGET_count_lanes "avx512f,avx512vpopcntdq"
-constexpr auto count_requirements = NATIVE_TARGET_ISA(count_lanes);
+Each name also has `mask_NAME<Arch>(source, mask, value)` to keep inactive
+source lanes and `maskz_NAME<Arch>(mask, value)` to clear them. Masks are
+`predicate<N,Arch>`; bit `i` selects lane `i`. Results retain their element
+width and exact architecture tag. All calls are `noexcept`.
 
-NATIVE_TARGET_PUSH(count_lanes)
-void count_lanes(std::uint32_t const* input, std::uint32_t* output) {
-  auto bits = native::simd<std::uint32_t,16,count_requirements>::load(input);
-  auto counts = native::vpopcntd<count_requirements>(bits);
-  counts.store(output);
-}
-NATIVE_TARGET_POP()
+## Caveats
 
-bool try_count_lanes(std::uint32_t const* input, std::uint32_t* output) {
-  auto cpu = native::observe_x86_capabilities();
-  if (!native::classify_isa(cpu, count_requirements,
-                          NATIVE_TARGET_MINIMUM).admitted()) return false;
-  count_lanes(input, output);
-  return true;
-}
-```
+These are per-lane counts, without an implicit horizontal sum. For byte and
+word counts use [BITALG](x86-bitalg.md); for one scalar word use
+[POPCNT](x86-popcnt.md). Their feature bits are independent.
 
-The buffers in this example each provide 64 accessible bytes. Pointer arguments
-keep the baseline call boundary independent of vector register calling conventions.
-Importing a module does not enable instructions in its caller.
+Runtime calls need AVX512F and AVX512VPOPCNTDQ, plus AVX512VL for 128/256 bits.
+Use `target_features<native::x86>("avx512vpopcntdq")`, adding `avx512vl` for
+shorter forms. Admit the caller's whole compiler target and OS AVX-512 state
+before entry, including for VL forms. The general AVX-512 profile does not
+imply VPOPCNTDQ.
 
-`x86_feature::avx512vpopcntdq` represents CPUID.7.0 ECX bit 14. Scalar POPCNT
-and BITALG do not establish this bit. Observation records the bit exactly;
-the catalog adds AVX512F when computing compiler prerequisite closure. Short
-forms add AVX512VL explicitly. The shared closure includes Clang's existing
-AVX512F prerequisites, including scalar POPCNT; it does not substitute that
-bit for VPOPCNTDQ. See LLVM's [CPUID definitions](https://clang.llvm.org/doxygen/cpuid_8h_source.html).
+Feature-bearing overloads are `constexpr` with native runtime paths. Weaker
+tags accept `consteval` calls if the vector storage exists: SSE2 for 128 bits,
+AVX for 256 bits or AVX512F for 512 bits, with prerequisites. They supply no
+runtime software fallback.
 
-Admission requires observed and present CPU features plus readable XCR0 with
-XMM, YMM, opmask, upper ZMM and high ZMM state enabled (`(XCR0 & 0xe6) == 0xe6`).
-This also applies to VL forms. Missing CPU support or OS state prevents the call.
+See Clang's [512-bit](https://clang.llvm.org/doxygen/avx512vpopcntdqintrin_8h_source.html)
+and [VL](https://clang.llvm.org/doxygen/avx512vpopcntdqvlintrin_8h_source.html) intrinsic interfaces.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

@@ -1,59 +1,57 @@
-# ARM cryptographic instructions
+# ARM AES/PMULL/SHA: cipher rounds, polynomial products and hash transforms
 
-`native.arm.aes`, `native.arm.pmull` and `native.arm.sha` expose individual
-Advanced SIMD instructions. They are also exported by `native.arm` and `native`.
-The vector arguments and results use `simd<T,N,Arch>`, preserving the same
-feature tag throughout each operation. Scalar SHA-1 and polynomial operands
-use C++ integer types. Each module reexports `native.simd`.
-The scalar `sha1h(word)` and scalar-input `pmull(a,b)` forms may omit `Arch`.
-Their defaults are captured from `NATIVE_BASELINE` by the owning module, and
-retain their respective runtime SHA-1 and PMULL requirements. The polynomial result keeps
-that exact default tag in `simd<std::uint64_t,2,Arch>`. An importing target scope
-does not change a module's default; optional instruction leaves can still give
-an explicit ISA. Vector arguments continue to deduce their own `Arch`.
-They perform integer operations without changing FPCR, FPSR or NZCV.
+[ARM instruction sets](arm.md)
 
-All AES, SHA and polynomial operations support constant evaluation. A
-feature-capable overload is `constexpr`: its constant branch computes the
-instruction's value semantics, while runtime calls retain the native instruction.
-When `Arch` lacks the instruction feature, a disjoint `consteval` overload accepts
-constant operands only. Runtime operands with that tag are rejected even though
-the immediate call can appear in an unevaluated `requires` expression. No runtime
-software implementation is selected.
+## Why use it
 
-Vector operands and results still require complete `simd<T,N,Arch>` storage;
-on AArch64 these shapes require NEON. Constant evaluation preserves the exact
-feature tag, logical lanes and integer widths. It does not manufacture vector
-storage for a scalar ISA. The byte polynomial forms already require only NEON,
-so their existing overloads provide both constant and runtime evaluation.
+AES rounds, carryless polynomial multiplication and SHA transforms have enough
+internal structure to benefit from dedicated instructions. These operations let
+you build the state machine around those instructions while keeping vector
+values in the same typed SIMD interface as the rest of a kernel.
 
-These operations do not implement a cipher mode, key expansion, message padding,
-byte-order conversion or a complete hash. Their input state and prepared round
-words must already have the form required by the instruction. The
-[Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html)
-and [Arm A64 instruction reference](https://documentation-service.arm.com/static/67e40f3398aa3c3b6eea6a85)
-define the corresponding transformations.
+## Operations
 
-## Features and caller targets
+Import `native.arm.aes`, `native.arm.pmull` or `native.arm.sha`, or use the
+`native.arm` or `native` hub. Each module reexports `native.simd`.
+All vector operands and results preserve a common `Arch`.
 
-An operation's `Arch` constraint names the hardware instruction feature.
-Clang's target strings describe larger compiler bundles:
+| Operations | Shape | Transformation |
+| --- | --- | --- |
+| `aese(state,key)`, `aesd(state,key)` | `simd<std::uint8_t,16,Arch>` | Forward/inverse AES substitution and row permutation after key XOR |
+| `aesmc(state)`, `aesimc(state)` | Same byte shape | Forward/inverse MixColumns |
+| `pmull<Arch>(a,b)` | Two `std::uint64_t` inputs; `simd<std::uint64_t,2,Arch>` result | Carryless 64×64-bit product |
+| `pmull2(a,b)` | `simd<std::uint64_t,2,Arch>` | Carryless product of the high lanes |
+| Byte `pmull(a,b)` | Two `simd<std::uint8_t,8,Arch>` inputs; `simd<std::uint16_t,8,Arch>` result | Eight carryless byte products |
+| Byte `pmull2(a,b)` | Two `simd<std::uint8_t,16,Arch>` inputs; same 16-bit result | Eight carryless products of the high byte lanes |
+| `sha1c`, `sha1p`, `sha1m` | Four 32-bit state words, scalar `std::uint32_t e`, four prepared round words | Four SHA-1 rounds using choice, parity or majority |
+| `sha1h<Arch>(word)` | `std::uint32_t` input/result | SHA-1 fixed rotation |
+| `sha1su0`, `sha1su1` | `simd<std::uint32_t,4,Arch>` | Paired four-word SHA-1 schedule updates |
+| `sha256h`, `sha256h2` | `simd<std::uint32_t,4,Arch>` | Paired four-round SHA-256 state updates |
+| `sha256su0`, `sha256su1` | Same 32-bit shape | Paired four-word SHA-256 schedule updates |
+| `sha512h`, `sha512h2` | `simd<std::uint64_t,2,Arch>` | Packed SHA-512 round updates |
+| `sha512su0`, `sha512su1` | Same 64-bit shape | Paired two-word SHA-512 schedule updates |
+| `eor3(a,b,c)`, `bcax(a,b,c)` | Signed or unsigned 128-bit integer vectors, with 8-, 16-, 32- or 64-bit lanes | `a ^ b ^ c`, or `a ^ (b & ~c)` |
+| `rax1(a,b)` | `simd<std::uint64_t,2,Arch>` | `a ^ rotl(b,1)` per lane |
+| `xar<Arch,Rotate>(a,b)` | Same 64-bit shape | `rotr(a ^ b,Rotate)` per lane; immediate 0–63 |
 
-| Operations | `arm_feature` | Caller target | Required compiler bundle |
-|---|---|---|---|
-| `aese`, `aesd`, `aesmc`, `aesimc` | `aes` | `aes` | NEON, AES, PMULL |
-| 64-bit `pmull`, `pmull2` | `pmull` | `aes` | NEON, AES, PMULL |
-| Byte `pmull`, `pmull2` | `neon` | baseline AArch64 | NEON |
-| `sha1c`, `sha1p`, `sha1m`, `sha1h`, `sha1su0`, `sha1su1` | `sha1` | `sha2` | NEON, SHA-1, SHA-256 |
-| `sha256h`, `sha256h2`, `sha256su0`, `sha256su1` | `sha2` | `sha2` | NEON, SHA-1, SHA-256 |
-| `sha512h`, `sha512h2`, `sha512su0`, `sha512su1` | `sha512` | `sha3` | NEON, SHA-1, SHA-256, SHA-512, SHA-3 |
-| `eor3`, `bcax`, `rax1`, `xar` | `sha3` | `sha3` | NEON, SHA-1, SHA-256, SHA-512, SHA-3 |
+AES state has four consecutive bytes per column. `aese` and `aesd` XOR the
+round key before substitution and row permutation; MixColumns is separate.
+The final encryption round uses `aese` without `aesmc`, followed by the final
+round-key XOR.
 
-Check the whole `target_features` set before calling a target-attributed leaf.
-The compiler may use any instruction enabled in that leaf, including sibling
-crypto features. Observing PMULL alone does not admit the compiler's `aes`
-bundle. Hardware-only names `pmull`, `sha1` and `sha512` are not supported target
-strings.
+For polynomial products, bit `i` is the coefficient of `x^i`. There is no
+integer carry or modular reduction. The 64-bit product puts coefficients 0–63
+in result lane zero and 64–127 in lane one on either endian layout.
+
+SHA-1 and SHA-256 state and schedule words occupy increasing lanes. Prepared
+round words already include the message word plus its round constant.
+`sha256h2` takes the original `abcd` state, before `sha256h` changes it.
+
+SHA-512 uses packed pairs. For `sha512h(sum,fg,de)`, `fg` contains f,g and
+`de` contains d,e in increasing lane order. `sum` contains the prepared k+w+h
+terms for the later and earlier round, respectively; the high lane is processed
+first. `sha512h2(sum,c_,ab)` also processes the high lane first and uses only
+lane zero of `c_`. Schedule helpers produce two successive words.
 
 ```cpp
 #include <cstdint>
@@ -73,47 +71,36 @@ bool supported() {
 }
 ```
 
-Only call `round` after `supported` succeeds. The module provider and admission
-code retain the project's baseline target. Wrong register shapes, unsupported
-runtime features and invalid `xar` rotation immediates are rejected; convert vector types
-explicitly when a bit reinterpretation is intended. All vector operands must carry the same `Arch`; raw intrinsic vectors are not
-public overloads. The implementation headers are private to the module provider.
+## Caveats
 
-## AES and polynomial state
+These are individual instructions. Callers supply cipher modes, key expansion,
+message padding and byte-order conversion. The operations do not alter FPCR,
+FPSR or NZCV.
 
-AES functions use a `simd<std::uint8_t,16,Arch>` state with four consecutive bytes per column.
-`aese` and `aesd` XOR the round key before the substitution and row permutation.
-They do not include MixColumns. `aesmc` and `aesimc` perform that separate forward
-or inverse column transform. The final encryption round therefore uses `aese`
-without `aesmc`, followed by the final round-key XOR.
+Hardware feature constraints and compiler targets differ. AES requires
+`arm_feature::aes`, and 64-bit polynomial multiplication requires
+`arm_feature::pmull`; Clang's `"aes"` target enables both plus NEON. The byte
+polynomial forms require only NEON. SHA-1 requires `sha1` and SHA-256 requires
+`sha2`; the `"sha2"` target enables both plus NEON. SHA-512 requires `sha512`
+and the SHA-3 transforms require `sha3`; the `"sha3"` target enables both plus
+SHA-1, SHA-256 and NEON.
 
-For polynomial products, bit *i* is the coefficient of *x^i*. No integer carry or
-modular reduction is performed. `pmull<Arch>(std::uint64_t, std::uint64_t)` returns
-`simd<std::uint64_t,2,Arch>`, with coefficients 0–63 in lane zero and 64–127
-in lane one on either endian layout. `pmull2` takes that same vector shape,
-multiplies lane one from each operand and ignores lane zero. The byte forms
-take `simd<std::uint8_t,8,Arch>` or the high half of
-`simd<std::uint8_t,16,Arch>` and return `simd<std::uint16_t,8,Arch>`; they
-require only baseline NEON.
+Admit the whole `target_features` set and any inherited compiler minimum before
+entering the target function: the compiler may use sibling instructions enabled
+by that target. PMULL alone does not admit `"aes"`. The hardware names `pmull`,
+`sha1` and `sha512` are not supported standalone target strings. Importing a
+module neither enables the caller's target nor performs runtime dispatch.
 
-## SHA state and schedule
+Scalar `sha1h` and scalar-input `pmull` may omit `Arch`; their default is the
+owning module's captured `NATIVE_BASELINE`. An importer's target scope cannot
+change it. The polynomial result retains that default tag. Vector calls deduce
+`Arch` from their operands.
 
-SHA-1 and SHA-256 use `simd<std::uint32_t,4,Arch>` vectors and place consecutive 32-bit state or schedule words in
-increasing lane order. Each round function processes four rounds; `wk` already
-contains the message word plus its round constant. `sha256h2` takes the original
-`abcd` state, not the result of `sha256h`. The paired schedule helpers generate
-four successive schedule words.
+All operations support constant evaluation. Without an instruction feature,
+only `consteval` calls are available; vector storage must still exist, which
+requires NEON for these shapes. Byte polynomial multiplication retains its
+NEON-only requirement. There is no runtime software fallback. Explicitly
+convert vector types when a bit reinterpretation is intended.
 
-SHA-512 helpers use `simd<std::uint64_t,2,Arch>` to process pairs of 64-bit words. For `sha512h(sum, fg, de)`, the
-high lane is processed first: `fg` contains f,g and `de` contains d,e in increasing
-lane order. `sum` contains the prepared k+w+h terms for the later and earlier
-round, respectively. `sha512h2(sum, c_, ab)` likewise produces the high lane before
-the low lane; only lane zero of `c_` participates. The schedule helpers produce
-two successive words. These packed intermediate forms differ from the four-word
-SHA-256 round interface.
-
-`eor3` computes `a ^ b ^ c`; `bcax` computes `a ^ (b & ~c)`. Both support signed
-and unsigned 128-bit integer vectors with 8-, 16-, 32- or 64-bit elements.
-`rax1` computes `a ^ rotl(b, 1)` in each unsigned 64-bit lane.
-`xar<Arch, Rotate>` computes `rotr(a ^ b, Rotate)` with a compile-time rotation
-from 0 through 63.
+See the [Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html)
+and [Arm A64 instruction reference](https://documentation-service.arm.com/static/67e40f3398aa3c3b6eea6a85).
