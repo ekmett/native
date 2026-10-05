@@ -3,6 +3,8 @@
 <!-- SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
+[![Build](https://github.com/ekmett/native/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
+
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
 with a shared vocabulary for compiler features and runtime admission.
 
