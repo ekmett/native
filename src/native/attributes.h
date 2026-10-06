@@ -175,19 +175,6 @@
   #define native_noescape
 #endif
 
-/** \def native_nodiscard
-
-      \brief C++17 `[[nodiscard]]`.
-
-      \details
-
-        The user should explicitly throw away the result rather than let it be silently discarded
-
-        Note: Despite being already standard, this is used primarily to annotate the definition with
-        a `[[nodiscard]]` qualifier in DOXYGEN.  */
-
-#define native_nodiscard [[nodiscard]]
-
 /// \}
 
 
@@ -1335,7 +1322,6 @@ Allows better interprocedural analysis */
 
 #else
 // The shared shader declarations carry no host compiler promises.
-#define native_nodiscard
 #define native_constexpr
 #define native_inline inline
 #define native_pure

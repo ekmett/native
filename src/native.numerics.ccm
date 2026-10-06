@@ -101,12 +101,12 @@ public:
 #endif
 
   /// Decode to binary32; finite values are exact and signaling NaNs are quieted.
-  native_nodiscard native_inline native_artificial
+  [[nodiscard]] native_inline native_artificial
   constexpr operator float (this fp16 self) noexcept { return decode(self.to_bits()); }
 
 #if NATIVE_HAS_NATIVE_FP16
   /// Return native storage without rounding or normalizing NaN payloads.
-  native_nodiscard native_inline native_artificial
+  [[nodiscard]] native_inline native_artificial
   constexpr operator _Float16 (this fp16 self) noexcept { return self.content; }
 #endif
 
@@ -121,42 +121,42 @@ public:
   native_lifetimebound = default;
 
   /// Compare decoded values for equality; signed zeros compare equal and NaNs do not.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator == (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) == static_cast<float>(y);
   }
 
   /// Compare decoded values for inequality; a NaN operand makes the result true.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator != (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) != static_cast<float>(y);
   }
 
   /// Compare decoded values; NaNs are unordered and signed zeros equivalent.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr std::partial_ordering operator <=> (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) <=> static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is less; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator < (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) < static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is at most the right; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator <= (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) <= static_cast<float>(y);
   }
   /// Return whether the decoded left value is greater; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator > (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) > static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is at least the right; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator >= (fp16 x, fp16 y) noexcept {
     return static_cast<float>(x) >= static_cast<float>(y);
   }
@@ -178,7 +178,7 @@ public:
   }
 
   /// Return the exact sixteen representation bits.
-  native_nodiscard native_inline native_const
+  [[nodiscard]] native_inline native_const
   constexpr uint16_t to_bits(this fp16 self) noexcept {
     return std::bit_cast<uint16_t>(self.content);
   }
@@ -190,7 +190,7 @@ public:
 template<> struct mask_traits<fp16> { using type = bool; };
 
 /// Round a literal through binary32 to fp16.
-native_nodiscard native_inline native_artificial native_const
+[[nodiscard]] native_inline native_artificial native_const
 constexpr fp16 operator""_fp16(long double v) noexcept {
   return fp16(static_cast<float>(v));
 }
@@ -202,7 +202,7 @@ constexpr fp16 operator""_fp16(long double v) noexcept {
 export namespace std {
   using ::std::numeric_limits;
   /// Classify the stored bits as NaN without performing a floating-point conversion.
-  native_nodiscard native_artificial native_inline native_const
+  [[nodiscard]] native_artificial native_inline native_const
   constexpr bool isnan(::native::fp16 x) noexcept {
     // Sign doesn't matter, frac not zero (infinity)
     return (x.to_bits() & 0x7FFF) > 0x7c00;
@@ -346,12 +346,12 @@ public:
 
 #if NATIVE_HAS_NATIVE_BF16
   /// Return native storage without rounding or normalizing NaN payloads.
-  native_nodiscard native_inline native_artificial native_const constexpr
+  [[nodiscard]] native_inline native_artificial native_const constexpr
   operator __bf16 (this bf16 self) noexcept { return self.content; }
 #endif
 
   /// Decode to binary32; finite values are exact and signaling NaNs are quieted.
-  native_nodiscard native_inline native_artificial native_const constexpr
+  [[nodiscard]] native_inline native_artificial native_const constexpr
   operator float (this bf16 self) noexcept { return decode(self.to_bits()); }
 
   /// Copy the native representation, replacing all previous bits.
@@ -365,43 +365,43 @@ public:
   native_lifetimebound = default;
 
   /// Compare decoded values for equality; signed zeros compare equal and NaNs do not.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator == (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) == static_cast<float>(y);
   }
 
   /// Compare decoded values; NaNs are unordered and signed zeros equivalent.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr std::partial_ordering operator <=> (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) <=> static_cast<float>(y);
   }
 
   /// Compare decoded values for inequality; a NaN operand makes the result true.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator != (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) != static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is less; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator < (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) < static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is greater; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator > (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) > static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is at most the right; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator <= (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) <= static_cast<float>(y);
   }
 
   /// Return whether the decoded left value is at least the right; false for NaN operands.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   friend constexpr bool operator >= (bf16 x, bf16 y) noexcept {
     return static_cast<float>(x) >= static_cast<float>(y);
   }
@@ -417,13 +417,13 @@ public:
   }
 
   /// Adopt the exact sixteen representation bits without normalization.
-  native_nodiscard native_inline native_artificial native_const
+  [[nodiscard]] native_inline native_artificial native_const
   static constexpr bf16 from_bits(uint16_t data) noexcept {
     return std::bit_cast<bf16>(data);
   }
 
   /// Return the exact sixteen representation bits.
-  native_nodiscard native_inline native_const
+  [[nodiscard]] native_inline native_const
   constexpr uint16_t to_bits(this bf16 self) noexcept {
     return std::bit_cast<uint16_t>(self.content);
   }
@@ -434,7 +434,7 @@ public:
 template<> struct mask_traits<bf16> { using type = bool; };
 
 /// Round a literal through binary32 to bf16.
-native_nodiscard native_inline native_artificial
+[[nodiscard]] native_inline native_artificial
 constexpr bf16 operator""_bf16(long double v) noexcept {
   return bf16(static_cast<float>(v));
 }
@@ -442,7 +442,7 @@ constexpr bf16 operator""_bf16(long double v) noexcept {
 /// Compatibility fast conversion: runtime drops the low sixteen binary32 bits.
 /// Constant evaluation uses the ordinary rounded constructor instead. Use bf16(f)
 /// when both contexts must share rounding or NaN handling.
-native_nodiscard native_inline native_artificial native_const
+[[nodiscard]] native_inline native_artificial native_const
 constexpr bf16 fast_to_bf16(float f) noexcept {
   if consteval {
     return f;
@@ -452,7 +452,7 @@ constexpr bf16 fast_to_bf16(float f) noexcept {
 }
 
 /// Return an already converted bfloat16 unchanged.
-native_nodiscard native_inline native_artificial native_const
+[[nodiscard]] native_inline native_artificial native_const
 constexpr bf16 fast_to_bf16(bf16 f) noexcept {
   return f;
 }
@@ -462,7 +462,7 @@ constexpr bf16 fast_to_bf16(bf16 f) noexcept {
 export namespace std {
   using ::std::numeric_limits;
   /// Classify the stored bits as NaN without performing a floating-point conversion.
-  native_nodiscard native_artificial native_inline native_const
+  [[nodiscard]] native_artificial native_inline native_const
   constexpr bool isnan(::native::bf16 x) noexcept {
     // Exponent maxed out and fraction non-zero indicates NaN
     return (x.to_bits() & 0x7FFF) > 0x7F80;
@@ -474,17 +474,17 @@ export namespace std {
   public:
     static constexpr bool is_specialized = true;
     /// Return the least positive normal value, 2^-126 (bits 0x0080).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 min() noexcept {
       return ::native::bf16::from_bits(0x0080);
     }
     /// Return the greatest finite value, (2 - 2^-7) * 2^127 (bits 0x7f7f).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 max() noexcept {
       return ::native::bf16::from_bits(0x7F7F);
     }
     /// Return the negative of max() (bits 0xff7f).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 lowest() noexcept {
       return ::native::bf16::from_bits(0xFF7F);
     }
@@ -496,12 +496,12 @@ export namespace std {
     static constexpr bool is_exact = false;
     static constexpr int radix = 2;
     /// Return the distance from one to its successor, 2^-7 (bits 0x3c00).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 epsilon() noexcept {
       return ::native::bf16::from_bits(0x3C00);
     }
     /// Return the round-to-nearest error bound, one half (bits 0x3f00).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 round_error() noexcept {
       return ::native::bf16::from_bits(0x3F00);
     }
@@ -517,22 +517,22 @@ export namespace std {
     [[deprecated("numeric_limits::has_denorm_loss is deprecated since C++23")]]
     static constexpr bool has_denorm_loss = false;
     /// Return positive infinity (bits 0x7f80).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 infinity() noexcept {
       return ::native::bf16::from_bits(0x7F80);
     }
     /// Return a quiet NaN with the fixed encoding 0x7fc0.
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 quiet_NaN() noexcept {
       return ::native::bf16::from_bits(0x7FC0);
     }
     /// Return a signaling NaN encoding (bits 0x7f81); decoding to float quiets it.
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 signaling_NaN() noexcept {
       return ::native::bf16::from_bits(0x7F81);
     }
     /// Return the least positive subnormal value, 2^-133 (bits 0x0001).
-    native_nodiscard native_inline native_artificial native_const
+    [[nodiscard]] native_inline native_artificial native_const
     static constexpr ::native::bf16 denorm_min() noexcept {
       return ::native::bf16::from_bits(1);
     }
@@ -594,7 +594,7 @@ using uint_t = typename integer_traits<sizeof(T)*8>::unsigned_t;
       This corresponds to checking if the two arguments are "unordered" with
       respect to the IEEE floating point comparison predicates */
 template <typename T>
-native_nodiscard native_inline
+[[nodiscard]] native_inline
 constexpr bool cmp_unord(T a, T b) noexcept(noexcept(isnan(a) || isnan(b))) {
   return isnan(a) || isnan(b);
 }
@@ -611,7 +611,7 @@ constexpr bool cmp_unord(T a, T b) noexcept(noexcept(isnan(a) || isnan(b))) {
       This corresponds to checking if the two arguments are "ordered" with
       respect to the IEEE floating point comparison predicates */
 template <typename T>
-native_nodiscard native_inline
+[[nodiscard]] native_inline
 constexpr bool cmp_ord(T a, T b) noexcept(noexcept(!isnan(a) && !isnan(b))) {
   return !isnan(a) && !isnan(b);
 }
@@ -630,7 +630,7 @@ constexpr bool cmp_ord(T a, T b) noexcept(noexcept(!isnan(a) && !isnan(b))) {
 /// Signed zeros and overflow signs are preserved; NaN payloads are not promised.
 /// This scalar truncation contract differs from the vector scaleb API.
 template <one_of_t<float, double> T>
-native_nodiscard native_inline native_pure
+[[nodiscard]] native_inline native_pure
 constexpr T scalef(T x, T y) noexcept {
   if consteval {
     using U = uint_t<T>;
@@ -686,7 +686,7 @@ constexpr T scalef(T x, T y) noexcept {
 /// \showenumvalues
 /// \brief Scalar integer-comparison predicates, encoded like the corresponding x86 immediates.
 /// \details Select a truth table for cmpint(); comparison uses the signedness of its operands.
-enum class native_nodiscard CMPINT : std::size_t {
+enum class [[nodiscard]] CMPINT : std::size_t {
   EQ    = 0x0uz ///< `==`
 , LT    = 0x1uz ///< `<`
 , LE    = 0x2uz ///< `<=`
@@ -701,7 +701,7 @@ enum class native_nodiscard CMPINT : std::size_t {
 /// Signed and unsigned ordering follow T; the immediate selects one of eight predicates.
 template <CMPINT imm8, typename T>
 requires (one_of_t<T, uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t, uint64_t, int64_t> && (std::size_t(imm8) < 8uz))
-native_nodiscard native_inline native_const
+[[nodiscard]] native_inline native_const
 constexpr bool cmpint(T a, T b) noexcept {
   using enum CMPINT;
   if      constexpr (imm8 == TRUE)  return -1;
@@ -731,7 +731,7 @@ inline constexpr std::size_t max_fp_comparison_predicate = [] {
 /// \details Ordered predicates require neither operand to be NaN; unordered
 /// predicates include NaNs as indicated by their truth table. The Q/S suffixes
 /// retain the x86 encoding names, not a promise about hardware exception flags.
-enum class native_nodiscard CMP : std::size_t {
+enum class [[nodiscard]] CMP : std::size_t {
   EQ_OQ     = 0x00uz  ///< Equal (ordered, nonsignaling)
 , LT_OS     = 0x01uz  ///< Less-than (ordered, signaling)
 , LE_OS     = 0x02uz  ///< Less-than-or-equal (ordered, signaling)
@@ -771,7 +771,7 @@ enum class native_nodiscard CMP : std::size_t {
 /// emulate the x86 signaling versus nonsignaling exception behavior.
 template <CMP imm8, typename T>
 requires (one_of_t<T, float, double> && (std::size_t(imm8) < 32uz))
-native_nodiscard native_inline native_pure
+[[nodiscard]] native_inline native_pure
 constexpr bool cmp(T a, T b) noexcept {
   using enum CMP;
   if      constexpr (imm8 == EQ_OQ)    return cmp_ord(a, b) && (a == b);

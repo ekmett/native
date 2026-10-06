@@ -28,7 +28,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 16, Arch> mask_vpcompressb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -48,7 +48,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 16, Arch> maskz_vpcompressb(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> value) noexcept {
@@ -86,7 +86,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 16, Arch> mask_vpexpandb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -106,7 +106,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 16, Arch> maskz_vpexpandb(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> value) noexcept {
@@ -126,7 +126,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 16, Arch> mask_vpexpandb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -147,7 +147,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 16, Arch> maskz_vpexpandb(
     predicate<16, Arch> mask,
     T * memory) noexcept {
@@ -166,7 +166,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpcompressw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -186,7 +186,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpcompressw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> value) noexcept {
@@ -224,7 +224,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpexpandw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -244,7 +244,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpexpandw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> value) noexcept {
@@ -264,7 +264,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpexpandw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -285,7 +285,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpexpandw(
     predicate<8, Arch> mask,
     T * memory) noexcept {
@@ -304,7 +304,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> vpshldw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b) noexcept {
@@ -324,7 +324,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpshldw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -346,7 +346,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpshldw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
@@ -367,7 +367,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> vpshldvw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
@@ -388,7 +388,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpshldvw(
     simd<std::uint16_t, 8, Arch> a,
     predicate<8, Arch> mask,
@@ -410,7 +410,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpshldvw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
@@ -432,7 +432,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> vpshrdw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b) noexcept {
@@ -452,7 +452,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpshrdw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -474,7 +474,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpshrdw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
@@ -495,7 +495,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> vpshrdvw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
@@ -516,7 +516,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> mask_vpshrdvw(
     simd<std::uint16_t, 8, Arch> a,
     predicate<8, Arch> mask,
@@ -538,7 +538,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 8, Arch> maskz_vpshrdvw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
@@ -560,7 +560,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> vpshldd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b) noexcept {
@@ -580,7 +580,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> mask_vpshldd(
     simd<std::uint32_t, 4, Arch> source,
     predicate<4, Arch> mask,
@@ -602,7 +602,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> maskz_vpshldd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
@@ -623,7 +623,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> vpshldvd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
@@ -644,7 +644,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> mask_vpshldvd(
     simd<std::uint32_t, 4, Arch> a,
     predicate<4, Arch> mask,
@@ -666,7 +666,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> maskz_vpshldvd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
@@ -688,7 +688,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> vpshrdd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b) noexcept {
@@ -708,7 +708,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> mask_vpshrdd(
     simd<std::uint32_t, 4, Arch> source,
     predicate<4, Arch> mask,
@@ -730,7 +730,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> maskz_vpshrdd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
@@ -751,7 +751,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> vpshrdvd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
@@ -772,7 +772,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> mask_vpshrdvd(
     simd<std::uint32_t, 4, Arch> a,
     predicate<4, Arch> mask,
@@ -794,7 +794,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> maskz_vpshrdvd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
@@ -816,7 +816,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> vpshldq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b) noexcept {
@@ -836,7 +836,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_vpshldq(
     simd<std::uint64_t, 2, Arch> source,
     predicate<2, Arch> mask,
@@ -858,7 +858,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_vpshldq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
@@ -879,7 +879,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> vpshldvq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
@@ -900,7 +900,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_vpshldvq(
     simd<std::uint64_t, 2, Arch> a,
     predicate<2, Arch> mask,
@@ -922,7 +922,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_vpshldvq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
@@ -944,7 +944,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> vpshrdq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b) noexcept {
@@ -964,7 +964,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_vpshrdq(
     simd<std::uint64_t, 2, Arch> source,
     predicate<2, Arch> mask,
@@ -986,7 +986,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_vpshrdq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
@@ -1007,7 +1007,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> vpshrdvq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
@@ -1028,7 +1028,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_vpshrdvq(
     simd<std::uint64_t, 2, Arch> a,
     predicate<2, Arch> mask,
@@ -1050,7 +1050,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_vpshrdvq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
@@ -1072,7 +1072,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 32, Arch> mask_vpcompressb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -1092,7 +1092,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 32, Arch> maskz_vpcompressb(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> value) noexcept {
@@ -1130,7 +1130,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 32, Arch> mask_vpexpandb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -1150,7 +1150,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 32, Arch> maskz_vpexpandb(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> value) noexcept {
@@ -1170,7 +1170,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 32, Arch> mask_vpexpandb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -1191,7 +1191,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint8_t, 32, Arch> maskz_vpexpandb(
     predicate<32, Arch> mask,
     T * memory) noexcept {
@@ -1210,7 +1210,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpcompressw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -1230,7 +1230,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpcompressw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> value) noexcept {
@@ -1268,7 +1268,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpexpandw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -1288,7 +1288,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpexpandw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> value) noexcept {
@@ -1308,7 +1308,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpexpandw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -1329,7 +1329,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpexpandw(
     predicate<16, Arch> mask,
     T * memory) noexcept {
@@ -1348,7 +1348,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> vpshldw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b) noexcept {
@@ -1368,7 +1368,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpshldw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -1390,7 +1390,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpshldw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
@@ -1411,7 +1411,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> vpshldvw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b,
@@ -1432,7 +1432,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpshldvw(
     simd<std::uint16_t, 16, Arch> a,
     predicate<16, Arch> mask,
@@ -1454,7 +1454,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpshldvw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
@@ -1476,7 +1476,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> vpshrdw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b) noexcept {
@@ -1496,7 +1496,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpshrdw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -1518,7 +1518,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpshrdw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
@@ -1539,7 +1539,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> vpshrdvw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b,
@@ -1560,7 +1560,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> mask_vpshrdvw(
     simd<std::uint16_t, 16, Arch> a,
     predicate<16, Arch> mask,
@@ -1582,7 +1582,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint16_t, 16, Arch> maskz_vpshrdvw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
@@ -1604,7 +1604,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> vpshldd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b) noexcept {
@@ -1624,7 +1624,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> mask_vpshldd(
     simd<std::uint32_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -1646,7 +1646,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> maskz_vpshldd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
@@ -1667,7 +1667,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> vpshldvd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b,
@@ -1688,7 +1688,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> mask_vpshldvd(
     simd<std::uint32_t, 8, Arch> a,
     predicate<8, Arch> mask,
@@ -1710,7 +1710,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> maskz_vpshldvd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
@@ -1732,7 +1732,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> vpshrdd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b) noexcept {
@@ -1752,7 +1752,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> mask_vpshrdd(
     simd<std::uint32_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -1774,7 +1774,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> maskz_vpshrdd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
@@ -1795,7 +1795,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> vpshrdvd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b,
@@ -1816,7 +1816,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> mask_vpshrdvd(
     simd<std::uint32_t, 8, Arch> a,
     predicate<8, Arch> mask,
@@ -1838,7 +1838,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> maskz_vpshrdvd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
@@ -1860,7 +1860,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> vpshldq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b) noexcept {
@@ -1880,7 +1880,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_vpshldq(
     simd<std::uint64_t, 4, Arch> source,
     predicate<4, Arch> mask,
@@ -1902,7 +1902,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_vpshldq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
@@ -1923,7 +1923,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> vpshldvq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b,
@@ -1944,7 +1944,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_vpshldvq(
     simd<std::uint64_t, 4, Arch> a,
     predicate<4, Arch> mask,
@@ -1966,7 +1966,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_vpshldvq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
@@ -1988,7 +1988,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> vpshrdq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b) noexcept {
@@ -2008,7 +2008,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_vpshrdq(
     simd<std::uint64_t, 4, Arch> source,
     predicate<4, Arch> mask,
@@ -2030,7 +2030,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_vpshrdq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
@@ -2051,7 +2051,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> vpshrdvq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b,
@@ -2072,7 +2072,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_vpshrdvq(
     simd<std::uint64_t, 4, Arch> a,
     predicate<4, Arch> mask,
@@ -2094,7 +2094,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_vpshrdvq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
@@ -2115,7 +2115,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint8_t, 64, Arch> mask_vpcompressb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
@@ -2134,7 +2134,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint8_t, 64, Arch> maskz_vpcompressb(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> value) noexcept {
@@ -2170,7 +2170,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint8_t, 64, Arch> mask_vpexpandb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
@@ -2189,7 +2189,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint8_t, 64, Arch> maskz_vpexpandb(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> value) noexcept {
@@ -2208,7 +2208,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint8_t, 64, Arch> mask_vpexpandb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
@@ -2228,7 +2228,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint8_t, 64, Arch> maskz_vpexpandb(
     predicate<64, Arch> mask,
     T * memory) noexcept {
@@ -2246,7 +2246,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpcompressw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -2265,7 +2265,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpcompressw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> value) noexcept {
@@ -2301,7 +2301,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpexpandw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -2320,7 +2320,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpexpandw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> value) noexcept {
@@ -2339,7 +2339,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpexpandw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -2359,7 +2359,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>))
-  native_nodiscard native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpexpandw(
     predicate<32, Arch> mask,
     T * memory) noexcept {
@@ -2377,7 +2377,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> vpshldw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b) noexcept {
@@ -2396,7 +2396,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpshldw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -2417,7 +2417,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpshldw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
@@ -2437,7 +2437,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> vpshldvw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b,
@@ -2457,7 +2457,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpshldvw(
     simd<std::uint16_t, 32, Arch> a,
     predicate<32, Arch> mask,
@@ -2478,7 +2478,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpshldvw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
@@ -2499,7 +2499,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> vpshrdw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b) noexcept {
@@ -2518,7 +2518,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpshrdw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
@@ -2539,7 +2539,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpshrdw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
@@ -2559,7 +2559,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> vpshrdvw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b,
@@ -2579,7 +2579,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> mask_vpshrdvw(
     simd<std::uint16_t, 32, Arch> a,
     predicate<32, Arch> mask,
@@ -2600,7 +2600,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint16_t, 32, Arch> maskz_vpshrdvw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
@@ -2621,7 +2621,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> vpshldd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b) noexcept {
@@ -2640,7 +2640,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> mask_vpshldd(
     simd<std::uint32_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -2661,7 +2661,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> maskz_vpshldd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
@@ -2681,7 +2681,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> vpshldvd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b,
@@ -2701,7 +2701,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> mask_vpshldvd(
     simd<std::uint32_t, 16, Arch> a,
     predicate<16, Arch> mask,
@@ -2722,7 +2722,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> maskz_vpshldvd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
@@ -2743,7 +2743,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> vpshrdd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b) noexcept {
@@ -2762,7 +2762,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> mask_vpshrdd(
     simd<std::uint32_t, 16, Arch> source,
     predicate<16, Arch> mask,
@@ -2783,7 +2783,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> maskz_vpshrdd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
@@ -2803,7 +2803,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> vpshrdvd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b,
@@ -2823,7 +2823,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> mask_vpshrdvd(
     simd<std::uint32_t, 16, Arch> a,
     predicate<16, Arch> mask,
@@ -2844,7 +2844,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint32_t, 16, Arch> maskz_vpshrdvd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
@@ -2865,7 +2865,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> vpshldq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b) noexcept {
@@ -2884,7 +2884,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> mask_vpshldq(
     simd<std::uint64_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -2905,7 +2905,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> maskz_vpshldq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
@@ -2925,7 +2925,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> vpshldvq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b,
@@ -2945,7 +2945,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> mask_vpshldvq(
     simd<std::uint64_t, 8, Arch> a,
     predicate<8, Arch> mask,
@@ -2966,7 +2966,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> maskz_vpshldvq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
@@ -2987,7 +2987,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> vpshrdq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b) noexcept {
@@ -3006,7 +3006,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> mask_vpshrdq(
     simd<std::uint64_t, 8, Arch> source,
     predicate<8, Arch> mask,
@@ -3027,7 +3027,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> maskz_vpshrdq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
@@ -3047,7 +3047,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> vpshrdvq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b,
@@ -3067,7 +3067,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> mask_vpshrdvq(
     simd<std::uint64_t, 8, Arch> a,
     predicate<8, Arch> mask,
@@ -3088,7 +3088,7 @@ export namespace native {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
   constexpr simd<std::uint64_t, 8, Arch> maskz_vpshrdvq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
@@ -3111,7 +3111,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpcompressb(
+  [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpcompressb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> value) noexcept {
@@ -3125,7 +3125,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpcompressb(
+  [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpcompressb(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<false>(simd<std::uint8_t, 16, Arch>{}, mask.to_bitset(), value);
@@ -3152,7 +3152,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpexpandb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> value) noexcept {
@@ -3166,7 +3166,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpexpandb(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<true>(simd<std::uint8_t, 16, Arch>{}, mask.to_bitset(), value);
@@ -3180,7 +3180,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 16, Arch> mask_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpexpandb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
     T * memory) noexcept {
@@ -3195,7 +3195,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 16, Arch> maskz_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpexpandb(
     predicate<16, Arch> mask,
     T * memory) noexcept {
     return detail::x86_vbmi2_constant::expand_load(simd<std::uint8_t, 16, Arch>{}, mask.to_bitset(), memory);
@@ -3208,7 +3208,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpcompressw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpcompressw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> value) noexcept {
@@ -3222,7 +3222,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpcompressw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpcompressw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<false>(simd<std::uint16_t, 8, Arch>{}, mask.to_bitset(), value);
@@ -3249,7 +3249,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpexpandw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> value) noexcept {
@@ -3263,7 +3263,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpexpandw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<true>(simd<std::uint16_t, 8, Arch>{}, mask.to_bitset(), value);
@@ -3277,7 +3277,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpexpandw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
     T * memory) noexcept {
@@ -3292,7 +3292,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpexpandw(
     predicate<8, Arch> mask,
     T * memory) noexcept {
     return detail::x86_vbmi2_constant::expand_load(simd<std::uint16_t, 8, Arch>{}, mask.to_bitset(), memory);
@@ -3305,7 +3305,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> vpshldw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -3319,7 +3319,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpshldw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
@@ -3335,7 +3335,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpshldw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b) noexcept {
@@ -3350,7 +3350,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> vpshldvw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
     simd<std::uint16_t, 8, Arch> counts) noexcept {
@@ -3365,7 +3365,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpshldvw(
     simd<std::uint16_t, 8, Arch> a,
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> b,
@@ -3381,7 +3381,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpshldvw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
@@ -3397,7 +3397,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> vpshrdw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -3411,7 +3411,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpshrdw(
     simd<std::uint16_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
@@ -3427,7 +3427,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpshrdw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b) noexcept {
@@ -3442,7 +3442,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> vpshrdvw(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
     simd<std::uint16_t, 8, Arch> counts) noexcept {
@@ -3457,7 +3457,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> mask_vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> mask_vpshrdvw(
     simd<std::uint16_t, 8, Arch> a,
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> b,
@@ -3473,7 +3473,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 8, Arch> maskz_vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> maskz_vpshrdvw(
     predicate<8, Arch> mask,
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
@@ -3489,7 +3489,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> vpshldd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -3503,7 +3503,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> mask_vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> mask_vpshldd(
     simd<std::uint32_t, 4, Arch> source,
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
@@ -3519,7 +3519,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> maskz_vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> maskz_vpshldd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b) noexcept {
@@ -3534,7 +3534,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> vpshldvd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
     simd<std::uint32_t, 4, Arch> counts) noexcept {
@@ -3549,7 +3549,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> mask_vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> mask_vpshldvd(
     simd<std::uint32_t, 4, Arch> a,
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> b,
@@ -3565,7 +3565,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> maskz_vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> maskz_vpshldvd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
@@ -3581,7 +3581,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> vpshrdd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -3595,7 +3595,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> mask_vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> mask_vpshrdd(
     simd<std::uint32_t, 4, Arch> source,
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
@@ -3611,7 +3611,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> maskz_vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> maskz_vpshrdd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b) noexcept {
@@ -3626,7 +3626,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> vpshrdvd(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
     simd<std::uint32_t, 4, Arch> counts) noexcept {
@@ -3641,7 +3641,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> mask_vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> mask_vpshrdvd(
     simd<std::uint32_t, 4, Arch> a,
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> b,
@@ -3657,7 +3657,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> maskz_vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> maskz_vpshrdvd(
     predicate<4, Arch> mask,
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
@@ -3673,7 +3673,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> vpshldq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -3687,7 +3687,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> mask_vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_vpshldq(
     simd<std::uint64_t, 2, Arch> source,
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
@@ -3703,7 +3703,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> maskz_vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_vpshldq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b) noexcept {
@@ -3718,7 +3718,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> vpshldvq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
     simd<std::uint64_t, 2, Arch> counts) noexcept {
@@ -3733,7 +3733,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> mask_vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_vpshldvq(
     simd<std::uint64_t, 2, Arch> a,
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> b,
@@ -3749,7 +3749,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> maskz_vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_vpshldvq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
@@ -3765,7 +3765,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> vpshrdq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -3779,7 +3779,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> mask_vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_vpshrdq(
     simd<std::uint64_t, 2, Arch> source,
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
@@ -3795,7 +3795,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> maskz_vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_vpshrdq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b) noexcept {
@@ -3810,7 +3810,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> vpshrdvq(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
     simd<std::uint64_t, 2, Arch> counts) noexcept {
@@ -3825,7 +3825,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> mask_vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_vpshrdvq(
     simd<std::uint64_t, 2, Arch> a,
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> b,
@@ -3841,7 +3841,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 2, Arch> maskz_vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_vpshrdvq(
     predicate<2, Arch> mask,
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
@@ -3857,7 +3857,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpcompressb(
+  [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpcompressb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> value) noexcept {
@@ -3871,7 +3871,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpcompressb(
+  [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpcompressb(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<false>(simd<std::uint8_t, 32, Arch>{}, mask.to_bitset(), value);
@@ -3898,7 +3898,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpexpandb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> value) noexcept {
@@ -3912,7 +3912,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint8_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpexpandb(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<true>(simd<std::uint8_t, 32, Arch>{}, mask.to_bitset(), value);
@@ -3926,7 +3926,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>) &&
       requires { sizeof(simd<std::uint8_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 32, Arch> mask_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpexpandb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
     T * memory) noexcept {
@@ -3941,7 +3941,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>) &&
       requires { sizeof(simd<std::uint8_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 32, Arch> maskz_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpexpandb(
     predicate<32, Arch> mask,
     T * memory) noexcept {
     return detail::x86_vbmi2_constant::expand_load(simd<std::uint8_t, 32, Arch>{}, mask.to_bitset(), memory);
@@ -3954,7 +3954,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpcompressw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpcompressw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> value) noexcept {
@@ -3968,7 +3968,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpcompressw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpcompressw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<false>(simd<std::uint16_t, 16, Arch>{}, mask.to_bitset(), value);
@@ -3995,7 +3995,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpexpandw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> value) noexcept {
@@ -4009,7 +4009,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpexpandw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<true>(simd<std::uint16_t, 16, Arch>{}, mask.to_bitset(), value);
@@ -4023,7 +4023,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpexpandw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
     T * memory) noexcept {
@@ -4038,7 +4038,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vl)) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpexpandw(
     predicate<16, Arch> mask,
     T * memory) noexcept {
     return detail::x86_vbmi2_constant::expand_load(simd<std::uint16_t, 16, Arch>{}, mask.to_bitset(), memory);
@@ -4051,7 +4051,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> vpshldw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -4065,7 +4065,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpshldw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
@@ -4081,7 +4081,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpshldw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b) noexcept {
@@ -4096,7 +4096,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> vpshldvw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b,
     simd<std::uint16_t, 16, Arch> counts) noexcept {
@@ -4111,7 +4111,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpshldvw(
     simd<std::uint16_t, 16, Arch> a,
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> b,
@@ -4127,7 +4127,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpshldvw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b,
@@ -4143,7 +4143,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> vpshrdw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -4157,7 +4157,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpshrdw(
     simd<std::uint16_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
@@ -4173,7 +4173,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpshrdw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b) noexcept {
@@ -4188,7 +4188,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> vpshrdvw(
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b,
     simd<std::uint16_t, 16, Arch> counts) noexcept {
@@ -4203,7 +4203,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> mask_vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> mask_vpshrdvw(
     simd<std::uint16_t, 16, Arch> a,
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> b,
@@ -4219,7 +4219,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint16_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 16, Arch> maskz_vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 16, Arch> maskz_vpshrdvw(
     predicate<16, Arch> mask,
     simd<std::uint16_t, 16, Arch> a,
     simd<std::uint16_t, 16, Arch> b,
@@ -4235,7 +4235,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> vpshldd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -4249,7 +4249,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> mask_vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> mask_vpshldd(
     simd<std::uint32_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
@@ -4265,7 +4265,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> maskz_vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> maskz_vpshldd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b) noexcept {
@@ -4280,7 +4280,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> vpshldvd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b,
     simd<std::uint32_t, 8, Arch> counts) noexcept {
@@ -4295,7 +4295,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> mask_vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> mask_vpshldvd(
     simd<std::uint32_t, 8, Arch> a,
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> b,
@@ -4311,7 +4311,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> maskz_vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> maskz_vpshldvd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b,
@@ -4327,7 +4327,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> vpshrdd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -4341,7 +4341,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> mask_vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> mask_vpshrdd(
     simd<std::uint32_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
@@ -4357,7 +4357,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> maskz_vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> maskz_vpshrdd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b) noexcept {
@@ -4372,7 +4372,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> vpshrdvd(
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b,
     simd<std::uint32_t, 8, Arch> counts) noexcept {
@@ -4387,7 +4387,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> mask_vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> mask_vpshrdvd(
     simd<std::uint32_t, 8, Arch> a,
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> b,
@@ -4403,7 +4403,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint32_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 8, Arch> maskz_vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> maskz_vpshrdvd(
     predicate<8, Arch> mask,
     simd<std::uint32_t, 8, Arch> a,
     simd<std::uint32_t, 8, Arch> b,
@@ -4419,7 +4419,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> vpshldq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -4433,7 +4433,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> mask_vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_vpshldq(
     simd<std::uint64_t, 4, Arch> source,
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
@@ -4449,7 +4449,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> maskz_vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_vpshldq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b) noexcept {
@@ -4464,7 +4464,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> vpshldvq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b,
     simd<std::uint64_t, 4, Arch> counts) noexcept {
@@ -4479,7 +4479,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> mask_vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_vpshldvq(
     simd<std::uint64_t, 4, Arch> a,
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> b,
@@ -4495,7 +4495,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> maskz_vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_vpshldvq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b,
@@ -4511,7 +4511,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> vpshrdq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -4525,7 +4525,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> mask_vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_vpshrdq(
     simd<std::uint64_t, 4, Arch> source,
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
@@ -4541,7 +4541,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> maskz_vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_vpshrdq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b) noexcept {
@@ -4556,7 +4556,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> vpshrdvq(
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b,
     simd<std::uint64_t, 4, Arch> counts) noexcept {
@@ -4571,7 +4571,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> mask_vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_vpshrdvq(
     simd<std::uint64_t, 4, Arch> a,
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> b,
@@ -4587,7 +4587,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl)) &&
       requires { sizeof(simd<std::uint64_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 4, Arch> maskz_vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_vpshrdvq(
     predicate<4, Arch> mask,
     simd<std::uint64_t, 4, Arch> a,
     simd<std::uint64_t, 4, Arch> b,
@@ -4602,7 +4602,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint8_t, 64, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpcompressb(
+  [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpcompressb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> value) noexcept {
@@ -4615,7 +4615,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint8_t, 64, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpcompressb(
+  [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpcompressb(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<false>(simd<std::uint8_t, 64, Arch>{}, mask.to_bitset(), value);
@@ -4640,7 +4640,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint8_t, 64, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpexpandb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> value) noexcept {
@@ -4653,7 +4653,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint8_t, 64, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpexpandb(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<true>(simd<std::uint8_t, 64, Arch>{}, mask.to_bitset(), value);
@@ -4666,7 +4666,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2)) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>) &&
       requires { sizeof(simd<std::uint8_t, 64, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 64, Arch> mask_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpexpandb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
     T * memory) noexcept {
@@ -4680,7 +4680,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2)) &&
       (std::same_as<T, std::uint8_t> || std::same_as<T, std::uint8_t const>) &&
       requires { sizeof(simd<std::uint8_t, 64, Arch>); })
-  native_nodiscard consteval simd<std::uint8_t, 64, Arch> maskz_vpexpandb(
+  [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpexpandb(
     predicate<64, Arch> mask,
     T * memory) noexcept {
     return detail::x86_vbmi2_constant::expand_load(simd<std::uint8_t, 64, Arch>{}, mask.to_bitset(), memory);
@@ -4692,7 +4692,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpcompressw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpcompressw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> value) noexcept {
@@ -4705,7 +4705,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpcompressw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpcompressw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<false>(simd<std::uint16_t, 32, Arch>{}, mask.to_bitset(), value);
@@ -4730,7 +4730,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpexpandw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> value) noexcept {
@@ -4743,7 +4743,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpexpandw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> value) noexcept {
     return detail::x86_vbmi2_constant::compact<true>(simd<std::uint16_t, 32, Arch>{}, mask.to_bitset(), value);
@@ -4756,7 +4756,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2)) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpexpandw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
     T * memory) noexcept {
@@ -4770,7 +4770,7 @@ export namespace native {
       Arch.has(x86_feature::avx512vbmi2)) &&
       (std::same_as<T, std::uint16_t> || std::same_as<T, std::uint16_t const>) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpexpandw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpexpandw(
     predicate<32, Arch> mask,
     T * memory) noexcept {
     return detail::x86_vbmi2_constant::expand_load(simd<std::uint16_t, 32, Arch>{}, mask.to_bitset(), memory);
@@ -4782,7 +4782,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> vpshldw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -4795,7 +4795,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpshldw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
@@ -4810,7 +4810,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpshldw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpshldw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b) noexcept {
@@ -4824,7 +4824,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> vpshldvw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b,
     simd<std::uint16_t, 32, Arch> counts) noexcept {
@@ -4838,7 +4838,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpshldvw(
     simd<std::uint16_t, 32, Arch> a,
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> b,
@@ -4853,7 +4853,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpshldvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpshldvw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b,
@@ -4868,7 +4868,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> vpshrdw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -4881,7 +4881,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpshrdw(
     simd<std::uint16_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
@@ -4896,7 +4896,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpshrdw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpshrdw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b) noexcept {
@@ -4910,7 +4910,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> vpshrdvw(
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b,
     simd<std::uint16_t, 32, Arch> counts) noexcept {
@@ -4924,7 +4924,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> mask_vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> mask_vpshrdvw(
     simd<std::uint16_t, 32, Arch> a,
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> b,
@@ -4939,7 +4939,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint16_t, 32, Arch>); })
-  native_nodiscard consteval simd<std::uint16_t, 32, Arch> maskz_vpshrdvw(
+  [[nodiscard]] consteval simd<std::uint16_t, 32, Arch> maskz_vpshrdvw(
     predicate<32, Arch> mask,
     simd<std::uint16_t, 32, Arch> a,
     simd<std::uint16_t, 32, Arch> b,
@@ -4954,7 +4954,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> vpshldd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -4967,7 +4967,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> mask_vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> mask_vpshldd(
     simd<std::uint32_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
@@ -4982,7 +4982,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> maskz_vpshldd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> maskz_vpshldd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b) noexcept {
@@ -4996,7 +4996,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> vpshldvd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b,
     simd<std::uint32_t, 16, Arch> counts) noexcept {
@@ -5010,7 +5010,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> mask_vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> mask_vpshldvd(
     simd<std::uint32_t, 16, Arch> a,
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> b,
@@ -5025,7 +5025,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> maskz_vpshldvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> maskz_vpshldvd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b,
@@ -5040,7 +5040,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> vpshrdd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -5053,7 +5053,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> mask_vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> mask_vpshrdd(
     simd<std::uint32_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
@@ -5068,7 +5068,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> maskz_vpshrdd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> maskz_vpshrdd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b) noexcept {
@@ -5082,7 +5082,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> vpshrdvd(
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b,
     simd<std::uint32_t, 16, Arch> counts) noexcept {
@@ -5096,7 +5096,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> mask_vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> mask_vpshrdvd(
     simd<std::uint32_t, 16, Arch> a,
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> b,
@@ -5111,7 +5111,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint32_t, 16, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 16, Arch> maskz_vpshrdvd(
+  [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> maskz_vpshrdvd(
     predicate<16, Arch> mask,
     simd<std::uint32_t, 16, Arch> a,
     simd<std::uint32_t, 16, Arch> b,
@@ -5126,7 +5126,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> vpshldq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<false>(
@@ -5139,7 +5139,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> mask_vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_vpshldq(
     simd<std::uint64_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
@@ -5154,7 +5154,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> maskz_vpshldq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_vpshldq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b) noexcept {
@@ -5168,7 +5168,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> vpshldvq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b,
     simd<std::uint64_t, 8, Arch> counts) noexcept {
@@ -5182,7 +5182,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> mask_vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_vpshldvq(
     simd<std::uint64_t, 8, Arch> a,
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> b,
@@ -5197,7 +5197,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> maskz_vpshldvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_vpshldvq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b,
@@ -5212,7 +5212,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> vpshrdq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_vbmi2_constant::shift<true>(
@@ -5225,7 +5225,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> mask_vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_vpshrdq(
     simd<std::uint64_t, 8, Arch> source,
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
@@ -5240,7 +5240,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) && Imm8 <= 255 &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> maskz_vpshrdq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_vpshrdq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b) noexcept {
@@ -5254,7 +5254,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> vpshrdvq(
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b,
     simd<std::uint64_t, 8, Arch> counts) noexcept {
@@ -5268,7 +5268,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> mask_vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_vpshrdvq(
     simd<std::uint64_t, 8, Arch> a,
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> b,
@@ -5283,7 +5283,7 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2)) &&
       requires { sizeof(simd<std::uint64_t, 8, Arch>); })
-  native_nodiscard consteval simd<std::uint64_t, 8, Arch> maskz_vpshrdvq(
+  [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_vpshrdvq(
     predicate<8, Arch> mask,
     simd<std::uint64_t, 8, Arch> a,
     simd<std::uint64_t, 8, Arch> b,

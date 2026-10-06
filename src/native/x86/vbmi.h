@@ -15,7 +15,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i vpermb(
     __m128i indices,
     __m128i value) noexcept {
@@ -27,7 +27,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i mask_vpermb(
     __m128i source,
     __mmask16 mask,
@@ -41,7 +41,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i maskz_vpermb(
     __mmask16 mask,
     __m128i indices,
@@ -54,7 +54,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i vpermt2b(
     __m128i a,
     __m128i indices,
@@ -67,7 +67,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i mask_vpermt2b(
     __m128i a,
     __mmask16 mask,
@@ -81,7 +81,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i maskz_vpermt2b(
     __mmask16 mask,
     __m128i a,
@@ -95,7 +95,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i vpermi2b(
     __m128i indices,
     __m128i a,
@@ -108,7 +108,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i mask_vpermi2b(
     __m128i indices,
     __mmask16 mask,
@@ -122,7 +122,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i maskz_vpermi2b(
     __mmask16 mask,
     __m128i indices,
@@ -136,7 +136,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i vpmultishiftqb(
     __m128i control,
     __m128i value) noexcept {
@@ -148,7 +148,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i mask_vpmultishiftqb(
     __m128i source,
     __mmask16 mask,
@@ -162,7 +162,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m128i maskz_vpmultishiftqb(
     __mmask16 mask,
     __m128i control,
@@ -175,7 +175,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i vpermb(
     __m256i indices,
     __m256i value) noexcept {
@@ -187,7 +187,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i mask_vpermb(
     __m256i source,
     __mmask32 mask,
@@ -201,7 +201,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i maskz_vpermb(
     __mmask32 mask,
     __m256i indices,
@@ -214,7 +214,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i vpermt2b(
     __m256i a,
     __m256i indices,
@@ -227,7 +227,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i mask_vpermt2b(
     __m256i a,
     __mmask32 mask,
@@ -241,7 +241,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i maskz_vpermt2b(
     __mmask32 mask,
     __m256i a,
@@ -255,7 +255,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i vpermi2b(
     __m256i indices,
     __m256i a,
@@ -268,7 +268,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i mask_vpermi2b(
     __m256i indices,
     __mmask32 mask,
@@ -282,7 +282,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i maskz_vpermi2b(
     __mmask32 mask,
     __m256i indices,
@@ -296,7 +296,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i vpmultishiftqb(
     __m256i control,
     __m256i value) noexcept {
@@ -308,7 +308,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i mask_vpmultishiftqb(
     __m256i source,
     __mmask32 mask,
@@ -322,7 +322,7 @@ namespace native::detail::x86_vbmi {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi,avx512vl")
   __m256i maskz_vpmultishiftqb(
     __mmask32 mask,
     __m256i control,
@@ -334,7 +334,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i vpermb(
     __m512i indices,
     __m512i value) noexcept {
@@ -345,7 +345,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i mask_vpermb(
     __m512i source,
     __mmask64 mask,
@@ -358,7 +358,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i maskz_vpermb(
     __mmask64 mask,
     __m512i indices,
@@ -370,7 +370,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i vpermt2b(
     __m512i a,
     __m512i indices,
@@ -382,7 +382,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i mask_vpermt2b(
     __m512i a,
     __mmask64 mask,
@@ -395,7 +395,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i maskz_vpermt2b(
     __mmask64 mask,
     __m512i a,
@@ -408,7 +408,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i vpermi2b(
     __m512i indices,
     __m512i a,
@@ -420,7 +420,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i mask_vpermi2b(
     __m512i indices,
     __mmask64 mask,
@@ -433,7 +433,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i maskz_vpermi2b(
     __mmask64 mask,
     __m512i indices,
@@ -446,7 +446,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i vpmultishiftqb(
     __m512i control,
     __m512i value) noexcept {
@@ -457,7 +457,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i mask_vpmultishiftqb(
     __m512i source,
     __mmask64 mask,
@@ -470,7 +470,7 @@ namespace native::detail::x86_vbmi {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi")
   __m512i maskz_vpmultishiftqb(
     __mmask64 mask,
     __m512i control,

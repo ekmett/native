@@ -65,7 +65,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline native_target(
+  [[nodiscard]] native_inline native_target(
       "avxneconvert") constexpr simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
     if consteval {
       return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
@@ -81,7 +81,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
              (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
-  native_nodiscard consteval simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
+  [[nodiscard]] consteval simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
   }
 
@@ -90,7 +90,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline native_target(
+  [[nodiscard]] native_inline native_target(
       "avxneconvert") constexpr simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
     if consteval {
       return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
@@ -106,7 +106,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
              (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
-  native_nodiscard consteval simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
+  [[nodiscard]] consteval simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
   }
 
@@ -115,7 +115,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline native_target(
+  [[nodiscard]] native_inline native_target(
       "avxneconvert") constexpr simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
     if consteval {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
@@ -133,7 +133,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
              (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
-  native_nodiscard consteval simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
+  [[nodiscard]] consteval simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
   }
 
@@ -142,7 +142,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline native_target(
+  [[nodiscard]] native_inline native_target(
       "avxneconvert") constexpr simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
     if consteval {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
@@ -160,7 +160,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
              (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
-  native_nodiscard consteval simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
+  [[nodiscard]] consteval simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
   }
 
@@ -169,7 +169,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline native_target(
+  [[nodiscard]] native_inline native_target(
       "avxneconvert") constexpr simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
     if consteval {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
@@ -187,7 +187,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
              (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
-  native_nodiscard consteval simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
+  [[nodiscard]] consteval simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
   }
 
@@ -196,7 +196,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline native_target(
+  [[nodiscard]] native_inline native_target(
       "avxneconvert") constexpr simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
     if consteval {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
@@ -214,7 +214,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
              (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
-  native_nodiscard consteval simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
+  [[nodiscard]] consteval simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
   }
 
@@ -223,7 +223,7 @@ export namespace native {
   template<isa<x86> Arch, std::size_t N>
     requires(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx) &&
              (N == 4 || N == 8))
-  native_nodiscard native_inline
+  [[nodiscard]] native_inline
   native_target("avxneconvert") constexpr simd<bf16, N, Arch> cvtneps_bf16(
       simd<float, N, Arch> input) noexcept {
     if consteval {
@@ -247,7 +247,7 @@ export namespace native {
                sizeof(simd<float, N, Arch>);
                sizeof(simd<bf16, N, Arch>);
              })
-  native_nodiscard consteval simd<bf16, N, Arch> cvtneps_bf16(simd<float, N, Arch> input) noexcept {
+  [[nodiscard]] consteval simd<bf16, N, Arch> cvtneps_bf16(simd<float, N, Arch> input) noexcept {
     return detail::x86_neconvert::narrow(input);
   }
   /// \}

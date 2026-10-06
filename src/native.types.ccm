@@ -37,9 +37,9 @@ using ::native::mask;
 /// \details Ideally this would be fully `constexpr`, but I'm not building my own demangler.
 /// \hideinitializer \hideinlinesource
 template <typename T>
-inline std::string_view const type = [] native_nodiscard static -> std::string_view {
+inline std::string_view const type = [] [[nodiscard]] static -> std::string_view {
   // nb: copying into string is necessary because the demangled name is ephemeral
-  static std::string const body = [] native_nodiscard static -> std::string {
+  static std::string const body = [] [[nodiscard]] static -> std::string {
     #if !defined(_MSC_VER) && __has_include(<cxxabi.h>)
     int status = 0;
     std::unique_ptr<char, decltype(&std::free)> demangled(
@@ -61,7 +61,7 @@ inline std::string_view const type = [] native_nodiscard static -> std::string_v
 /// Return the cached display name of the argument's cv/ref-stripped static type.
 /// The argument is not inspected. This does not perform dynamic type discovery.
 /// \hideinlinesource
-native_nodiscard
+[[nodiscard]]
 std::string_view type_of(auto const & t) {
   return type<std::remove_cvref_t<decltype(t)>>;
 }

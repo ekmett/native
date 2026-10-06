@@ -65,7 +65,7 @@ namespace native::detail::NATIVE_BACKEND {
       }
     }
     template<class Self>
-    native_nodiscard static native_inline constexpr result<Self> read(Self const & self) {
+    [[nodiscard]] static native_inline constexpr result<Self> read(Self const & self) {
       using T=typename Self::value_type;
       auto value=words(self);
       if constexpr(size==1) {
@@ -100,7 +100,7 @@ namespace native::detail {
     template<std::size_t K> using result = std::conditional_t<K==1,T,simd<T,K,Arch>>;
 #define NATIVE_SWIZZLE_FIELD(NAME,K,...) \
     template<class Self> requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template readable<Self>()) \
-    native_nodiscard native_inline constexpr result<K> get_##NAME(this Self const & self) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); } \
+    [[nodiscard]] native_inline constexpr result<K> get_##NAME(this Self const & self) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); } \
     template<class Self> requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template writable<Self>()) \
     native_inline constexpr result<K> set_##NAME(this Self & self,result<K> rhs) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::write(self,rhs); } \
     __declspec(property(get=get_##NAME,put=set_##NAME)) result<K> NAME;
@@ -607,7 +607,7 @@ namespace native {
     template <class X> using rebind = simd<X,N,Arch>;
     /// Load exactly the logical lanes; the template alignment is a caller promise, never permission to read padding.
     template <std::size_t A = 1>
-    native_nodiscard static native_inline constexpr simd load_memory(mask_lane<U> const * p) noexcept { return load(p); }
+    [[nodiscard]] static native_inline constexpr simd load_memory(mask_lane<U> const * p) noexcept { return load(p); }
     /// Store exactly the logical lanes; the template alignment is a caller promise, never permission to write padding.
     template <std::size_t A = 1>
     native_inline constexpr void store_memory(mask_lane<U> * p) const noexcept { store(p); }
@@ -634,19 +634,19 @@ namespace native {
     explicit native_inline constexpr simd(std::array<value_type,N> const & values) noexcept : simd(load(values.data())) {}
     // Safe native import interprets each whole U-sized lane as nonzero truth.
     /// Import native mask storage, normalizing nonzero lanes to true.
-    native_nodiscard static native_inline native_const constexpr simd from_native(native_type value) noexcept { return simd(raw{},ops::normalize(value)); }
+    [[nodiscard]] static native_inline native_const constexpr simd from_native(native_type value) noexcept { return simd(raw{},ops::normalize(value)); }
     // Caller promises zero/all-ones for EVERY lane. Arbitrary bitselect masks
     // must use bit_select instead, never this canonical predicate domain.
     /// Adopt storage with the precondition that every mask lane is canonical zero or all ones.
-    native_nodiscard static native_inline native_const constexpr simd unsafe_from_native(native_type value) noexcept { return simd(raw{},value); }
+    [[nodiscard]] static native_inline native_const constexpr simd unsafe_from_native(native_type value) noexcept { return simd(raw{},value); }
     /// Return the native storage representation.
-    native_nodiscard native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
+    [[nodiscard]] native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
     /// Import lane i from bit i, clearing bits above the logical lane count.
-    native_nodiscard static native_inline native_const constexpr simd from_bitset(std::uint64_t value) noexcept { return simd(raw{},ops::from_bits(value)); }
+    [[nodiscard]] static native_inline native_const constexpr simd from_bitset(std::uint64_t value) noexcept { return simd(raw{},ops::from_bits(value)); }
     /// Pack each logical lane truth value into bit i; higher bits are zero.
-    native_nodiscard native_inline native_pure constexpr std::uint64_t to_bitset() const noexcept { return ops::bits(value_); }
+    [[nodiscard]] native_inline native_pure constexpr std::uint64_t to_bitset() const noexcept { return ops::bits(value_); }
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard static native_inline constexpr native_pure simd load(value_type const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load(value_type const * p) noexcept {
       if consteval {
         std::uint64_t bits=0;
         for(std::size_t i=0;i<N;++i) bits|=std::uint64_t(p[i].to_bool())<<i;
@@ -664,19 +664,19 @@ namespace native {
       std::memcpy(static_cast<void *>(p),&value_,sizeof(value_));
     }
     /// Invert each lane truth value, preserving the mask representation.
-    native_nodiscard friend native_inline native_const constexpr simd operator~(simd a) noexcept { return simd(raw{},ops::bit_not(a.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator~(simd a) noexcept { return simd(raw{},ops::bit_not(a.value_)); }
     /// Return the lane-wise logical complement, retaining this mask type.
-    native_nodiscard friend native_inline native_const constexpr simd operator!(simd a) noexcept { return ~a; }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator!(simd a) noexcept { return ~a; }
     /// Bitwise AND of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator&(simd a,simd b) noexcept { return simd(raw{},ops::bit_and(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator&(simd a,simd b) noexcept { return simd(raw{},ops::bit_and(a.value_,b.value_)); }
     /// Bitwise OR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator|(simd a,simd b) noexcept { return simd(raw{},ops::bit_or(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator|(simd a,simd b) noexcept { return simd(raw{},ops::bit_or(a.value_,b.value_)); }
     /// Bitwise XOR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator^(simd a,simd b) noexcept { return simd(raw{},ops::bit_xor(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator^(simd a,simd b) noexcept { return simd(raw{},ops::bit_xor(a.value_,b.value_)); }
     /// Return a mask whose lanes are true where `a == b` holds.
-    native_nodiscard friend native_inline native_const constexpr simd operator==(simd a,simd b) noexcept { return ~(a^b); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator==(simd a,simd b) noexcept { return ~(a^b); }
     /// Return a mask whose lanes are true where `a != b` holds.
-    native_nodiscard friend native_inline native_const constexpr simd operator!=(simd a,simd b) noexcept { return a^b; }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator!=(simd a,simd b) noexcept { return a^b; }
     /// Apply the corresponding lane-wise AND operation in place and return *this.
     native_inline constexpr simd & operator&=(simd b) noexcept { return *this=*this&b; }
     /// Apply the corresponding lane-wise OR operation in place and return *this.
@@ -684,13 +684,13 @@ namespace native {
     /// Apply the corresponding lane-wise XOR operation in place and return *this.
     native_inline constexpr simd & operator^=(simd b) noexcept { return *this=*this^b; }
     /// Return whether at least one logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool any(simd a) noexcept { return ops::any(a.value_); }
+    [[nodiscard]] friend native_inline native_const constexpr bool any(simd a) noexcept { return ops::any(a.value_); }
     /// Return whether every logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool all(simd a) noexcept { return ops::all(a.value_); }
+    [[nodiscard]] friend native_inline native_const constexpr bool all(simd a) noexcept { return ops::all(a.value_); }
     /// Return true exactly when no logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool none(simd a) noexcept { return !any(a); }
+    [[nodiscard]] friend native_inline native_const constexpr bool none(simd a) noexcept { return !any(a); }
     /// Choose a in true lanes and b in false lanes; both values are already evaluated.
-    native_nodiscard friend native_inline native_const constexpr simd select(simd predicate,simd a,simd b) noexcept { return (predicate&a)|(~predicate&b); }
+    [[nodiscard]] friend native_inline native_const constexpr simd select(simd predicate,simd a,simd b) noexcept { return (predicate&a)|(~predicate&b); }
   private:
     struct raw {};
     native_inline constexpr simd(raw,native_type value) noexcept : value_(value) {}
@@ -716,42 +716,42 @@ namespace native {
 #if NATIVE_HOST_X86
     native_target("sse2")
 #endif
-    native_nodiscard static native_inline native_const constexpr predicate from_native(native_type value) noexcept { return predicate(raw{},ops::normalize(value)); }
+    [[nodiscard]] static native_inline native_const constexpr predicate from_native(native_type value) noexcept { return predicate(raw{},ops::normalize(value)); }
     /// Import compact bits and clear bits above the lane count, just like from_native.
 #if NATIVE_HOST_X86
     native_target("sse2")
 #endif
-    native_nodiscard static native_inline native_const constexpr predicate unsafe_from_native(native_type value) noexcept { return from_native(value); }
+    [[nodiscard]] static native_inline native_const constexpr predicate unsafe_from_native(native_type value) noexcept { return from_native(value); }
     /// Return the native storage representation.
 #if NATIVE_HOST_X86
     native_target("sse2")
 #endif
-    native_nodiscard native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
+    [[nodiscard]] native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
     /// Import lane truth from the low logical-lane bits.
 #if NATIVE_HOST_X86
     native_target("sse2")
 #endif
-    native_nodiscard static native_inline native_const constexpr predicate from_bitset(std::uint64_t value) noexcept { return from_native(native_type(value)); }
+    [[nodiscard]] static native_inline native_const constexpr predicate from_bitset(std::uint64_t value) noexcept { return from_native(native_type(value)); }
     /// Pack lane truth into low bits, with lane zero in bit zero.
 #if NATIVE_HOST_X86
     // Compact masks hold scalar bits even when their vector profile is stronger.
     native_target("sse2")
 #endif
-    native_nodiscard native_inline native_pure constexpr std::uint64_t to_bitset() const noexcept { return value_; }
+    [[nodiscard]] native_inline native_pure constexpr std::uint64_t to_bitset() const noexcept { return value_; }
     /// Invert each lane truth value, preserving the mask representation.
-    native_nodiscard friend native_inline native_const constexpr predicate operator~(predicate a) noexcept { return predicate(raw{},ops::bit_not(a.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator~(predicate a) noexcept { return predicate(raw{},ops::bit_not(a.value_)); }
     /// Return the lane-wise logical complement, retaining this mask type.
-    native_nodiscard friend native_inline native_const constexpr predicate operator!(predicate a) noexcept { return ~a; }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator!(predicate a) noexcept { return ~a; }
     /// Bitwise AND of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr predicate operator&(predicate a,predicate b) noexcept { return predicate(raw{},ops::bit_and(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator&(predicate a,predicate b) noexcept { return predicate(raw{},ops::bit_and(a.value_,b.value_)); }
     /// Bitwise OR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr predicate operator|(predicate a,predicate b) noexcept { return predicate(raw{},ops::bit_or(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator|(predicate a,predicate b) noexcept { return predicate(raw{},ops::bit_or(a.value_,b.value_)); }
     /// Bitwise XOR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr predicate operator^(predicate a,predicate b) noexcept { return predicate(raw{},ops::bit_xor(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator^(predicate a,predicate b) noexcept { return predicate(raw{},ops::bit_xor(a.value_,b.value_)); }
     /// Return a mask whose lanes are true where `a == b` holds.
-    native_nodiscard friend native_inline native_const constexpr predicate operator==(predicate a,predicate b) noexcept { return ~(a^b); }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator==(predicate a,predicate b) noexcept { return ~(a^b); }
     /// Return a mask whose lanes are true where `a != b` holds.
-    native_nodiscard friend native_inline native_const constexpr predicate operator!=(predicate a,predicate b) noexcept { return a^b; }
+    [[nodiscard]] friend native_inline native_const constexpr predicate operator!=(predicate a,predicate b) noexcept { return a^b; }
     /// Apply the corresponding lane-wise AND operation in place and return *this.
     native_inline constexpr predicate & operator&=(predicate b) noexcept { return *this=*this&b; }
     /// Apply the corresponding lane-wise OR operation in place and return *this.
@@ -759,13 +759,13 @@ namespace native {
     /// Apply the corresponding lane-wise XOR operation in place and return *this.
     native_inline constexpr predicate & operator^=(predicate b) noexcept { return *this=*this^b; }
     /// Return whether at least one logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool any(predicate a) noexcept { return a.value_!=0; }
+    [[nodiscard]] friend native_inline native_const constexpr bool any(predicate a) noexcept { return a.value_!=0; }
     /// Return whether every logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool all(predicate a) noexcept { return ops::all(a.value_); }
+    [[nodiscard]] friend native_inline native_const constexpr bool all(predicate a) noexcept { return ops::all(a.value_); }
     /// Return true exactly when no logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool none(predicate a) noexcept { return !any(a); }
+    [[nodiscard]] friend native_inline native_const constexpr bool none(predicate a) noexcept { return !any(a); }
     /// Choose a in true lanes and b in false lanes; both values are already evaluated.
-    native_nodiscard friend native_inline native_const constexpr predicate select(predicate p,predicate a,predicate b) noexcept { return (p&a)|(~p&b); }
+    [[nodiscard]] friend native_inline native_const constexpr predicate select(predicate p,predicate a,predicate b) noexcept { return (p&a)|(~p&b); }
   private:
     struct raw {};
 #if NATIVE_HOST_X86
@@ -783,13 +783,13 @@ namespace native {
   namespace detail::NATIVE_BACKEND {
   template<::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_pure simd<T,N,Arch> load_simd(U const * p,simd_memory<A,Access> = {}) noexcept { return simd<T,N,Arch>::load(p); }
+  [[nodiscard]] native_inline constexpr native_pure simd<T,N,Arch> load_simd(U const * p,simd_memory<A,Access> = {}) noexcept { return simd<T,N,Arch>::load(p); }
   template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename simd<T,N,Arch>::native_type; }
   native_inline constexpr void store_simd(U * p,simd<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept { value.store(p); }
   template<::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && std::same_as<T,U> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=T{},simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
+  [[nodiscard]] native_inline constexpr native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=T{},simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     std::array<T,N> a;a.fill(fill);for(std::size_t i=0;i<count;++i)a[i]=p[i];return simd<T,N,Arch>::load(a.data());
   }
   template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
@@ -802,14 +802,14 @@ namespace native {
   /// Change full-mask lane width without changing lane truth or lane count.
   template<class U,class T,std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<U> && simd_mask_element<T> &&
     requires { typename simd<U,N,Arch>::native_type; typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const simd<U,N,Arch> mask_cast(simd<T,N,Arch> value) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<U,N,Arch> mask_cast(simd<T,N,Arch> value) noexcept {
     if constexpr(sizeof(U)==sizeof(T)) return simd<U,N,Arch>::unsafe_from_native(value.to_native());
     else return simd<U,N,Arch>::from_bitset(value.to_bitset());
   }
   /// \ingroup masks
   /// Compress full-vector truth into a supported compact predicate.
   template<class T,std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && ::NATIVE_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const predicate<N,Arch> to_predicate(simd<T,N,Arch> value) noexcept {
+  [[nodiscard]] native_inline constexpr native_const predicate<N,Arch> to_predicate(simd<T,N,Arch> value) noexcept {
     if consteval { return predicate<N,Arch>::from_bitset(value.to_bitset()); }
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512VL
     if constexpr(sizeof(T)*N==16 && ::NATIVE_BACKEND_NAMESPACE::mask_compact<sizeof(T),N>) {
@@ -831,7 +831,7 @@ namespace native {
   /// \ingroup masks
   /// Expand a predicate to canonical zero/all-one lanes of mask element `T`.
   template<class T,std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && ::NATIVE_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const simd<T,N,Arch> to_vector_mask(predicate<N,Arch> value) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<T,N,Arch> to_vector_mask(predicate<N,Arch> value) noexcept {
     if consteval { return simd<T,N,Arch>::from_bitset(value.to_bitset()); }
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512VL
     if constexpr(sizeof(T)*N==16 && ::NATIVE_BACKEND_NAMESPACE::mask_compact<sizeof(T),N>) {
@@ -855,7 +855,7 @@ namespace native {
 
 namespace native {
   namespace detail::NATIVE_BACKEND {
-    template<std::size_t N> native_nodiscard native_inline native_const constexpr auto bool_ones() noexcept {
+    template<std::size_t N> [[nodiscard]] native_inline native_const constexpr auto bool_ones() noexcept {
       if consteval {
         using V=typename mask_full_ops<1,N>::native_type;
         std::array<std::uint8_t,N> lanes{}; lanes.fill(1);
@@ -883,7 +883,7 @@ namespace native {
     template <class X> using rebind = simd<X,N,Arch>;
     /// Load exactly the logical lanes; the template alignment is a caller promise, never permission to read padding.
     template <std::size_t A = 1>
-    native_nodiscard static native_inline constexpr simd load_memory(bool const * p) noexcept { return load(p); }
+    [[nodiscard]] static native_inline constexpr simd load_memory(bool const * p) noexcept { return load(p); }
     /// Store exactly the logical lanes; the template alignment is a caller promise, never permission to write padding.
     template <std::size_t A = 1>
     native_inline constexpr void store_memory(bool * p) const noexcept { store(p); }
@@ -907,16 +907,16 @@ namespace native {
     /// Read all logical lanes from an unaligned element pointer.
     explicit native_inline constexpr simd(std::array<bool,N> const & value) noexcept : simd(load(value.data())) {}
     /// Import native byte lanes, converting each nonzero byte to Boolean one.
-    native_nodiscard static native_inline native_const constexpr simd from_native(native_type value) noexcept {
+    [[nodiscard]] static native_inline native_const constexpr simd from_native(native_type value) noexcept {
       return simd(raw{},ops::bit_and(ops::normalize(value),::NATIVE_BACKEND_NAMESPACE::bool_ones<N>()));
     }
     // Caller promises EVERY byte is 0 or 1, never an all-ones mask byte.
     /// Adopt storage with the precondition that every Boolean byte is zero or one.
-    native_nodiscard static native_inline native_const constexpr simd unsafe_from_native(native_type value) noexcept { return simd(raw{},value); }
+    [[nodiscard]] static native_inline native_const constexpr simd unsafe_from_native(native_type value) noexcept { return simd(raw{},value); }
     /// Return the native storage representation.
-    native_nodiscard native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
+    [[nodiscard]] native_inline native_pure constexpr native_type to_native() const noexcept { return value_; }
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard static native_inline constexpr native_pure simd load(bool const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load(bool const * p) noexcept {
       std::array<std::uint8_t,N> bytes{};
       for(std::size_t i=0;i<N;++i) bytes[i]=p[i]?1:0;
       if consteval { return unsafe_from_native(__builtin_bit_cast(native_type,bytes)); }
@@ -931,7 +931,7 @@ namespace native {
     }
     // The caller supplies 0 <= count <= N. Zero touches no pointer, even null.
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
-    native_nodiscard static native_inline constexpr native_pure simd load_partial(bool const * p,std::size_t count,bool fill=false) noexcept native_diagnose_if(count > simd::lanes,"partial SIMD count exceeds the lane count") {
+    [[nodiscard]] static native_inline constexpr native_pure simd load_partial(bool const * p,std::size_t count,bool fill=false) noexcept native_diagnose_if(count > simd::lanes,"partial SIMD count exceeds the lane count") {
       std::array<bool,N> values;values.fill(fill);
       for(std::size_t i=0;i<count;++i) values[i]=p[i];
       return load(values.data());
@@ -942,17 +942,17 @@ namespace native {
       for(std::size_t i=0;i<count;++i) p[i]=values[i];
     }
     /// Return the lane-wise logical complement, retaining this mask type.
-    native_nodiscard friend native_inline native_const constexpr simd operator!(simd a) noexcept { return simd(raw{},ops::bit_xor(a.value_,::NATIVE_BACKEND_NAMESPACE::bool_ones<N>())); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator!(simd a) noexcept { return simd(raw{},ops::bit_xor(a.value_,::NATIVE_BACKEND_NAMESPACE::bool_ones<N>())); }
     /// Invert each lane truth value, preserving the mask representation.
-    native_nodiscard friend native_inline native_const constexpr simd operator~(simd a) noexcept { return !a; }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator~(simd a) noexcept { return !a; }
     /// Bitwise AND of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator&(simd a,simd b) noexcept { return simd(raw{},ops::bit_and(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator&(simd a,simd b) noexcept { return simd(raw{},ops::bit_and(a.value_,b.value_)); }
     /// Bitwise OR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator|(simd a,simd b) noexcept { return simd(raw{},ops::bit_or(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator|(simd a,simd b) noexcept { return simd(raw{},ops::bit_or(a.value_,b.value_)); }
     /// Bitwise XOR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator^(simd a,simd b) noexcept { return simd(raw{},ops::bit_xor(a.value_,b.value_)); }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator^(simd a,simd b) noexcept { return simd(raw{},ops::bit_xor(a.value_,b.value_)); }
     /// Return a mask whose lanes are true where `a != b` holds.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator!=(simd a,simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator!=(simd a,simd b) noexcept {
       auto x=ops::bit_xor(a.value_,b.value_);
       if consteval { return mask_type::from_bitset(vector_mask_type::from_native(x).to_bitset()); }
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512BW
@@ -966,7 +966,7 @@ namespace native {
       return vector_mask_type::from_native(x);
     }
     /// Return a mask whose lanes are true where `a == b` holds.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator==(simd a,simd b) noexcept { return ~(a!=b); }
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator==(simd a,simd b) noexcept { return ~(a!=b); }
     /// Apply the corresponding lane-wise AND operation in place and return *this.
     native_inline constexpr simd & operator&=(simd b) noexcept { return *this=*this&b; }
     /// Apply the corresponding lane-wise OR operation in place and return *this.
@@ -974,14 +974,14 @@ namespace native {
     /// Apply the corresponding lane-wise XOR operation in place and return *this.
     native_inline constexpr simd & operator^=(simd b) noexcept { return *this=*this^b; }
     /// Return whether at least one logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool any(simd a) noexcept { return ops::any(a.value_); }
+    [[nodiscard]] friend native_inline native_const constexpr bool any(simd a) noexcept { return ops::any(a.value_); }
     /// Return whether every logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool all(simd a) noexcept { return none(!a); }
+    [[nodiscard]] friend native_inline native_const constexpr bool all(simd a) noexcept { return none(!a); }
     /// Return true exactly when no logical lane is true.
-    native_nodiscard friend native_inline native_const constexpr bool none(simd a) noexcept { return !any(a); }
+    [[nodiscard]] friend native_inline native_const constexpr bool none(simd a) noexcept { return !any(a); }
     /// Choose a in true lanes and b in false lanes; both values are already evaluated.
     template<class M> requires(std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline native_const constexpr simd select(M m,simd a,simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd select(M m,simd a,simd b) noexcept {
       if consteval {
         auto mask=vector_mask_type::from_bitset(m.to_bitset()).to_native();
         return simd(raw{},ops::bit_or(ops::bit_and(mask,a.value_),ops::bit_and(ops::bit_not(mask),b.value_)));
@@ -1006,13 +1006,13 @@ namespace native {
   namespace detail::NATIVE_BACKEND {
   template<::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_pure simd<T,N,Arch> load_simd(U const * p,simd_memory<A,Access> = {}) noexcept { return simd<T,N,Arch>::load(p); }
+  [[nodiscard]] native_inline constexpr native_pure simd<T,N,Arch> load_simd(U const * p,simd_memory<A,Access> = {}) noexcept { return simd<T,N,Arch>::load(p); }
   template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename simd<T,N,Arch>::native_type; }
   native_inline constexpr void store_simd(U * p,simd<T,N,Arch> value,simd_memory<A,Access> = {}) noexcept { value.store(p); }
   template<::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,bool> && std::same_as<U,bool> && requires { typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=false,simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
+  [[nodiscard]] native_inline constexpr native_pure simd<T,N,Arch> load_simd_partial(U const * p,std::size_t count,T fill=false,simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     return simd<T,N,Arch>::load_partial(p,count,fill);
   }
   template<class U,class T,std::size_t N,std::size_t A=1,simd_access Access=simd_access::ordinary, ::native::isa<> Arch>
@@ -1021,21 +1021,21 @@ namespace native {
   }
   /// Expand lane truth into canonical zero/all-one full-vector mask lanes.
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<bool,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const simd<mask8,N,Arch> to_vector_mask(simd<bool,N,Arch> value) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<mask8,N,Arch> to_vector_mask(simd<bool,N,Arch> value) noexcept {
     return simd<mask8,N,Arch>::from_native(value.to_native());
   }
   /// Convert lane truth into Boolean data lanes represented as zero or one, preserving the lane count.
   template<class T,std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && requires { typename simd<bool,N,Arch>::native_type; typename simd<T,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const simd<bool,N,Arch> to_bool(simd<T,N,Arch> value) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<bool,N,Arch> to_bool(simd<T,N,Arch> value) noexcept {
     auto byte_mask=mask_cast<mask8>(value);
     return simd<bool,N,Arch>::unsafe_from_native(simd<bool,N,Arch>::ops::bit_and(byte_mask.to_native(),::NATIVE_BACKEND_NAMESPACE::bool_ones<N>()));
   }
   /// Convert lane truth into Boolean data lanes represented as zero or one, preserving the lane count.
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename simd<bool,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const simd<bool,N,Arch> to_bool(predicate<N,Arch> value) noexcept { return to_bool(to_vector_mask<mask8>(value)); }
+  [[nodiscard]] native_inline constexpr native_const simd<bool,N,Arch> to_bool(predicate<N,Arch> value) noexcept { return to_bool(to_vector_mask<mask8>(value)); }
   /// Compress lane truth into the supported compact predicate representation.
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename simd<bool,N,Arch>::native_type; }
-  native_nodiscard native_inline constexpr native_const predicate<N,Arch> to_predicate(simd<bool,N,Arch> value) noexcept {
+  [[nodiscard]] native_inline constexpr native_const predicate<N,Arch> to_predicate(simd<bool,N,Arch> value) noexcept {
     auto result=value!=simd<bool,N,Arch>(false);
     if constexpr(decltype(result)::compact) return result;
     else return to_predicate(result);
@@ -1044,34 +1044,34 @@ namespace native {
 
 
 namespace NATIVE_BACKEND_NAMESPACE {
-  template <simd_integer_element T> native_nodiscard native_inline constexpr auto integer_word(T value) noexcept {
+  template <simd_integer_element T> [[nodiscard]] native_inline constexpr auto integer_word(T value) noexcept {
     return std::bit_cast<std::make_unsigned_t<T>>(value);
   }
   template <simd_integer_element T, class U>
-  native_nodiscard native_inline constexpr T integer_wrap(U value) noexcept {
+  [[nodiscard]] native_inline constexpr T integer_wrap(U value) noexcept {
     return std::bit_cast<T>(static_cast<std::make_unsigned_t<T>>(value));
   }
   template <simd_integer_element T>
   using integer_work_word = std::conditional_t<(sizeof(T) < 4), uint32_t, std::make_unsigned_t<T>>;
   template <simd_integer_element T>
-  native_nodiscard native_inline constexpr T integer_scalar_add(T a, T b) noexcept {
+  [[nodiscard]] native_inline constexpr T integer_scalar_add(T a, T b) noexcept {
     using U = integer_work_word<T>;
     return integer_wrap<T>(U(integer_word(a)) + U(integer_word(b)));
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline constexpr T integer_scalar_sub(T a, T b) noexcept {
+  [[nodiscard]] native_inline constexpr T integer_scalar_sub(T a, T b) noexcept {
     using U = integer_work_word<T>;
     return integer_wrap<T>(U(integer_word(a)) - U(integer_word(b)));
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline constexpr T integer_scalar_mul(T a, T b) noexcept {
+  [[nodiscard]] native_inline constexpr T integer_scalar_mul(T a, T b) noexcept {
     using U = integer_work_word<T>;
     return integer_wrap<T>(U(integer_word(a)) * U(integer_word(b)));
   }
 
 #if NATIVE_HAS_AVX2
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m128i integer_broadcast_16(T x) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_broadcast_16(T x) noexcept {
     if constexpr (sizeof(T) == 1)
       return _mm_set1_epi8(std::bit_cast<int8_t>(x));
     else if constexpr (sizeof(T) == 2)
@@ -1082,7 +1082,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm_set1_epi64x(std::bit_cast<int64_t>(x));
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m128i integer_add(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_add(__m128i a, __m128i b) noexcept {
     if constexpr (sizeof(T) == 1)
       return _mm_add_epi8(a, b);
     else if constexpr (sizeof(T) == 2)
@@ -1093,7 +1093,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm_add_epi64(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m128i integer_sub(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_sub(__m128i a, __m128i b) noexcept {
     if constexpr (sizeof(T) == 1)
       return _mm_sub_epi8(a, b);
     else if constexpr (sizeof(T) == 2)
@@ -1104,7 +1104,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm_sub_epi64(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m128i integer_mul(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_mul(__m128i a, __m128i b) noexcept {
     if constexpr (sizeof(T) == 1) {
       // Independent low-byte products inside each word, with cross-byte bits removed.
       auto low = _mm_mullo_epi16(a, b);
@@ -1127,7 +1127,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const __m128i integer_left(__m128i a) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_left(__m128i a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1144,7 +1144,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const __m128i integer_right(__m128i a) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_right(__m128i a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1188,7 +1188,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
 
 #if NATIVE_HAS_AVX2
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m256i integer_broadcast_32(T x) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_broadcast_32(T x) noexcept {
     if constexpr (sizeof(T) == 1)
       return _mm256_set1_epi8(std::bit_cast<int8_t>(x));
     else if constexpr (sizeof(T) == 2)
@@ -1199,7 +1199,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm256_set1_epi64x(std::bit_cast<int64_t>(x));
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m256i integer_add(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_add(__m256i a, __m256i b) noexcept {
     if constexpr (sizeof(T) == 1)
       return _mm256_add_epi8(a, b);
     else if constexpr (sizeof(T) == 2)
@@ -1210,7 +1210,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm256_add_epi64(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m256i integer_sub(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_sub(__m256i a, __m256i b) noexcept {
     if constexpr (sizeof(T) == 1)
       return _mm256_sub_epi8(a, b);
     else if constexpr (sizeof(T) == 2)
@@ -1221,7 +1221,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm256_sub_epi64(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m256i integer_mul(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_mul(__m256i a, __m256i b) noexcept {
     if constexpr (sizeof(T) == 1) {
       // Independent low-byte products inside each word, with cross-byte bits removed.
       auto low = _mm256_mullo_epi16(a, b);
@@ -1244,7 +1244,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const __m256i integer_left(__m256i a) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_left(__m256i a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1259,12 +1259,12 @@ namespace NATIVE_BACKEND_NAMESPACE {
         return _mm256_slli_epi64(a, S);
     }
   }
-  native_nodiscard native_inline native_const __m256i integer_shift_left_variable(__m256i a,__m256i counts) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_shift_left_variable(__m256i a,__m256i counts) noexcept {
     return _mm256_sllv_epi32(a,counts);
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const __m256i integer_right(__m256i a) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_right(__m256i a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1309,7 +1309,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
 
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m512i integer_broadcast_64(T x) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_broadcast_64(T x) noexcept {
 #if NATIVE_HAS_AVX512BW
     if constexpr (sizeof(T) == 1)
       return _mm512_set1_epi8(std::bit_cast<int8_t>(x));
@@ -1322,7 +1322,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm512_set1_epi64(std::bit_cast<int64_t>(x));
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m512i integer_add(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_add(__m512i a, __m512i b) noexcept {
 #if NATIVE_HAS_AVX512BW
     if constexpr (sizeof(T) == 1)
       return _mm512_add_epi8(a, b);
@@ -1335,7 +1335,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm512_add_epi64(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m512i integer_sub(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_sub(__m512i a, __m512i b) noexcept {
 #if NATIVE_HAS_AVX512BW
     if constexpr (sizeof(T) == 1)
       return _mm512_sub_epi8(a, b);
@@ -1348,7 +1348,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm512_sub_epi64(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const __m512i integer_mul(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_mul(__m512i a, __m512i b) noexcept {
 #if NATIVE_HAS_AVX512BW
     if constexpr (sizeof(T) == 1) {
       // Independent low-byte products inside each word, with cross-byte bits removed.
@@ -1366,7 +1366,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const __m512i integer_left(__m512i a) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_left(__m512i a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1383,12 +1383,12 @@ namespace NATIVE_BACKEND_NAMESPACE {
         return _mm512_slli_epi64(a, S);
     }
   }
-  native_nodiscard native_inline native_const __m512i integer_shift_left_variable(__m512i a,__m512i counts) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_shift_left_variable(__m512i a,__m512i counts) noexcept {
     return _mm512_sllv_epi32(a,counts);
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const __m512i integer_right(__m512i a) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_right(__m512i a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1426,17 +1426,17 @@ namespace NATIVE_BACKEND_NAMESPACE {
   }
 #endif
 #if NATIVE_HAS_AVX2
-  native_nodiscard native_inline native_const __m128i integer_and(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_and(__m128i a, __m128i b) noexcept {
     return _mm_and_si128(a, b);
   }
-  native_nodiscard native_inline native_const __m128i integer_or(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_or(__m128i a, __m128i b) noexcept {
     return _mm_or_si128(a, b);
   }
-  native_nodiscard native_inline native_const __m128i integer_xor(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_xor(__m128i a, __m128i b) noexcept {
     return _mm_xor_si128(a, b);
   }
   template <simd_integer_element T, bool Greater>
-  native_nodiscard native_inline native_const auto integer_compare(__m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const auto integer_compare(__m128i a, __m128i b) noexcept {
     if constexpr (mask_compact<sizeof(T), 16 / sizeof(T)>) {
       if constexpr (sizeof(T) == 1) {
         if constexpr (Greater) {
@@ -1512,7 +1512,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m128i integer_select(M m, __m128i a, __m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_select(M m, __m128i a, __m128i b) noexcept {
     if constexpr (M::compact) {
       if constexpr (sizeof(T) == 1)
         return _mm_mask_blend_epi8(m.to_native(), b, a);
@@ -1526,7 +1526,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm_or_si128(_mm_and_si128(m.to_native(), a), _mm_andnot_si128(m.to_native(), b));
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m128i integer_masked_add(M m, __m128i prior, __m128i a,
+  [[nodiscard]] native_inline native_const __m128i integer_masked_add(M m, __m128i prior, __m128i a,
                                                                    __m128i b) noexcept {
     if constexpr (M::compact) {
       if constexpr (sizeof(T) == 1)
@@ -1541,7 +1541,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return integer_select<T>(m, integer_add<T>(a, b), prior);
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m128i integer_masked_sub(M m, __m128i prior, __m128i a,
+  [[nodiscard]] native_inline native_const __m128i integer_masked_sub(M m, __m128i prior, __m128i a,
                                                                    __m128i b) noexcept {
     if constexpr (M::compact) {
       if constexpr (sizeof(T) == 1)
@@ -1558,17 +1558,17 @@ namespace NATIVE_BACKEND_NAMESPACE {
 #endif
 
 #if NATIVE_HAS_AVX2
-  native_nodiscard native_inline native_const __m256i integer_and(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_and(__m256i a, __m256i b) noexcept {
     return _mm256_and_si256(a, b);
   }
-  native_nodiscard native_inline native_const __m256i integer_or(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_or(__m256i a, __m256i b) noexcept {
     return _mm256_or_si256(a, b);
   }
-  native_nodiscard native_inline native_const __m256i integer_xor(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_xor(__m256i a, __m256i b) noexcept {
     return _mm256_xor_si256(a, b);
   }
   template <simd_integer_element T, bool Greater>
-  native_nodiscard native_inline native_const auto integer_compare(__m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const auto integer_compare(__m256i a, __m256i b) noexcept {
     if constexpr (mask_compact<sizeof(T), 32 / sizeof(T)>) {
       if constexpr (sizeof(T) == 1) {
         if constexpr (Greater) {
@@ -1644,7 +1644,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m256i integer_select(M m, __m256i a, __m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_select(M m, __m256i a, __m256i b) noexcept {
     if constexpr (M::compact) {
       if constexpr (sizeof(T) == 1)
         return _mm256_mask_blend_epi8(m.to_native(), b, a);
@@ -1658,7 +1658,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm256_or_si256(_mm256_and_si256(m.to_native(), a), _mm256_andnot_si256(m.to_native(), b));
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m256i integer_masked_add(M m, __m256i prior, __m256i a,
+  [[nodiscard]] native_inline native_const __m256i integer_masked_add(M m, __m256i prior, __m256i a,
                                                                    __m256i b) noexcept {
     if constexpr (M::compact) {
       if constexpr (sizeof(T) == 1)
@@ -1673,7 +1673,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return integer_select<T>(m, integer_add<T>(a, b), prior);
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m256i integer_masked_sub(M m, __m256i prior, __m256i a,
+  [[nodiscard]] native_inline native_const __m256i integer_masked_sub(M m, __m256i prior, __m256i a,
                                                                    __m256i b) noexcept {
     if constexpr (M::compact) {
       if constexpr (sizeof(T) == 1)
@@ -1690,17 +1690,17 @@ namespace NATIVE_BACKEND_NAMESPACE {
 #endif
 
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
-  native_nodiscard native_inline native_const __m512i integer_and(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_and(__m512i a, __m512i b) noexcept {
     return _mm512_and_si512(a, b);
   }
-  native_nodiscard native_inline native_const __m512i integer_or(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_or(__m512i a, __m512i b) noexcept {
     return _mm512_or_si512(a, b);
   }
-  native_nodiscard native_inline native_const __m512i integer_xor(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_xor(__m512i a, __m512i b) noexcept {
     return _mm512_xor_si512(a, b);
   }
   template <simd_integer_element T, bool Greater>
-  native_nodiscard native_inline native_const auto integer_compare(__m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const auto integer_compare(__m512i a, __m512i b) noexcept {
     if constexpr (mask_compact<sizeof(T), 64 / sizeof(T)>) {
 #if NATIVE_HAS_AVX512BW
       if constexpr (sizeof(T) == 1) {
@@ -1743,7 +1743,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m512i integer_select(M m, __m512i a, __m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_select(M m, __m512i a, __m512i b) noexcept {
     if constexpr (M::compact) {
 #if NATIVE_HAS_AVX512BW
       if constexpr (sizeof(T) == 1)
@@ -1759,7 +1759,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return _mm512_or_si512(_mm512_and_si512(m.to_native(), a), _mm512_andnot_si512(m.to_native(), b));
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m512i integer_masked_add(M m, __m512i prior, __m512i a,
+  [[nodiscard]] native_inline native_const __m512i integer_masked_add(M m, __m512i prior, __m512i a,
                                                                    __m512i b) noexcept {
     if constexpr (M::compact) {
 #if NATIVE_HAS_AVX512BW
@@ -1776,7 +1776,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
       return integer_select<T>(m, integer_add<T>(a, b), prior);
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m512i integer_masked_sub(M m, __m512i prior, __m512i a,
+  [[nodiscard]] native_inline native_const __m512i integer_masked_sub(M m, __m512i prior, __m512i a,
                                                                    __m512i b) noexcept {
     if constexpr (M::compact) {
 #if NATIVE_HAS_AVX512BW
@@ -1795,17 +1795,17 @@ namespace NATIVE_BACKEND_NAMESPACE {
 #endif
 
 #if NATIVE_HAS_ARM_NEON
-  native_nodiscard native_inline native_const uint8x16_t integer_and(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_and(uint8x16_t a, uint8x16_t b) noexcept {
     return vandq_u8(a, b);
   }
-  native_nodiscard native_inline native_const uint8x16_t integer_or(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_or(uint8x16_t a, uint8x16_t b) noexcept {
     return vorrq_u8(a, b);
   }
-  native_nodiscard native_inline native_const uint8x16_t integer_xor(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_xor(uint8x16_t a, uint8x16_t b) noexcept {
     return veorq_u8(a, b);
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const uint8x16_t integer_add(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_add(uint8x16_t a, uint8x16_t b) noexcept {
     if constexpr (sizeof(T) == 1) {
       return vaddq_u8(a, b);
     } else if constexpr (sizeof(T) == 2) {
@@ -1817,7 +1817,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const uint8x16_t integer_sub(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_sub(uint8x16_t a, uint8x16_t b) noexcept {
     if constexpr (sizeof(T) == 1) {
       return vsubq_u8(a, b);
     } else if constexpr (sizeof(T) == 2) {
@@ -1829,7 +1829,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const uint8x16_t integer_mul(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_mul(uint8x16_t a, uint8x16_t b) noexcept {
     if constexpr (sizeof(T) == 1) {
       return vmulq_u8(a, b);
     } else if constexpr (sizeof(T) == 2) {
@@ -1845,7 +1845,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T>
-  native_nodiscard native_inline native_const uint8x16_t integer_broadcast_16(T x) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_broadcast_16(T x) noexcept {
     if constexpr (sizeof(T) == 1) {
       return vdupq_n_u8(integer_word(x));
     } else if constexpr (sizeof(T) == 2) {
@@ -1858,7 +1858,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const uint8x16_t integer_left(uint8x16_t a) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_left(uint8x16_t a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1873,12 +1873,12 @@ namespace NATIVE_BACKEND_NAMESPACE {
       }
     }
   }
-  native_nodiscard native_inline native_const uint8x16_t integer_shift_left_variable(uint8x16_t a,uint8x16_t counts) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_shift_left_variable(uint8x16_t a,uint8x16_t counts) noexcept {
     return vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(a),vreinterpretq_s32_u32(counts)));
   }
   template <simd_integer_element T, unsigned S>
     requires(S < sizeof(T) * 8)
-  native_nodiscard native_inline native_const uint8x16_t integer_right(uint8x16_t a) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_right(uint8x16_t a) noexcept {
     if constexpr (S == 0)
       return a;
     else {
@@ -1906,7 +1906,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T, bool Greater>
-  native_nodiscard native_inline native_const uint8x16_t integer_compare(uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_compare(uint8x16_t a, uint8x16_t b) noexcept {
     if constexpr (sizeof(T) == 1) {
       if constexpr (!Greater)
         return vceqq_u8(a, b);
@@ -1938,16 +1938,16 @@ namespace NATIVE_BACKEND_NAMESPACE {
     }
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const uint8x16_t integer_select(M m, uint8x16_t a, uint8x16_t b) noexcept {
+  [[nodiscard]] native_inline native_const uint8x16_t integer_select(M m, uint8x16_t a, uint8x16_t b) noexcept {
     return vbslq_u8(m.to_native(), a, b);
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const uint8x16_t integer_masked_add(M m, uint8x16_t prior, uint8x16_t a,
+  [[nodiscard]] native_inline native_const uint8x16_t integer_masked_add(M m, uint8x16_t prior, uint8x16_t a,
                                                                       uint8x16_t b) noexcept {
     return integer_select<T>(m, integer_add<T>(a, b), prior);
   }
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const uint8x16_t integer_masked_sub(M m, uint8x16_t prior, uint8x16_t a,
+  [[nodiscard]] native_inline native_const uint8x16_t integer_masked_sub(M m, uint8x16_t prior, uint8x16_t a,
                                                                       uint8x16_t b) noexcept {
     return integer_select<T>(m, integer_sub<T>(a, b), prior);
   }
@@ -1955,7 +1955,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
 
 #if NATIVE_HAS_AVX2
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m128i integer_masked_mul(M m, __m128i prior, __m128i a,
+  [[nodiscard]] native_inline native_const __m128i integer_masked_mul(M m, __m128i prior, __m128i a,
                                                                    __m128i b) noexcept {
     if constexpr (M::compact && sizeof(T) > 1) {
       if constexpr (sizeof(T) == 2)
@@ -1970,7 +1970,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
 #endif
 #if NATIVE_HAS_AVX2
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m256i integer_masked_mul(M m, __m256i prior, __m256i a,
+  [[nodiscard]] native_inline native_const __m256i integer_masked_mul(M m, __m256i prior, __m256i a,
                                                                    __m256i b) noexcept {
     if constexpr (M::compact && sizeof(T) > 1) {
       if constexpr (sizeof(T) == 2)
@@ -1985,7 +1985,7 @@ namespace NATIVE_BACKEND_NAMESPACE {
 #endif
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const __m512i integer_masked_mul(M m, __m512i prior, __m512i a,
+  [[nodiscard]] native_inline native_const __m512i integer_masked_mul(M m, __m512i prior, __m512i a,
                                                                    __m512i b) noexcept {
     if constexpr (M::compact && sizeof(T) > 1) {
 #if NATIVE_HAS_AVX512BW
@@ -2002,28 +2002,28 @@ namespace NATIVE_BACKEND_NAMESPACE {
 #endif
 #if NATIVE_HAS_ARM_NEON
   template <simd_integer_element T, class M>
-  native_nodiscard native_inline native_const uint8x16_t integer_masked_mul(M m, uint8x16_t prior, uint8x16_t a,
+  [[nodiscard]] native_inline native_const uint8x16_t integer_masked_mul(M m, uint8x16_t prior, uint8x16_t a,
                                                                       uint8x16_t b) noexcept {
     return integer_select<T>(m, integer_mul<T>(a, b), prior);
   }
 #endif
 #if NATIVE_HAS_AVX2
-  native_nodiscard native_inline native_const __m128i integer_bit_select(__m128i m,__m128i a,__m128i b) noexcept {
+  [[nodiscard]] native_inline native_const __m128i integer_bit_select(__m128i m,__m128i a,__m128i b) noexcept {
     return _mm_or_si128(_mm_and_si128(m,a),_mm_andnot_si128(m,b));
   }
 #endif
 #if NATIVE_HAS_AVX2
-  native_nodiscard native_inline native_const __m256i integer_bit_select(__m256i m,__m256i a,__m256i b) noexcept {
+  [[nodiscard]] native_inline native_const __m256i integer_bit_select(__m256i m,__m256i a,__m256i b) noexcept {
     return _mm256_or_si256(_mm256_and_si256(m,a),_mm256_andnot_si256(m,b));
   }
 #endif
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
-  native_nodiscard native_inline native_const __m512i integer_bit_select(__m512i m,__m512i a,__m512i b) noexcept {
+  [[nodiscard]] native_inline native_const __m512i integer_bit_select(__m512i m,__m512i a,__m512i b) noexcept {
     return _mm512_or_si512(_mm512_and_si512(m,a),_mm512_andnot_si512(m,b));
   }
 #endif
 #if NATIVE_HAS_ARM_NEON
-  native_nodiscard native_inline native_const uint8x16_t integer_bit_select(uint8x16_t m,uint8x16_t a,uint8x16_t b) noexcept { return vbslq_u8(m,a,b); }
+  [[nodiscard]] native_inline native_const uint8x16_t integer_bit_select(uint8x16_t m,uint8x16_t a,uint8x16_t b) noexcept { return vbslq_u8(m,a,b); }
 #endif
 } // namespace NATIVE_BACKEND_NAMESPACE
 
@@ -2072,7 +2072,7 @@ namespace native {
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline native_pure constexpr simd<T, N,Arch> load_simd(T const *p, simd_memory<A, Access> = {}) noexcept;
+  [[nodiscard]] native_inline native_pure constexpr simd<T, N,Arch> load_simd(T const *p, simd_memory<A, Access> = {}) noexcept;
   template <simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
@@ -2080,7 +2080,7 @@ namespace native {
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline constexpr native_pure simd<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
+  [[nodiscard]] native_inline constexpr native_pure simd<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
                                                                     simd_memory<A, Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count");
   template <simd_integer_element T, std::size_t N, std::size_t A = 1,
             simd_access Access = simd_access::ordinary, ::native::isa<> Arch>
@@ -2094,7 +2094,7 @@ namespace native {
     template <class U> using rebind = simd<U,1,Arch>;
     template <std::size_t A = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
-    native_nodiscard static native_inline constexpr simd load_memory(T const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load_memory(T const * p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T,1>(p,simd_memory<A>{});
     }
     template <std::size_t A = 1>
@@ -2118,188 +2118,188 @@ namespace native {
     /// Copy one value per logical lane in array order.
     constexpr simd(std::array<T, 1> const &x) noexcept : value(x[0]) {}
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr operator T() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr operator T() const noexcept { return value; }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard native_inline static constexpr simd from_native(T x) noexcept { return simd(x); }
+    [[nodiscard]] native_inline static constexpr simd from_native(T x) noexcept { return simd(x); }
     /// Return the native storage representation.
-    native_nodiscard native_inline constexpr T to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr T to_native() const noexcept { return value; }
     /// Add corresponding lanes modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline native_const constexpr simd operator+(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator+(simd a, simd b) noexcept {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_scalar_add(a.value, b.value));
     }
     /// Subtract corresponding lanes modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline native_const constexpr simd operator-(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator-(simd a, simd b) noexcept {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_scalar_sub(a.value, b.value));
     }
     /// Multiply corresponding lanes modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline native_const constexpr simd operator*(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator*(simd a, simd b) noexcept {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_scalar_mul(a.value, b.value));
     }
     /// Bitwise AND of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator&(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator&(simd a, simd b) noexcept {
       return from_native(
           ::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(::NATIVE_BACKEND_NAMESPACE::integer_word(a.value) & ::NATIVE_BACKEND_NAMESPACE::integer_word(b.value)));
     }
     /// Bitwise OR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator|(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator|(simd a, simd b) noexcept {
       return from_native(
           ::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(::NATIVE_BACKEND_NAMESPACE::integer_word(a.value) | ::NATIVE_BACKEND_NAMESPACE::integer_word(b.value)));
     }
     /// Bitwise XOR of corresponding lane representations.
-    native_nodiscard friend native_inline native_const constexpr simd operator^(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator^(simd a, simd b) noexcept {
       return from_native(
           ::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(::NATIVE_BACKEND_NAMESPACE::integer_word(a.value) ^ ::NATIVE_BACKEND_NAMESPACE::integer_word(b.value)));
     }
     /// Complement every bit in every lane.
-    native_nodiscard friend native_inline native_const constexpr simd operator~(simd a) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator~(simd a) noexcept {
       return a ^ simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(~std::make_unsigned_t<T>(0)));
     }
     /// Negate each lane modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline native_const constexpr simd operator-(simd a) noexcept { return simd(T(0)) - a; }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator-(simd a) noexcept { return simd(T(0)) - a; }
     /// Return the unchanged vector value.
-    native_nodiscard friend native_inline native_const constexpr simd operator+(simd a) noexcept { return a; }
+    [[nodiscard]] friend native_inline native_const constexpr simd operator+(simd a) noexcept { return a; }
     /// Return a mask whose lanes are true where `a == b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator==(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator==(simd a, simd b) noexcept {
       return mask_type(a.value == b.value);
     }
     /// Return a mask whose lanes are true where `a > b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator>(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator>(simd a, simd b) noexcept {
       return mask_type(a.value > b.value);
     }
     /// Return a mask whose lanes are true where `a != b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator!=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator!=(simd a, simd b) noexcept {
       return ~(a == b);
     }
     /// Return a mask whose lanes are true where `a < b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator<(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator<(simd a, simd b) noexcept {
       return b > a;
     }
     /// Return a mask whose lanes are true where `a <= b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator<=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator<=(simd a, simd b) noexcept {
       return ~(a > b);
     }
     /// Return a mask whose lanes are true where `a >= b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline native_const constexpr mask_type operator>=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator>=(simd a, simd b) noexcept {
       return ~(b > a);
     }
     /// Add corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator+(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator+(simd a, U b) noexcept {
       return a + simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Add corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator+(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator+(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) + b;
     }
     /// Subtract corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator-(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator-(simd a, U b) noexcept {
       return a - simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Subtract corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator-(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator-(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) - b;
     }
     /// Multiply corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator*(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator*(simd a, U b) noexcept {
       return a * simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Multiply corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator*(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator*(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) * b;
     }
     /// Bitwise AND of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator&(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator&(simd a, U b) noexcept {
       return a & simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Bitwise AND of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator&(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator&(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) & b;
     }
     /// Bitwise OR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator|(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator|(simd a, U b) noexcept {
       return a | simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Bitwise OR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator|(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator|(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) | b;
     }
     /// Bitwise XOR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator^(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator^(simd a, U b) noexcept {
       return a ^ simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Bitwise XOR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr simd operator^(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator^(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) ^ b;
     }
     /// Return a mask whose lanes are true where `a == b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator==(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator==(simd a, U b) noexcept {
       return a == simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a == b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator==(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator==(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) == b;
     }
     /// Return a mask whose lanes are true where `a != b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator!=(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator!=(simd a, U b) noexcept {
       return a != simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a != b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator!=(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator!=(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) != b;
     }
     /// Return a mask whose lanes are true where `a < b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator<(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator<(simd a, U b) noexcept {
       return a < simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a < b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator<(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator<(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) < b;
     }
     /// Return a mask whose lanes are true where `a > b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator>(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator>(simd a, U b) noexcept {
       return a > simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a > b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator>(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator>(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) > b;
     }
     /// Return a mask whose lanes are true where `a <= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator<=(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator<=(simd a, U b) noexcept {
       return a <= simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a <= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator<=(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator<=(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) <= b;
     }
     /// Return a mask whose lanes are true where `a >= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator>=(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator>=(simd a, U b) noexcept {
       return a >= simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a >= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline native_const constexpr mask_type operator>=(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr mask_type operator>=(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) >= b;
     }
     /// Apply the corresponding lane-wise add operation in place and return *this.
@@ -2329,7 +2329,7 @@ namespace native {
     /// Shift each lane left by compile-time K, discarding high bits; require K below the lane bit width.
     template <unsigned K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard native_inline native_const constexpr simd left() const noexcept {
+    [[nodiscard]] native_inline native_const constexpr simd left() const noexcept {
       using W = ::NATIVE_BACKEND_NAMESPACE::integer_work_word<T>;
       auto u = ::NATIVE_BACKEND_NAMESPACE::integer_word(value);
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(W(u) << K));
@@ -2337,7 +2337,7 @@ namespace native {
     /// Shift each lane right by compile-time K; signed lanes extend their sign. Require K below the lane bit width.
     template <unsigned K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard native_inline native_const constexpr simd right() const noexcept {
+    [[nodiscard]] native_inline native_const constexpr simd right() const noexcept {
       using U = std::make_unsigned_t<T>;
       using W = ::NATIVE_BACKEND_NAMESPACE::integer_work_word<T>;
       auto u = ::NATIVE_BACKEND_NAMESPACE::integer_word(value);
@@ -2355,21 +2355,21 @@ namespace native {
     /// Shift every lane left by K bits, discarding high bits. Require K smaller than the lane bit width.
     template <std::size_t K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard friend native_inline native_const constexpr simd operator<<(simd a, imm_t<K>) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator<<(simd a, imm_t<K>) noexcept {
       return a.template left<K>();
     }
     /// Shift every lane right by K; signed lanes extend the sign, unsigned lanes shift in zero. Require K smaller than the lane bit width.
     template <std::size_t K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard friend native_inline native_const constexpr simd operator>>(simd a, imm_t<K>) noexcept {
+    [[nodiscard]] friend native_inline native_const constexpr simd operator>>(simd a, imm_t<K>) noexcept {
       return a.template right<K>();
     }
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard native_inline static native_pure constexpr simd load(T const *p) noexcept {
+    [[nodiscard]] native_inline static native_pure constexpr simd load(T const *p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, lanes>(p);
     }
     /// Read all logical lanes without an extra alignment promise.
-    native_nodiscard native_inline static native_pure constexpr simd loadu(T const *p) noexcept {
+    [[nodiscard]] native_inline static native_pure constexpr simd loadu(T const *p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, lanes>(p);
     }
     /// Write all logical lanes to an unaligned element pointer.
@@ -2377,7 +2377,7 @@ namespace native {
     /// Write all logical lanes without an extra alignment promise.
     native_inline constexpr void storeu(T *p) const noexcept { ::NATIVE_BACKEND_NAMESPACE::store_simd(p, *this); }
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
-    native_nodiscard native_inline constexpr static native_pure simd load_partial(T const *p, std::size_t n,
+    [[nodiscard]] native_inline constexpr static native_pure simd load_partial(T const *p, std::size_t n,
                                                                   T fill = T(0)) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n <= lanes);
       std::array<T, lanes> data;
@@ -2529,7 +2529,7 @@ namespace native {
     template <class U> using rebind = simd<U,N,Arch>;
     template <std::size_t A = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
-    native_nodiscard static native_inline constexpr simd load_memory(T const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load_memory(T const * p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T,N>(p,simd_memory<A>{});
     }
     template <std::size_t A = 1>
@@ -2594,42 +2594,42 @@ namespace native {
     }
 #if NATIVE_HOST_X86
     /// Return the native storage value under its minimal register ABI.
-    native_nodiscard native_inline constexpr native_const native_target("sse2")
+    [[nodiscard]] native_inline constexpr native_const native_target("sse2")
     operator native_type() const noexcept requires(sizeof(native_type)==16) { return value; }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline constexpr native_const native_target("sse2")
+    [[nodiscard]] static native_inline constexpr native_const native_target("sse2")
     simd from_native(native_type x) noexcept requires(sizeof(native_type)==16) { return simd(x); }
     /// Return the native storage representation under its minimal register ABI.
-    native_nodiscard native_inline constexpr native_const native_target("sse2")
+    [[nodiscard]] native_inline constexpr native_const native_target("sse2")
     native_type to_native() const noexcept requires(sizeof(native_type)==16) { return value; }
     /// Return the native storage value under its minimal register ABI.
-    native_nodiscard native_inline constexpr native_const native_target("avx")
+    [[nodiscard]] native_inline constexpr native_const native_target("avx")
     operator native_type() const noexcept requires(sizeof(native_type)==32) { return value; }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline constexpr native_const native_target("avx")
+    [[nodiscard]] static native_inline constexpr native_const native_target("avx")
     simd from_native(native_type x) noexcept requires(sizeof(native_type)==32) { return simd(x); }
     /// Return the native storage representation under its minimal register ABI.
-    native_nodiscard native_inline constexpr native_const native_target("avx")
+    [[nodiscard]] native_inline constexpr native_const native_target("avx")
     native_type to_native() const noexcept requires(sizeof(native_type)==32) { return value; }
     /// Return the native storage value under its minimal register ABI.
-    native_nodiscard native_inline constexpr native_const native_target("avx512f")
+    [[nodiscard]] native_inline constexpr native_const native_target("avx512f")
     operator native_type() const noexcept requires(sizeof(native_type)==64) { return value; }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline constexpr native_const native_target("avx512f")
+    [[nodiscard]] static native_inline constexpr native_const native_target("avx512f")
     simd from_native(native_type x) noexcept requires(sizeof(native_type)==64) { return simd(x); }
     /// Return the native storage representation under its minimal register ABI.
-    native_nodiscard native_inline constexpr native_const native_target("avx512f")
+    [[nodiscard]] native_inline constexpr native_const native_target("avx512f")
     native_type to_native() const noexcept requires(sizeof(native_type)==64) { return value; }
 #else
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr native_const operator native_type() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_const operator native_type() const noexcept { return value; }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard native_inline constexpr static native_const simd from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] native_inline constexpr static native_const simd from_native(native_type x) noexcept { return simd(x); }
     /// Return the native storage representation.
-    native_nodiscard native_inline constexpr native_const native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_const native_type to_native() const noexcept { return value; }
 #endif
     /// Add corresponding lanes modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline constexpr native_const simd operator+(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator+(simd a, simd b) noexcept {
       if consteval {
         using U=std::make_unsigned_t<T>;
         using V=U __attribute__((ext_vector_type(N)));
@@ -2639,7 +2639,7 @@ namespace native {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_add<T>(a.value, b.value));
     }
     /// Subtract corresponding lanes modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a, simd b) noexcept {
       if consteval {
         using U=std::make_unsigned_t<T>;
         using V=U __attribute__((ext_vector_type(N)));
@@ -2649,7 +2649,7 @@ namespace native {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_sub<T>(a.value, b.value));
     }
     /// Multiply corresponding lanes modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline constexpr native_const simd operator*(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator*(simd a, simd b) noexcept {
       if consteval {
         using U=std::make_unsigned_t<T>;
         using V=U __attribute__((ext_vector_type(N)));
@@ -2659,7 +2659,7 @@ namespace native {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_mul<T>(a.value, b.value));
     }
     /// Bitwise AND of corresponding lane representations.
-    native_nodiscard friend native_inline constexpr native_const simd operator&(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator&(simd a, simd b) noexcept {
       if consteval {
         using U=std::make_unsigned_t<T>;
         using V=U __attribute__((ext_vector_type(N)));
@@ -2669,7 +2669,7 @@ namespace native {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_and(a.value, b.value));
     }
     /// Bitwise OR of corresponding lane representations.
-    native_nodiscard friend native_inline constexpr native_const simd operator|(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator|(simd a, simd b) noexcept {
       if consteval {
         using U=std::make_unsigned_t<T>;
         using V=U __attribute__((ext_vector_type(N)));
@@ -2679,7 +2679,7 @@ namespace native {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_or(a.value, b.value));
     }
     /// Bitwise XOR of corresponding lane representations.
-    native_nodiscard friend native_inline constexpr native_const simd operator^(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator^(simd a, simd b) noexcept {
       if consteval {
         using U=std::make_unsigned_t<T>;
         using V=U __attribute__((ext_vector_type(N)));
@@ -2689,15 +2689,15 @@ namespace native {
       return from_native(::NATIVE_BACKEND_NAMESPACE::integer_xor(a.value, b.value));
     }
     /// Complement every bit in every lane.
-    native_nodiscard friend native_inline constexpr native_const simd operator~(simd a) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator~(simd a) noexcept {
       return a ^ simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(~std::make_unsigned_t<T>(0)));
     }
     /// Negate each lane modulo 2^(sizeof(T)*8).
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) noexcept { return simd(T(0)) - a; }
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a) noexcept { return simd(T(0)) - a; }
     /// Return the unchanged vector value.
-    native_nodiscard friend native_inline constexpr native_const simd operator+(simd a) noexcept { return a; }
+    [[nodiscard]] friend native_inline constexpr native_const simd operator+(simd a) noexcept { return a; }
     /// Return a mask whose lanes are true where `a == b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(simd a, simd b) noexcept {
       if consteval {
         auto x=__builtin_bit_cast(std::array<T,N>,a.value);
         auto y=__builtin_bit_cast(std::array<T,N>,b.value);
@@ -2708,7 +2708,7 @@ namespace native {
       return mask_type::unsafe_from_native(::NATIVE_BACKEND_NAMESPACE::integer_compare<T, false>(a.value, b.value));
     }
     /// Return a mask whose lanes are true where `a > b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(simd a, simd b) noexcept {
       if consteval {
         auto x=__builtin_bit_cast(std::array<T,N>,a.value);
         auto y=__builtin_bit_cast(std::array<T,N>,b.value);
@@ -2719,139 +2719,139 @@ namespace native {
       return mask_type::unsafe_from_native(::NATIVE_BACKEND_NAMESPACE::integer_compare<T, true>(a.value, b.value));
     }
     /// Return a mask whose lanes are true where `a != b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(simd a, simd b) noexcept {
       return ~(a == b);
     }
     /// Return a mask whose lanes are true where `a < b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(simd a, simd b) noexcept {
       return b > a;
     }
     /// Return a mask whose lanes are true where `a <= b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(simd a, simd b) noexcept {
       return ~(a > b);
     }
     /// Return a mask whose lanes are true where `a >= b` holds. Ordering follows the signedness of T.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(simd a, simd b) noexcept {
       return ~(b > a);
     }
     /// Add corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator+(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator+(simd a, U b) noexcept {
       return a + simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Add corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator+(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator+(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) + b;
     }
     /// Subtract corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a, U b) noexcept {
       return a - simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Subtract corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator-(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) - b;
     }
     /// Multiply corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator*(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator*(simd a, U b) noexcept {
       return a * simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Multiply corresponding lanes modulo 2^(sizeof(T)*8). Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator*(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator*(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) * b;
     }
     /// Bitwise AND of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator&(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator&(simd a, U b) noexcept {
       return a & simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Bitwise AND of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator&(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator&(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) & b;
     }
     /// Bitwise OR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator|(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator|(simd a, U b) noexcept {
       return a | simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Bitwise OR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator|(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator|(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) | b;
     }
     /// Bitwise XOR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator^(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator^(simd a, U b) noexcept {
       return a ^ simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Bitwise XOR of corresponding lane representations. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const simd operator^(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator^(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) ^ b;
     }
     /// Return a mask whose lanes are true where `a == b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(simd a, U b) noexcept {
       return a == simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a == b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) == b;
     }
     /// Return a mask whose lanes are true where `a != b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(simd a, U b) noexcept {
       return a != simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a != b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) != b;
     }
     /// Return a mask whose lanes are true where `a < b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(simd a, U b) noexcept {
       return a < simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a < b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) < b;
     }
     /// Return a mask whose lanes are true where `a > b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(simd a, U b) noexcept {
       return a > simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a > b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) > b;
     }
     /// Return a mask whose lanes are true where `a <= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(simd a, U b) noexcept {
       return a <= simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a <= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) <= b;
     }
     /// Return a mask whose lanes are true where `a >= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a, U b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(simd a, U b) noexcept {
       return a >= simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(b));
     }
     /// Return a mask whose lanes are true where `a >= b` holds. Ordering follows the signedness of T. Scalar operands are reduced to the lane width and broadcast first.
     template <simd_integer_element U>
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(U a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(U a, simd b) noexcept {
       return simd(::NATIVE_BACKEND_NAMESPACE::integer_wrap<T>(a)) >= b;
     }
     /// Apply the corresponding lane-wise add operation in place and return *this.
@@ -2881,7 +2881,7 @@ namespace native {
     /// Shift each lane left by compile-time K, discarding high bits; require K below the lane bit width.
     template <unsigned K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard native_inline constexpr native_const simd left() const noexcept {
+    [[nodiscard]] native_inline constexpr native_const simd left() const noexcept {
       if consteval {
         using E=std::make_unsigned_t<T>;
         using V=E __attribute__((ext_vector_type(N)));
@@ -2892,7 +2892,7 @@ namespace native {
     /// Shift each lane right by compile-time K; signed lanes extend their sign. Require K below the lane bit width.
     template <unsigned K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard native_inline constexpr native_const simd right() const noexcept {
+    [[nodiscard]] native_inline constexpr native_const simd right() const noexcept {
       if consteval {
         using E=T;
         using V=E __attribute__((ext_vector_type(N)));
@@ -2903,11 +2903,11 @@ namespace native {
     /// Shift every lane left by K bits, discarding high bits. Require K smaller than the lane bit width.
     template <std::size_t K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard friend native_inline constexpr native_const simd operator<<(simd a, imm_t<K>) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator<<(simd a, imm_t<K>) noexcept {
       return a.template left<K>();
     }
     /// Shift each unsigned 32-bit lane by its corresponding count, which must be less than 32.
-    native_nodiscard friend native_inline constexpr native_const simd operator<<(simd a,simd counts) noexcept
+    [[nodiscard]] friend native_inline constexpr native_const simd operator<<(simd a,simd counts) noexcept
       requires std::same_as<T,std::uint32_t> && requires(native_type x) {
         ::NATIVE_BACKEND_NAMESPACE::integer_shift_left_variable(x,x);
       }
@@ -2923,15 +2923,15 @@ namespace native {
     /// Shift every lane right by K; signed lanes extend the sign, unsigned lanes shift in zero. Require K smaller than the lane bit width.
     template <std::size_t K>
       requires(K < sizeof(T) * 8)
-    native_nodiscard friend native_inline constexpr native_const simd operator>>(simd a, imm_t<K>) noexcept {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator>>(simd a, imm_t<K>) noexcept {
       return a.template right<K>();
     }
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard native_inline static native_pure constexpr simd load(T const *p) noexcept {
+    [[nodiscard]] native_inline static native_pure constexpr simd load(T const *p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, lanes>(p);
     }
     /// Read all logical lanes without an extra alignment promise.
-    native_nodiscard native_inline static native_pure constexpr simd loadu(T const *p) noexcept {
+    [[nodiscard]] native_inline static native_pure constexpr simd loadu(T const *p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, lanes>(p);
     }
     /// Write all logical lanes to an unaligned element pointer.
@@ -2939,7 +2939,7 @@ namespace native {
     /// Write all logical lanes without an extra alignment promise.
     native_inline constexpr void storeu(T *p) const noexcept { ::NATIVE_BACKEND_NAMESPACE::store_simd(p, *this); }
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
-    native_nodiscard native_inline constexpr static native_pure simd load_partial(T const *p, std::size_t n,
+    [[nodiscard]] native_inline constexpr static native_pure simd load_partial(T const *p, std::size_t n,
                                                                   T fill = T(0)) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       assert(n <= lanes);
       if consteval {
@@ -3161,7 +3161,7 @@ namespace native {
   namespace detail::NATIVE_BACKEND {
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline native_pure constexpr simd<T, N,Arch> load_simd(T const *p, simd_memory<A, Access>) noexcept {
+  [[nodiscard]] native_inline native_pure constexpr simd<T, N,Arch> load_simd(T const *p, simd_memory<A, Access>) noexcept {
     using V = simd<T, N,Arch>;
     if consteval {
       if constexpr(N==1) return V(*p);
@@ -3207,7 +3207,7 @@ namespace native {
   }
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N, std::size_t A, simd_access Access>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline constexpr native_pure simd<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
+  [[nodiscard]] native_inline constexpr native_pure simd<T, N,Arch> load_simd_partial(T const *p, std::size_t count,
                                                                     simd_memory<A, Access>) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     assert(count <= N);
     std::array<T, N> data{};
@@ -3227,12 +3227,12 @@ namespace native {
   }
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline constexpr native_pure simd<T, N,Arch> load_simd(std::array<T, N> const &p) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure simd<T, N,Arch> load_simd(std::array<T, N> const &p) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, N>(p.data());
   }
   template <::native::isa<> Arch, simd_integer_element T, std::size_t N>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline constexpr native_pure simd<T, N,Arch> load_simd(std::span<T const, N> p) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure simd<T, N,Arch> load_simd(std::span<T const, N> p) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, N>(p.data());
   }
 
@@ -3247,7 +3247,7 @@ namespace native {
   /// Choose a in true lanes and b in false lanes; both operands are evaluated.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> select(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> select(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
     if consteval {
       std::array<T,N> first{},second{};
       a.store(first.data()); b.store(second.data());
@@ -3266,7 +3266,7 @@ namespace native {
   /// Select individual bits: (bits & a) | (~bits & b); no mask canonicalization.
   template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> bit_select(simd<T, N,Arch> bits, simd<T, N,Arch> a,
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> bit_select(simd<T, N,Arch> bits, simd<T, N,Arch> a,
                                                               simd<T, N,Arch> b) noexcept {
     if consteval { return (bits & a) | (~bits & b); }
     if constexpr(N==1) return (bits & a) | (~bits & b);
@@ -3279,14 +3279,14 @@ namespace native {
   /// Choose a in true lanes and b in false lanes; both operands are evaluated.
   template <simd_integer_element T, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N>
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> select(simd<T, N,Arch> bits, simd<T, N,Arch> a,
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> select(simd<T, N,Arch> bits, simd<T, N,Arch> a,
                                                           simd<T, N,Arch> b) noexcept {
     return bit_select(bits, a, b);
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
   template <simd_mask_element M, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline constexpr native_const auto mask_bits(simd<M, N,Arch> m) noexcept {
+  [[nodiscard]] native_inline constexpr native_const auto mask_bits(simd<M, N,Arch> m) noexcept {
     using U = typename M::storage_type;
     return simd<U, N,Arch>::from_native(m.to_native());
   }
@@ -3294,21 +3294,21 @@ namespace native {
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
   template <simd_integer_element T, simd_mask_element M, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(sizeof(T) == sizeof(M))
-  native_nodiscard native_inline constexpr native_const simd<std::make_unsigned_t<T>, N,Arch> mask_bits(simd<M, N,Arch> m) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<std::make_unsigned_t<T>, N,Arch> mask_bits(simd<M, N,Arch> m) noexcept {
     return mask_bits(m);
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.
   template <simd_integer_element T, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     requires(predicate<N,Arch> m) { to_vector_mask<::NATIVE_BACKEND_NAMESPACE::mask_lane_for<T>>(m); }
-  native_nodiscard native_inline constexpr native_const simd<std::make_unsigned_t<T>, N,Arch> mask_bits(predicate<N,Arch> m) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<std::make_unsigned_t<T>, N,Arch> mask_bits(predicate<N,Arch> m) noexcept {
     return mask_bits(to_vector_mask<::NATIVE_BACKEND_NAMESPACE::mask_lane_for<T>>(m));
   }
   /// \ingroup masks
   /// Add modulo the lane width in active lanes, retaining prior elsewhere.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> masked_add(M m, simd<T, N,Arch> prior, simd<T, N,Arch> a,
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_add(M m, simd<T, N,Arch> prior, simd<T, N,Arch> a,
                                                               simd<T, N,Arch> b) noexcept {
     if consteval { return select(m,a + b,prior); }
     if constexpr (N == 1)
@@ -3322,14 +3322,14 @@ namespace native {
   /// Add modulo the lane width in active lanes and zero inactive lanes.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> masked_add_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_add_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
     return masked_add(m, simd<T, N,Arch>(T(0)), a, b);
   }
   /// \ingroup masks
   /// Subtract modulo the lane width in active lanes, retaining prior elsewhere.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> masked_sub(M m, simd<T, N,Arch> prior, simd<T, N,Arch> a,
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_sub(M m, simd<T, N,Arch> prior, simd<T, N,Arch> a,
                                                               simd<T, N,Arch> b) noexcept {
     if consteval { return select(m,a - b,prior); }
     if constexpr (N == 1)
@@ -3343,14 +3343,14 @@ namespace native {
   /// Subtract modulo the lane width in active lanes and zero inactive lanes.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> masked_sub_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_sub_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
     return masked_sub(m, simd<T, N,Arch>(T(0)), a, b);
   }
   /// \ingroup masks
   /// Multiply modulo the lane width in active lanes, retaining prior elsewhere.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> masked_mul(M m, simd<T, N,Arch> prior, simd<T, N,Arch> a,
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_mul(M m, simd<T, N,Arch> prior, simd<T, N,Arch> a,
                                                               simd<T, N,Arch> b) noexcept {
     if consteval { return select(m,a * b,prior); }
     if constexpr (N == 1)
@@ -3364,7 +3364,7 @@ namespace native {
   /// Multiply modulo the lane width in active lanes and zero inactive lanes.
   template <simd_integer_element T, std::size_t N, class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(::NATIVE_BACKEND_NAMESPACE::integer_shape<T, N> && ::NATIVE_BACKEND_NAMESPACE::integer_mask_for<M, T, N, Arch>)
-  native_nodiscard native_inline constexpr native_const simd<T, N,Arch> masked_mul_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
+  [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_mul_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
     return masked_mul(m, simd<T, N,Arch>(T(0)), a, b);
   }
 } // namespace native
@@ -3399,9 +3399,9 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
     typename V::value_type;
   } && std::same_as<typename V::value_type,::native::uint32_t>;
   template<unsigned S,unsigned_register V> requires(S<32)
-  native_nodiscard native_inline native_const V shift_left(V x) noexcept { return x.template left<S>(); }
+  [[nodiscard]] native_inline native_const V shift_left(V x) noexcept { return x.template left<S>(); }
   template<unsigned S,unsigned_register V> requires(S<32)
-  native_nodiscard native_inline native_const V shift_right(V x) noexcept { return x.template right<S>(); }
+  [[nodiscard]] native_inline native_const V shift_right(V x) noexcept { return x.template right<S>(); }
   using ::native::mask_bits;
   using ::native::bit_select;
   struct integer_target {
@@ -3422,7 +3422,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
 
 namespace native {
   namespace detail::NATIVE_BACKEND {
-    template <class V,std::size_t Alignment> native_nodiscard native_artificial native_inline constexpr native_pure V simd_load_native(native_noescape float const *) noexcept;
+    template <class V,std::size_t Alignment> [[nodiscard]] native_artificial native_inline constexpr native_pure V simd_load_native(native_noescape float const *) noexcept;
     template <class V,std::size_t Alignment> native_artificial native_inline constexpr void simd_store_native(native_noescape float *,V) noexcept;
   }
   namespace detail::NATIVE_BACKEND {
@@ -3446,67 +3446,67 @@ namespace native {
     /// Broadcast the supplied value to each logical lane.
     native_inline constexpr simd(float x) : value(x) {}
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard static native_inline constexpr native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes to an unaligned element pointer.
     native_inline constexpr void store(native_noescape float * p) const { ::NATIVE_BACKEND_NAMESPACE::simd_store_native<simd,1>(p,*this); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
       return simd(a.value + b.value);
     }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
       return simd(a.value - b.value);
     }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
       return simd(a.value * b.value);
     }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
       return simd(a.value / b.value);
     }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
       return simd(-a.value);
     }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
       return mask_type::from_native(a.value < b.value ? ~std::uint32_t(0) : 0u);
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       return mask_type::from_native(a.value > b.value ? ~std::uint32_t(0) : 0u);
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       return mask_type::from_native(a.value == b.value ? ~std::uint32_t(0) : 0u);
     }
     /// Choose a in true mask lanes and b in false lanes; both values are already evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
       if consteval { return ::native::detail::float_constant::select(m,a,b); }
       return m.to_native()!=0 ? a : b;
     }
     /// Compute a*b+c with one fused rounding per lane.
-    native_nodiscard friend native_inline constexpr simd fma(simd a, simd b, simd c) {
+    [[nodiscard]] friend native_inline constexpr simd fma(simd a, simd b, simd c) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
       return simd(std::fma(a.value, b.value, c.value));
     }
     /// Take the native square root of each lane.
-    native_nodiscard friend native_inline constexpr simd sqrt(simd a) {
+    [[nodiscard]] friend native_inline constexpr simd sqrt(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
       return simd(std::sqrt(a.value));
     }
     /// Round each lane to nearest integral value, choosing even at a tie.
-    native_nodiscard friend native_inline constexpr native_pure simd round_even(simd a) {
+    [[nodiscard]] friend native_inline constexpr native_pure simd round_even(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
       if (!std::isfinite(a.value) || std::abs(a.value) >= 0x1p23f) return a;
       float lo = std::floor(a.value), delta = a.value - lo;
@@ -3515,14 +3515,14 @@ namespace native {
     }
     // Internal precondition: integral n in [-126,127].
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+    [[nodiscard]] friend native_inline constexpr native_const simd normal_pow2(simd n) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
       return simd(std::bit_cast<float>(std::uint32_t(int(n.value) + 127) << 23));
     }
 
     template <std::size_t Alignment = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
-    native_nodiscard static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,Alignment>(p);
     }
     template <std::size_t Alignment = 1>
@@ -3535,33 +3535,33 @@ namespace native {
     using native_type = float;
     using bits_type = simd<uint32_t,1,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure operator native_type() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure operator native_type() const noexcept { return value; }
     /// Return the native storage representation.
-    native_nodiscard native_inline constexpr native_pure native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_type to_native() const noexcept { return value; }
     /// Project the exact lane representation into the corresponding unsigned vector.
-    native_nodiscard native_inline constexpr native_pure bits_type bits() const noexcept { return bits_type(std::bit_cast<std::uint32_t>(value)); }
+    [[nodiscard]] native_inline constexpr native_pure bits_type bits() const noexcept { return bits_type(std::bit_cast<std::uint32_t>(value)); }
     /// Return the exact binary32 lane representations in the unsigned vector.
-    native_nodiscard native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
+    [[nodiscard]] native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
     /// Reinterpret binary words as lane values; do not normalize them.
-    native_nodiscard static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { return simd(std::bit_cast<float>(bits.value)); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { return simd(std::bit_cast<float>(bits.value)); }
     /// Reinterpret binary words as lane values; do not normalize them.
-    native_nodiscard static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
     /// Broadcast the float value without adding an FTZ or other normalization policy.
-    native_nodiscard static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline constexpr native_const simd from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt raw float storage without numerical conversion or normalization.
-    native_nodiscard static native_inline constexpr native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Read all logical lanes without an extra alignment promise.
-    native_nodiscard static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes without an extra alignment promise.
     native_inline constexpr void storeu(native_noescape float * p) const { ::NATIVE_BACKEND_NAMESPACE::simd_store_native<simd,1>(p,*this); }
     /// Load exactly the logical count of binary32 words without normalizing their representations.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
     native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Read all logical lanes without an extra alignment promise.
@@ -3575,11 +3575,11 @@ namespace native {
     /// Apply the corresponding lane-wise divide operation in place and return *this.
     native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
   };
 #if NATIVE_HAS_AVX2
 }
@@ -3609,36 +3609,36 @@ namespace native {
     /// Adopt native lane storage without numerical conversion.
     native_inline native_target("sse") constexpr simd(__m128 x) : value(x) {}
     /// Load every logical lane; no extra alignment is required.
-    native_nodiscard static native_inline constexpr native_pure simd load(native_noescape float const * p) { return load_memory<1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load(native_noescape float const * p) { return load_memory<1>(p); }
     /// Store every logical lane; no extra alignment is required.
     native_inline constexpr void store(native_noescape float * p) const { store_memory<1>(p); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
       return simd(_mm_add_ps(a.value, b.value));
     }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
       return simd(_mm_sub_ps(a.value, b.value));
     }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
       return simd(_mm_mul_ps(a.value, b.value));
     }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
       return simd(_mm_div_ps(a.value, b.value));
     }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
       return simd(_mm_xor_ps(a.value, _mm_set1_ps(-0.f)));
     }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
@@ -3646,7 +3646,7 @@ namespace native {
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
@@ -3654,7 +3654,7 @@ namespace native {
         return mask_type::unsafe_from_native(_mm_castps_si128(_mm_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
@@ -3663,35 +3663,35 @@ namespace native {
     }
     /// Choose a where the canonical mask is true, otherwise b; both operands are evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
       if consteval { return ::native::detail::float_constant::select(m,a,b); }
       if constexpr(M::compact) return simd(_mm_mask_blend_ps(m.to_native(),b.value,a.value));
       else
         return simd(_mm_blendv_ps(b.value,a.value,_mm_castsi128_ps(m.to_native()))); }
     /// Compute a*b+c with one fused rounding per lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
       return simd(_mm_fmadd_ps(a.value, b.value, c.value));
     }
     /// Compute the native square root in every lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd sqrt(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd sqrt(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
       return simd(_mm_sqrt_ps(a.value));
     }
     /// Round to an integral value, ties to even, independent of ambient direction.
-    native_artificial native_nodiscard friend native_inline constexpr native_const simd round_even(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_const simd round_even(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
       return simd(_mm_round_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
     }
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+    [[nodiscard]] friend native_inline constexpr native_const simd normal_pow2(simd n) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
       return simd(_mm_castsi128_ps(_mm_slli_epi32(_mm_add_epi32(_mm_cvttps_epi32(n.value), _mm_set1_epi32(127)), 23)));
     }
 
     template <std::size_t Alignment = 1>
     /// Load full lanes, assuming Alignment-byte pointer alignment.
-    native_nodiscard static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
       if consteval {
         std::array<float,sizeof(native_type)/sizeof(float)> values{};
         for (std::size_t i=0;i<sizeof(native_type)/sizeof(float);++i) values[i]=p[i];
@@ -3716,33 +3716,33 @@ namespace native {
     using native_type = __m128;
     using bits_type = simd<uint32_t,4,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure native_target("sse") operator native_type() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_target("sse") operator native_type() const noexcept { return value; }
     /// Project native register storage without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure native_target("sse") native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_target("sse") native_type to_native() const noexcept { return value; }
     /// Project exact binary32 lane words into the unsigned vector.
-    native_artificial native_nodiscard native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(_mm_castps_si128(value)); }
+    native_artificial [[nodiscard]] native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(_mm_castps_si128(value)); }
     /// Synonym for bits(): preserve all binary32 representation bits.
-    native_nodiscard native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
+    [[nodiscard]] native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
     /// Reinterpret unsigned lane words as binary32, without normalization.
-    native_artificial native_nodiscard static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(_mm_castsi128_ps(bits.value)); }
+    native_artificial [[nodiscard]] static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(_mm_castsi128_ps(bits.value)); }
     /// Reinterpret unsigned lane words as binary32, without normalization.
-    native_nodiscard static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
     /// Broadcast one binary32 value to every lane.
-    native_nodiscard static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native register storage without changing its bits.
-    native_nodiscard static native_inline constexpr native_const native_target("sse") simd from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const native_target("sse") simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt native raw float storage; this raw type adds no normalization.
-    native_nodiscard static native_inline constexpr native_const native_target("sse") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const native_target("sse") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Synonym for an unaligned full-vector load.
-    native_nodiscard static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return load_memory<1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return load_memory<1>(p); }
     /// Synonym for an unaligned full-vector store.
     native_inline constexpr void storeu(native_noescape float * p) const { store_memory<1>(p); }
     /// Load exact binary32 representations from uint32_t words.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
     /// Store exact binary32 representations as uint32_t words.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Load n words and fill the remaining lanes; require n <= lanes.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Store exactly n representation words; require n <= lanes.
     native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Load one lane from each array element, in array order.
@@ -3765,11 +3765,11 @@ namespace native {
     /// Apply the corresponding lane-wise divide operation in place and return *this.
     native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
   };
 
   /// \ingroup vectors
@@ -3796,36 +3796,36 @@ namespace native {
     /// Adopt native lane storage without numerical conversion.
     native_inline native_target("avx") constexpr simd(__m256 x) : value(x) {}
     /// Load every logical lane; no extra alignment is required.
-    native_nodiscard static native_inline constexpr native_pure simd load(native_noescape float const * p) { return load_memory<1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load(native_noescape float const * p) { return load_memory<1>(p); }
     /// Store every logical lane; no extra alignment is required.
     native_inline constexpr void store(native_noescape float * p) const { store_memory<1>(p); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
       return simd(_mm256_add_ps(a.value, b.value));
     }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
       return simd(_mm256_sub_ps(a.value, b.value));
     }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
       return simd(_mm256_mul_ps(a.value, b.value));
     }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
       return simd(_mm256_div_ps(a.value, b.value));
     }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
       return simd(_mm256_xor_ps(a.value, _mm256_set1_ps(-0.f)));
     }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
@@ -3833,7 +3833,7 @@ namespace native {
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_LT_OQ)));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
@@ -3841,7 +3841,7 @@ namespace native {
         return mask_type::unsafe_from_native(_mm256_castps_si256(_mm256_cmp_ps(a.value,b.value,_CMP_GT_OQ)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       if constexpr(bool(NATIVE_HAS_AVX512VL))
         return mask_type::from_native(_mm256_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
@@ -3850,35 +3850,35 @@ namespace native {
     }
     /// Choose a where the canonical mask is true, otherwise b; both operands are evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
       if consteval { return ::native::detail::float_constant::select(m,a,b); }
       if constexpr(M::compact) return simd(_mm256_mask_blend_ps(m.to_native(),b.value,a.value));
       else
         return simd(_mm256_blendv_ps(b.value,a.value,_mm256_castsi256_ps(m.to_native()))); }
     /// Compute a*b+c with one fused rounding per lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
       return simd(_mm256_fmadd_ps(a.value, b.value, c.value));
     }
     /// Compute the native square root in every lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd sqrt(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd sqrt(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
       return simd(_mm256_sqrt_ps(a.value));
     }
     /// Round to an integral value, ties to even, independent of ambient direction.
-    native_artificial native_nodiscard friend native_inline constexpr native_const simd round_even(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_const simd round_even(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
       return simd(_mm256_round_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
     }
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+    [[nodiscard]] friend native_inline constexpr native_const simd normal_pow2(simd n) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
       return simd(_mm256_castsi256_ps(_mm256_slli_epi32(_mm256_add_epi32(_mm256_cvttps_epi32(n.value), _mm256_set1_epi32(127)), 23)));
     }
 
     template <std::size_t Alignment = 1>
     /// Load full lanes, assuming Alignment-byte pointer alignment.
-    native_nodiscard static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
       if consteval {
         std::array<float,sizeof(native_type)/sizeof(float)> values{};
         for (std::size_t i=0;i<sizeof(native_type)/sizeof(float);++i) values[i]=p[i];
@@ -3903,33 +3903,33 @@ namespace native {
     using native_type = __m256;
     using bits_type = simd<uint32_t,8,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure native_target("avx") operator native_type() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_target("avx") operator native_type() const noexcept { return value; }
     /// Project native register storage without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure native_target("avx") native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_target("avx") native_type to_native() const noexcept { return value; }
     /// Project exact binary32 lane words into the unsigned vector.
-    native_artificial native_nodiscard native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(_mm256_castps_si256(value)); }
+    native_artificial [[nodiscard]] native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(_mm256_castps_si256(value)); }
     /// Synonym for bits(): preserve all binary32 representation bits.
-    native_nodiscard native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
+    [[nodiscard]] native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
     /// Reinterpret unsigned lane words as binary32, without normalization.
-    native_artificial native_nodiscard static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(_mm256_castsi256_ps(bits.value)); }
+    native_artificial [[nodiscard]] static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(_mm256_castsi256_ps(bits.value)); }
     /// Reinterpret unsigned lane words as binary32, without normalization.
-    native_nodiscard static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
     /// Broadcast one binary32 value to every lane.
-    native_nodiscard static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native register storage without changing its bits.
-    native_nodiscard static native_inline constexpr native_const native_target("avx") simd from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const native_target("avx") simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt native raw float storage; this raw type adds no normalization.
-    native_nodiscard static native_inline constexpr native_const native_target("avx") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const native_target("avx") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Synonym for an unaligned full-vector load.
-    native_nodiscard static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return load_memory<1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return load_memory<1>(p); }
     /// Synonym for an unaligned full-vector store.
     native_inline constexpr void storeu(native_noescape float * p) const { store_memory<1>(p); }
     /// Load exact binary32 representations from uint32_t words.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
     /// Store exact binary32 representations as uint32_t words.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Load n words and fill the remaining lanes; require n <= lanes.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Store exactly n representation words; require n <= lanes.
     native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Load one lane from each array element, in array order.
@@ -3952,11 +3952,11 @@ namespace native {
     /// Apply the corresponding lane-wise divide operation in place and return *this.
     native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
   };
 
 }
@@ -3988,80 +3988,80 @@ namespace native {
     /// Adopt native lane storage without numerical conversion.
     native_inline native_target("avx512f") constexpr simd(__m512 x) : value(x) {}
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard static native_inline constexpr native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes to an unaligned element pointer.
     native_inline constexpr void store(native_noescape float * p) const { ::NATIVE_BACKEND_NAMESPACE::simd_store_native<simd,1>(p,*this); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
       return simd(_mm512_add_ps(a.value, b.value));
     }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
       return simd(_mm512_sub_ps(a.value, b.value));
     }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
       return simd(_mm512_mul_ps(a.value, b.value));
     }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
       return simd(_mm512_div_ps(a.value, b.value));
     }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+    [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
       return simd(_mm512_xor_ps(a.value, _mm512_set1_ps(-0.f)));
     }
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,a,b); }
       return mask_type::from_native(_mm512_cmp_ps_mask(a.value,b.value,_CMP_LT_OQ));
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       return mask_type::from_native(_mm512_cmp_ps_mask(a.value,b.value,_CMP_GT_OQ));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator==(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       return mask_type::from_native(_mm512_cmp_ps_mask(a.value,b.value,_CMP_EQ_OQ));
     }
     /// Choose a in true lanes and b in false lanes; both values are already evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
       if consteval { return ::native::detail::float_constant::select(m,a,b); }
       if constexpr(M::compact) return simd(_mm512_mask_blend_ps(m.to_native(),b.value,a.value));
       else return simd(_mm512_castsi512_ps(_mm512_or_si512(_mm512_and_si512(m.to_native(),_mm512_castps_si512(a.value)),
         _mm512_andnot_si512(m.to_native(),_mm512_castps_si512(b.value))))); }
     /// Compute a*b+c with one fused rounding per lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
       return simd(_mm512_fmadd_ps(a.value, b.value, c.value));
     }
     /// Take the native square root of each lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd sqrt(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd sqrt(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
       return simd(_mm512_sqrt_ps(a.value));
     }
     /// Round each lane to nearest integral value, choosing even at a tie.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd round_even(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd round_even(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
       return simd(_mm512_roundscale_ps(a.value, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
     }
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+    [[nodiscard]] friend native_inline constexpr native_const simd normal_pow2(simd n) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
       return simd(_mm512_castsi512_ps(_mm512_slli_epi32(_mm512_add_epi32(_mm512_cvttps_epi32(n.value), _mm512_set1_epi32(127)), 23)));
     }
 
     template <std::size_t Alignment = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
-    native_nodiscard static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,Alignment>(p);
     }
     template <std::size_t Alignment = 1>
@@ -4074,33 +4074,33 @@ namespace native {
     using native_type = __m512;
     using bits_type = simd<uint32_t,16,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure native_target("avx512f") operator native_type() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_target("avx512f") operator native_type() const noexcept { return value; }
     /// Return the native storage representation.
-    native_nodiscard native_inline constexpr native_pure native_target("avx512f") native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_target("avx512f") native_type to_native() const noexcept { return value; }
     /// Project the exact lane representation into the corresponding unsigned vector.
-    native_artificial native_nodiscard native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(_mm512_castps_si512(value)); }
+    native_artificial [[nodiscard]] native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(_mm512_castps_si512(value)); }
     /// Return the exact binary32 lane representations in the unsigned vector.
-    native_nodiscard native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
+    [[nodiscard]] native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
     /// Reinterpret binary words as lane values; do not normalize them.
-    native_artificial native_nodiscard static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(_mm512_castsi512_ps(bits.value)); }
+    native_artificial [[nodiscard]] static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(_mm512_castsi512_ps(bits.value)); }
     /// Reinterpret binary words as lane values; do not normalize them.
-    native_nodiscard static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
     /// Broadcast the float value without adding an FTZ or other normalization policy.
-    native_nodiscard static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline constexpr native_const native_target("avx512f") simd from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const native_target("avx512f") simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt raw float storage without numerical conversion or normalization.
-    native_nodiscard static native_inline constexpr native_const native_target("avx512f") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const native_target("avx512f") simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Read all logical lanes without an extra alignment promise.
-    native_nodiscard static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes without an extra alignment promise.
     native_inline constexpr void storeu(native_noescape float * p) const { ::NATIVE_BACKEND_NAMESPACE::simd_store_native<simd,1>(p,*this); }
     /// Load exactly the logical count of binary32 words without normalizing their representations.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
     native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Read all logical lanes without an extra alignment promise.
@@ -4123,11 +4123,11 @@ namespace native {
     /// Apply the corresponding lane-wise divide operation in place and return *this.
     native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator<=(simd a,simd b) noexcept { return (a<b)|(a==b); }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
+    [[nodiscard]] friend native_inline constexpr native_const mask_type operator>=(simd a,simd b) noexcept { return (a>b)|(a==b); }
   };
 #endif
 #if NATIVE_HAS_ARM_NEON
@@ -4153,31 +4153,31 @@ namespace native {
     /// Adopt native lane storage without numerical conversion.
     native_inline constexpr simd(float32x4_t x) : value(x) {}
     /// Read all logical lanes from an unaligned element pointer.
-    native_nodiscard static native_inline constexpr native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes to an unaligned element pointer.
     native_inline constexpr void store(native_noescape float * p) const { ::NATIVE_BACKEND_NAMESPACE::simd_store_native<simd,1>(p,*this); }
     /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator+(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::add,a,b); }
       return simd(vaddq_f32(a.value, b.value));
     }
     /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator-(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::subtract,a,b); }
       return simd(vsubq_f32(a.value, b.value));
     }
     /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator*(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply,a,b); }
       return simd(vmulq_f32(a.value, b.value));
     }
     /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd operator/(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::divide,a,b); }
       return simd(vdivq_f32(a.value, b.value));
     }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_artificial native_nodiscard friend native_inline constexpr native_const simd operator-(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_const simd operator-(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::negate,a); }
       return simd(vnegq_f32(a.value));
     }
@@ -4185,11 +4185,11 @@ namespace native {
     // -frounding-math. Keep the vector instruction and its FPCR/FPSR effects;
     // the memory clobber orders environment accesses without a CPU fence.
     /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr mask_type operator<(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr mask_type operator<(simd a, simd b) {
       return b>a;
     }
     /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr mask_type operator>(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr mask_type operator>(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::less,b,a); }
       auto x=::native::detail::arm_register_order(a.value);
       auto y=::native::detail::arm_register_order(b.value);
@@ -4198,7 +4198,7 @@ namespace native {
       return mask_type::unsafe_from_native(vreinterpretq_u8_u32(::native::detail::arm_register_order(bits)));
     }
     /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr mask_type operator==(simd a, simd b) {
+    [[nodiscard]] friend native_inline constexpr mask_type operator==(simd a, simd b) {
       if consteval { return ::native::detail::float_constant::compare(::native::detail::float_constant::equal,a,b); }
       auto x=::native::detail::arm_register_order(a.value);
       auto y=::native::detail::arm_register_order(b.value);
@@ -4208,34 +4208,34 @@ namespace native {
     }
     /// Choose a in true mask lanes and b in false lanes; both values are already evaluated.
     template<class M> requires (std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
+    [[nodiscard]] friend native_inline constexpr native_const simd select(M m,simd a,simd b) {
       if consteval { return ::native::detail::float_constant::select(m,a,b); }
       return simd(vbslq_f32(vreinterpretq_u32_u8(m.to_native()),a.value,b.value));
     }
     /// Compute a*b+c with one fused rounding per lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd fma(simd a, simd b, simd c) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::multiply_add,a,b,c); }
       return simd(vfmaq_f32(c.value, a.value, b.value));
     }
     /// Take the native square root of each lane.
-    native_artificial native_nodiscard friend native_inline constexpr native_pure simd sqrt(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_pure simd sqrt(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::square_root,a); }
       return simd(vsqrtq_f32(a.value));
     }
     /// Round each lane to nearest integral value, choosing even at a tie.
-    native_artificial native_nodiscard friend native_inline constexpr native_const simd round_even(simd a) {
+    native_artificial [[nodiscard]] friend native_inline constexpr native_const simd round_even(simd a) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::nearest,a); }
       return simd(vrndnq_f32(a.value));
     }
     /// Construct normal powers of two; require integral exponents in [-126,127].
-    native_nodiscard friend native_inline constexpr native_const simd normal_pow2(simd n) {
+    [[nodiscard]] friend native_inline constexpr native_const simd normal_pow2(simd n) {
       if consteval { return ::native::detail::float_constant::map(::native::detail::float_constant::power_of_two,n); }
       return simd(vreinterpretq_f32_s32(vshlq_n_s32(vaddq_s32(vcvtq_s32_f32(n.value), vdupq_n_s32(127)), 23)));
     }
 
     template <std::size_t Alignment = 1>
     /// Load logical lanes, assuming the template alignment in bytes.
-    native_nodiscard static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr native_pure simd load_memory(float const * p) noexcept {
       return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,Alignment>(p);
     }
     template <std::size_t Alignment = 1>
@@ -4248,33 +4248,33 @@ namespace native {
     using native_type = float32x4_t;
     using bits_type = simd<uint32_t,4,Arch>;
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr native_pure operator native_type() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure operator native_type() const noexcept { return value; }
     /// Return the native storage representation.
-    native_nodiscard native_inline constexpr native_pure native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_pure native_type to_native() const noexcept { return value; }
     /// Project the exact lane representation into the corresponding unsigned vector.
-    native_artificial native_nodiscard native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(vreinterpretq_u8_f32(value)); }
+    native_artificial [[nodiscard]] native_inline constexpr native_pure bits_type bits() const noexcept { if consteval { return bits_type::from_native(__builtin_bit_cast(typename bits_type::native_type,value)); } return bits_type::from_native(vreinterpretq_u8_f32(value)); }
     /// Return the exact binary32 lane representations in the unsigned vector.
-    native_nodiscard native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
+    [[nodiscard]] native_inline constexpr native_pure bits_type to_bits() const noexcept { return bits(); }
     /// Reinterpret binary words as lane values; do not normalize them.
-    native_artificial native_nodiscard static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(vreinterpretq_f32_u8(bits.value)); }
+    native_artificial [[nodiscard]] static native_inline constexpr native_const simd from_bits(bits_type bits) noexcept { if consteval { return simd(__builtin_bit_cast(native_type,bits.to_native())); } return simd(vreinterpretq_f32_u8(bits.value)); }
     /// Reinterpret binary words as lane values; do not normalize them.
-    native_nodiscard static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_bits(std::uint32_t bits) noexcept { return from_bits(bits_type(bits)); }
     /// Broadcast the float value without adding an FTZ or other normalization policy.
-    native_nodiscard static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_float(float x) noexcept { return simd(x); }
     /// Adopt native storage without numerical conversion.
-    native_nodiscard static native_inline constexpr native_const simd from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd from_native(native_type x) noexcept { return simd(x); }
     /// Adopt raw float storage without numerical conversion or normalization.
-    native_nodiscard static native_inline constexpr native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr native_const simd unsafe_from_float32(native_type x) noexcept { return simd(x); }
     /// Read all logical lanes without an extra alignment promise.
-    native_nodiscard static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
+    [[nodiscard]] static native_inline constexpr native_pure simd loadu(native_noescape float const * p) { return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd,1>(p); }
     /// Write all logical lanes without an extra alignment promise.
     native_inline constexpr void storeu(native_noescape float * p) const { ::NATIVE_BACKEND_NAMESPACE::simd_store_native<simd,1>(p,*this); }
     /// Load exactly the logical count of binary32 words without normalizing their representations.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits(native_noescape std::uint32_t const * p) noexcept { return from_bits(bits_type::load(p)); }
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(native_noescape std::uint32_t * p) const noexcept { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
+    [[nodiscard]] static native_inline constexpr native_pure simd load_bits_partial(native_noescape std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
     native_inline constexpr void store_bits_partial(native_noescape std::uint32_t * p,std::size_t n) const noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Read all logical lanes without an extra alignment promise.
@@ -4297,11 +4297,11 @@ namespace native {
     /// Apply the corresponding lane-wise divide operation in place and return *this.
     native_inline constexpr simd & operator/=(simd b) noexcept { return *this=*this/b; }
     /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
-    native_nodiscard friend native_inline constexpr mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept { return b>=a; }
+    [[nodiscard]] friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept { return b>=a; }
     /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
-    native_nodiscard friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept {
       if consteval {
         return ::native::detail::float_constant::compare([](auto x,auto y) {
           return ::native::detail::float_constant::less(y,x) || ::native::detail::float_constant::equal(x,y);
@@ -4342,7 +4342,7 @@ namespace native {
   template <std::size_t N,class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)
-  native_nodiscard native_inline constexpr native_pure simd<float,N,Arch> masked_scaleb(M mask,
+  [[nodiscard]] native_inline constexpr native_pure simd<float,N,Arch> masked_scaleb(M mask,
       simd<float,N,Arch> prior,simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
     if consteval {
       auto a=::native::detail::float_constant::words(value),b=::native::detail::float_constant::words(exponent);
@@ -4376,7 +4376,7 @@ namespace native {
   template <std::size_t N,class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)
-  native_nodiscard native_inline constexpr native_pure simd<float,N,Arch> masked_scaleb_zero(M mask,
+  [[nodiscard]] native_inline constexpr native_pure simd<float,N,Arch> masked_scaleb_zero(M mask,
       simd<float,N,Arch> value,simd<float,N,Arch> exponent) noexcept {
     if consteval { return masked_scaleb(mask,simd<float,N,Arch>(0.f),value,exponent); }
 #if NATIVE_HAS_AVX512F
@@ -4396,83 +4396,83 @@ namespace native {
   /// Scale every lane by 2^floor(exponent), including fractional exponents.
   /// Unlike an integer ldexp exponent, the exponent argument is itself a vector.
   template <std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N>
-  native_nodiscard native_inline constexpr native_pure simd<float,N,Arch> scaleb(simd<float,N,Arch> value,
+  [[nodiscard]] native_inline constexpr native_pure simd<float,N,Arch> scaleb(simd<float,N,Arch> value,
       simd<float,N,Arch> exponent) noexcept {
     return masked_scaleb_zero(typename simd<float,N,Arch>::mask_type(true),value,exponent);
   }
   /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator+(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a+simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator+(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a+simd<float,N,Arch>(b); }
   /// Add corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator+(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)+b; }
+  [[nodiscard]] native_inline constexpr auto operator+(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)+b; }
   /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator-(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a-simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator-(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a-simd<float,N,Arch>(b); }
   /// Subtract corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator-(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)-b; }
+  [[nodiscard]] native_inline constexpr auto operator-(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)-b; }
   /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator*(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a*simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator*(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a*simd<float,N,Arch>(b); }
   /// Multiply corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator*(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)*b; }
+  [[nodiscard]] native_inline constexpr auto operator*(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)*b; }
   /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator/(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a/simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator/(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a/simd<float,N,Arch>(b); }
   /// Divide corresponding floating-point lanes using the caller's rounding and denormal environment.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator/(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)/b; }
+  [[nodiscard]] native_inline constexpr auto operator/(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)/b; }
   /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator<(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a<simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator<(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a<simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a < b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator<(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)<b; }
+  [[nodiscard]] native_inline constexpr auto operator<(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)<b; }
   /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator>(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a>simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator>(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a>simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a > b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator>(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)>b; }
+  [[nodiscard]] native_inline constexpr auto operator>(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)>b; }
   /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator<=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a<=simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator<=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a<=simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a <= b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator<=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)<=b; }
+  [[nodiscard]] native_inline constexpr auto operator<=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)<=b; }
   /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator>=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a>=simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator>=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a>=simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a >= b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator>=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)>=b; }
+  [[nodiscard]] native_inline constexpr auto operator>=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)>=b; }
   /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator==(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a==simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator==(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a==simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a == b` holds. NaN lanes yield false.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator==(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)==b; }
+  [[nodiscard]] native_inline constexpr auto operator==(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)==b; }
   /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator!=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a!=simd<float,N,Arch>(b); }
+  [[nodiscard]] native_inline constexpr auto operator!=(simd<float,N,Arch> a, U b) noexcept(noexcept(simd<float,N,Arch>(b))) { return a!=simd<float,N,Arch>(b); }
   /// Return a mask whose lanes are true where `a != b` holds. NaN lanes compare unequal.
   template <std::size_t N,class U, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<U>) && (!std::same_as<U,simd<float,N,Arch>>) && std::convertible_to<U,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto operator!=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)!=b; }
+  [[nodiscard]] native_inline constexpr auto operator!=(U a, simd<float,N,Arch> b) noexcept(noexcept(simd<float,N,Arch>(a))) { return simd<float,N,Arch>(a)!=b; }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
   template <std::size_t N,class A,class B, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto fma(simd<float,N,Arch> a,A b,B c) noexcept(noexcept(simd<float,N,Arch>(b)) && noexcept(simd<float,N,Arch>(c))) { return fma(a,simd<float,N,Arch>(b),simd<float,N,Arch>(c)); }
+  [[nodiscard]] native_inline constexpr auto fma(simd<float,N,Arch> a,A b,B c) noexcept(noexcept(simd<float,N,Arch>(b)) && noexcept(simd<float,N,Arch>(c))) { return fma(a,simd<float,N,Arch>(b),simd<float,N,Arch>(c)); }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
   template <std::size_t N,class A,class B, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,simd<float,N,Arch>>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto fma(A a,simd<float,N,Arch> b,B c) noexcept(noexcept(simd<float,N,Arch>(a)) && noexcept(simd<float,N,Arch>(c))) { return fma(simd<float,N,Arch>(a),b,simd<float,N,Arch>(c)); }
+  [[nodiscard]] native_inline constexpr auto fma(A a,simd<float,N,Arch> b,B c) noexcept(noexcept(simd<float,N,Arch>(a)) && noexcept(simd<float,N,Arch>(c))) { return fma(simd<float,N,Arch>(a),b,simd<float,N,Arch>(c)); }
   /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
   template <std::size_t N,class A,class B, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && (!::NATIVE_BACKEND_NAMESPACE::custom_argument<A> && !::NATIVE_BACKEND_NAMESPACE::custom_argument<B>) && (!std::same_as<A,simd<float,N,Arch>>) && (!std::same_as<B,simd<float,N,Arch>>) && std::convertible_to<A,simd<float,N,Arch>> && std::convertible_to<B,simd<float,N,Arch>>
-  native_nodiscard native_inline constexpr auto fma(A a,B b,simd<float,N,Arch> c) noexcept(noexcept(simd<float,N,Arch>(a)) && noexcept(simd<float,N,Arch>(b))) { return fma(simd<float,N,Arch>(a),simd<float,N,Arch>(b),c); }
+  [[nodiscard]] native_inline constexpr auto fma(A a,B b,simd<float,N,Arch> c) noexcept(noexcept(simd<float,N,Arch>(a)) && noexcept(simd<float,N,Arch>(b))) { return fma(simd<float,N,Arch>(a),simd<float,N,Arch>(b),c); }
   /// \ingroup vector_math
   /// Clear each binary32 sign bit, preserving the remaining payload bits.
   template <std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr native_const auto abs(simd<float,N,Arch> a) noexcept {
+  [[nodiscard]] native_inline constexpr native_const auto abs(simd<float,N,Arch> a) noexcept {
     return simd<float,N,Arch>::from_bits(a.bits() & typename simd<float,N,Arch>::bits_type(0x7fffffffu));
   }
 
@@ -4483,7 +4483,7 @@ namespace native {
   /// Runtime conversion retains the instruction's floating-point status effects.
   template<std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr simd<std::int32_t,N,Arch>
+  [[nodiscard]] native_inline constexpr simd<std::int32_t,N,Arch>
   fcvtzs(simd<float,N,Arch> x) noexcept {
     using I = simd<std::int32_t,N,Arch>;
     if consteval {
@@ -4512,7 +4512,7 @@ namespace native {
   /// Scalar AArch64 FCVTZS, with the same defined NaN and saturation results.
   template<::native::isa<> Arch = NATIVE_BASELINE, class T>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,float>
-  native_nodiscard native_inline constexpr std::int32_t fcvtzs(T x) noexcept {
+  [[nodiscard]] native_inline constexpr std::int32_t fcvtzs(T x) noexcept {
     return fcvtzs(simd<float,1,Arch>(x)).value;
   }
 
@@ -4521,7 +4521,7 @@ namespace native {
   /// NaNs and negative inputs produce zero; positive overflow saturates to UINT32_MAX.
   template<std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr simd<std::uint32_t,N,Arch>
+  [[nodiscard]] native_inline constexpr simd<std::uint32_t,N,Arch>
   fcvtzu(simd<float,N,Arch> x) noexcept {
     using I = simd<std::uint32_t,N,Arch>;
     if consteval {
@@ -4549,7 +4549,7 @@ namespace native {
   /// Scalar AArch64 FCVTZU, with the same defined NaN and saturation results.
   template<::native::isa<> Arch = NATIVE_BASELINE, class T>
     requires NATIVE_ARCH_REQUIRES(Arch) && std::same_as<T,float>
-  native_nodiscard native_inline constexpr std::uint32_t fcvtzu(T x) noexcept {
+  [[nodiscard]] native_inline constexpr std::uint32_t fcvtzu(T x) noexcept {
     return fcvtzu(simd<float,1,Arch>(x)).value;
   }
 #endif
@@ -4559,7 +4559,7 @@ namespace native {
   /// Convert floats to signed 32-bit integers by truncation toward zero.
   /// \pre Every truncated result is representable; NaNs and infinities are outside the contract.
   template <class To, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && std::same_as<To,std::int32_t>
-  native_nodiscard native_inline constexpr simd<To,N,Arch> convert(simd<float,N,Arch> x) noexcept {
+  [[nodiscard]] native_inline constexpr simd<To,N,Arch> convert(simd<float,N,Arch> x) noexcept {
     if consteval {
       std::array<float,N> a{}; std::array<To,N> b{}; x.store(a.data());
       for(std::size_t i=0;i<N;++i) b[i]=static_cast<To>(a[i]);
@@ -4582,7 +4582,7 @@ namespace native {
   /// Numerically convert signed 32-bit integers to binary32.
   /// This is not a bit cast. Values outside binary32's exact integer range round.
   template <class To, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && std::same_as<To,float>
-  native_nodiscard native_inline constexpr simd<To,N,Arch> convert(simd<std::int32_t,N,Arch> x) noexcept {
+  [[nodiscard]] native_inline constexpr simd<To,N,Arch> convert(simd<std::int32_t,N,Arch> x) noexcept {
     if consteval {
       std::array<std::int32_t,N> a{}; std::array<To,N> b{}; x.store(a.data());
       for(std::size_t i=0;i<N;++i) b[i]=static_cast<To>(a[i]);
@@ -4603,7 +4603,7 @@ namespace native {
   }
 
   namespace detail::NATIVE_BACKEND {
-    template <class V,std::size_t Alignment> native_nodiscard native_artificial native_inline constexpr native_pure V simd_load_native(native_noescape float const * p) noexcept {
+    template <class V,std::size_t Alignment> [[nodiscard]] native_artificial native_inline constexpr native_pure V simd_load_native(native_noescape float const * p) noexcept {
       if consteval {
         std::array<float,V::lanes> values{};
         for (std::size_t i=0;i<V::lanes;++i) values[i]=p[i];
@@ -4646,7 +4646,7 @@ namespace native {
   template <::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::native::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::native::simd_custom_element<T>)
-  native_nodiscard native_inline constexpr native_pure simd<T,N,Arch> load_simd(native_noescape U const * p,simd_memory<A,Access> = {}) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure simd<T,N,Arch> load_simd(native_noescape U const * p,simd_memory<A,Access> = {}) noexcept {
     if constexpr (::native::simd_custom_element<T>) return simd<T,N,Arch>::template load_memory<A>(p);
     else if constexpr (::native::simd_custom_element<U>) return simd<U,N,Arch>::template load_memory<A>(p).to_native();
     else return ::NATIVE_BACKEND_NAMESPACE::simd_load_native<simd<float,N,Arch>,A>(p);
@@ -4663,7 +4663,7 @@ namespace native {
   template <::native::isa<> Arch, class T,std::size_t N,class U,std::size_t A=1,simd_access Access=simd_access::ordinary>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::same_as<U,float> || ::native::simd_custom_element<U>) &&
       (std::same_as<T,float> || ::native::simd_custom_element<T>)
-  native_nodiscard native_inline constexpr native_pure simd<T,N,Arch> load_simd_partial(native_noescape U const * p,std::size_t count,
+  [[nodiscard]] native_inline constexpr native_pure simd<T,N,Arch> load_simd_partial(native_noescape U const * p,std::size_t count,
       T fill=T{},simd_memory<A,Access> = {}) noexcept native_diagnose_if(count > N,"partial SIMD count exceeds the lane count") {
     std::array<U,N> temporary;temporary.fill(U(fill));
     for(std::size_t i=0;i<count;++i)temporary[i]=p[i];
@@ -4677,9 +4677,9 @@ namespace native {
     for(std::size_t i=0;i<count;++i)p[i]=temporary[i];
   }
   template <::native::isa<> Arch,class T,std::size_t N> requires NATIVE_ARCH_REQUIRES(Arch)
-  native_nodiscard native_inline constexpr native_pure auto load_simd(std::array<T,N> const & values) noexcept { return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T,N>(values.data()); }
+  [[nodiscard]] native_inline constexpr native_pure auto load_simd(std::array<T,N> const & values) noexcept { return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T,N>(values.data()); }
   template <::native::isa<> Arch,class T,std::size_t N> requires NATIVE_ARCH_REQUIRES(Arch) && (N!=std::dynamic_extent)
-  native_nodiscard native_inline constexpr native_pure auto load_simd(std::span<T,N> values) noexcept { return load_simd<Arch,std::remove_cv_t<T>,N>(values.data()); }
+  [[nodiscard]] native_inline constexpr native_pure auto load_simd(std::span<T,N> values) noexcept { return load_simd<Arch,std::remove_cv_t<T>,N>(values.data()); }
   }
 
 }
@@ -4699,14 +4699,14 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
     std::same_as<typename V::value_type,float> && ::NATIVE_BACKEND_NAMESPACE::float_shape<V::lanes> && (::native::abi_lookup<V::architecture,::native::detail::raw_kernel_policies>::index == NATIVE_RAW_TARGET);
   // Ordered comparison: second operand wins on equality or unordered, including
   // signed zero and NaNs, identically on each architecture.
-  template<float_register V> native_nodiscard native_inline constexpr V min(V a, V b) { return select(a < b, a, b); }
-  template<float_register V> native_nodiscard native_inline constexpr V max(V a, V b) { return select(a > b, a, b); }
-  template<float_register V> native_nodiscard native_inline native_pure float reduce_add(V v) {
+  template<float_register V> [[nodiscard]] native_inline constexpr V min(V a, V b) { return select(a < b, a, b); }
+  template<float_register V> [[nodiscard]] native_inline constexpr V max(V a, V b) { return select(a > b, a, b); }
+  template<float_register V> [[nodiscard]] native_inline native_pure float reduce_add(V v) {
     std::array<float, V::lanes> a; v.storeu(a.data()); float sum = 0;
     for (float x : a) sum += x; // Increasing lane order, FP32.
     return sum;
   }
-  template<float_register V> native_nodiscard native_inline V acos_scalar_lanes(V v) {
+  template<float_register V> [[nodiscard]] native_inline V acos_scalar_lanes(V v) {
     std::array<float, V::lanes> a; v.storeu(a.data());
     for (float & x : a) x = std::acos(x);
     return V::loadu(a.data());
@@ -4803,30 +4803,30 @@ namespace native {
     native_inline constexpr simd(std::array<T,N> const & values) noexcept : simd(load(values.data())) {}
 
     /// Return the native storage representation, including physical padding when present.
-    native_nodiscard native_inline constexpr native_type to_native() const noexcept { return value; }
+    [[nodiscard]] native_inline constexpr native_type to_native() const noexcept { return value; }
     /// Return the native storage value without a numerical conversion.
-    native_nodiscard native_inline constexpr operator native_type() const noexcept requires(!simd_mask_element<T>) { return value; }
+    [[nodiscard]] native_inline constexpr operator native_type() const noexcept requires(!simd_mask_element<T>) { return value; }
     /// Import native lanes, normalizing mask elements; other elements retain their bits. Clear physical padding.
-    native_nodiscard static native_inline constexpr simd from_native(native_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd from_native(native_type x) noexcept {
       if constexpr(simd_mask_element<T>) return from_storage(storage_type::from_native(__builtin_bit_cast(typename storage_type::native_type,x)));
       else return simd(x);
     }
     /// Adopt native bits and clear physical padding. If T is a mask element, every logical lane must already be canonical.
-    native_nodiscard static native_inline constexpr simd unsafe_from_native(native_type x) noexcept { return simd(x); }
+    [[nodiscard]] static native_inline constexpr simd unsafe_from_native(native_type x) noexcept { return simd(x); }
     /// Return the corresponding four-lane storage vector without changing logical lane bits.
-    native_nodiscard native_inline constexpr storage_type to_storage() const noexcept {
+    [[nodiscard]] native_inline constexpr storage_type to_storage() const noexcept {
       if constexpr(simd_mask_element<T>) return storage_type::unsafe_from_native(__builtin_bit_cast(typename storage_type::native_type,value));
       else return storage_type::from_native(__builtin_bit_cast(typename storage_type::native_type,value));
     }
     /// Copy the first N lanes from a four-lane storage value and clear physical padding.
-    native_nodiscard static native_inline constexpr simd from_storage(storage_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd from_storage(storage_type x) noexcept {
       return simd(__builtin_bit_cast(native_type,x.to_native()));
     }
     // The caller supplies exactly N logical lanes; alignment never grants a
     // readable fourth lane. Three-lane x86 transfers use native masked memory.
     /// Load exactly the logical lanes; the template alignment is a caller promise, never permission to read padding.
     template<std::size_t Alignment=1>
-    native_nodiscard static native_inline constexpr simd load_memory(T const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load_memory(T const * p) noexcept {
       if consteval {
         native_type words{};
         for (std::size_t i=0;i<N;++i) words[i]=::NATIVE_BACKEND_NAMESPACE::short_word(p[i]);
@@ -4895,15 +4895,15 @@ namespace native {
 #endif
     }
     /// Load exactly the logical lanes; no extra pointer alignment is required.
-    native_nodiscard static native_inline constexpr simd load(T const * p) noexcept { return load_memory(p); }
+    [[nodiscard]] static native_inline constexpr simd load(T const * p) noexcept { return load_memory(p); }
     /// Load exactly the logical lanes without an additional alignment requirement.
-    native_nodiscard static native_inline constexpr simd loadu(T const * p) noexcept { return load_memory(p); }
+    [[nodiscard]] static native_inline constexpr simd loadu(T const * p) noexcept { return load_memory(p); }
     /// Store exactly the logical lanes; no extra pointer alignment is required.
     native_inline constexpr void store(T * p) const noexcept { store_memory(p); }
     /// Store exactly the logical lanes without an additional alignment requirement.
     native_inline constexpr void storeu(T * p) const noexcept { store_memory(p); }
     /// Read exactly n logical lanes and fill the remainder; require n <= lanes. For n == 0, p may be null.
-    native_nodiscard static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill={}) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
+    [[nodiscard]] static native_inline constexpr simd load_partial(T const * p,std::size_t n,T fill={}) noexcept native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") {
       std::array<T,N> values;values.fill(fill);
       if consteval { for (std::size_t i=0;i<n;++i) values[i]=p[i]; }
       else { if(n) std::memcpy(values.data(),p,n*sizeof(T)); }
@@ -4916,106 +4916,106 @@ namespace native {
       else { if(n) std::memcpy(p,values.data(),n*sizeof(T)); }
     }
     /// Return the exact binary32 lane representations in the unsigned vector.
-    native_nodiscard native_inline constexpr bits_type bits() const noexcept requires std::same_as<T,float> {
+    [[nodiscard]] native_inline constexpr bits_type bits() const noexcept requires std::same_as<T,float> {
       return bits_type::from_storage(to_storage().bits());
     }
     /// Return the exact binary32 lane representations in the unsigned vector.
-    native_nodiscard native_inline constexpr bits_type to_bits() const noexcept requires std::same_as<T,float> { return bits(); }
+    [[nodiscard]] native_inline constexpr bits_type to_bits() const noexcept requires std::same_as<T,float> { return bits(); }
     /// Reinterpret binary32 words as lane values without normalization; a scalar word is broadcast.
-    native_nodiscard static native_inline constexpr simd from_bits(bits_type x) noexcept requires std::same_as<T,float> {
+    [[nodiscard]] static native_inline constexpr simd from_bits(bits_type x) noexcept requires std::same_as<T,float> {
       return from_storage(storage_type::from_bits(x.to_storage()));
     }
     /// Reinterpret binary32 words as lane values without normalization; a scalar word is broadcast.
-    native_nodiscard static native_inline constexpr simd from_bits(std::uint32_t x) noexcept requires std::same_as<T,float> { return from_bits(bits_type(x)); }
+    [[nodiscard]] static native_inline constexpr simd from_bits(std::uint32_t x) noexcept requires std::same_as<T,float> { return from_bits(bits_type(x)); }
     /// Broadcast the float value without adding an FTZ or other normalization policy.
-    native_nodiscard static native_inline constexpr simd from_float(float x) noexcept requires std::same_as<T,float> { return simd(x); }
+    [[nodiscard]] static native_inline constexpr simd from_float(float x) noexcept requires std::same_as<T,float> { return simd(x); }
     /// Adopt raw float storage without numerical conversion or normalization.
-    native_nodiscard static native_inline constexpr simd unsafe_from_float32(native_type x) noexcept requires std::same_as<T,float> { return simd(x); }
+    [[nodiscard]] static native_inline constexpr simd unsafe_from_float32(native_type x) noexcept requires std::same_as<T,float> { return simd(x); }
     /// Load exactly the logical count of binary32 words without normalizing their representations.
-    native_nodiscard static native_inline constexpr simd load_bits(std::uint32_t const * p) noexcept requires std::same_as<T,float> { return from_bits(bits_type::load(p)); }
+    [[nodiscard]] static native_inline constexpr simd load_bits(std::uint32_t const * p) noexcept requires std::same_as<T,float> { return from_bits(bits_type::load(p)); }
     /// Store the exact binary32 words for every logical lane.
     native_inline constexpr void store_bits(std::uint32_t * p) const noexcept requires std::same_as<T,float> { bits().store(p); }
     /// Read n representation words and fill the remaining logical lanes; require n <= lanes. A zero count permits null.
-    native_nodiscard static native_inline constexpr simd load_bits_partial(std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept requires std::same_as<T,float> native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
+    [[nodiscard]] static native_inline constexpr simd load_bits_partial(std::uint32_t const * p,std::size_t n,std::uint32_t fill=0) noexcept requires std::same_as<T,float> native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { return from_bits(bits_type::load_partial(p,n,fill)); }
     /// Write n exact representation words; require n <= lanes. A zero count permits null.
     native_inline constexpr void store_bits_partial(std::uint32_t * p,std::size_t n) const noexcept requires std::same_as<T,float> native_diagnose_if(n > simd::lanes,"partial SIMD count exceeds the lane count") { bits().store_partial(p,n); }
     /// Import lane i from bit i, clearing bits above the logical lane count.
-    native_nodiscard static native_inline constexpr simd from_bitset(std::uint64_t bits) noexcept requires simd_mask_element<T> { return from_storage(storage_type::from_bitset(bits&lane_mask)); }
+    [[nodiscard]] static native_inline constexpr simd from_bitset(std::uint64_t bits) noexcept requires simd_mask_element<T> { return from_storage(storage_type::from_bitset(bits&lane_mask)); }
     /// Pack each logical lane truth value into bit i; higher bits are zero.
-    native_nodiscard native_inline constexpr std::uint64_t to_bitset() const noexcept requires simd_mask_element<T> { return to_storage().to_bitset()&lane_mask; }
+    [[nodiscard]] native_inline constexpr std::uint64_t to_bitset() const noexcept requires simd_mask_element<T> { return to_storage().to_bitset()&lane_mask; }
     /// Return true when at least one logical lane is true.
-    native_nodiscard friend native_inline constexpr bool any(simd x) noexcept requires simd_mask_element<T> { return x.to_bitset()!=0; }
+    [[nodiscard]] friend native_inline constexpr bool any(simd x) noexcept requires simd_mask_element<T> { return x.to_bitset()!=0; }
     /// Return true exactly when every logical lane is true.
-    native_nodiscard friend native_inline constexpr bool all(simd x) noexcept requires simd_mask_element<T> { return x.to_bitset()==lane_mask; }
+    [[nodiscard]] friend native_inline constexpr bool all(simd x) noexcept requires simd_mask_element<T> { return x.to_bitset()==lane_mask; }
     /// Return true exactly when no logical lane is true.
-    native_nodiscard friend native_inline constexpr bool none(simd x) noexcept requires simd_mask_element<T> { return !any(x); }
+    [[nodiscard]] friend native_inline constexpr bool none(simd x) noexcept requires simd_mask_element<T> { return !any(x); }
 
     /// Add corresponding logical lanes using the full-register operation.
     /// Integer results wrap at the lane width; floating results follow the caller's environment.
-    native_nodiscard friend native_inline constexpr simd operator+(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return clean(a.to_storage()+b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator+(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return clean(a.to_storage()+b.to_storage()); }
     /// Subtract corresponding logical lanes using the full-register operation.
     /// Integer results wrap at the lane width; floating results follow the caller's environment.
-    native_nodiscard friend native_inline constexpr simd operator-(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return clean(a.to_storage()-b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator-(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return clean(a.to_storage()-b.to_storage()); }
     /// Multiply corresponding logical lanes using the full-register operation.
     /// Integer results wrap at the lane width; floating results follow the caller's environment.
-    native_nodiscard friend native_inline constexpr simd operator*(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return clean(a.to_storage()*b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator*(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return clean(a.to_storage()*b.to_storage()); }
     /// Divide corresponding logical lanes using the full-register operation.
     /// Inactive denominator lanes are set to one so padding does not introduce division by zero.
-    native_nodiscard friend native_inline constexpr simd operator/(simd a,simd b) noexcept requires std::same_as<T,float> {
+    [[nodiscard]] friend native_inline constexpr simd operator/(simd a,simd b) noexcept requires std::same_as<T,float> {
       auto padded=__builtin_shufflevector(b.value,native_type{1.f,1.f,1.f,1.f},0,1,N==3?2:4,4);
       auto divisor=storage_type::from_native(__builtin_bit_cast(typename storage_type::native_type,padded));
       return clean(a.to_storage()/divisor);
     }
     /// Negate every logical lane; floating-point lanes change sign.
-    native_nodiscard friend native_inline constexpr simd operator-(simd a) noexcept requires(!simd_mask_element<T>) { return from_storage(-a.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator-(simd a) noexcept requires(!simd_mask_element<T>) { return from_storage(-a.to_storage()); }
     /// Bitwise AND of corresponding lane representations.
-    native_nodiscard friend native_inline constexpr simd operator&(simd a,simd b) noexcept requires(!std::same_as<T,float>) { return from_storage(a.to_storage()&b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator&(simd a,simd b) noexcept requires(!std::same_as<T,float>) { return from_storage(a.to_storage()&b.to_storage()); }
     /// Bitwise OR of corresponding lane representations.
-    native_nodiscard friend native_inline constexpr simd operator|(simd a,simd b) noexcept requires(!std::same_as<T,float>) { return from_storage(a.to_storage()|b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator|(simd a,simd b) noexcept requires(!std::same_as<T,float>) { return from_storage(a.to_storage()|b.to_storage()); }
     /// Bitwise XOR of corresponding lane representations.
-    native_nodiscard friend native_inline constexpr simd operator^(simd a,simd b) noexcept requires(!std::same_as<T,float>) { return from_storage(a.to_storage()^b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator^(simd a,simd b) noexcept requires(!std::same_as<T,float>) { return from_storage(a.to_storage()^b.to_storage()); }
     /// Complement every bit in every lane.
-    native_nodiscard friend native_inline constexpr simd operator~(simd a) noexcept requires(!std::same_as<T,float>) { return from_storage(~a.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr simd operator~(simd a) noexcept requires(!std::same_as<T,float>) { return from_storage(~a.to_storage()); }
     /// Return the lane-wise logical complement, retaining this mask type.
-    native_nodiscard friend native_inline constexpr simd operator!(simd a) noexcept requires simd_mask_element<T> { return ~a; }
+    [[nodiscard]] friend native_inline constexpr simd operator!(simd a) noexcept requires simd_mask_element<T> { return ~a; }
     /// Return a mask whose lanes are true where `a == b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator==(simd a,simd b) noexcept { return comparison(a.to_storage()==b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator==(simd a,simd b) noexcept { return comparison(a.to_storage()==b.to_storage()); }
     /// Return a mask whose lanes are true where `a != b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator!=(simd a,simd b) noexcept { return ~(a==b); }
     /// Return a mask whose lanes are true where `a < b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator<(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()<b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator<(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()<b.to_storage()); }
     /// Return a mask whose lanes are true where `a > b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator>(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()>b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator>(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()>b.to_storage()); }
     /// Return a mask whose lanes are true where `a <= b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()<=b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator<=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()<=b.to_storage()); }
     /// Return a mask whose lanes are true where `a >= b` holds.
-    native_nodiscard friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()>=b.to_storage()); }
+    [[nodiscard]] friend native_inline constexpr mask_type operator>=(simd a,simd b) noexcept requires(!simd_mask_element<T>) { return comparison(a.to_storage()>=b.to_storage()); }
     /// Choose a in true mask lanes and b in false lanes; both values are already evaluated.
     template<class M> requires(std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
-    native_nodiscard friend native_inline constexpr simd select(M mask,simd a,simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd select(M mask,simd a,simd b) noexcept {
       using FM=typename storage_type::mask_type;
       return clean(select(FM::from_bitset(mask.to_bitset()),a.to_storage(),b.to_storage()));
     }
     /// Compute a*b+c with one fused rounding per logical lane in the caller's floating-point environment.
-    native_nodiscard friend native_inline constexpr simd fma(simd a,simd b,simd c) noexcept requires std::same_as<T,float> { return clean(fma(a.to_storage(),b.to_storage(),c.to_storage())); }
+    [[nodiscard]] friend native_inline constexpr simd fma(simd a,simd b,simd c) noexcept requires std::same_as<T,float> { return clean(fma(a.to_storage(),b.to_storage(),c.to_storage())); }
     /// Compute the native square root of each logical lane in the caller's floating-point environment.
-    native_nodiscard friend native_inline constexpr simd sqrt(simd a) noexcept requires std::same_as<T,float> { return clean(sqrt(a.to_storage())); }
+    [[nodiscard]] friend native_inline constexpr simd sqrt(simd a) noexcept requires std::same_as<T,float> { return clean(sqrt(a.to_storage())); }
     /// Round each logical lane to an integral value, ties to even, independently of the ambient rounding direction.
-    native_nodiscard friend native_inline constexpr simd round_even(simd a) noexcept requires std::same_as<T,float> { return clean(round_even(a.to_storage())); }
+    [[nodiscard]] friend native_inline constexpr simd round_even(simd a) noexcept requires std::same_as<T,float> { return clean(round_even(a.to_storage())); }
     /// Construct normal powers of two; require each input to be an integral exponent in [-126,127].
-    native_nodiscard friend native_inline constexpr simd normal_pow2(simd a) noexcept requires std::same_as<T,float> { return from_storage(normal_pow2(a.to_storage())); }
+    [[nodiscard]] friend native_inline constexpr simd normal_pow2(simd a) noexcept requires std::same_as<T,float> { return from_storage(normal_pow2(a.to_storage())); }
     /// Shift every lane left by K bits, discarding high bits. Require K smaller than the lane bit width.
     template<std::size_t K> requires(K<32)
-    native_nodiscard friend native_inline constexpr simd operator<<(simd a,imm_t<K>) noexcept requires simd_integer_element<T> { return from_storage(a.to_storage()<<imm<K>); }
+    [[nodiscard]] friend native_inline constexpr simd operator<<(simd a,imm_t<K>) noexcept requires simd_integer_element<T> { return from_storage(a.to_storage()<<imm<K>); }
     /// Shift every lane right by K; signed lanes extend the sign, unsigned lanes shift in zero. Require K smaller than the lane bit width.
     template<std::size_t K> requires(K<32)
-    native_nodiscard friend native_inline constexpr simd operator>>(simd a,imm_t<K>) noexcept requires simd_integer_element<T> { return from_storage(a.to_storage()>>imm<K>); }
+    [[nodiscard]] friend native_inline constexpr simd operator>>(simd a,imm_t<K>) noexcept requires simd_integer_element<T> { return from_storage(a.to_storage()>>imm<K>); }
     /// Shift each lane left by compile-time K, discarding high bits; require K below the lane bit width.
     template<unsigned K> requires(K<32) && simd_integer_element<T>
-    native_nodiscard native_inline constexpr simd left() const noexcept { return *this<<imm<K>; }
+    [[nodiscard]] native_inline constexpr simd left() const noexcept { return *this<<imm<K>; }
     /// Shift each lane right by compile-time K; signed lanes extend their sign. Require K below the lane bit width.
     template<unsigned K> requires(K<32) && simd_integer_element<T>
-    native_nodiscard native_inline constexpr simd right() const noexcept { return *this>>imm<K>; }
+    [[nodiscard]] native_inline constexpr simd right() const noexcept { return *this>>imm<K>; }
     // Match native integer registers: division and run-time shifts are absent.
     /// Reject runtime shift counts; use a compile-time imm<K> within the lane width.
     friend simd operator<<(simd,simd) requires simd_integer_element<T> = delete;
@@ -5054,8 +5054,8 @@ namespace native {
   private:
     struct unchecked {};
     native_inline constexpr simd(unchecked,native_type x) noexcept : value(x) {}
-    native_nodiscard static native_inline constexpr simd clean(storage_type x) noexcept { return simd(unchecked{},__builtin_bit_cast(native_type,x.to_native())); }
-    template<class M> native_nodiscard static native_inline constexpr mask_type comparison(M x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd clean(storage_type x) noexcept { return simd(unchecked{},__builtin_bit_cast(native_type,x.to_native())); }
+    template<class M> [[nodiscard]] static native_inline constexpr mask_type comparison(M x) noexcept {
       if constexpr(mask_type::compact) return mask_type::from_native(x.to_native());
       else return mask_type::from_storage(x);
     }
@@ -5064,22 +5064,22 @@ namespace native {
   /// Choose each bit from a where the corresponding mask bit is one, otherwise from b; arbitrary bit masks are permitted.
   template<simd_integer_element T,std::size_t N,::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4)
-  native_nodiscard native_inline constexpr simd<T,N,Arch> bit_select(simd<T,N,Arch> bits,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return (bits&a)|(~bits&b); }
+  [[nodiscard]] native_inline constexpr simd<T,N,Arch> bit_select(simd<T,N,Arch> bits,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return (bits&a)|(~bits&b); }
   /// Add matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
   template<simd_integer_element T,std::size_t N,::native::isa<> Arch,class M>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename simd<T,N,Arch>::mask> || std::same_as<M,simd<mask32,N,Arch>>)
-  native_nodiscard native_inline constexpr simd<T,N,Arch> masked_add(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a+b,prior); }
+  [[nodiscard]] native_inline constexpr simd<T,N,Arch> masked_add(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a+b,prior); }
   /// Subtract matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
   template<simd_integer_element T,std::size_t N,::native::isa<> Arch,class M>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename simd<T,N,Arch>::mask> || std::same_as<M,simd<mask32,N,Arch>>)
-  native_nodiscard native_inline constexpr simd<T,N,Arch> masked_sub(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a-b,prior); }
+  [[nodiscard]] native_inline constexpr simd<T,N,Arch> masked_sub(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a-b,prior); }
   /// Multiply matching integer lanes, retaining prior in inactive mask lanes; arithmetic wraps at the lane width.
   template<simd_integer_element T,std::size_t N,::native::isa<> Arch,class M>
     requires NATIVE_ARCH_REQUIRES(Arch) &&(N==2 || N==3) && (sizeof(T)==4) &&
       (std::same_as<M,typename simd<T,N,Arch>::mask> || std::same_as<M,simd<mask32,N,Arch>>)
-  native_nodiscard native_inline constexpr simd<T,N,Arch> masked_mul(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a*b,prior); }
+  [[nodiscard]] native_inline constexpr simd<T,N,Arch> masked_mul(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a*b,prior); }
 }
 
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
@@ -5139,13 +5139,13 @@ namespace native {
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr simd<float,N,Arch> floor(simd<float,N,Arch> x) noexcept {
+  [[nodiscard]] native_inline constexpr simd<float,N,Arch> floor(simd<float,N,Arch> x) noexcept {
     return detail::NATIVE_BACKEND::round_integral<detail::NATIVE_BACKEND::rounding_direction::down>(x);
   }
   /// \ingroup vector_math
   /// Apply floor to each register in an array; an empty array performs no lane work.
   template<std::size_t N,std::size_t M, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr std::array<simd<float,N,Arch>,M> floor(std::array<simd<float,N,Arch>,M> const & input) noexcept {
+  [[nodiscard]] native_inline constexpr std::array<simd<float,N,Arch>,M> floor(std::array<simd<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{floor(x)...}};
   }
@@ -5155,13 +5155,13 @@ namespace native {
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr simd<float,N,Arch> ceil(simd<float,N,Arch> x) noexcept {
+  [[nodiscard]] native_inline constexpr simd<float,N,Arch> ceil(simd<float,N,Arch> x) noexcept {
     return detail::NATIVE_BACKEND::round_integral<detail::NATIVE_BACKEND::rounding_direction::up>(x);
   }
   /// \ingroup vector_math
   /// Apply ceil to each register in an array; an empty array performs no lane work.
   template<std::size_t N,std::size_t M, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr std::array<simd<float,N,Arch>,M> ceil(std::array<simd<float,N,Arch>,M> const & input) noexcept {
+  [[nodiscard]] native_inline constexpr std::array<simd<float,N,Arch>,M> ceil(std::array<simd<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{ceil(x)...}};
   }
@@ -5171,13 +5171,13 @@ namespace native {
   /// handling still follows the CPU environment. No NaN payload or FP-status promise is added.
   /// \snippet api.cc rounding
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr simd<float,N,Arch> trunc(simd<float,N,Arch> x) noexcept {
+  [[nodiscard]] native_inline constexpr simd<float,N,Arch> trunc(simd<float,N,Arch> x) noexcept {
     return detail::NATIVE_BACKEND::round_integral<detail::NATIVE_BACKEND::rounding_direction::zero>(x);
   }
   /// \ingroup vector_math
   /// Apply trunc to each register in an array; an empty array performs no lane work.
   template<std::size_t N,std::size_t M, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr std::array<simd<float,N,Arch>,M> trunc(std::array<simd<float,N,Arch>,M> const & input) noexcept {
+  [[nodiscard]] native_inline constexpr std::array<simd<float,N,Arch>,M> trunc(std::array<simd<float,N,Arch>,M> const & input) noexcept {
     auto const & [...x] = input;
     return {{trunc(x)...}};
   }
@@ -5310,7 +5310,7 @@ namespace native {
   template<class T, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr compaction_result<simd<T,N,Arch>> compress(
+  [[nodiscard]] native_inline constexpr compaction_result<simd<T,N,Arch>> compress(
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> value, T fill = T{}) noexcept {
     if consteval {
       std::array<T,N> input{},output{}; value.store(input.data()); output.fill(fill);
@@ -5332,7 +5332,7 @@ namespace native {
   template<class T, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&
     (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>) &&
     ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
-  native_nodiscard native_inline constexpr simd<T,N,Arch> expand(
+  [[nodiscard]] native_inline constexpr simd<T,N,Arch> expand(
       typename simd<T,N,Arch>::mask mask, simd<T,N,Arch> packed,
       simd<T,N,Arch> prior) noexcept {
     if consteval {
@@ -5462,19 +5462,19 @@ namespace native {
       : simd(from_bitset(x ? ~std::uint64_t{} : 0)) {}
 
     /// Return the implementation register without changing its bits.
-    native_inline constexpr native_type to_native() const noexcept {
+    [[nodiscard]] native_inline constexpr native_type to_native() const noexcept {
       return value_;
     }
 
     /// Adopt implementation bits; mask callers must supply canonical lanes.
-    static native_inline constexpr simd unsafe_from_native(native_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd unsafe_from_native(native_type x) noexcept {
       simd r;
       r.value_ = x;
       return r;
     }
 
     /// Adopt implementation storage; mask specializations normalize nonzero lanes.
-    static native_inline constexpr simd from_native(native_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd from_native(native_type x) noexcept {
       if consteval {
         auto words = __builtin_bit_cast(std::array<U, N>, x);
         for (auto & w : words) {
@@ -5495,7 +5495,7 @@ namespace native {
     }
 
     /// Expand low scalar bits to canonical mask lanes, ignoring excess bits.
-    static native_inline constexpr simd from_bitset(std::uint64_t bits) noexcept {
+    [[nodiscard]] static native_inline constexpr simd from_bitset(std::uint64_t bits) noexcept {
       std::array<U, N> a{};
       for (std::size_t i = 0; i < N; ++i) {
         a[i] = ((bits >> i) & 1) ? U(~U(0)) : U(0);
@@ -5504,7 +5504,7 @@ namespace native {
     }
 
     /// Gather lane truth values into low scalar bits.
-    native_inline constexpr std::uint64_t to_bitset() const noexcept {
+    [[nodiscard]] native_inline constexpr std::uint64_t to_bitset() const noexcept {
       if consteval {
         auto a = __builtin_bit_cast(std::array<U, N>, value_);
         std::uint64_t r = 0;
@@ -5526,12 +5526,12 @@ namespace native {
     }
 
     /// Return the compact lane truth bitset.
-    native_inline constexpr std::uint64_t bits() const noexcept {
+    [[nodiscard]] native_inline constexpr std::uint64_t bits() const noexcept {
       return to_bitset();
     }
 
     /// Read exactly N canonical mask lane objects.
-    static native_inline constexpr simd load(value_type const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load(value_type const * p) noexcept {
       std::array<U, N> a{};
       for (std::size_t i = 0; i < N; ++i) {
         a[i] = p[i].to_bits();
@@ -5549,7 +5549,7 @@ namespace native {
 
     /// Load all lanes; Align is the caller-provided pointer alignment.
     template<std::size_t Align>
-    static native_inline constexpr simd load_memory(value_type const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load_memory(value_type const * p) noexcept {
       return load(p);
     }
 
@@ -5560,7 +5560,7 @@ namespace native {
     }
 
     /// Test whether at least one lane is true.
-    friend native_inline constexpr bool any(simd v) noexcept {
+    [[nodiscard]] friend native_inline constexpr bool any(simd v) noexcept {
       if consteval {
         return v.to_bitset() != 0;
       } else {
@@ -5569,7 +5569,7 @@ namespace native {
     }
 
     /// Test whether every lane is true.
-    friend native_inline constexpr bool all(simd v) noexcept {
+    [[nodiscard]] friend native_inline constexpr bool all(simd v) noexcept {
       if consteval {
         return v.to_bitset() == ((std::uint64_t{1} << N) - 1);
       } else {
@@ -5586,12 +5586,12 @@ namespace native {
     }
 
     /// Test whether no lane is true.
-    friend native_inline constexpr bool none(simd v) noexcept {
+    [[nodiscard]] friend native_inline constexpr bool none(simd v) noexcept {
       return !any(v);
     }
 
     /// Intersect representation bits.
-    friend native_inline constexpr simd operator&(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator&(simd a, simd b) noexcept {
       if consteval {
         return from_bitset(a.to_bitset() & b.to_bitset());
       } else {
@@ -5605,7 +5605,7 @@ namespace native {
     }
 
     /// Unite representation bits.
-    friend native_inline constexpr simd operator|(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator|(simd a, simd b) noexcept {
       if consteval {
         return from_bitset(a.to_bitset() | b.to_bitset());
       } else {
@@ -5619,7 +5619,7 @@ namespace native {
     }
 
     /// Exclusive-or representation bits.
-    friend native_inline constexpr simd operator^(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator^(simd a, simd b) noexcept {
       if consteval {
         return from_bitset(a.to_bitset() ^ b.to_bitset());
       } else {
@@ -5633,7 +5633,7 @@ namespace native {
     }
 
     /// Complement every representation bit (or lane truth for masks).
-    friend native_inline constexpr simd operator~(simd a) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator~(simd a) noexcept {
       if consteval {
         return from_bitset(~a.to_bitset());
       } else {
@@ -5642,22 +5642,22 @@ namespace native {
     }
 
     /// Complement every mask lane.
-    friend native_inline constexpr simd operator!(simd a) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator!(simd a) noexcept {
       return ~a;
     }
 
     /// Compare lane equality and return canonical mask lanes.
-    friend native_inline constexpr simd operator==(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator==(simd a, simd b) noexcept {
       return ~(a ^ b);
     }
 
     /// Compare lane inequality and return canonical mask lanes.
-    friend native_inline constexpr simd operator!=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator!=(simd a, simd b) noexcept {
       return a ^ b;
     }
 
     /// Choose mask lanes from a where m is true, otherwise from b.
-    friend native_inline constexpr simd select(simd m, simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd select(simd m, simd a, simd b) noexcept {
       return (m & a) | (~m & b);
     }
   };
@@ -5743,24 +5743,24 @@ namespace native {
     native_inline constexpr simd(U... x) noexcept : simd(std::array<T, N>{static_cast<T>(x)...}) {}
 
     /// Return the implementation register without changing its bits.
-    native_inline constexpr native_type to_native() const noexcept {
+    [[nodiscard]] native_inline constexpr native_type to_native() const noexcept {
       return value_;
     }
 
     /// Adopt implementation storage; mask specializations normalize nonzero lanes.
-    static native_inline constexpr simd from_native(native_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd from_native(native_type x) noexcept {
       simd r;
       r.value_ = x;
       return r;
     }
 
     /// Adopt implementation bits; mask callers must supply canonical lanes.
-    static native_inline constexpr simd unsafe_from_native(native_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd unsafe_from_native(native_type x) noexcept {
       return from_native(x);
     }
 
     /// Load exactly 16 unaligned bytes as N element objects.
-    static native_inline constexpr simd load(T const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load(T const * p) noexcept {
       if consteval {
         std::array<T, N> a{};
         for (std::size_t i = 0; i < N; ++i) {
@@ -5786,7 +5786,7 @@ namespace native {
 
     /// Load all lanes; Align is the caller-provided pointer alignment.
     template<std::size_t Align>
-    static native_inline constexpr simd load_memory(T const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load_memory(T const * p) noexcept {
       if consteval {
         return load(p);
       } else {
@@ -5805,7 +5805,7 @@ namespace native {
     }
 
     /// Read n lanes and fill the rest; require n <= N. Null is valid when n is zero.
-    static native_inline constexpr simd load_partial(T const * p, std::size_t n,
+    [[nodiscard]] static native_inline constexpr simd load_partial(T const * p, std::size_t n,
                                                      T fill = {}) noexcept {
       std::array<T, N> a{};
       a.fill(fill);
@@ -5824,7 +5824,7 @@ namespace native {
     }
 
     /// Load lane representations from corresponding unsigned words.
-    static native_inline constexpr simd load_bits(word_type const * p) noexcept {
+    [[nodiscard]] static native_inline constexpr simd load_bits(word_type const * p) noexcept {
       return from_native(bits_type::load(p).to_native());
     }
 
@@ -5834,19 +5834,19 @@ namespace native {
     }
 
     /// Reinterpret each lane as an unsigned word of the same width.
-    native_inline constexpr bits_type bits() const noexcept {
+    [[nodiscard]] native_inline constexpr bits_type bits() const noexcept {
       return bits_type::from_native(value_);
     }
 
     /// Adopt unsigned lane representations without numerical conversion.
-    static native_inline constexpr simd from_bits(bits_type x) noexcept {
+    [[nodiscard]] static native_inline constexpr simd from_bits(bits_type x) noexcept {
       return from_native(x.to_native());
     }
 
     /// Extract the compile-time-selected lane as its scalar element type.
     template<std::size_t I>
     requires(I < N)
-    native_inline constexpr T get() const noexcept {
+    [[nodiscard]] native_inline constexpr T get() const noexcept {
       if consteval {
         return __builtin_bit_cast(std::array<T, N>, value_)[I];
       } else {
@@ -5877,7 +5877,7 @@ namespace native {
     /// Replace one compile-time-selected lane and preserve every other lane.
     template<std::size_t I>
     requires(I < N)
-    native_inline constexpr simd replace(T x) const noexcept {
+    [[nodiscard]] native_inline constexpr simd replace(T x) const noexcept {
       if consteval {
         auto a = __builtin_bit_cast(std::array<T, N>, value_);
         a[I] = x;
@@ -5908,7 +5908,7 @@ namespace native {
     }
 
     /// Add lanes; integer results wrap and floating results round to nearest-even.
-    friend native_inline constexpr simd operator+(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator+(simd a, simd b) noexcept {
       if consteval {
         return detail::wasm_map(
           [](T x, T y) {
@@ -5953,7 +5953,7 @@ namespace native {
     }
 
     /// Subtract or negate lanes; integer results wrap and floating signs are preserved.
-    friend native_inline constexpr simd operator-(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator-(simd a, simd b) noexcept {
       if consteval {
         return detail::wasm_map(
           [](T x, T y) {
@@ -5998,7 +5998,7 @@ namespace native {
     }
 
     /// Multiply lanes; integer results wrap and floating results round to nearest-even.
-    friend native_inline constexpr simd operator*(simd a, simd b) noexcept
+    [[nodiscard]] friend native_inline constexpr simd operator*(simd a, simd b) noexcept
     requires(sizeof(T) > 1)
     {
       if consteval {
@@ -6043,7 +6043,7 @@ namespace native {
     }
 
     /// Divide floating lanes with WebAssembly IEEE semantics.
-    friend native_inline constexpr simd operator/(simd a, simd b) noexcept
+    [[nodiscard]] friend native_inline constexpr simd operator/(simd a, simd b) noexcept
     requires std::is_floating_point_v<T>
     {
       if consteval {
@@ -6071,7 +6071,7 @@ namespace native {
     }
 
     /// Intersect representation bits.
-    friend native_inline constexpr simd operator&(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator&(simd a, simd b) noexcept {
       if consteval {
         auto x = __builtin_bit_cast(std::array<word_type, N>, a.value_);
         auto y = __builtin_bit_cast(std::array<word_type, N>, b.value_);
@@ -6090,7 +6090,7 @@ namespace native {
     }
 
     /// Unite representation bits.
-    friend native_inline constexpr simd operator|(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator|(simd a, simd b) noexcept {
       if consteval {
         auto x = __builtin_bit_cast(std::array<word_type, N>, a.value_);
         auto y = __builtin_bit_cast(std::array<word_type, N>, b.value_);
@@ -6109,7 +6109,7 @@ namespace native {
     }
 
     /// Exclusive-or representation bits.
-    friend native_inline constexpr simd operator^(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator^(simd a, simd b) noexcept {
       if consteval {
         auto x = __builtin_bit_cast(std::array<word_type, N>, a.value_);
         auto y = __builtin_bit_cast(std::array<word_type, N>, b.value_);
@@ -6128,7 +6128,7 @@ namespace native {
     }
 
     /// Complement every representation bit (or lane truth for masks).
-    friend native_inline constexpr simd operator~(simd a) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator~(simd a) noexcept {
       if consteval {
         auto x = __builtin_bit_cast(std::array<word_type, N>, a.value_);
         for (auto & w : x) {
@@ -6141,7 +6141,7 @@ namespace native {
     }
 
     /// Subtract or negate lanes; integer results wrap and floating signs are preserved.
-    friend native_inline constexpr simd operator-(simd a) noexcept {
+    [[nodiscard]] friend native_inline constexpr simd operator-(simd a) noexcept {
       if consteval {
         auto x = __builtin_bit_cast(std::array<word_type, N>, a.value_);
         for (auto & w : x) {
@@ -6178,7 +6178,7 @@ namespace native {
     }
 
     /// Compare lane equality and return canonical mask lanes.
-    friend native_inline constexpr mask_type operator==(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator==(simd a, simd b) noexcept {
       if consteval {
         auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
         std::uint64_t bits = 0;
@@ -6212,7 +6212,7 @@ namespace native {
     }
 
     /// Compare lane inequality and return canonical mask lanes.
-    friend native_inline constexpr mask_type operator!=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator!=(simd a, simd b) noexcept {
       if consteval {
         auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
         std::uint64_t bits = 0;
@@ -6246,7 +6246,7 @@ namespace native {
     }
 
     /// Compare lanes using their signedness; unordered floating lanes are false.
-    friend native_inline constexpr mask_type operator<(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator<(simd a, simd b) noexcept {
       if consteval {
         auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
         std::uint64_t bits = 0;
@@ -6282,7 +6282,7 @@ namespace native {
     }
 
     /// Compare lanes using their signedness; unordered floating lanes are false.
-    friend native_inline constexpr mask_type operator<=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator<=(simd a, simd b) noexcept {
       if consteval {
         auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
         std::uint64_t bits = 0;
@@ -6318,7 +6318,7 @@ namespace native {
     }
 
     /// Compare lanes using their signedness; unordered floating lanes are false.
-    friend native_inline constexpr mask_type operator>(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator>(simd a, simd b) noexcept {
       if consteval {
         auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
         std::uint64_t bits = 0;
@@ -6354,7 +6354,7 @@ namespace native {
     }
 
     /// Compare lanes using their signedness; unordered floating lanes are false.
-    friend native_inline constexpr mask_type operator>=(simd a, simd b) noexcept {
+    [[nodiscard]] friend native_inline constexpr mask_type operator>=(simd a, simd b) noexcept {
       if consteval {
         auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
         std::uint64_t bits = 0;
@@ -6390,7 +6390,7 @@ namespace native {
     }
 
     /// WebAssembly shifts reduce the count modulo the lane width.
-    native_inline constexpr simd left(unsigned count) const noexcept
+    [[nodiscard]] native_inline constexpr simd left(unsigned count) const noexcept
     requires simd_integer_element<T>
     {
       count %= sizeof(T) * 8;
@@ -6421,14 +6421,14 @@ namespace native {
 
     /// Shift lanes left by K modulo the lane width.
     template<std::size_t K>
-    native_inline constexpr simd left() const noexcept
+    [[nodiscard]] native_inline constexpr simd left() const noexcept
     requires simd_integer_element<T>
     {
       return left(K);
     }
 
     /// Shift integer lanes left, reducing the count modulo the lane width.
-    friend native_inline constexpr simd operator<<(simd a, unsigned n) noexcept
+    [[nodiscard]] friend native_inline constexpr simd operator<<(simd a, unsigned n) noexcept
     requires simd_integer_element<T>
     {
       return a.left(n);
@@ -6436,14 +6436,14 @@ namespace native {
 
     /// Shift integer lanes left, reducing the count modulo the lane width.
     template<std::size_t K>
-    friend native_inline constexpr simd operator<<(simd a, imm_t<K>) noexcept
+    [[nodiscard]] friend native_inline constexpr simd operator<<(simd a, imm_t<K>) noexcept
     requires simd_integer_element<T>
     {
       return a.left(K);
     }
 
     /// WebAssembly shifts reduce the count modulo the lane width.
-    native_inline constexpr simd right(unsigned count) const noexcept
+    [[nodiscard]] native_inline constexpr simd right(unsigned count) const noexcept
     requires simd_integer_element<T>
     {
       count %= sizeof(T) * 8;
@@ -6472,14 +6472,14 @@ namespace native {
 
     /// Shift lanes right by K modulo the lane width.
     template<std::size_t K>
-    native_inline constexpr simd right() const noexcept
+    [[nodiscard]] native_inline constexpr simd right() const noexcept
     requires simd_integer_element<T>
     {
       return right(K);
     }
 
     /// Shift integer lanes right, extending signed lanes and reducing the count modulo their width.
-    friend native_inline constexpr simd operator>>(simd a, unsigned n) noexcept
+    [[nodiscard]] friend native_inline constexpr simd operator>>(simd a, unsigned n) noexcept
     requires simd_integer_element<T>
     {
       return a.right(n);
@@ -6487,7 +6487,7 @@ namespace native {
 
     /// Shift integer lanes right, extending signed lanes and reducing the count modulo their width.
     template<std::size_t K>
-    friend native_inline constexpr simd operator>>(simd a, imm_t<K>) noexcept
+    [[nodiscard]] friend native_inline constexpr simd operator>>(simd a, imm_t<K>) noexcept
     requires simd_integer_element<T>
     {
       return a.right(K);
@@ -6497,7 +6497,7 @@ namespace native {
   /// Select full lanes from a where m is true, otherwise from b.
   template<detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> select(typename simd<T, N, A>::mask_type m, simd<T, N, A> a,
+  [[nodiscard]] native_inline constexpr simd<T, N, A> select(typename simd<T, N, A>::mask_type m, simd<T, N, A> a,
                                                simd<T, N, A> b) noexcept {
     if consteval {
       auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
@@ -6517,7 +6517,7 @@ namespace native {
   /// Select individual representation bits using the unsigned mask words.
   template<detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> bit_select(simd<detail::wasm_word<T>, N, A> m,
+  [[nodiscard]] native_inline constexpr simd<T, N, A> bit_select(simd<detail::wasm_word<T>, N, A> m,
                                                    simd<T, N, A> a, simd<T, N, A> b) noexcept {
     return simd<T, N, A>::from_bits((m & a.bits()) | (~m & b.bits()));
   }
@@ -6526,14 +6526,14 @@ namespace native {
   template<class To, class U, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(U) * N == 16) && (sizeof(To) == sizeof(U)) &&
           simd_integer_element<To>
-  native_inline constexpr simd<To, N, A> mask_bits(simd<mask_lane<U>, N, A> m) noexcept {
+  [[nodiscard]] native_inline constexpr simd<To, N, A> mask_bits(simd<mask_lane<U>, N, A> m) noexcept {
     return simd<To, N, A>::from_native(m.to_native());
   }
 
   /// Broadcast one compile-time-selected lane.
   template<std::size_t I, detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16) && (I < N)
-  native_inline constexpr simd<T, N, A> broadcast(simd<T, N, A> v, imm_t<I>) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> broadcast(simd<T, N, A> v, imm_t<I>) noexcept {
     return simd<T, N, A>(v.template get<I>());
   }
 
@@ -6541,7 +6541,7 @@ namespace native {
   template<std::size_t... I, detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16) && (sizeof...(I) == N) &&
           ((I < 2 * N) && ...)
-  native_inline constexpr simd<T, N, A> shuffle(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> shuffle(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     if consteval {
       auto x = detail::wasm_lanes(a), y = detail::wasm_lanes(b);
       std::array<T, N> r{(I < N ? x[I] : y[I - N])...};
@@ -6557,7 +6557,7 @@ namespace native {
   /// Look up byte indices 0..15; every other index produces zero.
   template<isa<> A>
   requires(A.has(wasm_feature::simd128))
-  native_inline constexpr simd<std::uint8_t, 16, A>
+  [[nodiscard]] native_inline constexpr simd<std::uint8_t, 16, A>
   swizzle(simd<std::uint8_t, 16, A> v, simd<std::uint8_t, 16, A> indices) noexcept {
     if consteval {
       auto x = detail::wasm_lanes(v), i = detail::wasm_lanes(indices);
@@ -6574,7 +6574,7 @@ namespace native {
   /// Compute correctly rounded square roots; negative finite lanes produce NaN.
   template<std::floating_point T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> sqrt(simd<T, N, A> v) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> sqrt(simd<T, N, A> v) noexcept {
     if consteval {
       return detail::wasm_map(
         [](T x) {
@@ -6596,7 +6596,7 @@ namespace native {
   /// Round floating lanes toward negative infinity.
   template<std::floating_point T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> floor(simd<T, N, A> v) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> floor(simd<T, N, A> v) noexcept {
     if consteval {
       return detail::wasm_map(
         [](T x) {
@@ -6619,7 +6619,7 @@ namespace native {
   /// Round floating lanes toward positive infinity.
   template<std::floating_point T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> ceil(simd<T, N, A> v) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> ceil(simd<T, N, A> v) noexcept {
     if consteval {
       return detail::wasm_map(
         [](T x) {
@@ -6642,7 +6642,7 @@ namespace native {
   /// Round floating lanes toward zero.
   template<std::floating_point T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> trunc(simd<T, N, A> v) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> trunc(simd<T, N, A> v) noexcept {
     if consteval {
       return detail::wasm_map(
         [](T x) {
@@ -6665,7 +6665,7 @@ namespace native {
   /// Round floating lanes to nearest integers, choosing even at ties.
   template<std::floating_point T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> round_even(simd<T, N, A> v) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> round_even(simd<T, N, A> v) noexcept {
     if consteval {
       return detail::wasm_map(
         [](T x) {
@@ -6687,7 +6687,7 @@ namespace native {
   /// Clear the floating sign bit without changing payload bits.
   template<std::floating_point T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> abs(simd<T, N, A> v) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> abs(simd<T, N, A> v) noexcept {
     if consteval {
       return detail::wasm_map(
         [](T x) {
@@ -6739,7 +6739,7 @@ namespace native {
   /// Saturate signed or unsigned byte/halfword arithmetic at the lane limits.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && sizeof(T) <= 2)
-  native_inline constexpr simd<T, N, A> add_sat(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> add_sat(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     using vector_type = simd<T, N, A>;
     if consteval {
       return detail::wasm_map(
@@ -6760,7 +6760,7 @@ namespace native {
   /// Saturate signed or unsigned byte/halfword arithmetic at the lane limits.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && sizeof(T) <= 2)
-  native_inline constexpr simd<T, N, A> sub_sat(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> sub_sat(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     using vector_type = simd<T, N, A>;
     if consteval {
       return detail::wasm_map(
@@ -6782,7 +6782,7 @@ namespace native {
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) &&
           (std::is_unsigned_v<T> && sizeof(T) * N == 16 && sizeof(T) <= 2)
-  native_inline constexpr simd<T, N, A> average_round(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> average_round(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     if consteval {
       return detail::wasm_map([](T x, T y) { return T((unsigned(x) + y + 1) / 2); }, a, b);
     } else {
@@ -6797,7 +6797,7 @@ namespace native {
   /// Absolute value with the minimum signed lane retaining its representation.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (std::is_signed_v<T> && sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> abs(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> abs(simd<T, N, A> a) noexcept {
     using vector_type = simd<T, N, A>;
     using unsigned_type = std::make_unsigned_t<T>;
     if consteval {
@@ -6819,7 +6819,7 @@ namespace native {
   /// Minimum/maximum; floating NaNs propagate and signed zeros follow WebAssembly rules.
   template<detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> min(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> min(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     using vector_type = simd<T, N, A>;
     if consteval {
       return detail::wasm_map(
@@ -6866,7 +6866,7 @@ namespace native {
   /// Minimum/maximum; floating NaNs propagate and signed zeros follow WebAssembly rules.
   template<detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr simd<T, N, A> max(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> max(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     using vector_type = simd<T, N, A>;
     if consteval {
       return detail::wasm_map(
@@ -6913,7 +6913,7 @@ namespace native {
   /// Pseudo minimum/maximum selects the first operand for unordered or equal lanes.
   template<detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && std::is_floating_point_v<T>)
-  native_inline constexpr simd<T, N, A> pmin(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> pmin(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     using vector_type = simd<T, N, A>;
     if consteval {
       return detail::wasm_map([](T x, T y) { return y < x ? y : x; }, a, b);
@@ -6929,7 +6929,7 @@ namespace native {
   /// Pseudo minimum/maximum selects the first operand for unordered or equal lanes.
   template<detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && std::is_floating_point_v<T>)
-  native_inline constexpr simd<T, N, A> pmax(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> pmax(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     using vector_type = simd<T, N, A>;
     if consteval {
       return detail::wasm_map([](T x, T y) { return y > x ? y : x; }, a, b);
@@ -6945,7 +6945,7 @@ namespace native {
   /// Widen the lower half of integer lanes, preserving signedness.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && sizeof(T) <= 4)
-  native_inline constexpr auto extend_low(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr auto extend_low(simd<T, N, A> a) noexcept {
     using wide_unsigned_type =
       std::conditional_t<sizeof(T) == 1, std::uint16_t,
                          std::conditional_t<sizeof(T) == 2, std::uint32_t, std::uint64_t>>;
@@ -6980,14 +6980,14 @@ namespace native {
   /// Multiply widened lower integer lanes; the complete product fits.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && sizeof(T) <= 4)
-  native_inline constexpr auto multiply_widened_low(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr auto multiply_widened_low(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     return extend_low(a) * extend_low(b);
   }
 
   /// Widen the upper half of integer lanes, preserving signedness.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && sizeof(T) <= 4)
-  native_inline constexpr auto extend_high(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr auto extend_high(simd<T, N, A> a) noexcept {
     using wide_unsigned_type =
       std::conditional_t<sizeof(T) == 1, std::uint16_t,
                          std::conditional_t<sizeof(T) == 2, std::uint32_t, std::uint64_t>>;
@@ -7022,7 +7022,7 @@ namespace native {
   /// Multiply widened upper integer lanes; the complete product fits.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && sizeof(T) <= 4)
-  native_inline constexpr auto multiply_widened_high(simd<T, N, A> a, simd<T, N, A> b) noexcept {
+  [[nodiscard]] native_inline constexpr auto multiply_widened_high(simd<T, N, A> a, simd<T, N, A> b) noexcept {
     return extend_high(a) * extend_high(b);
   }
 
@@ -7031,7 +7031,7 @@ namespace native {
   requires(A.has(wasm_feature::simd128)) &&
           (sizeof(From) * N == 16 && sizeof(From) == 2 * sizeof(To) && sizeof(To) <= 2 &&
            std::is_signed_v<From>)
-  native_inline constexpr simd<To, N * 2, A> narrow_sat(simd<From, N, A> a,
+  [[nodiscard]] native_inline constexpr simd<To, N * 2, A> narrow_sat(simd<From, N, A> a,
                                                         simd<From, N, A> b) noexcept {
     using vector_type = simd<To, N * 2, A>;
     if consteval {
@@ -7058,7 +7058,7 @@ namespace native {
   /// Multiply signed Q15 lanes, round by adding 2^14, shift by 15 and saturate.
   template<isa<> A>
   requires(A.has(wasm_feature::simd128))
-  native_inline constexpr simd<std::int16_t, 8, A>
+  [[nodiscard]] native_inline constexpr simd<std::int16_t, 8, A>
   q15mulr_sat(simd<std::int16_t, 8, A> a, simd<std::int16_t, 8, A> b) noexcept {
     if consteval {
       return detail::wasm_map(
@@ -7075,7 +7075,7 @@ namespace native {
   /// Sum adjacent signed halfword products modulo 2^32.
   template<isa<> A>
   requires(A.has(wasm_feature::simd128))
-  native_inline constexpr simd<std::int32_t, 4, A> dot(simd<std::int16_t, 8, A> a,
+  [[nodiscard]] native_inline constexpr simd<std::int32_t, 4, A> dot(simd<std::int16_t, 8, A> a,
                                                        simd<std::int16_t, 8, A> b) noexcept {
     using vector_type = simd<std::int32_t, 4, A>;
     if consteval {
@@ -7095,7 +7095,7 @@ namespace native {
   /// result lanes zero.
   template<simd_integer_element To, std::floating_point From, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(From) * N == 16 && sizeof(To) == 4)
-  native_inline constexpr simd<To, 4, A> trunc_sat(simd<From, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr simd<To, 4, A> trunc_sat(simd<From, N, A> a) noexcept {
     using vector_type = simd<To, 4, A>;
     if consteval {
       auto x = detail::wasm_lanes(a);
@@ -7123,7 +7123,7 @@ namespace native {
   requires(A.has(wasm_feature::simd128)) &&
           (sizeof(From) * N == 16 && (sizeof(From) == 4 || std::is_floating_point_v<From>) &&
            !std::same_as<To, From>)
-  native_inline constexpr simd<To, 16 / sizeof(To), A> convert(simd<From, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr simd<To, 16 / sizeof(To), A> convert(simd<From, N, A> a) noexcept {
     using vector_type = simd<To, 16 / sizeof(To), A>;
     if consteval {
       auto x = detail::wasm_lanes(a);
@@ -7162,14 +7162,14 @@ namespace native {
   requires detail::wasm_number<typename V::value_type> &&
            (V::architecture.has(wasm_feature::simd128)) &&
            (V::lanes * sizeof(typename V::value_type) == 16)
-  native_inline constexpr V load_splat(typename V::value_type const * p) noexcept {
+  [[nodiscard]] native_inline constexpr V load_splat(typename V::value_type const * p) noexcept {
     return V(*p);
   }
 
   /// Read one scalar into lane I, preserving the other lanes.
   template<std::size_t I, detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && I < N)
-  native_inline constexpr simd<T, N, A> load_lane(T const * p, simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr simd<T, N, A> load_lane(T const * p, simd<T, N, A> a) noexcept {
     return a.template replace<I>(*p);
   }
 
@@ -7184,7 +7184,7 @@ namespace native {
   template<class V>
   requires(V::architecture.has(wasm_feature::simd128)) &&
           (V::lanes * sizeof(typename V::value_type) == 16 && sizeof(typename V::value_type) >= 4)
-  native_inline constexpr V load_zero(typename V::value_type const * p) noexcept {
+  [[nodiscard]] native_inline constexpr V load_zero(typename V::value_type const * p) noexcept {
     if consteval {
       std::array<typename V::value_type, V::lanes> a{};
       a[0] = *p;
@@ -7202,7 +7202,7 @@ namespace native {
   template<simd_integer_element To, simd_integer_element From, isa<> A>
   requires(A.has(wasm_feature::simd128)) &&
           (sizeof(To) == 2 * sizeof(From) && std::is_signed_v<To> == std::is_signed_v<From>)
-  native_inline constexpr simd<To, 16 / sizeof(To), A> load_widened(From const * p) noexcept {
+  [[nodiscard]] native_inline constexpr simd<To, 16 / sizeof(To), A> load_widened(From const * p) noexcept {
     using vector_type = simd<To, 16 / sizeof(To), A>;
     if consteval {
       std::array<To, vector_type::lanes> a{};
@@ -7231,7 +7231,7 @@ namespace native {
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) &&
           (std::is_signed_v<T> && sizeof(T) * N == 16 && sizeof(T) <= 2)
-  native_inline constexpr auto pairwise_add_widened(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr auto pairwise_add_widened(simd<T, N, A> a) noexcept {
     using wide_type = std::conditional_t<sizeof(T) == 1, std::int16_t, std::int32_t>;
     using vector_type = simd<wide_type, N / 2, A>;
     if consteval {
@@ -7253,7 +7253,7 @@ namespace native {
   /// Gather each integer lane's sign bit into bit i of the scalar result.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr std::uint32_t bitmask(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr std::uint32_t bitmask(simd<T, N, A> a) noexcept {
     if consteval {
       auto x = detail::wasm_lanes(a);
       std::uint32_t r = 0;
@@ -7277,7 +7277,7 @@ namespace native {
   /// Test whether at least one integer lane is nonzero.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr bool any(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr bool any(simd<T, N, A> a) noexcept {
     if consteval {
       for (auto x : detail::wasm_lanes(a)) {
         if (x) {
@@ -7293,7 +7293,7 @@ namespace native {
   /// Test whether every integer lane is nonzero.
   template<simd_integer_element T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16)
-  native_inline constexpr bool all(simd<T, N, A> a) noexcept {
+  [[nodiscard]] native_inline constexpr bool all(simd<T, N, A> a) noexcept {
     if consteval {
       for (auto x : detail::wasm_lanes(a)) {
         if (!x) {

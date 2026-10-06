@@ -58,14 +58,14 @@ namespace exp_before {
   // Apply the accepted range policy after the historical graph; no FP control changes.
   // Each dependency stage expands across independent register chains.
   template<float_register V, std::size_t N>
-  native_nodiscard native_inline native_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
+  [[nodiscard]] native_inline native_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
     return input.apply(detail::exp_registers<V>{});
   }
-  template<float_register V> native_nodiscard native_inline native_pure V exp(V x) noexcept { return exp_before::exp(wide<V, 1>{{x}}).registers[0]; }
+  template<float_register V> [[nodiscard]] native_inline native_pure V exp(V x) noexcept { return exp_before::exp(wide<V, 1>{{x}}).registers[0]; }
 #if defined(__ARM_NEON)
   // Compatibility for existing channel-packed callers.
-  native_nodiscard native_inline native_pure float32x4_t exp(float32x4_t x) noexcept { return exp_before::exp(fp32x4(x)).value; }
-  template<std::size_t N> native_nodiscard native_inline native_pure wide<float32x4_t, N> exp(wide<float32x4_t, N> x) noexcept {
+  [[nodiscard]] native_inline native_pure float32x4_t exp(float32x4_t x) noexcept { return exp_before::exp(fp32x4(x)).value; }
+  template<std::size_t N> [[nodiscard]] native_inline native_pure wide<float32x4_t, N> exp(wide<float32x4_t, N> x) noexcept {
     wide<fp32x4, N> input;
     for (std::size_t i = 0; i < N; ++i) input.registers[i] = fp32x4(x.registers[i]);
     auto output = exp(input);

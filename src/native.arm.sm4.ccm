@@ -52,14 +52,14 @@ namespace native::detail::arm_sm4_constant {
 namespace native::detail::arm_sm4 {
   template<isa<arm> Arch>
     requires(Arch.has(arm_feature::sm4))
-  native_nodiscard native_inline native_const native_target("sm4") uint32x4_t sm4e(
+  [[nodiscard]] native_inline native_const native_target("sm4") uint32x4_t sm4e(
     uint32x4_t a, uint32x4_t b) noexcept {
     return vsm4eq_u32(a, b);
   }
 
   template<isa<arm> Arch>
     requires(Arch.has(arm_feature::sm4))
-  native_nodiscard native_inline native_const native_target("sm4") uint32x4_t sm4ekey(
+  [[nodiscard]] native_inline native_const native_target("sm4") uint32x4_t sm4ekey(
     uint32x4_t a, uint32x4_t b) noexcept {
     return vsm4ekeyq_u32(a, b);
   }
@@ -82,7 +82,7 @@ export namespace native {
   /// Perform four SM4 data rounds with state words and successive round keys in ascending lanes.
   template<isa<arm> Arch>
     requires(Arch.has(arm_feature::sm4))
-  native_nodiscard native_inline native_const
+  [[nodiscard]] native_inline native_const
   native_target("sm4") constexpr simd<std::uint32_t, 4, Arch>
   sm4e(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     if consteval {
@@ -98,7 +98,7 @@ export namespace native {
   /// Evaluate constant operands without the SM4 instruction feature.
   template<isa<arm> Arch>
     requires(!Arch.has(arm_feature::sm4) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm4e(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm4e(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::arm_sm4_constant::sm4e(a, b);
   }
@@ -107,7 +107,7 @@ export namespace native {
   /// lanes.
   template<isa<arm> Arch>
     requires(Arch.has(arm_feature::sm4))
-  native_nodiscard native_inline native_const
+  [[nodiscard]] native_inline native_const
   native_target("sm4") constexpr simd<std::uint32_t, 4, Arch>
   sm4ekey(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     if consteval {
@@ -123,7 +123,7 @@ export namespace native {
   /// Evaluate constant operands without the SM4 instruction feature.
   template<isa<arm> Arch>
     requires(!Arch.has(arm_feature::sm4) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
-  native_nodiscard consteval simd<std::uint32_t, 4, Arch> sm4ekey(
+  [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm4ekey(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::arm_sm4_constant::sm4ekey(a, b);
   }

@@ -39,7 +39,7 @@ set(DOXYGEN_PREDEFINED
   "NATIVE_HAS_AVX2:=1" "NATIVE_HAS_AVX512F:=1" "NATIVE_HAS_AVX512DQ:=1"
   "NATIVE_HAS_AVX512BW:=1" "NATIVE_HAS_AVX512VL:=1" "NATIVE_HAS_ARM_NEON:=0"
   "native_inline:=inline" "native_flatten:=" "native_noinline:="
-  "native_const:=" "native_pure:=" "native_nodiscard:=" "native_lifetimebound:="
+  "native_const:=" "native_pure:=" "native_lifetimebound:="
   "native_artificial:=" "native_noescape:=" "native_reinitializes:="
   "native_empty_bases:=" "native_restrict:=" "native_hidden:="
   "native_nonnull(x):=" "native_null_terminated_string_arg(x):="

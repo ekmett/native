@@ -3,7 +3,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   // Compatibility entry points share the promoted pack graph.
   template<bool Flush = false, unsigned Degree = 6, float_register V, std::size_t N>
     requires (Degree >= 1 && Degree <= 7)
-  native_nodiscard native_flatten native_inline constexpr native_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
+  [[nodiscard]] native_flatten native_inline constexpr native_pure std::array<V, N> exp(std::array<V, N> const & input) noexcept {
     if constexpr (N == 0) return input;
     else {
       auto const [masks, replacements, values, exponents] =
@@ -19,15 +19,15 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   }
   template<bool Flush = false, unsigned Degree = 6, float_register V>
     requires (Degree >= 1 && Degree <= 7)
-  native_nodiscard native_inline constexpr native_pure V exp(V x) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure V exp(V x) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(std::array{x})[0];
   }
 #if NATIVE_HAS_ARM_NEON
-  native_nodiscard native_inline constexpr native_pure float32x4_t exp(float32x4_t x) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure float32x4_t exp(float32x4_t x) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp(fp32x4(x)).value;
   }
   template<std::size_t N>
-  native_nodiscard native_inline constexpr native_pure std::array<float32x4_t, N> exp(std::array<float32x4_t, N> const & input) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure std::array<float32x4_t, N> exp(std::array<float32x4_t, N> const & input) noexcept {
     if constexpr (N == 0) return {};
     else {
       auto const & [...value] = input;
@@ -43,12 +43,12 @@ namespace native {
 #define NATIVE_PROMOTED_MATH_ENTRY(name) \
   template<std::size_t L, ::native::isa<> Arch> \
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L> \
-  native_nodiscard native_inline constexpr simd<float,L,Arch> name(simd<float,L,Arch> input) noexcept { \
+  [[nodiscard]] native_inline constexpr simd<float,L,Arch> name(simd<float,L,Arch> input) noexcept { \
     return ::math::name(input); \
   } \
   template<std::size_t L, std::size_t N, ::native::isa<> Arch> \
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L> \
-  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N> \
+  [[nodiscard]] native_inline constexpr std::array<simd<float,L,Arch>,N> \
   name(std::array<simd<float,L,Arch>,N> const & input) noexcept { return ::math::name(input); }
   NATIVE_PROMOTED_MATH_ENTRY(expm1)
   NATIVE_PROMOTED_MATH_ENTRY(damping_gain)
@@ -61,25 +61,25 @@ namespace native {
   /// Base-two exponential with the same compile-time underflow policy as exp.
   template<bool Flush = false, std::size_t L, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr simd<float,L,Arch>
+  [[nodiscard]] native_inline constexpr simd<float,L,Arch>
   exp2(simd<float,L,Arch> input) noexcept { return ::math::exp2<Flush>(input); }
   /// \ingroup vector_math
   /// Evaluate exp2 stage by stage across independent registers.
   template<bool Flush = false, std::size_t L, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N>
+  [[nodiscard]] native_inline constexpr std::array<simd<float,L,Arch>,N>
   exp2(std::array<simd<float,L,Arch>,N> const & input) noexcept { return ::math::exp2<Flush>(input); }
   /// \ingroup vector_math
   /// Select exp2's underflow policy through a tag for dependent calls.
   template<bool Flush, std::size_t L, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr simd<float,L,Arch>
+  [[nodiscard]] native_inline constexpr simd<float,L,Arch>
   exp2(simd<float,L,Arch> input, std::bool_constant<Flush>) noexcept { return ::math::exp2<Flush>(input); }
   /// \ingroup vector_math
   /// Select exp2's underflow policy for a register batch through a tag.
   template<bool Flush, std::size_t L, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N>
+  [[nodiscard]] native_inline constexpr std::array<simd<float,L,Arch>,N>
   exp2(std::array<simd<float,L,Arch>,N> const & input, std::bool_constant<Flush>) noexcept {
     return ::math::exp2<Flush>(input);
   }
@@ -87,13 +87,13 @@ namespace native {
   /// Evaluate atan2(y,x), retaining the common SIMD architecture and lane count.
   template<std::size_t L, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr simd<float,L,Arch>
+  [[nodiscard]] native_inline constexpr simd<float,L,Arch>
   atan2(simd<float,L,Arch> y, simd<float,L,Arch> x) noexcept { return ::math::atan2(y,x); }
   /// \ingroup vector_math
   /// Advance each atan2 stage across matching arrays of independent registers.
   template<std::size_t L, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N>
+  [[nodiscard]] native_inline constexpr std::array<simd<float,L,Arch>,N>
   atan2(std::array<simd<float,L,Arch>,N> const & y,
       std::array<simd<float,L,Arch>,N> const & x) noexcept { return ::math::atan2(y,x); }
   /** \ingroup vector_math
@@ -106,13 +106,13 @@ namespace native {
    * \snippet api.cc exponential
    */
   template<bool Flush = false, unsigned Degree = 6, std::size_t L, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr native_pure simd<float,L,Arch> exp(simd<float,L,Arch> input) noexcept {
+  [[nodiscard]] native_inline constexpr native_pure simd<float,L,Arch> exp(simd<float,L,Arch> input) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
   /// \ingroup vector_math
   /// Evaluate exp stage by stage across independent registers; N may be zero.
   template<bool Flush = false, unsigned Degree = 6, std::size_t L, std::size_t N, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N> exp(std::array<simd<float,L,Arch>,N> const & input) noexcept {
+  [[nodiscard]] native_inline constexpr std::array<simd<float,L,Arch>,N> exp(std::array<simd<float,L,Arch>,N> const & input) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
   // A tag argument avoids confusing this policy with register-width template
@@ -120,14 +120,14 @@ namespace native {
   /// \ingroup vector_math
   /// Pass cutoff and degree through constant tags for dependent calls.
   template<bool Flush, unsigned Degree = 6, std::size_t L, std::size_t N, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr std::array<simd<float,L,Arch>,N> exp(
+  [[nodiscard]] native_inline constexpr std::array<simd<float,L,Arch>,N> exp(
       std::array<simd<float,L,Arch>,N> const & input, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
   /// \ingroup vector_math
   /// Pass cutoff and degree through constant tags for dependent calls.
   template<bool Flush, unsigned Degree = 6, std::size_t L, ::native::isa<> Arch> requires (Degree >= 1 && Degree <= 7) && NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<L>
-  native_nodiscard native_inline constexpr simd<float,L,Arch> exp(simd<float,L,Arch> input, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
+  [[nodiscard]] native_inline constexpr simd<float,L,Arch> exp(simd<float,L,Arch> input, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
     return ::NATIVE_BACKEND_NAMESPACE::native::exp<Flush, Degree>(input);
   }
 }

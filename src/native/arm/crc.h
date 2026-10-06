@@ -24,7 +24,7 @@ namespace native {
  * \{ */
   /// Update the CRC32 accumulator with exactly 8 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,8,0xedb88320u);
     return __crc32b(accumulator,value);
@@ -32,13 +32,13 @@ namespace native {
 
   /// Evaluate the 8-bit CRC32 update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept {
     return detail::crc_update(accumulator,value,8,0xedb88320u);
   }
 
   /// Update the CRC32 accumulator with exactly 16 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,16,0xedb88320u);
     return __crc32h(accumulator,value);
@@ -46,13 +46,13 @@ namespace native {
 
   /// Evaluate the 16-bit CRC32 update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept {
     return detail::crc_update(accumulator,value,16,0xedb88320u);
   }
 
   /// Update the CRC32 accumulator with exactly 32 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,32,0xedb88320u);
     return __crc32w(accumulator,value);
@@ -60,13 +60,13 @@ namespace native {
 
   /// Evaluate the 32-bit CRC32 update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept {
     return detail::crc_update(accumulator,value,32,0xedb88320u);
   }
 
   /// Update the CRC32 accumulator with exactly 64 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,64,0xedb88320u);
     return __crc32d(accumulator,value);
@@ -74,7 +74,7 @@ namespace native {
 
   /// Evaluate the 64-bit CRC32 update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept {
     return detail::crc_update(accumulator,value,64,0xedb88320u);
   }
 
@@ -84,7 +84,7 @@ namespace native {
 
   /// Update the CRC32C accumulator with exactly 8 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,8,0x82f63b78u);
     return __crc32cb(accumulator,value);
@@ -92,13 +92,13 @@ namespace native {
 
   /// Evaluate the 8-bit CRC32C update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
     return detail::crc_update(accumulator,value,8,0x82f63b78u);
   }
 
   /// Update the CRC32C accumulator with exactly 16 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,16,0x82f63b78u);
     return __crc32ch(accumulator,value);
@@ -106,13 +106,13 @@ namespace native {
 
   /// Evaluate the 16-bit CRC32C update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
     return detail::crc_update(accumulator,value,16,0x82f63b78u);
   }
 
   /// Update the CRC32C accumulator with exactly 32 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,32,0x82f63b78u);
     return __crc32cw(accumulator,value);
@@ -120,13 +120,13 @@ namespace native {
 
   /// Evaluate the 32-bit CRC32C update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
     return detail::crc_update(accumulator,value,32,0x82f63b78u);
   }
 
   /// Update the CRC32C accumulator with exactly 64 input bits.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::crc))
-  native_nodiscard native_inline native_const native_target("crc")
+  [[nodiscard]] native_inline native_const native_target("crc")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
     if(__builtin_is_constant_evaluated()) return detail::crc_update(accumulator,value,64,0x82f63b78u);
     return __crc32cd(accumulator,value);
@@ -134,7 +134,7 @@ namespace native {
 
   /// Evaluate the 64-bit CRC32C update at compile time without requiring CRC instructions.
   template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
-  native_nodiscard consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
+  [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
     return detail::crc_update(accumulator,value,64,0x82f63b78u);
   }
 

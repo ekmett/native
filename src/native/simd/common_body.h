@@ -5,7 +5,7 @@ namespace detail {
   struct register_memory<simd<T,N,Arch>,L> {
     using V=simd<T,N,Arch>;
     static constexpr std::size_t lanes = L;
-    native_nodiscard static native_inline constexpr native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept native_diagnose_if(n > L,"partial SIMD count exceeds the lane count") {
+    [[nodiscard]] static native_inline constexpr native_pure V load_partial(native_noescape float const * p, std::size_t n, float fill = 0) noexcept native_diagnose_if(n > L,"partial SIMD count exceeds the lane count") {
       alignas(64) std::array<float, L> a; a.fill(fill);
       for (std::size_t i = 0; i < n; ++i) a[i] = p[i];
       return V::load(a.data());
@@ -37,7 +37,7 @@ namespace detail {
   /// Exceptions propagate from the selected `V::load_memory<A>` operation.
   template <class V, class U, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && requires(U const * p) { V::template load_memory<A>(p); }
-  native_nodiscard native_inline constexpr V load_simd(U const * p, simd_memory<A,Access> = {})
+  [[nodiscard]] native_inline constexpr V load_simd(U const * p, simd_memory<A,Access> = {})
       noexcept(noexcept(V::template load_memory<A>(p))) {
     return V::template load_memory<A>(p);
   }
@@ -46,7 +46,7 @@ namespace detail {
   /// The customization owns any normalization; this is not an arbitrary pointer cast.
   template <class V, simd_custom_element U, std::size_t A=1, simd_access Access=simd_access::ordinary>
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && std::same_as<typename V::value_type,typename simd_traits<U>::storage_type>
-  native_nodiscard native_inline constexpr V load_simd(U const * p, simd_memory<A,Access> = {})
+  [[nodiscard]] native_inline constexpr V load_simd(U const * p, simd_memory<A,Access> = {})
       noexcept(noexcept(V::template rebind<U>::template load_memory<A>(p).to_native())) {
     return V::template rebind<U>::template load_memory<A>(p).to_native();
   }
@@ -72,7 +72,7 @@ namespace detail {
   /// Load an array or fixed-extent span whose extent equals the lane count.
   template<class V,class U,std::size_t N> requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) &&(N==V::lanes) &&
     requires(U const * p) { ::native::load_simd<V>(p); }
-  native_nodiscard native_inline constexpr V load_simd(std::array<U,N> const & values)
+  [[nodiscard]] native_inline constexpr V load_simd(std::array<U,N> const & values)
       noexcept(noexcept(::native::load_simd<V>(values.data()))) {
     return ::native::load_simd<V>(values.data());
   }
@@ -80,7 +80,7 @@ namespace detail {
   /// Load an array or fixed-extent span whose extent equals the lane count.
   template<class V,class U,std::size_t N> requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) &&(N==V::lanes) &&
     requires(U * p) { ::native::load_simd<V>(p); }
-  native_nodiscard native_inline constexpr V load_simd(std::span<U,N> values)
+  [[nodiscard]] native_inline constexpr V load_simd(std::span<U,N> values)
       noexcept(noexcept(::native::load_simd<V>(values.data()))) {
     return ::native::load_simd<V>(values.data());
   }
@@ -93,7 +93,7 @@ namespace detail {
     requires detail::memory_architecture<V,U>::known && NATIVE_COMMON_ARCH(detail::memory_architecture_v<V,U>) && std::default_initializable<U> &&
       std::constructible_from<U,typename V::value_type &> && std::is_copy_assignable_v<U> &&
       requires(U const * p) { ::native::load_simd<V>(p); }
-  native_nodiscard native_inline constexpr V load_simd_partial(U const * p,std::size_t count,
+  [[nodiscard]] native_inline constexpr V load_simd_partial(U const * p,std::size_t count,
       typename V::value_type fill={},simd_memory<A,Access> = {})
       noexcept(std::is_nothrow_default_constructible_v<U> &&
         std::is_nothrow_constructible_v<U,typename V::value_type &> &&

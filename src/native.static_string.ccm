@@ -134,19 +134,19 @@ public:
   /// \{
 
   /// Borrow the null-terminated storage; embedded NULs still stop C-string consumers.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   operator CharT const * () const noexcept {
     return view.data(); // an extra invariant that its null terminated is maintained
   }
 
   /// Borrow the full view, including any embedded NUL characters.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   operator std::basic_string_view<CharT,Traits>() const noexcept {
     return view;
   }
 
   /// Allocate an independent standard string containing the full view.
-  native_nodiscard native_inline constexpr
+  [[nodiscard]] native_inline constexpr
   operator std::basic_string<CharT,Traits>() const {
     return std::basic_string<CharT,Traits>(view);
   }
@@ -156,24 +156,24 @@ public:
   /// \{
 
   /// Access character i. Requires i < size().
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   CharT const & operator [](size_type i) const noexcept { return view[i]; }
 
   /// access the specified character with bounds checking
-  native_nodiscard native_inline constexpr
+  [[nodiscard]] native_inline constexpr
   CharT const & at(size_type i) const { return view.at(i); }
 
   /// Returns the first character. Requires !empty().
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   const_reference front() const noexcept { return view.front(); }
 
   /// Return the last character.
   /// \pre !empty()
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   const_reference back() const noexcept { return view.back(); }
 
   /// Borrow the canonical storage; the terminator is at data()[size()].
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   const_pointer data() const noexcept { return view.data(); }
 
   /// \}
@@ -181,23 +181,23 @@ public:
   /// \{
 
   /// Return the stored number of characters, excluding the final terminator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   size_type size() const noexcept { return view.size(); }
 
   /// Synonym for size().
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   size_type length() const noexcept { return view.length(); }
 
   /// Return the underlying string_view capacity bound, not the current length.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   size_type max_size() const noexcept { return view.max_size(); }
 
   /// Return whether the stored length is zero.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   bool empty() const noexcept { return view.empty(); }
 
   /// Return whether the string is nonempty.
-  native_nodiscard native_inline native_pure
+  [[nodiscard]] native_inline native_pure
   explicit constexpr operator bool () const noexcept { return !view.empty(); }
 
   /// \}
@@ -206,7 +206,7 @@ public:
 
   /// Compare interned addresses with standard traits, otherwise compare addresses or character values.
   /// \pre `Traits::eq` is assumed reflexive even if overloaded
-  native_nodiscard native_inline native_artificial friend constexpr
+  [[nodiscard]] native_inline native_artificial friend constexpr
   bool operator == (basic_static_string self, basic_static_string that) noexcept {
     if constexpr (std::is_same_v<Traits,std::char_traits<CharT>> && detail::static_character<CharT>) {
       return self.view.data() == that.view.data();
@@ -217,7 +217,7 @@ public:
 
   /// Negate equality, using the same address or custom-traits comparison.
   /// \pre `Traits::eq` is assumed reflexive
-  native_nodiscard native_inline native_artificial friend constexpr
+  [[nodiscard]] native_inline native_artificial friend constexpr
   bool operator != (basic_static_string self, basic_static_string that) noexcept {
     if constexpr (std::is_same_v<Traits,std::char_traits<CharT>> && detail::static_character<CharT>) {
       return self.view.data() != that.view.data();
@@ -243,35 +243,35 @@ public:
   /// \{
 
   /// Return the first character iterator.
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   auto begin() const noexcept { return view.data(); }
 
   /// Return the one-past-last character iterator; C-string form scans to its NUL.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto end() const noexcept { return view.data() + view.size(); }
 
   /// Return the first const character iterator.
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   auto cbegin() const noexcept { return begin(); }
 
   /// Return the const end iterator; C-string form scans to its NUL.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto cend() const noexcept { return end(); }
 
   /// Return the first reverse iterator; C-string form first finds its end.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto rbegin() const noexcept { return const_reverse_iterator(end()); }
 
   /// Return the reverse end iterator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto rend() const noexcept { return const_reverse_iterator(begin()); }
 
   /// Return the first const reverse iterator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto crbegin() const noexcept { return rbegin(); }
 
   /// Return the const reverse end iterator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto crend() const noexcept { return rend(); }
 
   /// \}
@@ -357,15 +357,15 @@ public:
   /// \{
 
   /// Borrow the interned null-terminated character pointer.
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   operator const char * () const noexcept { return p; }
 
   /// Recover a static_string by scanning to the first NUL; O(length).
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   operator static_string () const noexcept { return static_string(std::string_view(p)); }
 
   /// Return the borrowed interned pointer.
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   const char * data() const noexcept { return p; }
 
   /// \}
@@ -373,11 +373,11 @@ public:
   /// \{
 
   /// Return whether both views refer to the same interned address.
-  native_nodiscard native_inline native_pure native_artificial constexpr friend
+  [[nodiscard]] native_inline native_pure native_artificial constexpr friend
   bool operator == (static_c_string x, static_c_string y) noexcept { return x.p == y.p; }
 
   /// Return whether the interned addresses differ.
-  native_nodiscard native_inline native_pure native_artificial constexpr friend
+  [[nodiscard]] native_inline native_pure native_artificial constexpr friend
   bool operator != (static_c_string x, static_c_string y) noexcept { return x.p != y.p; }
 
   /// \}
@@ -386,41 +386,41 @@ public:
 
   /// O(1)
   /// Return the first character iterator.
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   auto begin() const noexcept { return p; }
 
   /// Return the one-past-last character iterator; C-string form scans to its NUL.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto end() const noexcept { return p + std::char_traits<char>::length(p); }
 
   /// O(1)
   /// Return the first const character iterator.
-  native_nodiscard native_inline native_pure native_artificial constexpr
+  [[nodiscard]] native_inline native_pure native_artificial constexpr
   auto cbegin() const noexcept { return p; }
 
   /// O(n)
   /// Return the const end iterator; C-string form scans to its NUL.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto cend() const noexcept { return p + std::char_traits<char>::length(p); }
 
   /// O(n)
   /// Return the first reverse iterator; C-string form first finds its end.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto rbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
 
   /// O(1)
   /// Return the reverse end iterator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto rend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
 
   /// O(n)
   /// Return the first const reverse iterator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto crbegin() const noexcept { return std::reverse_iterator<const char *>(end()); }
 
   /// O(1)
   /// Return the const reverse end iterator.
-  native_nodiscard native_inline native_pure constexpr
+  [[nodiscard]] native_inline native_pure constexpr
   auto crend() const noexcept { return std::reverse_iterator<const char *>(begin()); }
 
   /// \}

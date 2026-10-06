@@ -25,7 +25,7 @@ namespace candidate {
   // The timing bank contains ordinary normal operands without tiny ratios.
   template<class V, std::size_t N>
     requires (::wide::detail::binary32_register<V>)
-  native_nodiscard native_inline constexpr auto atan2_newton_kernel(
+  [[nodiscard]] native_inline constexpr auto atan2_newton_kernel(
       std::array<V, N> const & y, std::array<V, N> const & x) noexcept {
     namespace w = ::wide;
     auto const c = [&](float value) { return w::constant_like(y, value); };

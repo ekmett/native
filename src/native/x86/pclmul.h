@@ -16,7 +16,7 @@ namespace native::detail::x86_pclmul {
   /// Multiply the selected 64-bit halves into one 128-bit polynomial product.
   /// Requires PCLMUL. An AVX-enabled caller may use the VEX encoding.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) && Imm8 <= 255)
-  native_nodiscard native_inline native_const native_target("pclmul")
+  [[nodiscard]] native_inline native_const native_target("pclmul")
   __m128i pclmulqdq(__m128i a, __m128i b) noexcept {
     return _mm_clmulepi64_si128(a, b, Imm8);
   }

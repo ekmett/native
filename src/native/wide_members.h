@@ -41,7 +41,7 @@
       : wide(conversion_tag{}, std::move(source), std::make_index_sequence<N>{}) {}
 
     /// Copy `value` to every element; an empty pack makes no copies.
-    native_nodiscard static NATIVE_WIDE_TARGET native_inline constexpr wide broadcast(T const & value)
+    [[nodiscard]] static NATIVE_WIDE_TARGET native_inline constexpr wide broadcast(T const & value)
       noexcept(N == 0 || std::is_nothrow_copy_constructible_v<T>)
       requires (detail::wide_target<T> == NATIVE_WIDE_INDEX) && (N == 0 || std::copy_constructible<T>) {
       return wide(value, std::make_index_sequence<N>{});

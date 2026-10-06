@@ -23,7 +23,7 @@ export namespace native {
 
   /// \ingroup capabilities
   /// Raw CPUID register values, interpreted as signed storage words.
-  struct native_nodiscard cpuid_t {
+  struct [[nodiscard]] cpuid_t {
     std::int32_t eax, ebx, ecx, edx;
   };
 
@@ -37,7 +37,7 @@ export namespace native {
   /// \showenumvalues
   /// \brief Recognized CPUID vendor strings; vendor identity alone does not imply features.
   /// \details Values classify leaf zero only and are independent of OS vector-state support.
-  enum class native_nodiscard cpu_vendor : std::uint8_t {
+  enum class [[nodiscard]] cpu_vendor : std::uint8_t {
     intel = 0, ///< CPUID reports GenuineIntel.
     amd = 1, ///< CPUID reports AuthenticAMD.
     unknown = 2 ///< Any other vendor string.

@@ -55,7 +55,7 @@ export namespace native {
   /// \pre \p str is non-null
   /// \post result owns an independent null-terminated copy, or is null if allocation fails
   /// \hideinlinesource
-  native_nodiscard native_inline native_artificial
+  [[nodiscard]] native_inline native_artificial
   native_nonnull(1) native_null_terminated_string_arg(1)
   unique_str dup(
     native_noescape char const * str

@@ -16,7 +16,7 @@ namespace native::detail::x86_vnni {
   // 128-bit core operations.
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, modulo 2^32. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m128i dpbusd(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbusd_avx_epi32(accumulator, a, b);
   }
@@ -24,7 +24,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, modulo 2^32. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i dpbusd(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbusd_epi32(accumulator, a, b);
   }
@@ -32,7 +32,7 @@ namespace native::detail::x86_vnni {
   /// dpbusd in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i mask_dpbusd(__m128i accumulator, __mmask8 mask, __m128i a, __m128i b) noexcept {
     return _mm_mask_dpbusd_epi32(accumulator, mask, a, b);
   }
@@ -40,14 +40,14 @@ namespace native::detail::x86_vnni {
   /// dpbusd in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i maskz_dpbusd(__mmask8 mask, __m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_maskz_dpbusd_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, with signed 32-bit saturation. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m128i dpbusds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbusds_avx_epi32(accumulator, a, b);
   }
@@ -55,7 +55,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, with signed 32-bit saturation. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i dpbusds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbusds_epi32(accumulator, a, b);
   }
@@ -63,7 +63,7 @@ namespace native::detail::x86_vnni {
   /// dpbusds in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i mask_dpbusds(__m128i accumulator, __mmask8 mask, __m128i a, __m128i b) noexcept {
     return _mm_mask_dpbusds_epi32(accumulator, mask, a, b);
   }
@@ -71,14 +71,14 @@ namespace native::detail::x86_vnni {
   /// dpbusds in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i maskz_dpbusds(__mmask8 mask, __m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_maskz_dpbusds_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and b, modulo 2^32. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m128i dpwssd(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwssd_avx_epi32(accumulator, a, b);
   }
@@ -86,7 +86,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of two signed words from a and b, modulo 2^32. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i dpwssd(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwssd_epi32(accumulator, a, b);
   }
@@ -94,7 +94,7 @@ namespace native::detail::x86_vnni {
   /// dpwssd in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i mask_dpwssd(__m128i accumulator, __mmask8 mask, __m128i a, __m128i b) noexcept {
     return _mm_mask_dpwssd_epi32(accumulator, mask, a, b);
   }
@@ -102,14 +102,14 @@ namespace native::detail::x86_vnni {
   /// dpwssd in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i maskz_dpwssd(__mmask8 mask, __m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_maskz_dpwssd_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and b, with signed 32-bit saturation. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m128i dpwssds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwssds_avx_epi32(accumulator, a, b);
   }
@@ -117,7 +117,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of two signed words from a and b, with signed 32-bit saturation. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i dpwssds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwssds_epi32(accumulator, a, b);
   }
@@ -125,7 +125,7 @@ namespace native::detail::x86_vnni {
   /// dpwssds in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i mask_dpwssds(__m128i accumulator, __mmask8 mask, __m128i a, __m128i b) noexcept {
     return _mm_mask_dpwssds_epi32(accumulator, mask, a, b);
   }
@@ -133,7 +133,7 @@ namespace native::detail::x86_vnni {
   /// dpwssds in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m128i maskz_dpwssds(__mmask8 mask, __m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_maskz_dpwssds_epi32(mask, accumulator, a, b);
   }
@@ -141,7 +141,7 @@ namespace native::detail::x86_vnni {
   // 256-bit core operations.
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, modulo 2^32. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m256i dpbusd(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbusd_avx_epi32(accumulator, a, b);
   }
@@ -149,7 +149,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, modulo 2^32. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i dpbusd(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbusd_epi32(accumulator, a, b);
   }
@@ -157,7 +157,7 @@ namespace native::detail::x86_vnni {
   /// dpbusd in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i mask_dpbusd(__m256i accumulator, __mmask8 mask, __m256i a, __m256i b) noexcept {
     return _mm256_mask_dpbusd_epi32(accumulator, mask, a, b);
   }
@@ -165,14 +165,14 @@ namespace native::detail::x86_vnni {
   /// dpbusd in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i maskz_dpbusd(__mmask8 mask, __m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_maskz_dpbusd_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, with signed 32-bit saturation. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m256i dpbusds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbusds_avx_epi32(accumulator, a, b);
   }
@@ -180,7 +180,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, with signed 32-bit saturation. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i dpbusds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbusds_epi32(accumulator, a, b);
   }
@@ -188,7 +188,7 @@ namespace native::detail::x86_vnni {
   /// dpbusds in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i mask_dpbusds(__m256i accumulator, __mmask8 mask, __m256i a, __m256i b) noexcept {
     return _mm256_mask_dpbusds_epi32(accumulator, mask, a, b);
   }
@@ -196,14 +196,14 @@ namespace native::detail::x86_vnni {
   /// dpbusds in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i maskz_dpbusds(__mmask8 mask, __m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_maskz_dpbusds_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and b, modulo 2^32. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m256i dpwssd(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwssd_avx_epi32(accumulator, a, b);
   }
@@ -211,7 +211,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of two signed words from a and b, modulo 2^32. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i dpwssd(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwssd_epi32(accumulator, a, b);
   }
@@ -219,7 +219,7 @@ namespace native::detail::x86_vnni {
   /// dpwssd in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i mask_dpwssd(__m256i accumulator, __mmask8 mask, __m256i a, __m256i b) noexcept {
     return _mm256_mask_dpwssd_epi32(accumulator, mask, a, b);
   }
@@ -227,14 +227,14 @@ namespace native::detail::x86_vnni {
   /// dpwssd in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i maskz_dpwssd(__mmask8 mask, __m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_maskz_dpwssd_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and b, with signed 32-bit saturation. Uses AVX-VNNI.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnni))
-  native_nodiscard native_inline native_const native_target("avxvnni")
+  [[nodiscard]] native_inline native_const native_target("avxvnni")
   __m256i dpwssds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwssds_avx_epi32(accumulator, a, b);
   }
@@ -242,7 +242,7 @@ namespace native::detail::x86_vnni {
   /// Accumulate products of two signed words from a and b, with signed 32-bit saturation. Uses AVX512VNNI.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::avxvnni) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) && Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i dpwssds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwssds_epi32(accumulator, a, b);
   }
@@ -250,7 +250,7 @@ namespace native::detail::x86_vnni {
   /// dpwssds in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i mask_dpwssds(__m256i accumulator, __mmask8 mask, __m256i a, __m256i b) noexcept {
     return _mm256_mask_dpwssds_epi32(accumulator, mask, a, b);
   }
@@ -258,7 +258,7 @@ namespace native::detail::x86_vnni {
   /// dpwssds in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni) &&
       Arch.has(x86_feature::avx512vl))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni,avx512vl")
   __m256i maskz_dpwssds(__mmask8 mask, __m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_maskz_dpwssds_epi32(mask, accumulator, a, b);
   }
@@ -266,252 +266,252 @@ namespace native::detail::x86_vnni {
   // 512-bit core operations.
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i dpbusd(__m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_dpbusd_epi32(accumulator, a, b);
   }
 
   /// dpbusd in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i mask_dpbusd(__m512i accumulator, __mmask16 mask, __m512i a, __m512i b) noexcept {
     return _mm512_mask_dpbusd_epi32(accumulator, mask, a, b);
   }
 
   /// dpbusd in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i maskz_dpbusd(__mmask16 mask, __m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_maskz_dpbusd_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and signed bytes from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i dpbusds(__m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_dpbusds_epi32(accumulator, a, b);
   }
 
   /// dpbusds in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i mask_dpbusds(__m512i accumulator, __mmask16 mask, __m512i a, __m512i b) noexcept {
     return _mm512_mask_dpbusds_epi32(accumulator, mask, a, b);
   }
 
   /// dpbusds in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i maskz_dpbusds(__mmask16 mask, __m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_maskz_dpbusds_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i dpwssd(__m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_dpwssd_epi32(accumulator, a, b);
   }
 
   /// dpwssd in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i mask_dpwssd(__m512i accumulator, __mmask16 mask, __m512i a, __m512i b) noexcept {
     return _mm512_mask_dpwssd_epi32(accumulator, mask, a, b);
   }
 
   /// dpwssd in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i maskz_dpwssd(__mmask16 mask, __m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_maskz_dpwssd_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i dpwssds(__m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_dpwssds_epi32(accumulator, a, b);
   }
 
   /// dpwssds in active lanes; inactive lanes retain accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i mask_dpwssds(__m512i accumulator, __mmask16 mask, __m512i a, __m512i b) noexcept {
     return _mm512_mask_dpwssds_epi32(accumulator, mask, a, b);
   }
 
   /// dpwssds in active lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vnni))
-  native_nodiscard native_inline native_const native_target("avx512f,avx512vnni")
+  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vnni")
   __m512i maskz_dpwssds(__mmask16 mask, __m512i accumulator, __m512i a, __m512i b) noexcept {
     return _mm512_maskz_dpwssds_epi32(mask, accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m128i dpbssd(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbssd_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m256i dpbssd(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbssd_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m128i dpbssds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbssds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m256i dpbssds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbssds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and unsigned bytes from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m128i dpbsud(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbsud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and unsigned bytes from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m256i dpbsud(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbsud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and unsigned bytes from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m128i dpbsuds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbsuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four signed bytes from a and unsigned bytes from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m256i dpbsuds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbsuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m128i dpbuud(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbuud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m256i dpbuud(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbuud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and b, with unsigned 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m128i dpbuuds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpbuuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of four unsigned bytes from a and b, with unsigned 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint8))
-  native_nodiscard native_inline native_const native_target("avxvnniint8")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint8")
   __m256i dpbuuds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpbuuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and unsigned words from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m128i dpwsud(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwsud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and unsigned words from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m256i dpwsud(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwsud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and unsigned words from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m128i dpwsuds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwsuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two signed words from a and unsigned words from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m256i dpwsuds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwsuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and signed words from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m128i dpwusd(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwusd_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and signed words from b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m256i dpwusd(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwusd_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and signed words from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m128i dpwusds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwusds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and signed words from b, with signed 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m256i dpwusds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwusds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m128i dpwuud(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwuud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and b, modulo 2^32.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m256i dpwuud(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwuud_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and b, with unsigned 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m128i dpwuuds(__m128i accumulator, __m128i a, __m128i b) noexcept {
     return _mm_dpwuuds_epi32(accumulator, a, b);
   }
 
   /// Accumulate products of two unsigned words from a and b, with unsigned 32-bit saturation.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxvnniint16))
-  native_nodiscard native_inline native_const native_target("avxvnniint16")
+  [[nodiscard]] native_inline native_const native_target("avxvnniint16")
   __m256i dpwuuds(__m256i accumulator, __m256i a, __m256i b) noexcept {
     return _mm256_dpwuuds_epi32(accumulator, a, b);
   }

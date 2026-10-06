@@ -86,7 +86,7 @@
   /// Apply `+` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a + b; }
-  native_nodiscard native_inline constexpr auto operator+(A const & a, B const & b)
+  [[nodiscard]] native_inline constexpr auto operator+(A const & a, B const & b)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_dispatch(a,b,NATIVE_WIDE_DETAIL::wide_add{}))) {
     return NATIVE_WIDE_DETAIL::wide_dispatch(a,b,NATIVE_WIDE_DETAIL::wide_add{});
   }
@@ -95,7 +95,7 @@
   /// Apply `-` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a - b; }
-  native_nodiscard native_inline constexpr auto operator-(A const & a, B const & b)
+  [[nodiscard]] native_inline constexpr auto operator-(A const & a, B const & b)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_dispatch(a,b,NATIVE_WIDE_DETAIL::wide_sub{}))) {
     return NATIVE_WIDE_DETAIL::wide_dispatch(a,b,NATIVE_WIDE_DETAIL::wide_sub{});
   }
@@ -104,7 +104,7 @@
   /// Apply `*` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a * b; }
-  native_nodiscard native_inline constexpr auto operator*(A const & a, B const & b)
+  [[nodiscard]] native_inline constexpr auto operator*(A const & a, B const & b)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_dispatch(a,b,NATIVE_WIDE_DETAIL::wide_mul{}))) {
     return NATIVE_WIDE_DETAIL::wide_dispatch(a,b,NATIVE_WIDE_DETAIL::wide_mul{});
   }
@@ -113,7 +113,7 @@
   /// Apply `/` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a / b; }
-  native_nodiscard native_inline constexpr auto operator/(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator/(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x / y) { return x / y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -122,7 +122,7 @@
   /// Apply `%` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a % b; }
-  native_nodiscard native_inline constexpr auto operator%(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator%(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x % y) { return x % y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -131,7 +131,7 @@
   /// Apply `&` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a & b; }
-  native_nodiscard native_inline constexpr auto operator&(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator&(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x & y) { return x & y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -140,7 +140,7 @@
   /// Apply `|` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a | b; }
-  native_nodiscard native_inline constexpr auto operator|(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator|(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x | y) { return x | y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -149,7 +149,7 @@
   /// Apply `^` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a ^ b; }
-  native_nodiscard native_inline constexpr auto operator^(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator^(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x ^ y) { return x ^ y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -158,7 +158,7 @@
   /// Apply `<<` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a << b; }
-  native_nodiscard native_inline constexpr auto operator<<(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator<<(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x << y) { return x << y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -167,7 +167,7 @@
   /// Apply `>>` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a >> b; }
-  native_nodiscard native_inline constexpr auto operator>>(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator>>(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >> y) { return x >> y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -176,7 +176,7 @@
   /// Apply `==` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a == b; }
-  native_nodiscard native_inline constexpr auto operator==(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator==(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x == y) { return x == y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -185,7 +185,7 @@
   /// Apply `!=` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a != b; }
-  native_nodiscard native_inline constexpr auto operator!=(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator!=(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x != y) { return x != y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -194,7 +194,7 @@
   /// Apply `<` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a < b; }
-  native_nodiscard native_inline constexpr auto operator<(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator<(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x < y) { return x < y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -203,7 +203,7 @@
   /// Apply `>` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a > b; }
-  native_nodiscard native_inline constexpr auto operator>(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator>(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x > y) { return x > y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -212,7 +212,7 @@
   /// Apply `<=` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a <= b; }
-  native_nodiscard native_inline constexpr auto operator<=(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator<=(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x <= y) { return x <= y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -221,7 +221,7 @@
   /// Apply `>=` to corresponding elements; a non-pack argument is broadcast.
   template<class A, class B> requires NATIVE_WIDE_DETAIL::wide_arguments<A, B> && (::native::detail::wide_target<A,B> == NATIVE_WIDE_INDEX) &&
     requires(NATIVE_WIDE_DETAIL::wide_element_t<A> const & a, NATIVE_WIDE_DETAIL::wide_element_t<B> const & b) { a >= b; }
-  native_nodiscard native_inline constexpr auto operator>=(A const & a, B const & b) {
+  [[nodiscard]] native_inline constexpr auto operator>=(A const & a, B const & b) {
     return NATIVE_WIDE_DETAIL::wide_binary(a, b, [](auto const & x, auto const & y) -> decltype(x >= y) { return x >= y; },
       std::make_index_sequence<NATIVE_WIDE_DETAIL::wide_size<A, B>>{});
   }
@@ -229,28 +229,28 @@
   /// \ingroup wide_values
   /// Apply unary `+` to each element, retaining its result type.
   template<class T, std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && requires(T const & a) { +a; }
-  native_nodiscard native_inline constexpr auto operator+(wide<T, N> const & a) {
+  [[nodiscard]] native_inline constexpr auto operator+(wide<T, N> const & a) {
     return NATIVE_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(+x) { return +x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Apply unary `-` to each element, retaining its result type.
   template<class T, std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && requires(T const & a) { -a; }
-  native_nodiscard native_inline constexpr auto operator-(wide<T, N> const & a) {
+  [[nodiscard]] native_inline constexpr auto operator-(wide<T, N> const & a) {
     return NATIVE_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(-x) { return -x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Apply unary `~` to each element, retaining its result type.
   template<class T, std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && requires(T const & a) { ~a; }
-  native_nodiscard native_inline constexpr auto operator~(wide<T, N> const & a) {
+  [[nodiscard]] native_inline constexpr auto operator~(wide<T, N> const & a) {
     return NATIVE_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(~x) { return ~x; }, std::make_index_sequence<N>{});
   }
 
   /// \ingroup wide_values
   /// Apply unary `!` to each element, retaining its result type.
   template<class T, std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && requires(T const & a) { !a; }
-  native_nodiscard native_inline constexpr auto operator!(wide<T, N> const & a) {
+  [[nodiscard]] native_inline constexpr auto operator!(wide<T, N> const & a) {
     return NATIVE_WIDE_DETAIL::wide_unary(a, [](auto const & x) -> decltype(!x) { return !x; }, std::make_index_sequence<N>{});
   }
 
@@ -533,28 +533,28 @@
   /// Classify each element as finite, preserving its actual bool or mask result type.
   /// The result construction and ADL call both contribute to conditional `noexcept`.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_isfinite,T>
-  native_nodiscard native_inline constexpr auto isfinite(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr auto isfinite(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_isfinite>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_isfinite>(input);
   }
   /// \ingroup wide_values
   /// Classify infinities using the element operation and its actual result type.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_isinf,T>
-  native_nodiscard native_inline constexpr auto isinf(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr auto isinf(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_isinf>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_isinf>(input);
   }
   /// \ingroup wide_values
   /// Classify NaNs using the element operation and its actual result type.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_isnan,T>
-  native_nodiscard native_inline constexpr auto isnan(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr auto isnan(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_isnan>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_isnan>(input);
   }
   /// \ingroup wide_values
   /// Read each element's sign predicate, retaining its actual mask or bool type.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_signbit,T>
-  native_nodiscard native_inline constexpr auto signbit(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr auto signbit(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_signbit>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_signbit>(input);
   }
@@ -563,7 +563,7 @@
   /// The result construction and ADL call both contribute to conditional `noexcept`.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_copysign,T,T> &&
     std::same_as<NATIVE_WIDE_DETAIL::wide_result<NATIVE_WIDE_DETAIL::wide_copysign,T,T>,T>
-  native_nodiscard native_inline constexpr wide<T,N> copysign(wide<T,N> const & a,wide<T,N> const & b)
+  [[nodiscard]] native_inline constexpr wide<T,N> copysign(wide<T,N> const & a,wide<T,N> const & b)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_copysign>(a,b))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_copysign>(a,b);
   }
@@ -572,7 +572,7 @@
   /// The result construction and ADL call both contribute to conditional `noexcept`.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_floor,T> &&
     std::same_as<NATIVE_WIDE_DETAIL::wide_result<NATIVE_WIDE_DETAIL::wide_floor,T>,T>
-  native_nodiscard native_inline constexpr wide<T,N> floor(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<T,N> floor(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_floor>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_floor>(input);
   }
@@ -580,7 +580,7 @@
   /// Round each element up, using its ADL operation and retaining the element type.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_ceil,T> &&
     std::same_as<NATIVE_WIDE_DETAIL::wide_result<NATIVE_WIDE_DETAIL::wide_ceil,T>,T>
-  native_nodiscard native_inline constexpr wide<T,N> ceil(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<T,N> ceil(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_ceil>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_ceil>(input);
   }
@@ -588,20 +588,20 @@
   /// Round each element toward zero, using its ADL operation and retaining the element type.
   template<class T,std::size_t N> requires (::native::detail::wide_target<T> == NATIVE_WIDE_INDEX) && NATIVE_WIDE_DETAIL::wide_value_operation<N,NATIVE_WIDE_DETAIL::wide_trunc,T> &&
     std::same_as<NATIVE_WIDE_DETAIL::wide_result<NATIVE_WIDE_DETAIL::wide_trunc,T>,T>
-  native_nodiscard native_inline constexpr wide<T,N> trunc(wide<T,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<T,N> trunc(wide<T,N> const & input)
       noexcept(noexcept(NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_trunc>(input))) {
     return NATIVE_WIDE_DETAIL::wide_map<NATIVE_WIDE_DETAIL::wide_trunc>(input);
   }
   /// \ingroup wide_values
   /// Copy one value to a pack with the explicitly selected extent.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX)
-  native_nodiscard native_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
+  [[nodiscard]] native_inline constexpr wide<R,N> broadcast(R value) noexcept(noexcept(wide<R,N>::broadcast(value))) {
     return wide<R,N>::broadcast(value);
   }
   /// \ingroup wide_values
   /// Apply the element library's absolute-value operation.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_abs(x); }
-  native_nodiscard native_inline constexpr wide<R,N> abs(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> abs(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_abs(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_abs(std::declval<std::array<R,N> const &>())});
@@ -622,7 +622,7 @@
   /// Apply the element library's square-root operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_sqrt(x); }
-  native_nodiscard native_inline constexpr wide<R,N> sqrt(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> sqrt(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_sqrt(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_sqrt(std::declval<std::array<R,N> const &>())});
@@ -643,7 +643,7 @@
   /// Apply the element library's sine operation in radians.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_sin(x); }
-  native_nodiscard native_inline constexpr wide<R,N> sin(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> sin(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_sin(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_sin(std::declval<std::array<R,N> const &>())});
@@ -664,7 +664,7 @@
   /// Apply the element library's cosine operation in radians.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_cos(x); }
-  native_nodiscard native_inline constexpr wide<R,N> cos(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> cos(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_cos(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_cos(std::declval<std::array<R,N> const &>())});
@@ -686,7 +686,7 @@
   /// Uses one array call when available, otherwise an elementwise fallback.
   /// Untagged element operations are available only at the default degree six.
   template<bool Flush = false,unsigned Degree = 6,class R,std::size_t N> requires (Degree >= 1 && Degree <= 7) && (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(x); }
-  native_nodiscard native_inline constexpr wide<R,N> exp(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> exp(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp<Flush,Degree>(std::declval<std::array<R,N> const &>())});
@@ -707,7 +707,7 @@
   /// Apply base-two exponential; pass the compile-time Flush tag when the element supports it.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<bool Flush = false,class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_exp2<Flush>(x); }
-  native_nodiscard native_inline constexpr wide<R,N> exp2(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> exp2(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_exp2<Flush>(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_exp2<Flush>(std::declval<std::array<R,N> const &>())});
@@ -728,7 +728,7 @@
   /// Apply the element library's exp(x)-1 operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_expm1(x); }
-  native_nodiscard native_inline constexpr wide<R,N> expm1(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> expm1(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_expm1(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_expm1(std::declval<std::array<R,N> const &>())});
@@ -749,7 +749,7 @@
   /// Apply the element library's -expm1(-x) operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_damping_gain(x); }
-  native_nodiscard native_inline constexpr wide<R,N> damping_gain(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> damping_gain(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_damping_gain(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_damping_gain(std::declval<std::array<R,N> const &>())});
@@ -770,7 +770,7 @@
   /// Apply the element library's natural logarithm.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_log(x); }
-  native_nodiscard native_inline constexpr wide<R,N> log(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> log(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_log(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_log(std::declval<std::array<R,N> const &>())});
@@ -791,7 +791,7 @@
   /// Apply the element library's base-two logarithm.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_log2(x); }
-  native_nodiscard native_inline constexpr wide<R,N> log2(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> log2(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_log2(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_log2(std::declval<std::array<R,N> const &>())});
@@ -812,7 +812,7 @@
   /// Apply the element library's log(1+x) operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_log1p(x); }
-  native_nodiscard native_inline constexpr wide<R,N> log1p(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> log1p(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_log1p(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_log1p(std::declval<std::array<R,N> const &>())});
@@ -833,7 +833,7 @@
   /// Apply the element library's hyperbolic tangent.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_tanh(x); }
-  native_nodiscard native_inline constexpr wide<R,N> tanh(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr wide<R,N> tanh(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_tanh(a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_tanh(std::declval<std::array<R,N> const &>())});
@@ -854,7 +854,7 @@
   /// Apply the element library's atan2(y,x), preserving argument order.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_atan2(x,x); }
-  native_nodiscard native_inline constexpr wide<R,N> atan2(wide<R,N> const & y,wide<R,N> const & x)
+  [[nodiscard]] native_inline constexpr wide<R,N> atan2(wide<R,N> const & y,wide<R,N> const & x)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & a) { NATIVE_WIDE_DETAIL::adl_atan2(a,a); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_atan2(std::declval<std::array<R,N> const &>(),
@@ -878,7 +878,7 @@
   /// Apply the element library's fused multiply-add to corresponding elements.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_fma(x,x,x); }
-  native_nodiscard native_inline constexpr wide<R,N> fma(wide<R,N> const & a,wide<R,N> const & b,wide<R,N> const & c)
+  [[nodiscard]] native_inline constexpr wide<R,N> fma(wide<R,N> const & a,wide<R,N> const & b,wide<R,N> const & c)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & x) { NATIVE_WIDE_DETAIL::adl_fma(x,x,x); })
           return noexcept(wide<R,N>{NATIVE_WIDE_DETAIL::adl_fma(std::declval<std::array<R,N> const &>(),
@@ -903,7 +903,7 @@
   /// Return paired sine and cosine packs using the element's paired operation.
   /// Uses one array call when available, otherwise an elementwise fallback.
   template<class R,std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX) && requires(R const & x) { NATIVE_WIDE_DETAIL::adl_sincos(x); }
-  native_nodiscard native_inline constexpr auto sincos(wide<R,N> const & input)
+  [[nodiscard]] native_inline constexpr auto sincos(wide<R,N> const & input)
       noexcept([] {
         if constexpr (requires(std::array<R,N> const & x) { NATIVE_WIDE_DETAIL::adl_sincos(x); })
           return noexcept(NATIVE_WIDE_DETAIL::adl_sincos(std::declval<std::array<R,N> const &>())) &&
@@ -927,7 +927,7 @@
   /// \ingroup wide_values
   /// Choose from `a` or `b` according to the corresponding element mask.
   template <class R, std::size_t N> requires (::native::detail::wide_target<R> == NATIVE_WIDE_INDEX)
-  native_nodiscard native_inline constexpr wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
+  [[nodiscard]] native_inline constexpr wide<R, N> select(wide<decltype(R{} == R{}), N> const & masks,
       wide<R, N> const & a, wide<R, N> const & b)
       noexcept([] {
         if constexpr (N == 0)

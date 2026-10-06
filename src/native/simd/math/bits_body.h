@@ -49,7 +49,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
    * \snippet api.cc bit_transport
    */
   template <fp32_bits_register V, std::size_t N>
-  native_inline constexpr std::array<V, N> flush_to_zero(std::array<V, N> const & x) noexcept {
+  [[nodiscard]] native_inline constexpr std::array<V, N> flush_to_zero(std::array<V, N> const & x) noexcept {
     if consteval {
       std::array<V,N> result{};
       for(std::size_t i=0;i<N;++i) result[i]=::native::detail::float_constant::map([](auto bits) {
@@ -83,7 +83,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   }
   /// \ingroup vector_math
   /// Apply the same bit-preserving signed-zero flush to one register.
-  template <fp32_bits_register V> native_inline constexpr V flush_to_zero(V x) noexcept {
+  template <fp32_bits_register V> [[nodiscard]] native_inline constexpr V flush_to_zero(V x) noexcept {
     return flush_to_zero(std::array{x})[0];
   }
 } // namespace NATIVE_BACKEND_NAMESPACE::native
