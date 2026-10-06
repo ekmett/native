@@ -8,9 +8,7 @@ module;
 #include <cstdint>
 #include <immintrin.h>
 #include "native/x86/detail/constant_lanes.h"
-export module native.x86.sm3;
-export import native.x86.features;
-export import native.simd;
+import native.simd;
 
 namespace native::detail::x86_sm3_constant {
   template<class V> constexpr V sm3msg1(V a, V b, V c) noexcept {
@@ -51,7 +49,7 @@ namespace native::detail::x86_sm3_constant {
   }
 }
 
-export namespace native {
+namespace native {
   /// \defgroup x86_sm3 SM3
   /// \ingroup cpu_x86
   /// Runtime calls require AVX and SM3, matching compiler targets and OS vector state.
@@ -120,3 +118,15 @@ export namespace native {
   template<isa<x86> Arch, unsigned Imm8, class... Args> void sm3rnds2(Args...) = delete;
   /// \}
 }
+
+export module native.x86.sm3;
+export import native.x86.features;
+export import native.simd;
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::sm3msg1;
+  using ::native::sm3msg2;
+  using ::native::sm3rnds2;
+}
+#endif

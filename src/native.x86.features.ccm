@@ -11,10 +11,9 @@ module;
 #include <cpuid.h>
 #endif
 
-export module native.x86.features;
-export import native.isa;
+import native.isa;
 
-export namespace native {
+namespace native {
   /// \defgroup capabilities Feature detection
   /// \ingroup cpu_x86
   /// x86-only queries and wait helpers. Feature queries belong outside hot loops;
@@ -173,4 +172,15 @@ namespace native {
   const enum cpu_vendor cpu_vendor = [] static noexcept {
     return detail::identify_vendor(detail::vendor_identifier(cpuid(0,0)));
   }();
+}
+
+export module native.x86.features;
+export import native.isa;
+
+export namespace native {
+  using ::native::cpuid_t;
+  using ::native::cpuid;
+  using ::native::cpu_vendor;
+  using ::native::x86_capabilities;
+  using ::native::observe_x86_capabilities;
 }

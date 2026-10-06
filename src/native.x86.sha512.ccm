@@ -8,9 +8,7 @@ module;
 #include <cstdint>
 #include <immintrin.h>
 #include "native/x86/detail/constant_lanes.h"
-export module native.x86.sha512;
-export import native.x86.features;
-export import native.simd;
+import native.simd;
 
 namespace native::detail::x86_sha512_constant {
   constexpr std::uint64_t sigma0(std::uint64_t x) noexcept {
@@ -52,7 +50,7 @@ namespace native::detail::x86_sha512_constant {
   }
 }
 
-export namespace native {
+namespace native {
   /// \defgroup x86_sha512 SHA512
   /// \ingroup cpu_x86
   /// Runtime calls require AVX and SHA512, matching compiler targets and OS vector state.
@@ -121,3 +119,15 @@ export namespace native {
   template<isa<x86> Arch, class... Args> void sha512rnds2(Args...) = delete;
   /// \}
 }
+
+export module native.x86.sha512;
+export import native.x86.features;
+export import native.simd;
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::sha512msg1;
+  using ::native::sha512msg2;
+  using ::native::sha512rnds2;
+}
+#endif

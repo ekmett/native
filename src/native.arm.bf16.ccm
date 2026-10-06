@@ -3,9 +3,7 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/bf16.h"
 #include "native/arm/bf16_constexpr.h"
-export module native.arm.bf16;
-export import native.arm.features;
-export import native.simd;
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<int Lane,std::size_t N,std::size_t M,isa<arm> Arch>
@@ -49,7 +47,7 @@ namespace native::detail {
     return simd<float,4,Arch>::load_bits(c.data());
   }
 }
-export namespace native {
+namespace native {
   /// \defgroup arm_bf16 BF16
   /// \ingroup cpu_arm
   /// Runtime calls require arm_feature::neon_bf16 and a compatible bf16 compiler target.
@@ -328,5 +326,21 @@ export namespace native {
 
   /// \endcond
   /// \}
+}
+#endif
+
+export module native.arm.bf16;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::bfdot;
+  using ::native::bfdot_lane;
+  using ::native::bfmlalb;
+  using ::native::bfmlalb_lane;
+  using ::native::bfmlalt;
+  using ::native::bfmlalt_lane;
+  using ::native::bfmmla;
 }
 #endif

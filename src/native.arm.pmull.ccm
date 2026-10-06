@@ -4,9 +4,7 @@ module;
 #include "native/arm/detail/crypto_constant.h"
 #include "native/arm/pmull.h"
 #include "native/targets.h"
-export module native.arm.pmull;
-export import native.arm.features;
-export import native.simd;
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<isa<arm> Arch>
@@ -19,7 +17,7 @@ namespace native::detail {
     return simd<std::uint64_t,2,Arch>(low,high);
   }
 }
-export namespace native {
+namespace native {
   /// \defgroup arm_pmull PMULL
   /// \ingroup cpu_arm
   /// Bit i is the coefficient of x^i. Products use XOR, without carry or
@@ -100,5 +98,16 @@ export namespace native {
   template<isa<arm> Arch, class... T> void pmull2(T...) = delete;
 
   /// \}
+}
+#endif
+
+export module native.arm.pmull;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::pmull;
+  using ::native::pmull2;
 }
 #endif

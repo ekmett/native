@@ -3,9 +3,7 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/fp16fml.h"
 #include "native/detail/constexpr_float.h"
-export module native.arm.fp16fml;
-export import native.arm.features;
-export import native.simd;
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<isa<arm> Arch,bool Subtract,bool High,int Lane,std::size_t N,std::size_t M>
@@ -29,7 +27,7 @@ namespace native::detail {
     return simd<float,N,Arch>::load_bits(c.data());
   }
 }
-export namespace native {
+namespace native {
   /// \defgroup arm_fp16fml FHM
   /// \ingroup cpu_arm
   /// Runtime calls require arm_feature::fp16fml (FEAT_FHM), independently of FCMA/BF16.
@@ -685,5 +683,22 @@ export namespace native {
   void fmlsl2_lane(A, B, C) = delete;
   /// \endcond
   /// \}
+}
+#endif
+
+export module native.arm.fp16fml;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::fmlal;
+  using ::native::fmlal2;
+  using ::native::fmlal2_lane;
+  using ::native::fmlal_lane;
+  using ::native::fmlsl;
+  using ::native::fmlsl2;
+  using ::native::fmlsl2_lane;
+  using ::native::fmlsl_lane;
 }
 #endif

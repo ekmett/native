@@ -4,10 +4,7 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/detail/integer_constant.h"
 #include "native/arm/dotprod.h"
-export module native.arm.dotprod;
-export import native.arm.features;
-export import native.simd;
-export {
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native {
 /** \defgroup arm_dotprod DotProd
@@ -344,4 +341,16 @@ namespace native {
   /// \}
 }
 #endif
+
+export module native.arm.dotprod;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::sdot;
+  using ::native::sdot_lane;
+  using ::native::udot;
+  using ::native::udot_lane;
 }
+#endif

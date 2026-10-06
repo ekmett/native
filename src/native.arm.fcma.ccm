@@ -3,9 +3,7 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/fcma.h"
 #include "native/detail/constexpr_float.h"
-export module native.arm.fcma;
-export import native.arm.features;
-export import native.simd;
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<class T> using fcma_format=std::conditional_t<std::same_as<T,fp16>,
@@ -57,7 +55,7 @@ namespace native::detail {
     return fcma_from_bits<T,N,Arch>(cv);
   }
 }
-export namespace native {
+namespace native {
   /// \defgroup arm_fcma FCMA
   /// \ingroup cpu_arm
   /// Interleaved real/imaginary pairs; requires arm_feature::complxnum (FEAT_FCMA).
@@ -582,5 +580,17 @@ export namespace native {
   void fcmla_lane(A, B, C) = delete;
   /// \endcond
   /// \}
+}
+#endif
+
+export module native.arm.fcma;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::fcadd;
+  using ::native::fcmla;
+  using ::native::fcmla_lane;
 }
 #endif
