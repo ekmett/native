@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+// Parse the limits specializations before importing overlapping standard declarations.
+#include <limits>
 #include "native/isa_import.h"
 #include <bit>
 #include "native/arm/neon.h"

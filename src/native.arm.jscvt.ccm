@@ -11,6 +11,16 @@ export module native.arm.jscvt;
 export import native.arm.features;
 
 namespace native::detail {
+#if NATIVE_HOST_NEON
+  native_inline native_target("jsconv") std::int32_t jcvt_runtime(double value) noexcept {
+    // Clang gates its builtin on all of v8.3a, not jsconv alone. Keep assembly
+    // outside the exported template so importing it needs no asm substitution.
+    std::int32_t result;
+    asm volatile("fjcvtzs %w0, %d1" : "=r"(result) : "w"(value));
+    return result;
+  }
+#endif
+
   constexpr std::int32_t jcvt_constant(double value) noexcept {
     auto bits = std::bit_cast<std::uint64_t>(value);
     auto exponent = unsigned((bits >> 52) & 0x7ff);
@@ -42,10 +52,7 @@ export namespace native {
     if consteval {
       return detail::jcvt_constant(value);
     } else {
-      // Clang gates its builtin on all of v8.3a, not the jsconv feature alone.
-      std::int32_t result;
-      asm volatile("fjcvtzs %w0, %d1" : "=r"(result) : "w"(value));
-      return result;
+      return detail::jcvt_runtime(value);
     }
   }
 
