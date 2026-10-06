@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
@@ -9,9 +10,6 @@ import native.simd;
 #endif
 export module native.math;
 export import native.simd;
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-// Included in the hub purview after the separately owned wide module is imported.
 #if NATIVE_HOST_X86
 export namespace native {
   /// Evaluate the unchanged array exp graph under the common callee ABI policy.
@@ -32,7 +30,6 @@ export namespace native {
 #undef NATIVE_EMIT_WIDE_EXP
 }
 #endif
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 export namespace math {
   using ::native::exp_width;
   using ::native::exp2_width;
