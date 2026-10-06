@@ -9,8 +9,6 @@ export module native.x86.aes;
 export import native.x86.features;
 export import native.simd;
 
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
   /// \defgroup x86_aes AES

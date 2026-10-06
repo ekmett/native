@@ -10,8 +10,6 @@ static_assert(vex256.has(x86_feature::pclmul)); // Compiler prerequisite closure
 static_assert(!vex256.has(x86_feature::avx2));
 static_assert(!evex512.has(x86_feature::avx512vl));
 
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 // Participation includes compile-time-only overloads for complete weak-tag storage.
 // The integer constexpr fixture rejects actual runtime calls to every such overload.
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "support/failure.h"
 #include "support/profile.h"
 #include "support/fp_environment.h"
@@ -75,16 +77,6 @@ namespace exp_before {
 #endif
 }
 
-/**
- * \file
- * \license
- * SPDX-FileType: SOURCE
- * SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
- * SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
- * \endlicense
- * \author Edward Kmett <ekmett@gmail.com>
- * \brief Evaluates the independent split-scale exponential reference.
- */
 #include <bit>
 #include <iostream>
 #include <vector>
@@ -137,14 +129,3 @@ int main() {
   if(native::test::read_fp_state()!=saved)native::test::fail(std::runtime_error("state not restored"));
   std::cout<<"exact raw baseline comparisons passed; input words="<<words.size()<<" per width per mode\n";
 }
-
-/**
- * \file
- * \license
- * SPDX-FileType: SOURCE
- * SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
- * SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
- * \endlicense
- * \author Edward Kmett <ekmett@gmail.com>
- * \brief Checks direct wide exp against its independent historical graph.
- */

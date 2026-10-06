@@ -2,7 +2,6 @@
 #include "prelude.h"
 import native;
 #include "checks.h"
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 namespace bf16_fixture {
   native_target("bf16") bool bridges() {
     environment saved; fpcr(0);

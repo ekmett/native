@@ -18,7 +18,6 @@ import native.x86.features;
 import native.arm.features;
 #endif
 #endif
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 namespace generic_test {
   inline unsigned arrays=0,elements=0,cleanups=0;
   struct value {

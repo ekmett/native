@@ -52,7 +52,6 @@ static_assert(arithmetic<std::int16_t>() && arithmetic<std::uint16_t>());
 static_assert(arithmetic<std::int32_t>() && arithmetic<std::uint32_t>());
 static_assert(arithmetic<std::int64_t>() && arithmetic<std::uint64_t>());
 static_assert(arithmetic<float>() && arithmetic<double>());
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <algorithm>
 #include <bit>
 #include <cmath>
@@ -393,7 +392,6 @@ template <class T> __attribute__((target("simd128"))) bool floating_families() {
   }
   return true;
 }
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 __attribute__((target("simd128"))) bool runtime_mixed() {
   for (unsigned trial = 0; trial < 128; ++trial) {

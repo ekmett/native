@@ -12,9 +12,6 @@ namespace gfni_fixture {
   static_assert(!arch256.has(x86_feature::avx2));
   static_assert(!arch512.has(x86_feature::avx512bw));
 
-
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 // Participation includes compile-time-only overloads for complete weak-tag storage.
 // The integer constexpr fixture rejects actual runtime calls to every such overload.
 

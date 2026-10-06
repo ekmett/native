@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "native/simd/common_body.h"
 
 namespace native::detail::NATIVE_BACKEND {
@@ -139,8 +141,6 @@ namespace native::detail {
   };
 }
 
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Included once per disjoint backend family under its function target scope.
 // Raw SIMD types and operations for the selected compile-time ISA profile.
 
@@ -852,7 +852,6 @@ namespace native {
   }
 }
 
-
 namespace native {
   namespace detail::NATIVE_BACKEND {
     template<std::size_t N> [[nodiscard]] native_inline native_const constexpr auto bool_ones() noexcept {
@@ -1041,7 +1040,6 @@ namespace native {
     else return to_predicate(result);
   }
 }
-
 
 namespace NATIVE_BACKEND_NAMESPACE {
   template <simd_integer_element T> [[nodiscard]] native_inline constexpr auto integer_word(T value) noexcept {
@@ -2026,7 +2024,6 @@ namespace NATIVE_BACKEND_NAMESPACE {
   [[nodiscard]] native_inline native_const uint8x16_t integer_bit_select(uint8x16_t m,uint8x16_t a,uint8x16_t b) noexcept { return vbslq_u8(m,a,b); }
 #endif
 } // namespace NATIVE_BACKEND_NAMESPACE
-
 
 namespace native {
   namespace detail::NATIVE_BACKEND {
@@ -3236,7 +3233,6 @@ namespace native {
     return ::NATIVE_BACKEND_NAMESPACE::load_simd<Arch,T, N>(p.data());
   }
 
-
   }
   namespace detail::NATIVE_BACKEND {
   template <class M, class T, std::size_t N, isa<> Arch>
@@ -3961,8 +3957,6 @@ namespace native {
 
 }
 
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 namespace native {
 #endif
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
@@ -4731,8 +4725,6 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   };
 }
 
-
-
 #if NATIVE_HAS_AVX2 || NATIVE_HAS_ARM_NEON
 #if defined(__x86_64__) || defined(_M_X64)
 #elif defined(__aarch64__) || defined(_M_ARM64)
@@ -5082,8 +5074,6 @@ namespace native {
   [[nodiscard]] native_inline constexpr simd<T,N,Arch> masked_mul(M m,simd<T,N,Arch> prior,simd<T,N,Arch> a,simd<T,N,Arch> b) noexcept { return select(m,a*b,prior); }
 }
 
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #endif
 namespace native {
   namespace detail::NATIVE_BACKEND {
@@ -5182,10 +5172,6 @@ namespace native {
     return {{trunc(x)...}};
   }
 }
-
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 
 namespace native::detail::NATIVE_BACKEND {
   template<std::size_t N,class M>
@@ -5393,7 +5379,6 @@ namespace native {
 }
 
 #if NATIVE_HAS_WASM_SIMD128 || defined(NATIVE_DOXYGEN)
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Included only in the SIMD128 backend target scope.
 namespace native {
   namespace detail {
@@ -6706,7 +6691,6 @@ namespace native {
     }
   }
 } // namespace native
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // SIMD128 instruction families, included in the SIMD128 target scope.
 namespace native {
   namespace detail {

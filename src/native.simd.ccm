@@ -169,7 +169,6 @@ export namespace native {
     }
   };
 
-
   /// Native VDPBF16PS: for each output i, accumulate a[2*i+1]*b[2*i+1]
   /// first, then a[2*i]*b[2*i]. Each FP32 FMA rounds to nearest, ties to even;
   /// input denormals are zero and output denormals are flushed to zero.
@@ -398,7 +397,6 @@ export namespace native {
     }
   };
 
-
   /// Compute a*b+c in each lane with one final half-precision rounding (VFMADD*PH).
   /// MXCSR rounding and exception controls apply, status flags may change, and
   /// DAZ/FTZ are ignored. Control bits are preserved; NaNs follow the instruction.
@@ -560,7 +558,6 @@ export namespace native {
       } else { if (n) std::memcpy(p, &value_, n * sizeof(bf16)); }
     }
   };
-
 
   /// Native BFDOT: output i combines adjacent products a[2*i]*b[2*i] and
   /// a[2*i+1]*b[2*i+1], then adds accumulator[i]. This follows Arm's native
@@ -796,7 +793,6 @@ export namespace native {
     }
   };
 
-
   /// Compute a*b+c in each lane with one final half-precision rounding (FMLA).
   /// The caller's FPCR rounding/FZ16/DN/exception controls apply, FPSR may change,
   /// and FPCR is preserved. NaN payload/sign follow the native instruction.
@@ -812,8 +808,6 @@ export namespace native {
 #pragma clang attribute pop
 #undef NATIVE_ARCH_REQUIRES
 #endif
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Register shapes needed by instruction interfaces outside the arithmetic kernels.
 #if !NATIVE_HOST_WASM
 export namespace native {

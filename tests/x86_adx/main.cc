@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 #include <array>
 #include <bit>
@@ -19,8 +18,6 @@ import native.features;
 #else
 import native;
 #endif
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 
 namespace adx_fixture {
   constexpr auto strong = native::target_features<native::x86>("adx");

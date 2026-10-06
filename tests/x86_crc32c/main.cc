@@ -20,8 +20,6 @@ import native.x86;
 #else
 #error Select the header, direct module, main hub or x86 umbrella test interface.
 #endif
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 #define NATIVE_TARGET_test_crc32c "crc32"
 

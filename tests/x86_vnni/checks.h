@@ -9,9 +9,6 @@ namespace vnni_fixture {
   constexpr auto int8 = native::feature_closure(native::isa<native::x86>{x86_feature::avxvnniint8});
   constexpr auto int16 = native::feature_closure(native::isa<native::x86>{x86_feature::avxvnniint16});
 
-
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 // Participation includes compile-time-only overloads for complete weak-tag storage.
 // The integer constexpr fixture rejects actual runtime calls to every such overload.
 

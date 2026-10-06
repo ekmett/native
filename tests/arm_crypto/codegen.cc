@@ -320,7 +320,6 @@ extern "C" __attribute__((noinline, target("sha3"))) uint64x2_t native_crypto_sh
 extern "C" __attribute__((noinline)) unsigned native_crypto_baseline(unsigned x) { return x * 17 + 3; }
 
 // Same signatures and targets isolate instruction-wrapper overhead.
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 extern "C" __attribute__((noinline, target("aes"))) uint8x16_t native_crypto_aes_0_raw(uint8x16_t state, uint8x16_t round_key) {
   return native::detail::arm_aes::aese<native::feature_closure(native::isa<native::arm>{native::arm_feature::aes})>(state, round_key);

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <bit>
 #include <cstdint>
 #include <cstdio>
@@ -7,8 +9,6 @@
 #include "support/fp_environment.h"
 import native.numerics;
 #include "support/fp_environment.h"
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #include <bit>
 #include <cfenv>
@@ -226,6 +226,3 @@ int main() {
   if (native::scalef(2.0f, 3.0f) != 16.0f) return 9;
   std::puts("fp16/bf16: all 65536 storage encodings preserved; basic conversions, comparisons, traits and RTTI work");
 }
-
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0

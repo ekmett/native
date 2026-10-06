@@ -144,7 +144,6 @@ float32x4_t native_environment(float32x4_t c,bfloat16x8_t a,bfloat16x8_t b,unsig
 }
 
 // Same signatures and targets isolate instruction-wrapper overhead.
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 extern "C" __attribute__((target("bf16"),noinline)) float32x2_t native_bfdot_2_0_0_raw(float32x2_t acc, bfloat16x4_t a, bfloat16x4_t b) {
   return native::detail::arm_bf16::bfdot<arch>(acc,a,b);
 }

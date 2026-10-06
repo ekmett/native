@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "simd_adapter.h"
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <concepts>
 #include <utility>
 namespace fcma_simd_contract {

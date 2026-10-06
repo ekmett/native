@@ -7,7 +7,6 @@ module;
 export module native.wasm.relaxed;
 export import native.wasm.features;
 export import native.simd;
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #if NATIVE_HOST_WASM || defined(NATIVE_DOXYGEN)
 export namespace native {
   /// \defgroup wasm_relaxed Relaxed SIMD

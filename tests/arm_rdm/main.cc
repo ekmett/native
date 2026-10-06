@@ -18,7 +18,6 @@ import native;
 #error Select header, granular module or omnibus interface.
 #endif
 #include "simd_adapter.h"
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <concepts>
 #include <utility>
 namespace rdm_simd_contract {

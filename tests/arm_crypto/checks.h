@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "simd_bridge.h"
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 namespace crypto_fixture {
   template<native::isa<native::arm> A, class T0, class T1> concept available_aes_0 = requires(T0 a0, T1 a1) { native::aese<A>(a0, a1); };
   static_assert(available_aes_0<native::feature_closure(native::isa<native::arm>{native::arm_feature::aes}), native::simd<std::uint8_t, 16, native::feature_closure(native::isa<native::arm>{native::arm_feature::aes})>, native::simd<std::uint8_t, 16, native::feature_closure(native::isa<native::arm>{native::arm_feature::aes})>>);

@@ -581,8 +581,6 @@ namespace math {
     }
   }
 }
-// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
-// SPDX-License-Identifier: (BSD-2-Clause OR Apache-2.0) AND BSL-1.0
 // Adapted from FTZ's seven-interval tanh polynomial, with native arithmetic.
 namespace math::detail {
   template<class V,std::size_t N> requires (::wide::detail::binary32_register<V>)
@@ -944,7 +942,6 @@ namespace math {
 // SPDX-FileCopyrightText: 2017 Edward Kmett
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: Zlib AND BSD-2-Clause
-// Included by wide_math.h after the lifted native operations.
 // Altered source: the original trig reducer and polynomials now operate on
 // standard arrays, preserving each binary32 dependency stage.
 

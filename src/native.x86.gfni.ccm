@@ -6,7 +6,6 @@ module;
 export module native.x86.gfni;
 export import native.x86.features;
 export import native.simd;
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 export namespace native {
 /** \defgroup x86_gfni GFNI
@@ -127,7 +126,6 @@ export namespace native {
     }
   }
 
-
   // 256-bit registers.
   /// Multiply corresponding bytes in GF(2^8).
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx))
@@ -224,7 +222,6 @@ export namespace native {
       return simd<std::uint8_t, 32, Arch>::from_native(detail::x86_gfni::gf2p8affineinvqb_maskz<Arch, Imm8>(k.to_bitset(), a.to_native(), matrix.to_native()));
     }
   }
-
 
   // 512-bit registers.
   /// Multiply corresponding bytes in GF(2^8).

@@ -7,7 +7,6 @@ module;
 export module native.x86.f16c;
 export import native.x86.features;
 export import native.simd;
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<unsigned Imm8> constexpr auto f16c_rounding() noexcept {

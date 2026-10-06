@@ -19,7 +19,6 @@ import native.x86.crc32c;
 #else
 import native;
 #endif
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 namespace scalar_constexpr_fixture {
   template<auto A> consteval bool rejects_foreign_family() {

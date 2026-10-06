@@ -6,7 +6,6 @@
 #include <limits>
 #include <type_traits>
 import native.arm.neon;
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #include <bit>
 #include <cstdint>
@@ -127,7 +126,6 @@ constexpr bool constant_narrow(Low low_operation, High high_operation) {
   return true;
 }
 
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 static_assert(constant_binary<std::int8_t, std::int8_t, 8>([](V<std::int8_t, 8> a, V<std::int8_t, 8> b) { return native::sqadd(a, b); }, reference::operation::add, false, true));
 static_assert(constant_binary<std::int8_t, std::int8_t, 16>([](V<std::int8_t, 16> a, V<std::int8_t, 16> b) { return native::sqadd(a, b); }, reference::operation::add, false, true));
 static_assert(constant_binary<std::int16_t, std::int16_t, 4>([](V<std::int16_t, 4> a, V<std::int16_t, 4> b) { return native::sqadd(a, b); }, reference::operation::add, false, true));
@@ -347,7 +345,6 @@ bool check_narrow(char const *name, Low low_operation, High high_operation) {
 }
 
 bool run() {
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
   if (!check_binary<std::int8_t, std::int8_t, 8>("sqadd_8_8", [](V<std::int8_t, 8> a, V<std::int8_t, 8> b) { return native::sqadd(a, b); }, reference::operation::add, false, true)) return false;
   if (!check_binary<std::int8_t, std::int8_t, 16>("sqadd_8_16", [](V<std::int8_t, 16> a, V<std::int8_t, 16> b) { return native::sqadd(a, b); }, reference::operation::add, false, true)) return false;
   if (!check_binary<std::int16_t, std::int16_t, 4>("sqadd_16_4", [](V<std::int16_t, 4> a, V<std::int16_t, 4> b) { return native::sqadd(a, b); }, reference::operation::add, false, true)) return false;

@@ -9,8 +9,6 @@ namespace f16c_fixture {
   static_assert(std::same_as<decltype(native::cvtss_sh<arch, 255>(0.f)), std::uint16_t>);
   static_assert(std::same_as<decltype(native::cvtsh_ss<arch>(0)), float>);
 
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-
 template<std::size_t N> using floats = native::simd<float,N,arch>;
 template<std::size_t N> using halves = native::simd<native::fp16,N,arch>;
 template<class V> concept can_narrow = requires(V a) { native::cvtps_ph<arch,0>(a); };

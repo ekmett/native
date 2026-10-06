@@ -13,7 +13,6 @@ import native;
 #else
 #error Select the module or hub interface
 #endif
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #include <concepts>
 #include <cstddef>

@@ -15,7 +15,6 @@ import native;
 #else
 #error Select the header, direct module or main hub test interface.
 #endif
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #define NATIVE_TARGET_test_lzcnt "lzcnt"
 inline constexpr auto requirements = NATIVE_TARGET_ISA(test_lzcnt);
 static_assert(requirements == native::isa<native::x86>(native::x86_feature::lzcnt));

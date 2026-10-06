@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <array>
 #include <cstdint>
 
@@ -552,8 +551,6 @@ namespace fixture {
   static_assert(constant_check<sm4e>());
   static_assert(constant_check<sm4ekey>());
 } // namespace fixture
-
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 namespace fixture {
   // SM3("abc"), with complete schedule and compression built from public ops.

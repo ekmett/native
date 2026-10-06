@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "native/config.h"
 #include "native/simd/common.h"
 #include "native/targets.h"
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "native/detail/constexpr_float.h"
 #include <tuple>
 
@@ -146,7 +146,6 @@ namespace native::detail::float_constant {
 #undef NATIVE_COMMON_ARCH
 #endif
 
-// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include "native/detail/constexpr_float.h"
 #include "native/arm/bf16_constexpr.h"
 
