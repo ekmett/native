@@ -7,9 +7,7 @@ module;
 #include <bit>
 #include <cstdint>
 #include <immintrin.h>
-export module native.x86.avxneconvert;
-export import native.x86.features;
-export import native.simd;
+import native.simd;
 
 namespace native::detail::x86_neconvert {
   template<class T> constexpr std::uint32_t widen(T value) noexcept {
@@ -49,7 +47,7 @@ namespace native::detail::x86_neconvert {
   }
 } // namespace native::detail::x86_neconvert
 
-export namespace native {
+namespace native {
   /// \defgroup x86_avxneconvert AVX-NE-CONVERT
   /// \ingroup cpu_x86
   /// Binary16/BF16 memory widening and binary32-to-BF16 narrowing, with no FP exceptions.
@@ -252,3 +250,19 @@ export namespace native {
   }
   /// \}
 } // namespace native
+
+export module native.x86.avxneconvert;
+export import native.x86.features;
+export import native.simd;
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::bcstnebf16_ps;
+  using ::native::bcstnesh_ps;
+  using ::native::cvtneebf16_ps;
+  using ::native::cvtneeph_ps;
+  using ::native::cvtneobf16_ps;
+  using ::native::cvtneoph_ps;
+  using ::native::cvtneps_bf16;
+}
+#endif

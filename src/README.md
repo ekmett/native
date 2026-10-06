@@ -49,13 +49,27 @@ values separately from observation. Applications still own module loading; see
 The SIMD provider compiles at the configured project minimum and contains
 supported host implementations under Clang target attributes. Structural ISA
 values select constrained definitions; an importer's feature macros do not
-change the module's definitions. System headers and intrinsic helpers stay in
-the global module fragment.
+change the module's definitions.
 
-Vector instruction modules import `native.simd` before defining their public
-bindings directly in the module interface. Textual implementation headers serve
-shared consumers or repeated target expansion. Provider defaults and private
-helpers live in the owning module interface. Vector parameters and results use
+**Every definition that calls a platform intrinsic stays in the global module
+fragment**, between `module;` and `export module`. This includes inline and
+always-inline wrappers, template bodies and raw instruction/assembly helpers.
+The boundary preserves the intrinsic declarations needed when an importing
+consumer inlines those definitions. It is a library invariant, not a formatting
+choice. Named-module bindings call the global helpers rather than the intrinsics.
+
+Headers included there are ordinary C++ headers, with ordinary include guards
+and shared declaration identity across modules and translation units. Keep a
+header when multiple global fragments need its definitions, or when textual
+macro expansion requires it. Folding a single-use header must preserve its
+position relative to the module declaration; moving its contents across that
+boundary changes their meaning.
+
+Vector instruction modules import `native.simd` before defining their typed
+bindings. Bindings that call intrinsics are defined in the global fragment and
+exported by name afterward; named-module bindings may instead call global
+helpers. Textual implementation headers serve shared consumers or repeated
+target expansion. Provider defaults stay with the module that supplies them. Vector parameters and results use
 `simd<T,N,Arch>`; scalar operations use ordinary C++ values. AVX-512 masked
 instruction forms use `predicate<N,Arch>`; AVX2 gathers use the instruction's
 full-vector sign-bit mask.

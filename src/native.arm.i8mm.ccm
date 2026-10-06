@@ -3,10 +3,7 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/detail/integer_constant.h"
 #include "native/arm/i8mm.h"
-export module native.arm.i8mm;
-export import native.arm.features;
-export import native.simd;
-export {
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native {
   /// \defgroup arm_i8mm I8MM
@@ -376,4 +373,18 @@ namespace native {
   /// \}
 }
 #endif
+
+export module native.arm.i8mm;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::smmla;
+  using ::native::sudot_lane;
+  using ::native::ummla;
+  using ::native::usdot;
+  using ::native::usdot_lane;
+  using ::native::usmmla;
 }
+#endif

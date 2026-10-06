@@ -23,12 +23,16 @@ result = subprocess.run([args.objdump, '--syms', '--disassemble', '--no-show-raw
 if result.returncode:
     raise SystemExit(result.stderr)
 args.output.with_suffix('.disassembly').write_text(result.stdout, encoding='utf-8')
-parts = re.split(r'(?m)^([0-9a-f]+) <([^\n]+)>:\s*$', result.stdout)
-addresses = {int(parts[i], 16): parts[i + 2] for i in range(1, len(parts), 3)}
-bodies = {parts[i + 1].lstrip('_'): parts[i + 2] for i in range(1, len(parts), 3)}
-for address, name in re.findall(r'(?m)^([0-9a-f]+)\s+[gw]\s+F\s+\S+\s+(_?(?:native|raw)_\w+)$', result.stdout):
-    if int(address, 16) in addresses:
-        bodies[name.lstrip('_')] = addresses[int(address, 16)]
+# Each relocatable object starts its own address space at zero.
+# Do not let a module initializer overwrite a comparison leaf in another object.
+bodies = {}
+for obj in re.split(r'(?m)^.*:\s+file format .*$', result.stdout)[1:]:
+    parts = re.split(r'(?m)^([0-9a-f]+) <([^\n]+)>:\s*$', obj)
+    addresses = {int(parts[i], 16): parts[i + 2] for i in range(1, len(parts), 3)}
+    bodies.update({parts[i + 1].lstrip('_'): parts[i + 2] for i in range(1, len(parts), 3)})
+    for address, name in re.findall(r'(?m)^([0-9a-f]+)\s+[gw]\s+F\s+\S+\s+(_?(?:native|raw)_\w+)$', obj):
+        if int(address, 16) in addresses:
+            bodies[name.lstrip('_')] = addresses[int(address, 16)]
 
 
 def instructions(body):

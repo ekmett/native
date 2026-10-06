@@ -9,9 +9,7 @@ module;
 #include <immintrin.h>
 #include "native/x86/detail/constant_lanes.h"
 #include "native/detail/sm4_sbox.h"
-export module native.x86.sm4;
-export import native.x86.features;
-export import native.simd;
+import native.simd;
 
 namespace native::detail::x86_sm4_constant {
   template<bool Key, class V> constexpr V rounds(V state, V keys) noexcept {
@@ -28,7 +26,7 @@ namespace native::detail::x86_sm4_constant {
   template<class V> constexpr V sm4key4(V a, V b) noexcept { return rounds<true>(a, b); }
 }
 
-export namespace native {
+namespace native {
   /// \defgroup x86_sm4 SM4
   /// \ingroup cpu_x86
   /// Runtime calls require AVX and SM4, matching compiler targets and OS vector state.
@@ -111,3 +109,14 @@ export namespace native {
   template<isa<x86> Arch, class... Args> void sm4key4(Args...) = delete;
   /// \}
 }
+
+export module native.x86.sm4;
+export import native.x86.features;
+export import native.simd;
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::sm4key4;
+  using ::native::sm4rnds4;
+}
+#endif

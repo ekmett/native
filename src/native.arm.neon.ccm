@@ -6,9 +6,7 @@ module;
 #include <bit>
 #include "native/arm/neon.h"
 #include "native/arm/neon_constant.h"
-export module native.arm.neon;
-export import native.arm.features;
-export import native.simd;
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail::arm_neon_bits {
   template<class V, class F> consteval V unary(V input, F operation) noexcept {
@@ -28,7 +26,7 @@ namespace native::detail::arm_neon_bits {
   }
 }
 
-export namespace native {
+namespace native {
   /// \defgroup arm_neon NEON
   /// \ingroup cpu_arm
   /// Typed instruction operations require arm_feature::neon and a matching caller target.
@@ -1240,4 +1238,39 @@ export namespace native {
 
   /// \}
 } // namespace native
+#endif
+
+export module native.arm.neon;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::sqadd;
+  using ::native::uqadd;
+  using ::native::sqsub;
+  using ::native::uqsub;
+  using ::native::sqdmulh;
+  using ::native::sqrdmulh;
+  using ::native::sshl;
+  using ::native::srshl;
+  using ::native::sqshl;
+  using ::native::sqrshl;
+  using ::native::ushl;
+  using ::native::urshl;
+  using ::native::uqshl;
+  using ::native::uqrshl;
+  using ::native::sqxtn;
+  using ::native::sqxtn_high;
+  using ::native::uqxtn;
+  using ::native::uqxtn_high;
+  using ::native::sqxtun;
+  using ::native::sqxtun_high;
+  using ::native::clz;
+  using ::native::cls;
+  using ::native::rbit;
+  using ::native::rev16;
+  using ::native::rev32;
+  using ::native::rev64;
+}
 #endif

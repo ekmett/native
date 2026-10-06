@@ -11,9 +11,7 @@ module;
 #if NATIVE_HOST_X86
 #include <immintrin.h>
 #endif
-export module native.x86.memory;
-export import native.x86.features;
-export import native.simd;
+import native.simd;
 
 #if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
 namespace native::detail::x86_memory {
@@ -80,7 +78,7 @@ namespace native::detail::x86_memory {
   }
 }
 
-export namespace native {
+namespace native {
   /** \defgroup x86_memory AVX2 / AVX-512 gather and scatter
    * \ingroup cpu_x86
    * Gather and scatter retain the hardware index and data register shapes.
@@ -1721,5 +1719,38 @@ export namespace native {
   }
 
   /// \}
+}
+#endif
+
+export module native.x86.memory;
+export import native.x86.features;
+export import native.simd;
+
+#if NATIVE_HOST_X86 || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::mask_vgatherdpd;
+  using ::native::mask_vgatherdps;
+  using ::native::mask_vgatherqpd;
+  using ::native::mask_vgatherqps;
+  using ::native::mask_vpgatherdd;
+  using ::native::mask_vpgatherdq;
+  using ::native::mask_vpgatherqd;
+  using ::native::mask_vpgatherqq;
+  using ::native::mask_vpscatterdd;
+  using ::native::mask_vpscatterdq;
+  using ::native::mask_vpscatterqd;
+  using ::native::mask_vpscatterqq;
+  using ::native::mask_vscatterdpd;
+  using ::native::mask_vscatterdps;
+  using ::native::mask_vscatterqpd;
+  using ::native::mask_vscatterqps;
+  using ::native::vgatherdpd;
+  using ::native::vgatherdps;
+  using ::native::vgatherqpd;
+  using ::native::vgatherqps;
+  using ::native::vpgatherdd;
+  using ::native::vpgatherdq;
+  using ::native::vpgatherqd;
+  using ::native::vpgatherqq;
 }
 #endif

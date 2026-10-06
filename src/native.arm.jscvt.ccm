@@ -7,9 +7,6 @@ module;
 #include <bit>
 #include <cstdint>
 
-export module native.arm.jscvt;
-export import native.arm.features;
-
 namespace native::detail {
 #if NATIVE_HOST_NEON
   native_inline native_target("jsconv") std::int32_t jcvt_runtime(double value) noexcept {
@@ -20,7 +17,12 @@ namespace native::detail {
     return result;
   }
 #endif
+}
 
+export module native.arm.jscvt;
+export import native.arm.features;
+
+namespace native::detail {
   constexpr std::int32_t jcvt_constant(double value) noexcept {
     auto bits = std::bit_cast<std::uint64_t>(value);
     auto exponent = unsigned((bits >> 52) & 0x7ff);

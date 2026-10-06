@@ -7,10 +7,9 @@ module;
 #include "native/attributes.h"
 #include "native/targets.h"
 
-export module native.x86.wait;
-export import native.x86.features;
+import native.x86.features;
 
-export namespace native {
+namespace native {
   /// \defgroup x86_mwaitx MWAITX
   /// \ingroup cpu_x86
   /// MONITORX and MWAITX require x86_feature::mwaitx, reported by extended
@@ -124,8 +123,8 @@ export namespace native {
 }
 
 namespace native {
-  // Out-of-line module-owned leaves avoid exposing the intrinsic headers'
-  // TU-local inline functions through a BMI, and preserve baseline callers.
+  // Global-module instruction definitions preserve intrinsic linkage.
+  // Out-of-line calls let the waiter dispatch remain at the baseline target.
   [[gnu::target("mwaitx")]] void mwaitx::monitor(volatile void * p) noexcept {
     _mm_monitorx(const_cast<void *>(p), 0, 0);
   }
@@ -146,4 +145,17 @@ namespace native {
   }
   const bool mwaitx::supported = classify_isa(wait_capabilities, x86_feature::mwaitx).admitted();
   const bool umwait::supported = classify_isa(wait_capabilities, x86_feature::waitpkg).admitted();
+}
+
+export module native.x86.wait;
+export import native.x86.features;
+
+export namespace native {
+  using ::native::waiter;
+  using ::native::wait_until;
+  using ::native::mwaitx;
+  using ::native::umwait;
+  using ::native::tpause;
+  using ::native::spin;
+  using ::native::with_waiter;
 }

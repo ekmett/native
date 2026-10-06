@@ -11,26 +11,6 @@ module;
 #include <arm_neon.h>
 #endif
 #include "native/targets.h"
-export module native.arm.sm4;
-export import native.arm.features;
-export import native.simd;
-namespace native::detail::arm_sm4_constant {
-
-
-  template<bool Key, class V> constexpr V rounds(V state, V keys) noexcept {
-    return arm_constant::pack<V>(sm4_rounds<Key>(
-      arm_constant::lanes(state), arm_constant::lanes(keys)));
-  }
-
-  template<class V> constexpr V sm4e(V state, V keys) noexcept {
-    return rounds<false>(state, keys);
-  }
-
-  template<class V> constexpr V sm4ekey(V state, V constants) noexcept {
-    return rounds<true>(state, constants);
-  }
-} // namespace native::detail::arm_sm4_constant
-
 /// \cond NATIVE_DETAIL
 #if NATIVE_HOST_NEON
 
@@ -52,6 +32,27 @@ namespace native::detail::arm_sm4 {
 } // namespace native::detail::arm_sm4
 #endif
 /// \endcond
+
+export module native.arm.sm4;
+export import native.arm.features;
+export import native.simd;
+namespace native::detail::arm_sm4_constant {
+
+
+  template<bool Key, class V> constexpr V rounds(V state, V keys) noexcept {
+    return arm_constant::pack<V>(sm4_rounds<Key>(
+      arm_constant::lanes(state), arm_constant::lanes(keys)));
+  }
+
+  template<class V> constexpr V sm4e(V state, V keys) noexcept {
+    return rounds<false>(state, keys);
+  }
+
+  template<class V> constexpr V sm4ekey(V state, V constants) noexcept {
+    return rounds<true>(state, constants);
+  }
+} // namespace native::detail::arm_sm4_constant
+
 
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 export namespace native {

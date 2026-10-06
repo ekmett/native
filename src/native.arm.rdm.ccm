@@ -5,10 +5,7 @@ module;
 #include "native/arm/detail/integer_constant.h"
 #include "native/arm/rdm.h"
 #include "native/targets.h"
-export module native.arm.rdm;
-export import native.arm.features;
-export import native.simd;
-export {
+import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native {
 /** \defgroup arm_rdm RDM
@@ -901,4 +898,16 @@ namespace native {
   /// \}
 }
 #endif
+
+export module native.arm.rdm;
+export import native.arm.features;
+export import native.simd;
+
+#if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
+export namespace native {
+  using ::native::sqrdmlah;
+  using ::native::sqrdmlah_lane;
+  using ::native::sqrdmlsh;
+  using ::native::sqrdmlsh_lane;
 }
+#endif

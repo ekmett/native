@@ -26,6 +26,8 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
 find_program(jscvt_objdump NAMES llvm-objdump HINTS "${compiler_dir}" REQUIRED)
 add_library(native_test_arm_jscvt_codegen OBJECT codegen.cc)
+target_sources(native_test_arm_jscvt_codegen PRIVATE
+  FILE_SET CXX_MODULES FILES consumer.ccm)
 target_link_libraries(native_test_arm_jscvt_codegen PRIVATE native::minimal)
 set_target_properties(native_test_arm_jscvt_codegen PROPERTIES CXX_SCAN_FOR_MODULES ON
   INTERPROCEDURAL_OPTIMIZATION FALSE)

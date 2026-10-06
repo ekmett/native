@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <cstdint>
+#include <native/attributes.h>
+export module native_test.jscvt;
+import native.arm.jscvt;
+
+// Exercise inlining through another named module, not just a direct importer.
+export namespace native_test {
+  native_inline __attribute__((target("jsconv"))) std::int32_t jcvt(double x) noexcept {
+    return native::jcvt<native::target_features("jsconv")>(x);
+  }
+}
