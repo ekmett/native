@@ -42,7 +42,10 @@ export namespace native {
     if consteval {
       return detail::jcvt_constant(value);
     } else {
-      return __builtin_arm_jcvt(value);
+      // Clang gates its builtin on all of v8.3a, not the jsconv feature alone.
+      std::int32_t result;
+      asm volatile("fjcvtzs %w0, %d1" : "=r"(result) : "w"(value));
+      return result;
     }
   }
 
