@@ -1,6 +1,20 @@
 name: native
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build.yml'
+      - '.github/actions/**'
+      - '.github/scripts/**'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'etc/cmake/**'
+      - 'src/**'
+      - 'tests/**'
+      - '!src/**/*.md'
+      - '!tests/**/*.md'
+      - 'README.md'
   pull_request:
     paths:
       - '.github/workflows/build.yml'
@@ -14,6 +28,8 @@ on:
       - '!src/**/*.md'
       - '!tests/**/*.md'
       - 'README.md'
+  schedule:
+    - cron: '23 7 * * *'
   workflow_dispatch:
 
 permissions:
@@ -27,8 +43,7 @@ jobs:
   build:
     name: ${{ matrix.platform.name }} / exceptions=${{ matrix.exceptions }}
     runs-on: ${{ matrix.platform.runner }}
-    # Source and relocated consumers both rebuild the complete module graph.
-    timeout-minutes: 90
+    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 90 || github.event_name == 'schedule' && 45 || 20 }}
     env:
       SCCACHE_GHA_ENABLED: "true"
     defaults:
@@ -37,7 +52,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Routine PR checks use two ARM hosts. Manual dispatch qualifies all ten configurations.
+        # Main: one smoke runner. PRs add Windows ARM; nightly adds x86.
+        # Manual dispatch retains all platforms and both exception modes.
         exceptions: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
         platform: >-
           ${{ fromJSON(github.event_name == 'workflow_dispatch' &&
@@ -45,9 +61,12 @@ jobs:
             {"name":"Windows x64 LLVM 23 / AVX2","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
             {"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
             {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"macOS LLVM 23 / NEON","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
+            {"name":"macOS LLVM 23 / NEON","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'schedule' &&
+          '[{"name":"Linux LLVM 23 / AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'pull_request' &&
           '[{"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
+            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
+          '[{"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -155,6 +174,7 @@ jobs:
           fi
           echo "Native CPU package tests: $RUNNER_OS / $(uname -m) / $TEST_PROFILE. AVX-512 compilation is not proof of AVX-512 execution; profile tests report unsupported hardware as skipped." >> "$GITHUB_STEP_SUMMARY"
       - name: Check compiler cache launcher
+        if: github.event_name == 'workflow_dispatch'
         run: |
           if [[ "$RUNNER_OS" == Windows ]]; then
             python -B .github/scripts/test_sccache_launcher.py
@@ -162,11 +182,11 @@ jobs:
             python3 -B .github/scripts/test_sccache_launcher.py
           fi
       - name: Check PCH cache invalidation
-        if: runner.os != 'Windows'
+        if: github.event_name == 'workflow_dispatch' && runner.os != 'Windows'
         run: |
           python3 -B .github/scripts/test_sccache_pch.py "$(command -v clang++)" "$GITHUB_WORKSPACE/build/sccache-pch-probe"
       - name: Check Windows module cache invalidation
-        if: runner.os == 'Windows'
+        if: github.event_name == 'workflow_dispatch' && runner.os == 'Windows'
         run: |
           python -B .github/scripts/test_sccache_modules.py --compiler clang-cl \
             --output build/sccache-modules --cmake-arg=-DCMAKE_LINKER_TYPE=LLD
@@ -188,7 +208,8 @@ jobs:
           cmake -S . -B build/core -G Ninja \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER="$launcher" \
-            -DNATIVE_BUILD_TESTS=ON -DNATIVE_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} -DNATIVE_ENABLE_PCH=ON -DNATIVE_ENABLE_IPO=ON \
+            -DNATIVE_BUILD_TESTS=ON -DNATIVE_TEST_EXTENDED=${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ON' || 'OFF' }} \
+            -DNATIVE_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} -DNATIVE_ENABLE_PCH=ON -DNATIVE_ENABLE_IPO=ON \
             -DNATIVE_TEST_ISA="${{ matrix.platform.profile }}" \
             '-DNATIVE_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
       - name: Build
@@ -197,19 +218,8 @@ jobs:
         shell: bash
         run: |
           ctest --test-dir build/core --show-only=json-v1 > build/tests.json
-          ctest --test-dir build/core --no-tests=error --output-on-failure \
+          ctest --test-dir build/core --parallel --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
-      - name: Retain native NEON compaction observations
-        if: matrix.platform.profile == 'NEON'
-        shell: bash
-        run: |
-          executable=build/core/tests/compaction/native_compaction_neon_import
-          if [[ "$RUNNER_OS" == Windows ]]; then executable+=.exe; fi
-          "$executable" --bench | tee build/compaction-neon-benchmark.log
-          object=$(find build/core/tests/compaction -type f -path '*native_compaction_neon_import_body.dir*' \( -name main.cc.o -o -name main.cc.obj \) -print -quit)
-          test -n "$object"
-          llvm-objdump -d --disassemble-symbols=compaction_codegen,expansion_codegen,compaction_store_codegen,_compaction_codegen,_expansion_codegen,_compaction_store_codegen "$object" > build/compaction-neon-codegen.log
-          echo 'NEON compaction observations compare interleaved native and reference kernels on this hosted runner; these are not stable performance guarantees.' >> "$GITHUB_STEP_SUMMARY"
       - name: Install
         run: cmake --install build/core --prefix build/install
       - name: Test relocated package boundaries and modules
@@ -220,22 +230,14 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
-          suites=(public_headers omnibus api half_storage half_constexpr floating_instructions_constexpr float_constexpr instruction_storage source_targets native_cutover wasm_features)
-          if [[ "${{ matrix.platform.profile }}" != NEON ]]; then
-            suites+=(cpuid_package profile_package bf16_profile avx512_fp16 x86_crc32c x86_aes x86_sha x86_vaes x86_ifma x86_adx x86_gfni x86_vpopcntdq x86_avx512cd x86_bitalg x86_vbmi x86_vbmi2 x86_memory x86_pclmul x86_vnni x86_f16c x86_scalar_defaults x86_constexpr x86_integer_constexpr)
-          else
-            suites+=(neon_fp16 neon_bf16 arm_neon arm_dotprod arm_rdm arm_fp16fml arm_fcma arm_i8mm arm_bf16 arm_crc arm_crypto arm_sm_crypto arm_scalar_defaults arm_constexpr)
-          fi
-          for suite in "${suites[@]}"; do
-            cmake -S "tests/$suite" -B "build/$suite" -G Ninja \
-              -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
-              -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/native" \
-              -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
-              "${extra[@]}"
-            cmake --build "build/$suite" --parallel
-            ctest --test-dir "build/$suite" --no-tests=error --output-on-failure \
-              --output-junit "$GITHUB_WORKSPACE/build/$suite-tests.xml"
-          done
+          cmake -S tests/package -B build/package -G Ninja \
+            -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
+            -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/native" \
+            -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
+            "${extra[@]}"
+          cmake --build build/package --parallel
+          ctest --test-dir build/package --parallel --no-tests=error --output-on-failure \
+            --output-junit "$GITHUB_WORKSPACE/build/package-tests.xml"
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
         shell: bash
@@ -259,79 +261,17 @@ jobs:
           if-no-files-found: ignore
           path: |
             build/environment.log
-            build/compaction-neon-benchmark.log
-            build/compaction-neon-codegen.log
             build/sccache-*
             build/tests.json
             build/tests.xml
-            build/*-tests.xml
-            build/public_headers/Testing/Temporary/
-            build/omnibus/Testing/Temporary/
-            build/cpuid_package/Testing/Temporary/
-            build/cpuid_package/compile_commands.json
-            build/core/tests/*/codegen.txt
-            build/*/codegen.txt
-            build/core/tests/source_targets/*.disassembly
-            build/source_targets/*.disassembly
-            build/core/tests/source_targets/reject-*.log
-            build/core/tests/x86_gfni/*.disassembly
-            build/core/tests/x86_gfni/*reject*.log
-            build/x86_gfni/*.disassembly
-            build/core/tests/x86_vpopcntdq/*.disassembly
-            build/core/tests/x86_vpopcntdq/reject-*.log
-            build/x86_vpopcntdq/*.disassembly
-            build/core/tests/x86_vpopcntdq/*-paired-*.txt
-            build/core/tests/x86_sha/*.disassembly
-            build/core/tests/x86_sha/*paired-*.txt
-            build/core/tests/x86_sha/reject-*.log
-            build/x86_sha/*.disassembly
-            build/core/tests/x86_vaes/*.disassembly
-            build/core/tests/x86_vaes/*paired-*.txt
-            build/core/tests/x86_vaes/reject-*.log
-            build/x86_vaes/*.disassembly
-            build/core/tests/x86_ifma/*.disassembly
-            build/core/tests/x86_ifma/paired-*.txt
-            build/core/tests/x86_ifma/reject-*.log
-            build/x86_ifma/*.disassembly
-            build/core/tests/x86_adx/*.disassembly
-            build/core/tests/x86_adx/paired-*.txt
-            build/core/tests/x86_adx/reject-*.log
-            build/x86_adx/*.disassembly
-            build/core/tests/x86_aes/*.disassembly
-            build/core/tests/x86_aes/*-paired-*.txt
-            build/core/tests/x86_aes/*-reject-*.log
-            build/x86_aes/*.disassembly
-            build/core/tests/x86_avx512cd/*.disassembly
-            build/core/tests/x86_avx512cd/*-paired-*.txt
-            build/core/tests/x86_avx512cd/reject-*.log
-            build/x86_avx512cd/*.disassembly
-            build/core/tests/x86_vbmi2/*-paired-*.txt
-            build/core/tests/x86_vbmi2/*.disassembly
-            build/core/tests/x86_vbmi2/reject-*.log
-            build/x86_vbmi2/*.disassembly
-            build/core/tests/x86_vbmi/*-paired-*.txt
-            build/core/tests/x86_vbmi/*.disassembly
-            build/core/tests/x86_vbmi/reject-*.log
-            build/x86_vbmi/*.disassembly
-            build/core/tests/x86_bitalg/*-paired-*.txt
-            build/core/tests/x86_bitalg/*.disassembly
-            build/core/tests/x86_bitalg/reject-*.log
-            build/x86_bitalg/*.disassembly
-            build/core/tests/x86_crc32c/*.disassembly
-            build/core/tests/x86_crc32c/reject-*.log
-            build/x86_crc32c/*.disassembly
-            build/x86_crc32c/reject-*.log
-            build/core/tests/arm_neon/paired-*.json
-            build/core/tests/arm_sm_crypto/paired-*.json
-            build/core/tests/arm_*/*codegen.txt
-            build/core/tests/arm_*/*.disassembly
-            build/core/tests/arm_*/negative-*.txt
-            build/core/tests/arm_*/reject-*.log
-            build/core/tests/arm_*/endian-*.s
-            build/core/tests/arm_*/big-endian/
-            build/source_targets/reject-*.log
-            build/*/compile_commands.json
-            build/*/Testing/Temporary/
+            build/package-tests.xml
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/
+            build/package/Testing/Temporary/
+            build/package/compile_commands.json
+            build/core/tests/**/*.log
+            build/core/tests/**/*.disassembly
+            build/core/tests/**/codegen.txt
+            build/core/tests/**/paired-*.json
+            build/core/tests/**/*-paired-*.txt

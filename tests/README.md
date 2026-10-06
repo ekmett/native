@@ -1,51 +1,42 @@
 # Tests
 
-The default host build checks raw SIMD arithmetic, numerics, integers, masks,
-memory tails, modules and per-profile identity. Use a C++26 compiler with
-structured-binding packs, CMake 4.4 or newer, and Ninja. Select an ISA already
-admitted on the host. In an initialized Windows Clang toolchain environment:
+The default host suite is a smoke test: ordinary SIMD and `wide` operations,
+math, masks, memory tails, and a few known results per instruction family.
+It uses the documented API examples and one instruction executable. Optional
+instructions are checked at compile time and run only when the CPU and OS
+admit them.
+
+Use Clang 23, CMake 4.4 or newer, and Ninja. Choose a profile the host supports:
 
 ```sh
-cmake -S . -B build/test-avx2 -G Ninja -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_BUILD_TYPE=Release -DNATIVE_TEST_ISA=AVX2 -DNATIVE_BUILD_TESTS=ON
-cmake --build build/test-avx2 --parallel
-ctest --test-dir build/test-avx2 --output-on-failure
+cmake -S . -B build/test -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DNATIVE_TEST_ISA=AVX2 -DNATIVE_BUILD_TESTS=ON
+cmake --build build/test --parallel
+ctest --test-dir build/test --parallel --output-on-failure
 ```
 
-One build can exercise several profiles through `NATIVE_PROFILES`; they share
-the hub BMI. Use separate build directories when changing the primary test ISA,
-exception setting or sanitizer configuration. Numerical fixtures set and restore
-their own floating-point controls; raw operations retain the active environment's
-semantics.
+On ARM use `NEON`; on Windows use `clang-cl` in an initialized toolchain
+shell. `NATIVE_TEST_EXTENDED=ON` adds the exhaustive numerical checks,
+code-generation comparisons and compiler-rejection tests. These run nightly
+on Linux ARM64 and x86-64, or locally when the change warrants them. CTest
+serializes tests that deliberately rebuild invalid targets in the same tree.
 
-The [validation guide](validation.md) describes CI coverage, numerical checks
-and compiler limitations. Focused projects document their commands in adjacent READMEs.
-The optional [AVX512 FP16 fixture](avx512_fp16/README.md) checks baseline admission,
-native code generation and relocated consumers sharing one baseline hub BMI,
-even on hosts where native execution reports an unsupported-profile skip.
-The [instruction storage checks](instruction_storage/README.md) cover the
-representation and memory boundaries of shapes used by instruction extensions.
-Each instruction family also checks its public SIMD calls against the matching
-raw instruction sequence. Runtime checks report a skip when the host lacks the
-required feature; compiling an operation does not establish hardware behavior.
-The [SM3/SM4 fixture](arm_sm_crypto/README.md) separately checks all nine typed
-operations, constant-evaluation known answers, independent feature observations
-and the compiler target requirements.
+Installed-package validation uses one consumer graph for public headers,
+the omnibus and API examples. Move the install prefix before configuring it:
 
-Constant-evaluation fixtures compare public calls with independent integer
-references or admitted hardware results. They cover integer and cryptographic
-families, [floating instructions](floating_instructions_constexpr/README.md),
-[half-vector arithmetic](half_constexpr/README.md), and ordinary SIMD storage
-and masks. Below-feature calls have separate compile-failure checks with runtime
-inputs.
+```sh
+cmake --install build/test --prefix build/install
+cmake -E rename build/install 'build/relocated package'
+cmake -S tests/package -B build/package -G Ninja -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -Dnative_DIR="$PWD/build/relocated package/lib/cmake/native"
+cmake --build build/package --parallel
+ctest --test-dir build/package --parallel --output-on-failure
+```
 
-Generated property tests use reproducible seeds and report the seed, case index
-and input bits on failure. Suites using `property_config` accept
-`NATIVE_TEST_SEED` and `NATIVE_TEST_CASES` to replay or extend a run. Compile-time
-corpora use fixed seeds so every build checks the same cases.
+Each required module is built once for these consumers. The tests check that
+core imports share a BMI. Keep build output outside the source tree.
 
-Generated packets, compiler output and machine reports belong in build
-directories. Correctness and code-generation checks do not establish measured
-performance.
+See [validation](validation.md) for CI cadence and the contracts checked by
+the extended suite. Unsupported hardware is reported; a compiled or skipped
+operation is not evidence of its runtime behavior.
 
 <!-- SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->

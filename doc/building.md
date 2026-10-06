@@ -18,6 +18,9 @@ common modules compile at that minimum; stronger implementations carry Clang fun
 target attributes. `NATIVE_PROFILES` selects test coverage and `NATIVE_TEST_ISA`
 selects the primary regression implementation. Neither changes the hub API.
 
+The default host tests are a small smoke suite. Set `NATIVE_TEST_EXTENDED=ON`
+for exhaustive numerical checks, compiler-rejection tests and assembly comparisons.
+
 `NATIVE_ENABLE_EXCEPTIONS` defaults to OFF. Producer and consumer compiler,
 standard-library and exception modes must agree. `NATIVE_ENABLE_ASAN` enables
 host-memory checks. ISA properties and named swizzles require Clang's property

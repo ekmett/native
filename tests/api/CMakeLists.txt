@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 cmake_minimum_required(VERSION 4.4)
-project(native_api_examples LANGUAGES CXX)
-find_package(native CONFIG REQUIRED COMPONENTS native)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_api_examples LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+endif()
 enable_testing()
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm64|aarch64|ARM64)$")
   set(api_default_profile NEON)

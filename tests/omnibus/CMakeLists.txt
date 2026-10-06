@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 cmake_minimum_required(VERSION 4.4)
-project(native_omnibus_consumer LANGUAGES CXX)
-find_package(native CONFIG REQUIRED COMPONENTS native)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_omnibus_consumer LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS native)
+endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(OMNIBUS_PCH "Use a consumer-owned standard-header PCH" ON)
 option(OMNIBUS_IPO "Use IPO on native kernels" ON)

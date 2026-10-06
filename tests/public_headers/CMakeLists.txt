@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 cmake_minimum_required(VERSION 4.4)
-project(native_public_headers LANGUAGES CXX)
-find_package(native CONFIG REQUIRED COMPONENTS headers)
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  project(native_public_headers LANGUAGES CXX)
+  find_package(native CONFIG REQUIRED COMPONENTS headers)
+endif()
 enable_testing()
 add_executable(public_headers headers.cc)
 target_link_libraries(public_headers PRIVATE native::headers)

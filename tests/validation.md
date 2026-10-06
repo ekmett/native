@@ -20,19 +20,23 @@ host implementations at the configured project minimum. Run separate builds
 for exception settings and sanitizers. `NATIVE_ENABLE_ASAN=ON` instruments host
 memory checks; use a separate build directory with IPO disabled for that run.
 
-Routine validation runs locally. For relevant pull-request changes, the
-[native CI workflow](https://github.com/ekmett/native/blob/main/.github/workflows/build.yml)
-runs Linux ARM64 and Windows ARM64 with exceptions enabled. Both jobs retain
-the complete source tests and physically relocated package checks. Changes to
-source, tests, CMake configuration, CI tooling or the compiled README example
-trigger these jobs; source and test Markdown alone does not. Native CI does not
-repeat automatically after a merge.
+The default host build runs a small smoke suite: the documented API examples
+and known-result checks for instruction families, including constant evaluation.
+Set `NATIVE_TEST_EXTENDED=ON` to add the numerical corpora, assembly comparisons
+and compiler-rejection tests described below. Both modes share the source
+module graph; the extended mode includes the smoke tests.
 
-Use **Run workflow** on **C++26 modules** for the full ten-job qualification:
-Linux x86-64 and ARM64, Windows x64 and ARM64, and macOS ARM64, each with
-exceptions enabled and disabled. Routine PR checks therefore do not establish
-x86, macOS or exception-disabled coverage for that revision; qualify those
-locally or request the full workflow when needed.
+The [native CI workflow](https://github.com/ekmett/native/blob/main/.github/workflows/build.yml)
+runs one Linux ARM64 smoke job on relevant pushes to `main`. Pull requests add
+Windows ARM64. Source, tests, CMake configuration, CI tooling and the compiled
+README example trigger these jobs; source and test Markdown alone does not.
+Each job also tests a physically relocated package in one shared consumer build.
+
+Nightly checks run the extended suite on Linux ARM64 and x86-64. **Run workflow**
+on **native** requests all five platforms with exceptions enabled and disabled:
+Linux x86-64 and ARM64, Windows x64 and ARM64, and macOS ARM64. Compiler-cache
+invalidation checks also run on that manual path. Routine checks use exceptions
+enabled; they do not establish coverage of every platform or configuration.
 
 Superseded PR runs are canceled. A new manual run cancels an older manual run
 on the same ref, while manual qualification remains separate from PR checks.
@@ -141,11 +145,11 @@ are checked against the owning module's compiler baseline. Changing an enclosing
 function target does not change that default. Frozen-BMI probes distinguish
 accepted imports from compiler rejection of incompatible target configurations.
 
-Installed-package tests physically move the prefix, including to paths with
-spaces, before configuring consumers. They require the original prefix to be
-absent, reject source-tree implementation include paths and compare installed
-file hashes before and after consumer builds. Granular imports, the `native`
-umbrella and separate numerical imports are exercised through the package.
+The routine installed-package check moves the prefix to a path with spaces,
+then builds header, omnibus and API consumers in one graph. It checks shared
+BMI identity. Focused package tests additionally check source-tree include
+leaks and installed-file integrity. Granular imports, the `native` umbrella
+and separate numerical imports are exercised through the package.
 
 Compiler version, language mode, exception settings and standard-library
 configuration must agree across a module boundary. A successful source-tree
