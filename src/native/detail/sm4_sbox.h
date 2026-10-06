@@ -1,10 +1,17 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+/** \file
+ * \brief Shared SM4 substitution and four-round semantics for ARM and x86.
+ *
+ * State words are in instruction lane order. Each round shifts out the first
+ * word and appends its replacement; Key selects the key-schedule rotations.
+ */
 #pragma once
 #include <array>
+#include <bit>
 #include <cstdint>
 namespace native::detail {
   // The fixed SM4 substitution permutation, in input-byte order (GB/T 32907-2016).
-  inline constexpr std::array<std::uint8_t, 256> sbox{0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d,
+  inline constexpr std::array<std::uint8_t, 256> sm4_sbox{0xd6, 0x90, 0xe9, 0xfe, 0xcc, 0xe1, 0x3d,
     0xb7, 0x16, 0xb6, 0x14, 0xc2, 0x28, 0xfb, 0x2c, 0x05, 0x2b, 0x67, 0x9a, 0x76, 0x2a, 0xbe, 0x04,
     0xc3, 0xaa, 0x44, 0x13, 0x26, 0x49, 0x86, 0x06, 0x99, 0x9c, 0x42, 0x50, 0xf4, 0x91, 0xef, 0x98,
     0x7a, 0x33, 0x54, 0x0b, 0x43, 0xed, 0xcf, 0xac, 0x62, 0xe4, 0xb3, 0x1c, 0xa9, 0xc9, 0x08, 0xe8,
@@ -21,4 +28,21 @@ namespace native::detail {
     0xbd, 0x2d, 0x74, 0xd0, 0x12, 0xb8, 0xe5, 0xb4, 0xb0, 0x89, 0x69, 0x97, 0x4a, 0x0c, 0x96, 0x77,
     0x7e, 0x65, 0xb9, 0xf1, 0x09, 0xc5, 0x6e, 0xc6, 0x84, 0x18, 0xf0, 0x7d, 0xec, 0x3a, 0xdc, 0x4d,
     0x20, 0x79, 0xee, 0x5f, 0x3e, 0xd7, 0xcb, 0x39, 0x48};
+
+  template<bool Key>
+  constexpr auto sm4_rounds(std::array<std::uint32_t, 4> state,
+    std::array<std::uint32_t, 4> const & keys) noexcept {
+    for (unsigned i = 0; i < 4; ++i) {
+      auto mixed = state[1] ^ state[2] ^ state[3] ^ keys[i];
+      std::uint32_t substituted = 0;
+      for (unsigned byte = 0; byte < 4; ++byte)
+        substituted |= std::uint32_t(sm4_sbox[(mixed >> (byte * 8)) & 255]) << (byte * 8);
+      auto next = state[0] ^ substituted;
+      if constexpr (Key) next ^= std::rotl(substituted, 13) ^ std::rotl(substituted, 23);
+      else next ^= std::rotl(substituted, 2) ^ std::rotl(substituted, 10) ^
+        std::rotl(substituted, 18) ^ std::rotl(substituted, 24);
+      state = {state[1], state[2], state[3], next};
+    }
+    return state;
+  }
 }

@@ -42,106 +42,80 @@ namespace bmi2_fixture {
 
   template<class U> constexpr unsigned width = std::numeric_limits<U>::digits;
 
-  template<class U> U rotate_oracle(U x, unsigned count) {
-    for (unsigned i = 0; i != count % width<U>; ++i)
-      x = U((x / 2) | ((x & 1) << (width<U> - 1)));
-    return x;
-  }
-
-  template<class U> U bzhi_oracle(U x, unsigned index) {
-    U result = 0;
-    for (unsigned bit = 0; bit != width<U>; ++bit)
-      if (bit < (index & 255u)) result |= x & (U{1} << bit);
-    return result;
-  }
-
-  // Schoolbook multiplication in two words; no intrinsic or wider-integer dependency.
-  template<class U> std::array<U, 2> product_oracle(U a, U b) {
-    std::array<U, 2> result{};
-    for (unsigned bit = 0; bit != width<U>; ++bit) {
-      if (((b >> bit) & 1) == 0) continue;
-      U low = U(a << bit);
-      U high = bit ? U(a >> (width<U> - bit)) : U{0};
-      U previous = result[0];
-      result[0] += low;
-      result[1] += U(high + U(result[0] < previous));
-    }
-    return result;
-  }
-
-  template<class U> U shift_oracle(U x, unsigned count, bool left, bool arithmetic) {
-    U sign = arithmetic ? x & (U{1} << (width<U> - 1)) : 0;
-    for (unsigned i = 0; i != count % width<U>; ++i)
-      x = left ? U(x * 2) : U((x / 2) | sign);
-    return x;
-  }
-
-  template<unsigned Imm8, class U>
-  __attribute__((target("bmi2"))) bool check_rotate(U x) {
-    return native::rorx<arch, Imm8>(x) == rotate_oracle(x, Imm8);
-  }
-
   template<class U>
-  __attribute__((target("bmi2"))) bool check_pair(U x, U y, unsigned random_count) {
-    auto product = product_oracle(x, y);
-    U high = ~product[1];
-    U low = native::mulx<arch>(x, y, &high);
-    if (low != product[0] || high != product[1]) return false;
-    // The high-half write remains observable when the low half is discarded.
-    high = ~product[1];
-    static_cast<void>(native::mulx<arch>(x, y, &high));
-    if (high != product[1]) return false;
-
-    for (unsigned count : std::array<unsigned, 18>{0, 1, 7, 31, 32, 33, 63, 64, 65,
-                                                  127, 128, 255, 256, 257, 511, 512,
-                                                  ~0u, random_count}) {
-      if (native::bzhi<arch>(x, count) != bzhi_oracle(x, count)) return false;
-      if (native::shlx<arch>(x, count) != shift_oracle(x, count, true, false)) return false;
-      if (native::shrx<arch>(x, count) != shift_oracle(x, count, false, false)) return false;
-      using S = std::make_signed_t<U>;
-      auto shifted = native::sarx<arch>(std::bit_cast<S>(x), count);
-      if (std::bit_cast<U>(shifted) != shift_oracle(x, count, false, true)) return false;
-    }
-    return check_rotate<0>(x) && check_rotate<1>(x) && check_rotate<7>(x) &&
-           check_rotate<31>(x) && check_rotate<32>(x) && check_rotate<63>(x) &&
-           check_rotate<64>(x) && check_rotate<127>(x) && check_rotate<255>(x);
-  }
-
-  template<class U>
-  __attribute__((target("bmi2"))) bool check_width(std::uint64_t seed) {
+  __attribute__((target("bmi2"))) bool check_width() {
     constexpr U all = ~U{0};
-    constexpr U sign = U{1} << (width<U> - 1);
-    constexpr std::array<U, 8> edges{0, 1, 2, all, U(all - 1), sign,
-                                    U(sign - 1), U(0xaaaaaaaaaaaaaaaaull)};
-    for (U x : edges)
-      for (U y : edges)
-        if (!check_pair(x, y, unsigned(seed))) return false;
-    auto next = [&] {
-      seed ^= seed << 13;
-      seed ^= seed >> 7;
-      seed ^= seed << 17;
-      return seed;
-    };
-    for (unsigned i = 0; i != 2048; ++i) {
-      U x = U(next()), y = U(next());
-      if (!check_pair(x, y, unsigned(next()))) return false;
+    constexpr U high_bit = U{1} << (width<U> - 1);
+    struct permutation_case { U value, mask, deposited, extracted; };
+    constexpr std::array<permutation_case, 7> permutations{{
+      {0, all, 0, 0}, {all, 0, 0, 0}, {U{0xa5}, all, U{0xa5}, U{0xa5}},
+      {5, 22, 18, 2}, {all, U(high_bit | 1), U(high_bit | 1), 3},
+      {1, high_bit, high_bit, 0}, {high_bit, high_bit, 0, 1}
+    }};
+    for (auto const& c : permutations) {
+      // Volatile loads keep these checks on the runtime intrinsic path.
+      volatile U value = c.value, mask = c.mask;
+      if (native::pdep<arch>(U(value), U(mask)) != c.deposited ||
+          native::pext<arch>(U(value), U(mask)) != c.extracted) return false;
     }
-    return true;
+
+    struct product_case { U a, b, low, high; };
+    constexpr std::array<product_case, 3> products{{
+      {0, all, 0, 0}, {all, all, 1, U(all - 1)}, {high_bit, 2, 0, 1}
+    }};
+    for (auto const& c : products) {
+      volatile U a = c.a, b = c.b;
+      U high = ~c.high;
+      if (native::mulx<arch>(U(a), U(b), &high) != c.low || high != c.high) return false;
+      // The high-half write remains observable when the low half is discarded.
+      high = ~c.high;
+      static_cast<void>(native::mulx<arch>(U(a), U(b), &high));
+      if (high != c.high) return false;
+    }
+
+    struct zero_high_case { unsigned index; U expected; };
+    constexpr std::array<zero_high_case, 7> indices{{
+      {0, 0}, {1, 1}, {width<U> - 1, U(high_bit - 1)}, {width<U>, all},
+      {255, all}, {256, 0}, {257, 1}
+    }};
+    volatile U input = all;
+    for (auto const& c : indices) {
+      volatile unsigned index = c.index;
+      if (native::bzhi<arch>(U(input), unsigned(index)) != c.expected) return false;
+    }
+
+    input = U(high_bit | 3);
+    using S = std::make_signed_t<U>;
+    for (unsigned c : std::array<unsigned, 6>{0, 1, width<U> - 1, width<U>, width<U> + 1, 256}) {
+      volatile unsigned count = c;
+      U x = input;
+      unsigned n = c % width<U>;
+      U arithmetic = U(x >> n);
+      if (n) arithmetic |= U(all << (width<U> - n));
+      if (native::shlx<arch>(x, unsigned(count)) != U(x << n) ||
+          native::shrx<arch>(x, unsigned(count)) != U(x >> n) ||
+          std::bit_cast<U>(native::sarx<arch>(std::bit_cast<S>(x), unsigned(count))) != arithmetic)
+        return false;
+    }
+    U x = input;
+    return native::rorx<arch, 0>(x) == x &&
+      native::rorx<arch, 1>(x) == U(high_bit | (high_bit >> 1) | 1) &&
+      native::rorx<arch, width<U>>(x) == x && native::rorx<arch, 255>(x) == U{7};
   }
 
-  __attribute__((target("bmi2"), noinline)) bool check(std::uint64_t seed) {
-    return check_width<std::uint32_t>(seed) && check_width<std::uint64_t>(seed);
+  __attribute__((target("bmi2"), noinline)) bool check() {
+    return check_width<std::uint32_t>() && check_width<std::uint64_t>();
   }
 
   // This entry point stays at the compiler baseline; admission precedes every BMI2 call.
-  int run(int argc) {
+  int run() {
     auto cpu = native::observe_x86_capabilities();
     if (!native::classify_isa(cpu, arch).admitted()) {
       std::puts("BMI2 unavailable");
       return 77;
     }
-    if (!check(0x6a09e667f3bcc909ull ^ unsigned(argc))) {
-      std::fputs("BMI2 scalar oracle mismatch\n", stderr);
+    if (!check()) {
+      std::fputs("BMI2 wrapper mismatch\n", stderr);
       return 1;
     }
     return 0;

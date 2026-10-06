@@ -18,23 +18,8 @@ namespace native::detail::arm_sm4_constant {
 
 
   template<bool Key, class V> constexpr V rounds(V state, V keys) noexcept {
-    auto x = arm_constant::lanes(state);
-    auto k = arm_constant::lanes(keys);
-    for (unsigned i = 0; i < 4; ++i) {
-      auto mixed = x[1] ^ x[2] ^ x[3] ^ k[i];
-      std::uint32_t substituted = 0;
-      for (unsigned byte = 0; byte < 4; ++byte)
-        substituted |= std::uint32_t(sbox[(mixed >> (byte * 8)) & 255]) << (byte * 8);
-      auto next = substituted;
-      if constexpr (Key)
-        next ^= std::rotl(substituted, 13) ^ std::rotl(substituted, 23);
-      else
-        next ^= std::rotl(substituted, 2) ^ std::rotl(substituted, 10) ^
-                std::rotl(substituted, 18) ^ std::rotl(substituted, 24);
-      next ^= x[0];
-      x = {x[1], x[2], x[3], next};
-    }
-    return arm_constant::pack<V>(x);
+    return arm_constant::pack<V>(sm4_rounds<Key>(
+      arm_constant::lanes(state), arm_constant::lanes(keys)));
   }
 
   template<class V> constexpr V sm4e(V state, V keys) noexcept {

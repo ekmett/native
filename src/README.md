@@ -65,6 +65,15 @@ compiler target. Raw intrinsic helpers remain private. The `native.arm.sm3` and
 separate constant-evaluation semantics; their [family guide](../docs/arm-sm-crypto.md)
 describes independent hardware feature bits and the coupled compiler target.
 
+`native/simd/for_each_backend.h` expands the shared operation bodies under
+separate target attributes. Those bodies are deliberately repeatable; ordinary
+include guards would suppress supported targets. Constant-evaluation helpers
+live beside the operations they implement. AES and SM4 word algorithms are
+shared between ARM and x86, while each instruction family retains its own key
+ordering and register layout. Runtime paths still call the hardware intrinsics.
+Historical numerical graphs used only as test oracles belong under `tests`,
+not in the installed implementation headers.
+
 Internal requirement lists describe operations, memory and storage. Their
 compiler-prerequisite closure must agree with the literal target attributes.
 Public `target<A, Choices...>` selection compares exact feature sets, whereas

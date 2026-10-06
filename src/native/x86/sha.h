@@ -74,17 +74,13 @@ namespace native::detail::x86_sha {
 }
 #endif
 
+#include "native/x86/detail/constant_lanes.h"
 #include <array>
 #include <bit>
 #include <cstdint>
 
 namespace native::detail::x86_sha_constant {
-  template<class V>
-  constexpr auto lanes(V value) noexcept {
-    std::array<std::uint32_t, 4> result{};
-    value.store(result.data());
-    return result;
-  }
+  using x86_constant::lanes;
 
   constexpr std::uint32_t choose(std::uint32_t x, std::uint32_t y, std::uint32_t z) noexcept {
     return (x & y) ^ (~x & z);

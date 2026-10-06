@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-// Compile at -O2 -S without a global ISA flag to inspect per-function lowering.
-#include <native/x86/bmi2.h>
+// Compile at -O2 on the provider baseline to inspect per-function lowering.
+#include <cstdint>
+import native.x86.bmi2;
 
 #if defined(__BMI__) || defined(__BMI2__) || defined(__AVX__) || defined(__AVX2__) || defined(__FMA__)
 #error BMI2 must be supplied by the function target, not translation-unit flags

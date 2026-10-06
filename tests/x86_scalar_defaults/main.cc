@@ -4,7 +4,6 @@
 #include <native/targets.h>
 #if defined(NATIVE_SCALAR_HEADER_FIRST)
 #include <native/x86/bmi1.h>
-#include <native/x86/bmi2.h>
 #include <native/x86/popcnt.h>
 #include <native/x86/lzcnt.h>
 #include <native/x86/crc32c.h>

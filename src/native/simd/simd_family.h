@@ -1,5 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+// Repeated for each disjoint backend family under its function target scope.
+// Storage, masks and operations use the selected compile-time ISA profile.
 #include "native/simd/common_body.h"
 
 namespace native::detail::NATIVE_BACKEND {
@@ -140,14 +142,6 @@ namespace native::detail {
 #undef NATIVE_SWIZZLE_FIELD
   };
 }
-
-// Included once per disjoint backend family under its function target scope.
-// Raw SIMD types and operations for the selected compile-time ISA profile.
-
-#if NATIVE_HAS_AVX2 || NATIVE_HAS_AVX512F
-#endif
-#if NATIVE_HAS_ARM_NEON
-#endif
 
 namespace native {
   namespace detail::NATIVE_BACKEND {
@@ -3363,11 +3357,9 @@ namespace native {
   [[nodiscard]] native_inline constexpr native_const simd<T, N,Arch> masked_mul_zero(M m, simd<T, N,Arch> a, simd<T, N,Arch> b) noexcept {
     return masked_mul(m, simd<T, N,Arch>(T(0)), a, b);
   }
-} // namespace native
 
-// Reject invalid immediate widths before implicit native conversion can select
-// a builtin scalar shift. The immediate tag retains its public size conversion.
-namespace native {
+  // Reject invalid immediate widths before implicit native conversion can select
+  // a builtin scalar shift. The immediate tag retains its public size conversion.
   /// Reject this unsupported operand combination instead of converting implicitly to a native register.
   template<simd_integer_element T, std::size_t N, std::size_t K, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8)

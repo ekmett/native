@@ -3,10 +3,10 @@
 #include <native/attributes.h>
 #if NATIVE_CONSTEXPR_INTERFACE == 0
 #include <native/x86/bmi1.h>
-#include <native/x86/bmi2.h>
 #include <native/x86/popcnt.h>
 #include <native/x86/lzcnt.h>
 #include <native/x86/crc32c.h>
+import native.x86.bmi2;
 #else
 import native.x86.bmi1;
 import native.x86.bmi2;

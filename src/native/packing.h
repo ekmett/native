@@ -1,6 +1,5 @@
 #pragma once
 #include "native/simd.h"
-#include "native/x86/bmi2.h"
 
 
 #define NATIVE_BACKEND_BODY "native/packing_body.h"

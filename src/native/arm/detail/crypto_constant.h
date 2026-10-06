@@ -1,54 +1,18 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "constant_lanes.h"
+#include "native/detail/aes_constant.h"
 
 namespace native::detail::arm_constant {
-  constexpr std::uint8_t aes_product(std::uint8_t a, std::uint8_t b) noexcept {
-    unsigned product = 0;
-    for (unsigned bit = 0; bit < 8; ++bit) {
-      if (b & (1u << bit)) product ^= a;
-      a = static_cast<std::uint8_t>((a << 1) ^ ((a & 0x80) ? 0x11b : 0));
-    }
-    return static_cast<std::uint8_t>(product);
-  }
-
-  constexpr std::uint8_t aes_inverse(std::uint8_t a) noexcept {
-    // a^254 in GF(2^8); this also maps zero to zero.
-    auto result = std::uint8_t{1};
-    for (unsigned exponent = 254; exponent; exponent >>= 1) {
-      if (exponent & 1) result = aes_product(result, a);
-      a = aes_product(a, a);
-    }
-    return result;
-  }
-
-  template<bool Inverse> constexpr std::uint8_t aes_substitute(std::uint8_t a) noexcept {
-    if constexpr (Inverse)
-      return aes_inverse(static_cast<std::uint8_t>(std::rotl(a, 1) ^ std::rotl(a, 3) ^ std::rotl(a, 6) ^ 5));
-    else {
-      auto x = aes_inverse(a);
-      return static_cast<std::uint8_t>(x ^ std::rotl(x, 1) ^ std::rotl(x, 2) ^ std::rotl(x, 3) ^ std::rotl(x, 4) ^ 0x63);
-    }
-  }
-
   template<bool Inverse, class V> constexpr V aes_round(V state, V key) noexcept {
-    auto a = lanes(state), k = lanes(key), result = a;
-    for (unsigned col = 0; col < 4; ++col) for (unsigned row = 0; row < 4; ++row) {
-      unsigned source = 4 * ((col + (Inverse ? 4 - row : row)) % 4) + row;
-      result[4 * col + row] = aes_substitute<Inverse>(a[source] ^ k[source]);
-    }
-    return pack<V>(result);
+    auto a = lanes(state), k = lanes(key);
+    // ARM AESE/AESD add the key before substitution and shifting.
+    for (unsigned i = 0; i < 16; ++i) a[i] ^= k[i];
+    return pack<V>(aes_constant::shift_substitute<Inverse>(a));
   }
 
   template<bool Inverse, class V> constexpr V aes_mix(V state) noexcept {
-    auto a = lanes(state), result = a;
-    constexpr std::uint8_t coefficients[2][4]{{2, 3, 1, 1}, {14, 11, 13, 9}};
-    for (unsigned col = 0; col < 4; ++col) for (unsigned row = 0; row < 4; ++row) {
-      result[4 * col + row] = 0;
-      for (unsigned term = 0; term < 4; ++term)
-        result[4 * col + row] ^= aes_product(a[4 * col + term], coefficients[Inverse][(term + 4 - row) % 4]);
-    }
-    return pack<V>(result);
+    return pack<V>(aes_constant::mix<Inverse>(lanes(state)));
   }
 
   template<class R, unsigned Offset, class V> constexpr R pmull_bytes(V a, V b) noexcept {

@@ -4,7 +4,26 @@
 #include "native/simd/common.h"
 #include "native/targets.h"
 #include "native/detail/constexpr_float.h"
+#include "native/arm/bf16_constexpr.h"
 #include <tuple>
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cassert>
+#include <cmath>
+#include <cstring>
+#include <span>
+#include <limits>
+#if NATIVE_HOST_WASM
+#include <wasm_simd128.h>
+#endif
+#if NATIVE_HOST_X86
+#include <immintrin.h>
+#endif
+#if NATIVE_HOST_NEON
+#include <arm_neon.h>
+#include "native/arm/detail/register_order.h"
+#endif
 
 namespace native::detail::float_constant {
   namespace cf=constexpr_float;
@@ -88,24 +107,6 @@ namespace native::detail::float_constant {
     return V::load_bits(x.data());
   }
 }
-#include <algorithm>
-#include <array>
-#include <bit>
-#include <cassert>
-#include <cmath>
-#include <cstring>
-#include <span>
-#include <limits>
-#if NATIVE_HOST_WASM
-#include <wasm_simd128.h>
-#endif
-#if NATIVE_HOST_X86
-#include <immintrin.h>
-#endif
-#if NATIVE_HOST_NEON
-#include <arm_neon.h>
-#include "native/arm/detail/register_order.h"
-#endif
 #define NATIVE_BACKEND_BODY "native/simd/simd_family.h"
 #include "native/simd/for_each_backend.h"
 #undef NATIVE_BACKEND_BODY
@@ -145,9 +146,6 @@ namespace native::detail::float_constant {
 #pragma clang attribute pop
 #undef NATIVE_COMMON_ARCH
 #endif
-
-#include "native/detail/constexpr_float.h"
-#include "native/arm/bf16_constexpr.h"
 
 namespace native::detail::half_constant {
   namespace fp=constexpr_float;

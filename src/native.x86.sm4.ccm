@@ -17,17 +17,10 @@ namespace native::detail::x86_sm4_constant {
   template<bool Key, class V> constexpr V rounds(V state, V keys) noexcept {
     auto x = x86_constant::lanes(state), k = x86_constant::lanes(keys);
     for (unsigned base = 0; base < V::lanes; base += 4) {
-      for (unsigned i = 0; i < 4; ++i) {
-        auto mixed = x[base + 1] ^ x[base + 2] ^ x[base + 3] ^ k[base + i];
-        std::uint32_t t = 0;
-        for (unsigned byte = 0; byte < 4; ++byte)
-          t |= std::uint32_t(sbox[(mixed >> (byte * 8)) & 255]) << (byte * 8);
-        auto next = x[base] ^ t;
-        if constexpr (Key) next ^= std::rotl(t, 13) ^ std::rotl(t, 23);
-        else next ^= std::rotl(t, 2) ^ std::rotl(t, 10) ^ std::rotl(t, 18) ^ std::rotl(t, 24);
-        for (unsigned j = 0; j < 3; ++j) x[base + j] = x[base + j + 1];
-        x[base + 3] = next;
-      }
+      auto block = sm4_rounds<Key>(
+        std::array{x[base], x[base + 1], x[base + 2], x[base + 3]},
+        std::array{k[base], k[base + 1], k[base + 2], k[base + 3]});
+      for (unsigned i = 0; i < 4; ++i) x[base + i] = block[i];
     }
     return x86_constant::pack<V>(x);
   }

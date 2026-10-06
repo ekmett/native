@@ -29,9 +29,7 @@ export namespace native {
   using ::native::compress;
   using ::native::expand;
   using ::native::compress_store;
-}
 
-export namespace native {
   /// Make the corresponding native overload set visible through this module.
   using ::native::operator+;
   /// Make the corresponding native overload set visible through this module.
@@ -98,19 +96,6 @@ export namespace native {
   using ::native::neon_bf16;
   using ::native::isa;
   using ::native::arch;
-  using std::int8_t;
-  using std::int16_t;
-  using std::int32_t;
-  using std::int64_t;
-  using std::uint8_t;
-  using std::uint16_t;
-  using std::uint32_t;
-  using std::uint64_t;
-  using ::native::simd_integer_element;
-  using ::native::imm_t;
-  using ::native::imm;
-  using ::native::simd_access;
-  using ::native::simd_memory;
   using ::native::mask_lane;
   using ::native::mask8;
   using ::native::mask16;
@@ -154,10 +139,7 @@ export namespace native {
   using ::native::floor;
   using ::native::ceil;
   using ::native::trunc;
-}
 
-
-export namespace native {
 #if (NATIVE_HOST_X86 || NATIVE_HOST_NEON || NATIVE_HOST_WASM) && (!defined(NATIVE_PROFILE) || NATIVE_PROFILE != 0)
   using ::native::narrow_concat;
 #endif

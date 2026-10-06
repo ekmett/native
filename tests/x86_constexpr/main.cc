@@ -6,10 +6,10 @@
 #include <type_traits>
 #if NATIVE_CONSTEXPR_INTERFACE == 0
 #include <native/x86/bmi1.h>
-#include <native/x86/bmi2.h>
 #include <native/x86/popcnt.h>
 #include <native/x86/lzcnt.h>
 #include <native/x86/crc32c.h>
+import native.x86.bmi2;
 #elif NATIVE_CONSTEXPR_INTERFACE == 1
 import native.x86.bmi1;
 import native.x86.bmi2;
@@ -146,6 +146,13 @@ namespace scalar_constexpr_fixture {
   }
 
   template<native::isa<native::x86> A, class U> consteval bool deposit_extract() {
+    constexpr U high = U{1} << (width<U> - 1);
+    if (native::pdep<A>(U{5}, U{22}) != U{18} ||
+        native::pext<A>(U{18}, U{22}) != U{5} ||
+        native::pdep<A>(U{1}, high) != high ||
+        native::pext<A>(high, high) != U{1} ||
+        native::pdep<A>(all<U>, U(high | 1)) != U(high | 1) ||
+        native::pext<A>(all<U>, U(high | 1)) != U{3}) return false;
     std::uint64_t state = 0xd6e8feb86659fd93ull;
     for (unsigned i = 0; i != 96; ++i) {
       U x = U(random(state)), mask = U(random(state));

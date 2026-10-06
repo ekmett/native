@@ -3,4 +3,4 @@
 import native;
 #include "checks.h"
 
-int main(int argc, char**) { return bmi2_fixture::run(argc); }
+int main() { return bmi2_fixture::run(); }

@@ -1,5 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+/** \file
+ * \brief Checks direct wide exp against its independent historical graph.
+ * Evaluates the independent split-scale exponential reference.
+ */
 #include "support/failure.h"
 #include "support/profile.h"
 #include "support/fp_environment.h"
