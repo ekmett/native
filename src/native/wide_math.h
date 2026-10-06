@@ -163,45 +163,60 @@ namespace wide::detail {
     return lift_array(function,std::make_index_sequence<lift_size<A...>()>{},arguments...);
   }
 
-#define NATIVE_WIDE_BINARY_OPERATION(name,bridge,op) \
+  // Pattern: [declaration macros](../README.md#declaration-macros).
+#define NATIVE_WIDE_BINARY_OPERATION(name, bridge, op) \
   struct name { \
-    template<class V> requires requires(V a) { a op a; } \
-    native_inline constexpr auto operator()(V const & a,V const & b) const { return native_ops<V>::bridge(a,b); } \
+    template<class V> \
+      requires requires(V a) { a op a; } \
+    native_inline constexpr auto operator()(V const & a, V const & b) const { \
+      return native_ops<V>::bridge(a, b); \
+    } \
   };
-  NATIVE_WIDE_BINARY_OPERATION(add,add,+)
-  NATIVE_WIDE_BINARY_OPERATION(subtract,sub,-)
-  NATIVE_WIDE_BINARY_OPERATION(multiply,mul,*)
-  NATIVE_WIDE_BINARY_OPERATION(divide,div,/)
-  NATIVE_WIDE_BINARY_OPERATION(bit_and,bit_and,&)
-  NATIVE_WIDE_BINARY_OPERATION(bit_or,bit_or,|)
-  NATIVE_WIDE_BINARY_OPERATION(bit_xor,bit_xor,^)
-  NATIVE_WIDE_BINARY_OPERATION(equal,equal,==)
-  NATIVE_WIDE_BINARY_OPERATION(unequal,unequal,!=)
-  NATIVE_WIDE_BINARY_OPERATION(less,less,<)
-  NATIVE_WIDE_BINARY_OPERATION(less_equal,less_equal,<=)
-  NATIVE_WIDE_BINARY_OPERATION(greater,greater,>)
-  NATIVE_WIDE_BINARY_OPERATION(greater_equal,greater_equal,>=)
+
+  NATIVE_WIDE_BINARY_OPERATION(add, add, +)
+  NATIVE_WIDE_BINARY_OPERATION(subtract, sub, -)
+  NATIVE_WIDE_BINARY_OPERATION(multiply, mul, *)
+  NATIVE_WIDE_BINARY_OPERATION(divide, div, /)
+  NATIVE_WIDE_BINARY_OPERATION(bit_and, bit_and, &)
+  NATIVE_WIDE_BINARY_OPERATION(bit_or, bit_or, |)
+  NATIVE_WIDE_BINARY_OPERATION(bit_xor, bit_xor, ^)
+  NATIVE_WIDE_BINARY_OPERATION(equal, equal, ==)
+  NATIVE_WIDE_BINARY_OPERATION(unequal, unequal, !=)
+  NATIVE_WIDE_BINARY_OPERATION(less, less, <)
+  NATIVE_WIDE_BINARY_OPERATION(less_equal, less_equal, <=)
+  NATIVE_WIDE_BINARY_OPERATION(greater, greater, >)
+  NATIVE_WIDE_BINARY_OPERATION(greater_equal, greater_equal, >=)
 #undef NATIVE_WIDE_BINARY_OPERATION
-#define NATIVE_WIDE_UNARY_OPERATION(name,bridge,op) \
+
+#define NATIVE_WIDE_UNARY_OPERATION(name, bridge, op) \
   struct name { \
-    template<class V> requires requires(V a) { { op a } -> std::same_as<V>; } \
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::bridge(a); } \
+    template<class V> \
+      requires requires(V a) { { op a } -> std::same_as<V>; } \
+    native_inline constexpr auto operator()(V const & a) const { \
+      return native_ops<V>::bridge(a); \
+    } \
   };
-  NATIVE_WIDE_UNARY_OPERATION(negate,negate,-)
-  NATIVE_WIDE_UNARY_OPERATION(bit_not,bit_not,~)
-  NATIVE_WIDE_UNARY_OPERATION(logical_not,logical_not,!)
+
+  NATIVE_WIDE_UNARY_OPERATION(negate, negate, -)
+  NATIVE_WIDE_UNARY_OPERATION(bit_not, bit_not, ~)
+  NATIVE_WIDE_UNARY_OPERATION(logical_not, logical_not, !)
 #undef NATIVE_WIDE_UNARY_OPERATION
-#define NATIVE_WIDE_UNARY_MATH(name,bridge,operation) \
+
+#define NATIVE_WIDE_UNARY_MATH(name, bridge, operation) \
   struct name { \
-    template<class V> requires requires(V a) { { operation(a) } -> std::same_as<V>; } \
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::bridge(a); } \
+    template<class V> \
+      requires requires(V a) { { operation(a) } -> std::same_as<V>; } \
+    native_inline constexpr auto operator()(V const & a) const { \
+      return native_ops<V>::bridge(a); \
+    } \
   };
-  NATIVE_WIDE_UNARY_MATH(absolute,absolute,abs)
-  NATIVE_WIDE_UNARY_MATH(root,root,sqrt)
-  NATIVE_WIDE_UNARY_MATH(downward,downward,floor)
-  NATIVE_WIDE_UNARY_MATH(upward,upward,ceil)
-  NATIVE_WIDE_UNARY_MATH(truncate,truncate,trunc)
-  NATIVE_WIDE_UNARY_MATH(round,round,round_even)
+
+  NATIVE_WIDE_UNARY_MATH(absolute, absolute, abs)
+  NATIVE_WIDE_UNARY_MATH(root, root, sqrt)
+  NATIVE_WIDE_UNARY_MATH(downward, downward, floor)
+  NATIVE_WIDE_UNARY_MATH(upward, upward, ceil)
+  NATIVE_WIDE_UNARY_MATH(truncate, truncate, trunc)
+  NATIVE_WIDE_UNARY_MATH(round, round, round_even)
 #undef NATIVE_WIDE_UNARY_MATH
   struct minimum {
     template<class V> requires requires(V a) { select(a<a,a,a); }
@@ -310,44 +325,49 @@ namespace wide {
   [[nodiscard]] native_inline constexpr V constant_like(std::array<V,N> const &, T value) noexcept {
     return detail::native_ops<V>::constant(value);
   }
-#define NATIVE_WIDE_BINARY_API(name,operation) \
-  template<class P,class Q> requires detail::liftable<detail::operation,P,Q> \
-  [[nodiscard]] native_inline constexpr auto name(P const & a,Q const & b) noexcept { \
-    return detail::lift(detail::operation{},a,b); \
+#define NATIVE_WIDE_BINARY_API(name, operation) \
+  template<class P, class Q> \
+    requires detail::liftable<detail::operation, P, Q> \
+  [[nodiscard]] native_inline constexpr auto name(P const & a, Q const & b) noexcept { \
+    return detail::lift(detail::operation{}, a, b); \
   }
-  NATIVE_WIDE_BINARY_API(add,add)
-  NATIVE_WIDE_BINARY_API(sub,subtract)
-  NATIVE_WIDE_BINARY_API(mul,multiply)
-  NATIVE_WIDE_BINARY_API(div,divide)
-  NATIVE_WIDE_BINARY_API(bit_and,bit_and)
-  NATIVE_WIDE_BINARY_API(bit_or,bit_or)
-  NATIVE_WIDE_BINARY_API(bit_xor,bit_xor)
-  NATIVE_WIDE_BINARY_API(cmp_eq,equal)
-  NATIVE_WIDE_BINARY_API(cmp_ne,unequal)
-  NATIVE_WIDE_BINARY_API(cmp_lt,less)
-  NATIVE_WIDE_BINARY_API(cmp_le,less_equal)
-  NATIVE_WIDE_BINARY_API(cmp_gt,greater)
-  NATIVE_WIDE_BINARY_API(cmp_ge,greater_equal)
-  NATIVE_WIDE_BINARY_API(min,minimum)
-  NATIVE_WIDE_BINARY_API(max,maximum)
-  NATIVE_WIDE_BINARY_API(scaleb,scale_all)
+
+  NATIVE_WIDE_BINARY_API(add, add)
+  NATIVE_WIDE_BINARY_API(sub, subtract)
+  NATIVE_WIDE_BINARY_API(mul, multiply)
+  NATIVE_WIDE_BINARY_API(div, divide)
+  NATIVE_WIDE_BINARY_API(bit_and, bit_and)
+  NATIVE_WIDE_BINARY_API(bit_or, bit_or)
+  NATIVE_WIDE_BINARY_API(bit_xor, bit_xor)
+  NATIVE_WIDE_BINARY_API(cmp_eq, equal)
+  NATIVE_WIDE_BINARY_API(cmp_ne, unequal)
+  NATIVE_WIDE_BINARY_API(cmp_lt, less)
+  NATIVE_WIDE_BINARY_API(cmp_le, less_equal)
+  NATIVE_WIDE_BINARY_API(cmp_gt, greater)
+  NATIVE_WIDE_BINARY_API(cmp_ge, greater_equal)
+  NATIVE_WIDE_BINARY_API(min, minimum)
+  NATIVE_WIDE_BINARY_API(max, maximum)
+  NATIVE_WIDE_BINARY_API(scaleb, scale_all)
 #undef NATIVE_WIDE_BINARY_API
-#define NATIVE_WIDE_UNARY_API(name,operation) \
-  template<class P> requires detail::liftable<detail::operation,P> \
+
+#define NATIVE_WIDE_UNARY_API(name, operation) \
+  template<class P> \
+    requires detail::liftable<detail::operation, P> \
   [[nodiscard]] native_inline constexpr auto name(P const & a) noexcept { \
-    return detail::lift(detail::operation{},a); \
+    return detail::lift(detail::operation{}, a); \
   }
-  NATIVE_WIDE_UNARY_API(negate,negate)
-  NATIVE_WIDE_UNARY_API(bit_not,bit_not)
-  NATIVE_WIDE_UNARY_API(mask_not,logical_not)
-  NATIVE_WIDE_UNARY_API(abs,absolute)
-  NATIVE_WIDE_UNARY_API(sqrt,root)
-  NATIVE_WIDE_UNARY_API(floor,downward)
-  NATIVE_WIDE_UNARY_API(ceil,upward)
-  NATIVE_WIDE_UNARY_API(trunc,truncate)
-  NATIVE_WIDE_UNARY_API(round_even,round)
-  NATIVE_WIDE_UNARY_API(bits,encode)
-  NATIVE_WIDE_UNARY_API(from_bits,decode)
+
+  NATIVE_WIDE_UNARY_API(negate, negate)
+  NATIVE_WIDE_UNARY_API(bit_not, bit_not)
+  NATIVE_WIDE_UNARY_API(mask_not, logical_not)
+  NATIVE_WIDE_UNARY_API(abs, absolute)
+  NATIVE_WIDE_UNARY_API(sqrt, root)
+  NATIVE_WIDE_UNARY_API(floor, downward)
+  NATIVE_WIDE_UNARY_API(ceil, upward)
+  NATIVE_WIDE_UNARY_API(trunc, truncate)
+  NATIVE_WIDE_UNARY_API(round_even, round)
+  NATIVE_WIDE_UNARY_API(bits, encode)
+  NATIVE_WIDE_UNARY_API(from_bits, decode)
 #undef NATIVE_WIDE_UNARY_API
   /// Compute a*b+c with fused rounding in each SIMD lane of the result array.
   /// Array operands have equal lengths; a SIMD operand is shared across them.
@@ -1041,12 +1061,14 @@ namespace math {
 
   // These primitives retain their native leaf semantics inside one wide stage.
 #define NATIVE_PROMOTED_UNARY(name) \
-  template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>) \
+  template<::wide::promotable T> \
+    requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>) \
   [[nodiscard]] native_inline constexpr auto name(T const & input) noexcept { \
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) \
       return std::remove_cvref_t<T>(input); \
     else return ::wide::demote<T>(::wide::name(::wide::promote(input))); \
   }
+
   NATIVE_PROMOTED_UNARY(abs)
   NATIVE_PROMOTED_UNARY(sqrt)
   NATIVE_PROMOTED_UNARY(floor)

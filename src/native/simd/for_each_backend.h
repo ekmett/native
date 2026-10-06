@@ -1,3 +1,4 @@
+// Pattern: [target-scoped includes](../../README.md#target-scoped-includes).
 // Repeated source inclusion. Every function receives its family target.
 #define NATIVE_BACKEND scalar_backend
 #define NATIVE_BACKEND_NAMESPACE native::detail::NATIVE_BACKEND

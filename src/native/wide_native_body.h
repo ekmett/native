@@ -6,21 +6,25 @@ namespace wide::detail {
   template<class V> requires requires { V::architecture; } && NATIVE_ARCH_REQUIRES(V::architecture)
   struct native_ops<V> {
     template<class T> static inline constexpr V constant(T x) noexcept { return V(x); }
-#define NATIVE_WIDE_NATIVE_BINARY(name,op) \
-    static inline constexpr auto name(V a,V b) noexcept { return a op b; }
-    NATIVE_WIDE_NATIVE_BINARY(add,+)
-    NATIVE_WIDE_NATIVE_BINARY(sub,-)
-    NATIVE_WIDE_NATIVE_BINARY(mul,*)
-    NATIVE_WIDE_NATIVE_BINARY(div,/)
-    NATIVE_WIDE_NATIVE_BINARY(bit_and,&)
-    NATIVE_WIDE_NATIVE_BINARY(bit_or,|)
-    NATIVE_WIDE_NATIVE_BINARY(bit_xor,^)
-    NATIVE_WIDE_NATIVE_BINARY(equal,==)
-    NATIVE_WIDE_NATIVE_BINARY(unequal,!=)
-    NATIVE_WIDE_NATIVE_BINARY(less,<)
-    NATIVE_WIDE_NATIVE_BINARY(less_equal,<=)
-    NATIVE_WIDE_NATIVE_BINARY(greater,>)
-    NATIVE_WIDE_NATIVE_BINARY(greater_equal,>=)
+    // Pattern: [declaration macros](../README.md#declaration-macros).
+#define NATIVE_WIDE_NATIVE_BINARY(name, op) \
+    static inline constexpr auto name(V a, V b) noexcept { \
+      return a op b; \
+    }
+
+    NATIVE_WIDE_NATIVE_BINARY(add, +)
+    NATIVE_WIDE_NATIVE_BINARY(sub, -)
+    NATIVE_WIDE_NATIVE_BINARY(mul, *)
+    NATIVE_WIDE_NATIVE_BINARY(div, /)
+    NATIVE_WIDE_NATIVE_BINARY(bit_and, &)
+    NATIVE_WIDE_NATIVE_BINARY(bit_or, |)
+    NATIVE_WIDE_NATIVE_BINARY(bit_xor, ^)
+    NATIVE_WIDE_NATIVE_BINARY(equal, ==)
+    NATIVE_WIDE_NATIVE_BINARY(unequal, !=)
+    NATIVE_WIDE_NATIVE_BINARY(less, <)
+    NATIVE_WIDE_NATIVE_BINARY(less_equal, <=)
+    NATIVE_WIDE_NATIVE_BINARY(greater, >)
+    NATIVE_WIDE_NATIVE_BINARY(greater_equal, >=)
 #undef NATIVE_WIDE_NATIVE_BINARY
     static inline constexpr auto negate(V a) noexcept { return -a; }
     static inline constexpr auto bit_not(V a) noexcept { return ~a; }

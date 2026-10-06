@@ -15,15 +15,17 @@ namespace native::detail {
     target<A,avx512,kernel_bw,kernel_vl,kernel_base,avx2>;
 }
 
+// Pattern: [callback lists](../README.md#callback-lists).
 // Ordinal and literal Clang target for each body.
 #define NATIVE_EXP_TARGETS(X) \
-  X(0,avx512) \
-  X(1,exp_bw) \
-  X(2,exp_vl) \
-  X(3,exp_base) \
-  X(4,avx2)
+  X(0, avx512) \
+  X(1, exp_bw) \
+  X(2, exp_vl) \
+  X(3, exp_base) \
+  X(4, avx2)
 
-#define CHECK_EXP_TARGET(i,name) \
+#define CHECK_EXP_TARGET(i, name) \
   static_assert(::native::detail::exp_target<::native::target_features<::native::x86>(NATIVE_TARGET_STRING(name))> == i);
+
 NATIVE_EXP_TARGETS(CHECK_EXP_TARGET)
 #undef CHECK_EXP_TARGET

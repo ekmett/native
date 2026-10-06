@@ -31,3 +31,11 @@ and ordinary translation units. Do not infer use counts from `.ccm` files alone.
 When changing this boundary, check an importing consumer, including a further
 module boundary where relevant, and inspect generated code for affected runtime
 wrappers. Preserve Doxygen briefs and applicable source/license notices.
+
+## Readable macro bodies
+
+Give generated declarations the same layout as ordinary C++: separate
+constraints, attributes and statements, and put expansion rows on separate
+lines. Keep confusing macro blocks linked to the matching pattern in
+[src/README.md](src/README.md#reading-the-macros), including a small expansion
+example. Preserve preprocessing tokens and target-scope balance when formatting.

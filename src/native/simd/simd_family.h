@@ -102,36 +102,75 @@ namespace native::detail {
   template<class T,std::size_t N,::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) &&(N<=4)
   struct swizzle_access<T,N,Arch> {
     template<std::size_t K> using result = std::conditional_t<K==1,T,simd<T,K,Arch>>;
-#define NATIVE_SWIZZLE_FIELD(NAME,K,...) \
-    template<class Self> requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template readable<Self>()) \
-    [[nodiscard]] native_inline constexpr result<K> get_##NAME(this Self const & self) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); } \
-    template<class Self> requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template writable<Self>()) \
-    native_inline constexpr result<K> set_##NAME(this Self & self,result<K> rhs) { return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::write(self,rhs); } \
-    __declspec(property(get=get_##NAME,put=set_##NAME)) result<K> NAME;
-#define NATIVE_SWIZZLE_ROW2(A,I,X,Y,Z,W) \
-    NATIVE_SWIZZLE_FIELD(A##X,2,I,0) NATIVE_SWIZZLE_FIELD(A##Y,2,I,1) \
-    NATIVE_SWIZZLE_FIELD(A##Z,2,I,2) NATIVE_SWIZZLE_FIELD(A##W,2,I,3)
-#define NATIVE_SWIZZLE_ROW3(A,I,B,J,X,Y,Z,W) \
-    NATIVE_SWIZZLE_FIELD(A##B##X,3,I,J,0) NATIVE_SWIZZLE_FIELD(A##B##Y,3,I,J,1) \
-    NATIVE_SWIZZLE_FIELD(A##B##Z,3,I,J,2) NATIVE_SWIZZLE_FIELD(A##B##W,3,I,J,3)
-#define NATIVE_SWIZZLE_PLANE3(A,I,X,Y,Z,W) \
-    NATIVE_SWIZZLE_ROW3(A,I,X,0,X,Y,Z,W) NATIVE_SWIZZLE_ROW3(A,I,Y,1,X,Y,Z,W) \
-    NATIVE_SWIZZLE_ROW3(A,I,Z,2,X,Y,Z,W) NATIVE_SWIZZLE_ROW3(A,I,W,3,X,Y,Z,W)
-#define NATIVE_SWIZZLE_ROW4(A,I,B,J,C,K,X,Y,Z,W) \
-    NATIVE_SWIZZLE_FIELD(A##B##C##X,4,I,J,K,0) NATIVE_SWIZZLE_FIELD(A##B##C##Y,4,I,J,K,1) \
-    NATIVE_SWIZZLE_FIELD(A##B##C##Z,4,I,J,K,2) NATIVE_SWIZZLE_FIELD(A##B##C##W,4,I,J,K,3)
-#define NATIVE_SWIZZLE_PLANE4(A,I,B,J,X,Y,Z,W) \
-    NATIVE_SWIZZLE_ROW4(A,I,B,J,X,0,X,Y,Z,W) NATIVE_SWIZZLE_ROW4(A,I,B,J,Y,1,X,Y,Z,W) \
-    NATIVE_SWIZZLE_ROW4(A,I,B,J,Z,2,X,Y,Z,W) NATIVE_SWIZZLE_ROW4(A,I,B,J,W,3,X,Y,Z,W)
-#define NATIVE_SWIZZLE_CUBE4(A,I,X,Y,Z,W) \
-    NATIVE_SWIZZLE_PLANE4(A,I,X,0,X,Y,Z,W) NATIVE_SWIZZLE_PLANE4(A,I,Y,1,X,Y,Z,W) \
-    NATIVE_SWIZZLE_PLANE4(A,I,Z,2,X,Y,Z,W) NATIVE_SWIZZLE_PLANE4(A,I,W,3,X,Y,Z,W)
-#define NATIVE_SWIZZLE4(X,Y,Z,W) \
-    NATIVE_SWIZZLE_FIELD(X,1,0) NATIVE_SWIZZLE_FIELD(Y,1,1) NATIVE_SWIZZLE_FIELD(Z,1,2) NATIVE_SWIZZLE_FIELD(W,1,3) \
-    NATIVE_SWIZZLE_ROW2(X,0,X,Y,Z,W) NATIVE_SWIZZLE_ROW2(Y,1,X,Y,Z,W) NATIVE_SWIZZLE_ROW2(Z,2,X,Y,Z,W) NATIVE_SWIZZLE_ROW2(W,3,X,Y,Z,W) \
-    NATIVE_SWIZZLE_PLANE3(X,0,X,Y,Z,W) NATIVE_SWIZZLE_PLANE3(Y,1,X,Y,Z,W) NATIVE_SWIZZLE_PLANE3(Z,2,X,Y,Z,W) NATIVE_SWIZZLE_PLANE3(W,3,X,Y,Z,W) \
-    NATIVE_SWIZZLE_CUBE4(X,0,X,Y,Z,W) NATIVE_SWIZZLE_CUBE4(Y,1,X,Y,Z,W) NATIVE_SWIZZLE_CUBE4(Z,2,X,Y,Z,W) NATIVE_SWIZZLE_CUBE4(W,3,X,Y,Z,W)
-    NATIVE_SWIZZLE4(x,y,z,w)
+    // Pattern: [swizzle names](../../README.md#swizzle-names).
+#define NATIVE_SWIZZLE_FIELD(NAME, K, ...) \
+    template<class Self> \
+      requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template readable<Self>()) \
+    [[nodiscard]] native_inline constexpr result<K> get_##NAME(this Self const & self) { \
+      return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::read(self); \
+    } \
+    template<class Self> \
+      requires(::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::template writable<Self>()) \
+    native_inline constexpr result<K> set_##NAME(this Self & self, result<K> rhs) { \
+      return ::NATIVE_BACKEND_NAMESPACE::swizzle<__VA_ARGS__>::write(self, rhs); \
+    } \
+    __declspec(property(get=get_##NAME, put=set_##NAME)) result<K> NAME;
+
+#define NATIVE_SWIZZLE_ROW2(A, I, X, Y, Z, W) \
+    NATIVE_SWIZZLE_FIELD(A##X, 2, I, 0) \
+    NATIVE_SWIZZLE_FIELD(A##Y, 2, I, 1) \
+    NATIVE_SWIZZLE_FIELD(A##Z, 2, I, 2) \
+    NATIVE_SWIZZLE_FIELD(A##W, 2, I, 3)
+
+#define NATIVE_SWIZZLE_ROW3(A, I, B, J, X, Y, Z, W) \
+    NATIVE_SWIZZLE_FIELD(A##B##X, 3, I, J, 0) \
+    NATIVE_SWIZZLE_FIELD(A##B##Y, 3, I, J, 1) \
+    NATIVE_SWIZZLE_FIELD(A##B##Z, 3, I, J, 2) \
+    NATIVE_SWIZZLE_FIELD(A##B##W, 3, I, J, 3)
+
+#define NATIVE_SWIZZLE_PLANE3(A, I, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW3(A, I, X, 0, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW3(A, I, Y, 1, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW3(A, I, Z, 2, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW3(A, I, W, 3, X, Y, Z, W)
+
+#define NATIVE_SWIZZLE_ROW4(A, I, B, J, C, K, X, Y, Z, W) \
+    NATIVE_SWIZZLE_FIELD(A##B##C##X, 4, I, J, K, 0) \
+    NATIVE_SWIZZLE_FIELD(A##B##C##Y, 4, I, J, K, 1) \
+    NATIVE_SWIZZLE_FIELD(A##B##C##Z, 4, I, J, K, 2) \
+    NATIVE_SWIZZLE_FIELD(A##B##C##W, 4, I, J, K, 3)
+
+#define NATIVE_SWIZZLE_PLANE4(A, I, B, J, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW4(A, I, B, J, X, 0, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW4(A, I, B, J, Y, 1, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW4(A, I, B, J, Z, 2, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW4(A, I, B, J, W, 3, X, Y, Z, W)
+
+#define NATIVE_SWIZZLE_CUBE4(A, I, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE4(A, I, X, 0, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE4(A, I, Y, 1, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE4(A, I, Z, 2, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE4(A, I, W, 3, X, Y, Z, W)
+
+#define NATIVE_SWIZZLE4(X, Y, Z, W) \
+    NATIVE_SWIZZLE_FIELD(X, 1, 0) \
+    NATIVE_SWIZZLE_FIELD(Y, 1, 1) \
+    NATIVE_SWIZZLE_FIELD(Z, 1, 2) \
+    NATIVE_SWIZZLE_FIELD(W, 1, 3) \
+    NATIVE_SWIZZLE_ROW2(X, 0, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW2(Y, 1, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW2(Z, 2, X, Y, Z, W) \
+    NATIVE_SWIZZLE_ROW2(W, 3, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE3(X, 0, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE3(Y, 1, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE3(Z, 2, X, Y, Z, W) \
+    NATIVE_SWIZZLE_PLANE3(W, 3, X, Y, Z, W) \
+    NATIVE_SWIZZLE_CUBE4(X, 0, X, Y, Z, W) \
+    NATIVE_SWIZZLE_CUBE4(Y, 1, X, Y, Z, W) \
+    NATIVE_SWIZZLE_CUBE4(Z, 2, X, Y, Z, W) \
+    NATIVE_SWIZZLE_CUBE4(W, 3, X, Y, Z, W)
+
+    NATIVE_SWIZZLE4(x, y, z, w)
 #undef NATIVE_SWIZZLE4
 #undef NATIVE_SWIZZLE_CUBE4
 #undef NATIVE_SWIZZLE_PLANE4
