@@ -114,7 +114,8 @@ both formats without enabling their optional arithmetic instructions.
 | `neon_bf16` | See [ARM BF16](arm-bf16.md) | Pair dots, matrices and widening multiply-adds |
 
 FP16 arithmetic rounds in binary16; FMA rounds once after the product and sum.
-Runtime rounding and exception behavior follow FPCR on ARM and MXCSR on x86.
+Runtime rounding follows FPCR on ARM and MXCSR on x86. Exception flags are
+unspecified; callers keep floating-point traps disabled.
 ARM's FZ16 controls half subnormal flushing. AVX-512 FP16 uses gradual underflow
 regardless of MXCSR's DAZ/FTZ bits. Neither backend changes the control register.
 
@@ -402,9 +403,14 @@ Binary32 arithmetic, comparisons, selection, fused multiply-add, square root,
 rounding support constant evaluation, including short vectors. Exponent scaling
 retains constant evaluation only for hardware-admitted `scaleb` shapes: AVX512F
 scalar and sixteen-lane vectors, and AVX512VL two-, three-, four- and eight-lane
-vectors within the supported kernel profiles. The short forms mask padding lanes.
+vectors within the supported kernel profiles. The short forms preserve zero padding.
 `scaleb`, `masked_scaleb` and `masked_scaleb_zero` have no software fallback on
-scalar, AVX2, NEON or Wasm profiles. The promoted exponential and trigonometric
+scalar, AVX2, NEON or Wasm profiles. Masked scaling preserves inactive result
+bits, but does not promise to suppress arithmetic in those lanes. The compiler
+can share calculations and fold loads across wrappers; floating-point exception
+flags are unspecified and traps must stay disabled. Rounding and denormal
+controls still determine result values.
+The promoted exponential and trigonometric
 kernels evaluate their existing polynomial graphs with the same input bounds and approximation
 contracts. Scalar, array and empty-array forms retain their shapes.
 

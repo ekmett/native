@@ -39,3 +39,17 @@ constraints, attributes and statements, and put expansion rows on separate
 lines. Keep confusing macro blocks linked to the matching pattern in
 [src/README.md](src/README.md#reading-the-macros), including a small expansion
 example. Preserve preprocessing tokens and target-scope balance when formatting.
+
+## Floating-point optimization contract
+
+Preserve result values and the operation's rounding semantics. Floating-point
+arithmetic leaves exception flags unspecified; callers keep traps disabled.
+A masked result does not promise that inactive lanes are excluded from
+arithmetic. Explicit floating-point environment operations retain their own
+read/write contracts.
+
+Judge wrapper overhead after inlining into the complete calculation, including
+`wide` batches. Sharing arithmetic or folding loads is welcome when it improves
+the resulting assembly and preserves values. Do not force separate masked
+instructions merely to preserve exception flags. Compare generated code and
+measure competing implementations before sacrificing those optimizations.

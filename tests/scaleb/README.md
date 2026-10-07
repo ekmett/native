@@ -4,7 +4,7 @@
 They are callable only on native scaling shapes in the supported arithmetic
 kernel profiles: AVX512F for one or sixteen lanes, and AVX512VL for two, three,
 four or eight lanes. Logical two- and three-lane values use one masked
-128-bit instruction, excluding physical padding from execution. Their constant
+128-bit instruction in isolation, preserving zero padding. Their constant
 evaluation remains available on those same admitted shapes.
 
 The fixture checks positive and negative admission through module and textual
@@ -14,6 +14,10 @@ fallbacks. Plain C++ scalar promotion does not manufacture a scaling instruction
 
 On x86, 24 raw-intrinsic/public pairs cover unmasked, merge and zero forms, both
 with and without AVX512VL, and compare complete instruction sequences. The
+runtime check covers inactive signaling-NaN result bits and zero padding at
+each admitted width, plus halfway subnormal and overflow results under all
+four rounding modes. Exception flags are outside the contract; sharing an
+unmasked calculation between masked results is allowed. The broader
 runtime environment/rounding oracle remains in `tests/core_regression/scaleb.cc`;
 its tests skip when the selected profile has no native scaling instruction.
 

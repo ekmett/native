@@ -4357,11 +4357,12 @@ namespace native {
   }
   // Full VSCALEFPS value semantics: floor(exponent), including nonfinite
   // operands. This raw operation follows the caller's FP environment.
-  // Inactive lanes never execute scaling; merge preserves their exact bits.
+  // Merge preserves inactive bits; floating-point exception flags are unspecified.
   /// \ingroup vector_math
   /// Scale active lanes by 2^floor(exponent), retaining `prior` in other lanes.
-  /// Inactive lanes are excluded from the scaling operation. The result follows
-  /// the caller's floating-point environment, including denormal controls.
+  /// Result values follow the caller's rounding and denormal controls. Inactive
+  /// lanes retain their exact bits; exception flags are unspecified. Keep traps
+  /// disabled: the compiler may share arithmetic before selecting masked results.
   /// Available only for native AVX512F scaling shapes; packed widths below 16
   /// require AVX512VL. No scalar, AVX2, NEON or Wasm software fallback exists.
   template <std::size_t N,class M, ::native::isa<> Arch>

@@ -67,7 +67,19 @@ template<unsigned N,unsigned Mode>
   extern "C" [[gnu::target(NATIVE_SCALEB_TARGET),gnu::noinline]] void native_scale_##N##_##M( \
       float const * p,float const * a,float const * b,unsigned m,float * out) {evaluate<N,M>(p,a,b,m,out);}
 #define NATIVE_SCALEB_WIDTH(N) NATIVE_SCALEB_CASE(N,0) NATIVE_SCALEB_CASE(N,1) NATIVE_SCALEB_CASE(N,2)
-NATIVE_SCALEB_WIDTH(1)
+// Return scalar results in their ABI register. A pointer-output caller also
+// compares unrelated store selection (VMOVSS versus VEXTRACTPS on Windows).
+#define NATIVE_SCALEB_SCALAR(M) \
+  extern "C" [[gnu::target(NATIVE_SCALEB_TARGET),gnu::noinline]] \
+  float native_scale_1_##M(float const * p,float const * a,float const * b,unsigned m) { \
+    float result; \
+    evaluate<1,M>(p,a,b,m,&result); \
+    return result; \
+  }
+NATIVE_SCALEB_SCALAR(0)
+NATIVE_SCALEB_SCALAR(1)
+NATIVE_SCALEB_SCALAR(2)
+#undef NATIVE_SCALEB_SCALAR
 NATIVE_SCALEB_WIDTH(16)
 #if NATIVE_SCALEB_VL
 NATIVE_SCALEB_WIDTH(2)
