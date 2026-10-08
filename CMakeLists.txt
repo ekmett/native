@@ -189,7 +189,7 @@ configure_package_config_file(etc/cmake/nativeConfig.cmake.in
 # Build-tree consumers also need to locate a source-built Hint package. Keep
 # that path out of the installed, relocatable Native configuration.
 if(hint_BINARY_DIR)
-  set(native_hint_build_hint "HINTS \"${hint_BINARY_DIR}\"")
+  set(native_hint_build_hint "\"${hint_BINARY_DIR}\"")
 endif()
 configure_package_config_file(etc/cmake/nativeConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/nativeConfig.cmake"

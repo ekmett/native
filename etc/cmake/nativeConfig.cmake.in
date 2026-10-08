@@ -4,7 +4,7 @@
 
 @PACKAGE_INIT@
 include(CMakeFindDependencyMacro)
-find_dependency(hint 0.1 CONFIG @native_hint_build_hint@)
+find_dependency(hint 0.1 CONFIG HINTS "${PACKAGE_PREFIX_DIR}" @native_hint_build_hint@)
 # Optional engine-validation adapter; no JavaScript runtime is a library dependency.
 set(native_WASM_FEATURES_JS "@PACKAGE_CMAKE_INSTALL_DATADIR@/native/wasm/features.mjs")
 include("${CMAKE_CURRENT_LIST_DIR}/nativeHeaderTargets.cmake")
