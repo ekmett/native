@@ -150,12 +150,13 @@ cmake -S . -B build/docs -G Ninja -DNATIVE_BUILD_HOST=OFF -DNATIVE_BUILD_DOCS=ON
 cmake --build build/docs --target native_docs
 ```
 
-Open `build/docs/docs/html/index.html`. The published reference contains the
+Pandoc 3.8.2.1 renders the guides in the shared site layout.
+Open `build/docs/site/index.html`. The published reference contains the
 library guides and API contracts. Test projects and their READMEs stay in the
 source tree.
 
 Warnings fail the documentation build. Check the generated links with:
 
 ```sh
-python doc/check_links.py build/docs/docs/html
+python doc/check_links.py build/docs/site
 ```

@@ -3,6 +3,7 @@
 
 find_package(Doxygen 1.18 REQUIRED COMPONENTS doxygen dot)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
+find_program(PANDOC_EXECUTABLE pandoc REQUIRED)
 set(DOXYGEN_GENERATE_HTML YES)
 set(DOXYGEN_GENERATE_LATEX NO)
 set(DOXYGEN_GENERATE_XML YES)
@@ -212,4 +213,11 @@ add_custom_command(TARGET native_docs POST_BUILD
 add_custom_command(TARGET native_docs POST_BUILD
   COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/check_guides.py"
     "${PROJECT_BINARY_DIR}/docs/html"
+  VERBATIM)
+
+# Keep the checked Doxygen reference intact inside the shared documentation shell.
+add_custom_command(TARGET native_docs POST_BUILD
+  COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/docs/site/build.py"
+    "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}/docs/html"
+    "${PROJECT_BINARY_DIR}/site" --name native --pandoc "${PANDOC_EXECUTABLE}"
   VERBATIM)
