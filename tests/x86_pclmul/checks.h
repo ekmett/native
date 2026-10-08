@@ -66,53 +66,53 @@ static_assert(polynomial(~word{0},~word{0}) == words<2>{0x5555555555555555,0x555
 static_assert(polynomial(3,3) == words<2>{5,0});
 
 template<unsigned... I>
-native_noinline native_target("pclmul")
+hint_noinline hint_target("pclmul")
 void evaluate_legacy(inputs<2> const& in, outputs<2,sizeof...(I)>& out,
     std::integer_sequence<unsigned,I...>) {
   __m128i a, b;
   __builtin_memcpy(&a,in.a.data(),sizeof(a));
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
-  ([&] native_target("pclmul") {
+  ([&] hint_target("pclmul") {
     auto value=native::pclmulqdq<legacy,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), legacy>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), legacy>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }
 template<unsigned... I>
-native_noinline native_target("avx,pclmul")
+hint_noinline hint_target("avx,pclmul")
 void evaluate_vex128(inputs<2> const& in, outputs<2,sizeof...(I)>& out,
     std::integer_sequence<unsigned,I...>) {
   __m128i a, b;
   __builtin_memcpy(&a,in.a.data(),sizeof(a));
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
-  ([&] native_target("avx,pclmul") {
+  ([&] hint_target("avx,pclmul") {
     auto value=native::vpclmulqdq<vex128,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), vex128>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), vex128>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }
 template<unsigned... I>
-native_noinline native_target("avx,vpclmulqdq")
+hint_noinline hint_target("avx,vpclmulqdq")
 void evaluate_vex256(inputs<4> const& in, outputs<4,sizeof...(I)>& out,
     std::integer_sequence<unsigned,I...>) {
   __m256i a, b;
   __builtin_memcpy(&a,in.a.data(),sizeof(a));
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
-  ([&] native_target("avx,vpclmulqdq") {
+  ([&] hint_target("avx,vpclmulqdq") {
     auto value=native::vpclmulqdq<vex256,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), vex256>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), vex256>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);
 }
 template<unsigned... I>
-native_noinline native_target("avx512f,vpclmulqdq")
+hint_noinline hint_target("avx512f,vpclmulqdq")
 void evaluate_evex512(inputs<8> const& in, outputs<8,sizeof...(I)>& out,
     std::integer_sequence<unsigned,I...>) {
   __m512i a, b;
   __builtin_memcpy(&a,in.a.data(),sizeof(a));
   __builtin_memcpy(&b,in.b.data(),sizeof(b));
   unsigned index=0;
-  ([&] native_target("avx512f,vpclmulqdq") {
+  ([&] hint_target("avx512f,vpclmulqdq") {
     auto value=native::vpclmulqdq<evex512,I>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), evex512>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), evex512>::from_native(b)).to_native();
     __builtin_memcpy(out[index++].data(),&value,sizeof(value));
   }(), ...);

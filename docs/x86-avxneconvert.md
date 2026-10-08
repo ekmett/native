@@ -27,13 +27,13 @@ All calls are `noexcept`.
 | `cvtneps_bf16(v)` | `simd<float,N,Arch>` | `simd<bf16,N,Arch>` | Register input |
 
 ```cpp
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.avxneconvert;
 
 constexpr auto arch = native::target_features<native::x86>("avxneconvert");
 
 // Enter after admitting arch; input has sixteen BF16 objects, output eight floats.
-native_target("avxneconvert")
+hint_target("avxneconvert")
 void widen_even(native::bf16 const * input, float * output) {
   native::cvtneebf16_ps<arch,8>(input).store(output);
 }

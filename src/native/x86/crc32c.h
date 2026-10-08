@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include "native/detail/crc.h"
 #include <cstdint>
@@ -23,7 +23,7 @@ namespace native {
  * \{ */
   /// Update a 32-bit CRC32C accumulator with exactly eight bits.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::crc32))
-  [[nodiscard]] native_inline native_const native_target("crc32")
+  [[nodiscard]] hint_inline hint_const hint_target("crc32")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
@@ -34,7 +34,7 @@ namespace native {
 
   /// Update a 32-bit CRC32C accumulator with exactly sixteen bits.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::crc32))
-  [[nodiscard]] native_inline native_const native_target("crc32")
+  [[nodiscard]] hint_inline hint_const hint_target("crc32")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
@@ -45,7 +45,7 @@ namespace native {
 
   /// Update a 32-bit CRC32C accumulator with exactly thirty-two bits.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::crc32))
-  [[nodiscard]] native_inline native_const native_target("crc32")
+  [[nodiscard]] hint_inline hint_const hint_target("crc32")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
@@ -58,7 +58,7 @@ namespace native {
   /// Update with sixty-four bits in x86-64 mode; the CRC remains 32 bits.
   /// The instruction zeroes the high half of its 64-bit destination register.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::crc32))
-  [[nodiscard]] native_inline native_const native_target("crc32")
+  [[nodiscard]] hint_inline hint_const hint_target("crc32")
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);

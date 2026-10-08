@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.vbmi2;
 
 #if NATIVE_TEST_WIDTH == 512
@@ -160,7 +160,7 @@ constexpr unsigned shift_count = 7;
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpcompressb_merge(
   bvector source,
   bmask mask,
@@ -171,7 +171,7 @@ auto reject_mask_vpcompressb_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpcompressb_zero(
   bmask mask,
   bvector value) noexcept {
@@ -180,7 +180,7 @@ auto reject_maskz_vpcompressb_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2) && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpcompressb_store(
   bpointer destination,
   bmask mask,
@@ -191,7 +191,7 @@ auto reject_mask_vpcompressb_store(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpexpandb_merge(
   bvector source,
   bmask mask,
@@ -202,7 +202,7 @@ auto reject_mask_vpexpandb_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 4) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpexpandb_zero(
   bmask mask,
   bvector value) noexcept {
@@ -212,7 +212,7 @@ auto reject_maskz_vpexpandb_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 5) && NATIVE_TEST_POINTER != 4 && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpexpandb_load_merge(
   bvector source,
   bmask mask,
@@ -223,7 +223,7 @@ auto reject_mask_vpexpandb_load_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 6) && !NATIVE_TEST_SHAPE && \
     NATIVE_TEST_POINTER != 4 && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpexpandb_load_zero(
   bmask mask,
   bpointer memory) noexcept {
@@ -233,7 +233,7 @@ auto reject_maskz_vpexpandb_load_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 7) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpcompressw_merge(
   wvector source,
   wmask mask,
@@ -244,7 +244,7 @@ auto reject_mask_vpcompressw_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 8) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpcompressw_zero(
   wmask mask,
   wvector value) noexcept {
@@ -253,7 +253,7 @@ auto reject_maskz_vpcompressw_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 9) && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpcompressw_store(
   wpointer destination,
   wmask mask,
@@ -264,7 +264,7 @@ auto reject_mask_vpcompressw_store(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 10) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpexpandw_merge(
   wvector source,
   wmask mask,
@@ -275,7 +275,7 @@ auto reject_mask_vpexpandw_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 11) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpexpandw_zero(
   wmask mask,
   wvector value) noexcept {
@@ -285,7 +285,7 @@ auto reject_maskz_vpexpandw_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 12) && NATIVE_TEST_POINTER != 4 && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpexpandw_load_merge(
   wvector source,
   wmask mask,
@@ -296,7 +296,7 @@ auto reject_mask_vpexpandw_load_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 13) && !NATIVE_TEST_SHAPE && \
     NATIVE_TEST_POINTER != 4 && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpexpandw_load_zero(
   wmask mask,
   wpointer memory) noexcept {
@@ -305,7 +305,7 @@ auto reject_maskz_vpexpandw_load_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 14) && !NATIVE_TEST_MASK && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshldw_plain(
   wvector a,
   wvector b) noexcept {
@@ -314,7 +314,7 @@ auto reject_vpshldw_plain(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 15) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshldw_merge(
   wvector source,
   wmask mask,
@@ -325,7 +325,7 @@ auto reject_mask_vpshldw_merge(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 16) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshldw_zero(
   wmask mask,
   wvector a,
@@ -336,7 +336,7 @@ auto reject_maskz_vpshldw_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 17) && !NATIVE_TEST_MASK && \
     !NATIVE_TEST_POINTER && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshldvw_plain(
   wvector a,
   wvector b,
@@ -347,7 +347,7 @@ auto reject_vpshldvw_plain(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 18) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshldvw_merge(
   wvector a,
   wmask mask,
@@ -359,7 +359,7 @@ auto reject_mask_vpshldvw_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 19) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshldvw_zero(
   wmask mask,
   wvector a,
@@ -370,7 +370,7 @@ auto reject_maskz_vpshldvw_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 20) && !NATIVE_TEST_MASK && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshrdw_plain(
   wvector a,
   wvector b) noexcept {
@@ -379,7 +379,7 @@ auto reject_vpshrdw_plain(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 21) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshrdw_merge(
   wvector source,
   wmask mask,
@@ -390,7 +390,7 @@ auto reject_mask_vpshrdw_merge(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 22) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshrdw_zero(
   wmask mask,
   wvector a,
@@ -401,7 +401,7 @@ auto reject_maskz_vpshrdw_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 23) && !NATIVE_TEST_MASK && \
     !NATIVE_TEST_POINTER && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshrdvw_plain(
   wvector a,
   wvector b,
@@ -412,7 +412,7 @@ auto reject_vpshrdvw_plain(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 24) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshrdvw_merge(
   wvector a,
   wmask mask,
@@ -424,7 +424,7 @@ auto reject_mask_vpshrdvw_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 25) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshrdvw_zero(
   wmask mask,
   wvector a,
@@ -435,7 +435,7 @@ auto reject_maskz_vpshrdvw_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 26) && !NATIVE_TEST_MASK && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshldd_plain(
   dvector a,
   dvector b) noexcept {
@@ -444,7 +444,7 @@ auto reject_vpshldd_plain(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 27) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshldd_merge(
   dvector source,
   dmask mask,
@@ -455,7 +455,7 @@ auto reject_mask_vpshldd_merge(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 28) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshldd_zero(
   dmask mask,
   dvector a,
@@ -466,7 +466,7 @@ auto reject_maskz_vpshldd_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 29) && !NATIVE_TEST_MASK && \
     !NATIVE_TEST_POINTER && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshldvd_plain(
   dvector a,
   dvector b,
@@ -477,7 +477,7 @@ auto reject_vpshldvd_plain(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 30) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshldvd_merge(
   dvector a,
   dmask mask,
@@ -489,7 +489,7 @@ auto reject_mask_vpshldvd_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 31) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshldvd_zero(
   dmask mask,
   dvector a,
@@ -500,7 +500,7 @@ auto reject_maskz_vpshldvd_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 32) && !NATIVE_TEST_MASK && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshrdd_plain(
   dvector a,
   dvector b) noexcept {
@@ -509,7 +509,7 @@ auto reject_vpshrdd_plain(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 33) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshrdd_merge(
   dvector source,
   dmask mask,
@@ -520,7 +520,7 @@ auto reject_mask_vpshrdd_merge(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 34) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshrdd_zero(
   dmask mask,
   dvector a,
@@ -531,7 +531,7 @@ auto reject_maskz_vpshrdd_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 35) && !NATIVE_TEST_MASK && \
     !NATIVE_TEST_POINTER && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshrdvd_plain(
   dvector a,
   dvector b,
@@ -542,7 +542,7 @@ auto reject_vpshrdvd_plain(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 36) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshrdvd_merge(
   dvector a,
   dmask mask,
@@ -554,7 +554,7 @@ auto reject_mask_vpshrdvd_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 37) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshrdvd_zero(
   dmask mask,
   dvector a,
@@ -565,7 +565,7 @@ auto reject_maskz_vpshrdvd_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 38) && !NATIVE_TEST_MASK && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshldq_plain(
   qvector a,
   qvector b) noexcept {
@@ -574,7 +574,7 @@ auto reject_vpshldq_plain(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 39) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshldq_merge(
   qvector source,
   qmask mask,
@@ -585,7 +585,7 @@ auto reject_mask_vpshldq_merge(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 40) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshldq_zero(
   qmask mask,
   qvector a,
@@ -596,7 +596,7 @@ auto reject_maskz_vpshldq_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 41) && !NATIVE_TEST_MASK && \
     !NATIVE_TEST_POINTER && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshldvq_plain(
   qvector a,
   qvector b,
@@ -607,7 +607,7 @@ auto reject_vpshldvq_plain(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 42) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshldvq_merge(
   qvector a,
   qmask mask,
@@ -619,7 +619,7 @@ auto reject_mask_vpshldvq_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 43) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshldvq_zero(
   qmask mask,
   qvector a,
@@ -630,7 +630,7 @@ auto reject_maskz_vpshldvq_zero(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 44) && !NATIVE_TEST_MASK && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshrdq_plain(
   qvector a,
   qvector b) noexcept {
@@ -639,7 +639,7 @@ auto reject_vpshrdq_plain(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 45) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshrdq_merge(
   qvector source,
   qmask mask,
@@ -650,7 +650,7 @@ auto reject_mask_vpshrdq_merge(
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 46) && !NATIVE_TEST_POINTER
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshrdq_zero(
   qmask mask,
   qvector a,
@@ -661,7 +661,7 @@ auto reject_maskz_vpshrdq_zero(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 47) && !NATIVE_TEST_MASK && \
     !NATIVE_TEST_POINTER && !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshrdvq_plain(
   qvector a,
   qvector b,
@@ -672,7 +672,7 @@ auto reject_vpshrdvq_plain(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 48) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshrdvq_merge(
   qvector a,
   qmask mask,
@@ -684,7 +684,7 @@ auto reject_mask_vpshrdvq_merge(
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 49) && !NATIVE_TEST_POINTER && \
     !NATIVE_TEST_IMMEDIATE
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpshrdvq_zero(
   qmask mask,
   qvector a,

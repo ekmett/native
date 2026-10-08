@@ -19,13 +19,13 @@ namespace {
   };
 }
 
-extern "C" native_noinline unsigned native_aes_baseline(unsigned a, unsigned b) noexcept {
+extern "C" hint_noinline unsigned native_aes_baseline(unsigned a, unsigned b) noexcept {
   return (a ^ b) + a;
 }
 
 // Keep admission in a baseline translation unit, including its classifier body.
 // Legacy AES needs no AVX/XSAVE state; it still needs observed SSE prerequisites.
-extern "C" native_noinline bool native_aes_admission(
+extern "C" hint_noinline bool native_aes_admission(
   std::uint32_t leaf1_ecx, std::uint32_t leaf1_edx, std::uint32_t max_basic_leaf) noexcept {
   snapshot cpu;
   cpu.max_basic_leaf = max_basic_leaf;

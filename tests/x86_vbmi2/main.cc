@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_TEST_INTERFACE == 1
 import native.x86.vbmi2;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -19,7 +19,7 @@ import native;
 #include <cstdio>
 #include <initializer_list>
 #include <new>
-#include <native/attributes.h>
+#include <hint.h>
 #include "support/guarded_pages.h"
 
 inline constexpr auto full_width = native::target_features<native::x86>("avx512vbmi2");
@@ -711,7 +711,7 @@ static_assert(shift_reference<std::uint16_t>(0x8001, 0x4003, 1, true) == 0xc000)
 
 // Literal runtime target boundaries remain visible to the baseline driver.
 template<unsigned Imm8, class T, std::size_t N>
-native_noinline native_target("avx512f,avx512bw,avx512vbmi2")
+hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2")
 void invoke_512(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, full_width>;
   auto a = vector_type::load(input.a.data());
@@ -783,7 +783,7 @@ void invoke_512(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_
 }
 
 template<class T, std::size_t N>
-native_noinline native_target("avx512f,avx512bw,avx512vbmi2")
+hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2")
 void memory_512(T * destination, T const * memory, std::array<T, N> & merged,
   std::array<T, N> & zeroed, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, full_width>;
@@ -804,7 +804,7 @@ void memory_512(T * destination, T const * memory, std::array<T, N> & merged,
 
 // Literal runtime target boundaries remain visible to the baseline driver.
 template<unsigned Imm8, class T, std::size_t N>
-native_noinline native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
 void invoke_vl(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, short_width>;
   auto a = vector_type::load(input.a.data());
@@ -876,7 +876,7 @@ void invoke_vl(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t
 }
 
 template<class T, std::size_t N>
-native_noinline native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
 void memory_vl(T * destination, T const * memory, std::array<T, N> & merged,
   std::array<T, N> & zeroed, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, short_width>;
@@ -897,7 +897,7 @@ void memory_vl(T * destination, T const * memory, std::array<T, N> & merged,
 
 // Literal runtime target boundaries remain visible to the baseline driver.
 template<unsigned Imm8, class T, std::size_t N>
-native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
+hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
 void invoke_broad(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, broad>;
   auto a = vector_type::load(input.a.data());
@@ -969,7 +969,7 @@ void invoke_broad(outputs<T, N> & output, inputs<T, N> const & input, std::uint6
 }
 
 template<class T, std::size_t N>
-native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
+hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
 void memory_broad(T * destination, T const * memory, std::array<T, N> & merged,
   std::array<T, N> & zeroed, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, broad>;
@@ -1127,7 +1127,7 @@ bool check_vectors(std::uint64_t & state) {
   return true;
 }
 
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_vbmi2_baseline_import(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

@@ -1069,7 +1069,7 @@ namespace bf16_fixture {
   using singles = std::array<std::uint32_t,4>;
 
   template<unsigned N, unsigned M=0, unsigned Lane=0>
-  native_inline native_target("bf16") singles dot(singles c, halves a, halves b) {
+  hint_inline hint_target("bf16") singles dot(singles c, halves a, halves b) {
     singles result{};
     if constexpr(N==2) {
       auto va=vreinterpret_bf16_u16(vld1_u16(a.data()));
@@ -1088,7 +1088,7 @@ namespace bf16_fixture {
   }
 
   template<bool Top, unsigned M=0, unsigned Lane=0>
-  native_inline native_target("bf16") singles fused(singles c, halves a, halves b) {
+  hint_inline hint_target("bf16") singles fused(singles c, halves a, halves b) {
     auto va=vreinterpretq_bf16_u16(vld1q_u16(a.data()));
     auto vc=vreinterpretq_f32_u32(vld1q_u32(c.data()));
     auto vb=[&] {if constexpr(M==4) return vreinterpret_bf16_u16(vld1_u16(b.data())); else return vreinterpretq_bf16_u16(vld1q_u16(b.data()));}();
@@ -1100,14 +1100,14 @@ namespace bf16_fixture {
     singles result; vst1q_u32(result.data(),vreinterpretq_u32_f32(value)); return result;
   }
 
-  native_inline native_target("bf16") singles matrix(singles c, halves a, halves b) {
+  hint_inline hint_target("bf16") singles matrix(singles c, halves a, halves b) {
     auto value=instruction_fixture::bfmmla<arch>(vreinterpretq_f32_u32(vld1q_u32(c.data())),
       vreinterpretq_bf16_u16(vld1q_u16(a.data())),vreinterpretq_bf16_u16(vld1q_u16(b.data())));
     singles result; vst1q_u32(result.data(),vreinterpretq_u32_f32(value)); return result;
   }
 
   template<unsigned N, unsigned M=0, unsigned Lane=0>
-  native_target("bf16") bool check_dot(bool enhanced, unsigned config, bool dn) {
+  hint_target("bf16") bool check_dot(bool enhanced, unsigned config, bool dn) {
     std::uint64_t status=dn?0x08000095:0;
     auto control=fpcr();
     for(auto const & sample:neon_bf16_reference::cases) {
@@ -1129,7 +1129,7 @@ namespace bf16_fixture {
   }
 
   template<bool Top, unsigned M=0, unsigned Lane=0>
-  native_target("bf16") bool check_fused(unsigned config) {
+  hint_target("bf16") bool check_fused(unsigned config) {
     auto control=fpcr();
     for(auto const & sample:arm_bf16_reference::fmas) {
       halves a{},b{}; singles c{}; a.fill(0x7f81); b.fill(0x7f81); c.fill(sample.acc);
@@ -1144,7 +1144,7 @@ namespace bf16_fixture {
     return true;
   }
 
-  native_target("bf16") bool check_matrix(bool enhanced,unsigned config,bool dn) {
+  hint_target("bf16") bool check_matrix(bool enhanced,unsigned config,bool dn) {
     auto control=fpcr();
     std::uint64_t status=dn?0x08000095:0;
     for(auto const & sample:arm_bf16_reference::matrices) {
@@ -1161,7 +1161,7 @@ namespace bf16_fixture {
   }
 
   template<bool Top, unsigned M=0, unsigned Lane=0>
-  native_target("bf16") bool fused_effects() {
+  hint_target("bf16") bool fused_effects() {
     struct example {std::uint16_t a,b; std::uint32_t c,result,flags; bool flush,dn;};
     constexpr example cases[]{
       {0,0x7f80,0,0x7fc00000,1,false,true},
@@ -1201,7 +1201,7 @@ namespace bf16_fixture {
     return true;
   }
 
-  native_target("bf16") bool environment_controls(bool enhanced) {
+  hint_target("bf16") bool environment_controls(bool enhanced) {
     environment saved;
     halves a{},b{}; singles c{};
     a.fill(0x3f80); b.fill(0x3380); c.fill(0x3f800000);
@@ -1257,7 +1257,7 @@ namespace bf16_fixture {
     return true;
   }
 
-  native_target("bf16") bool effects(bool enhanced) {
+  hint_target("bf16") bool effects(bool enhanced) {
     environment saved;
     if(!fused_effects<false>()) return false;
     if(!fused_effects<false,4,0>()) return false;
@@ -1288,7 +1288,7 @@ namespace bf16_fixture {
     return environment_controls(enhanced);
   }
 
-  native_target("bf16") bool arithmetic(bool enhanced) {
+  hint_target("bf16") bool arithmetic(bool enhanced) {
     environment saved;
     for(unsigned ebf=0;ebf<(enhanced?2u:1u);++ebf)
       for(unsigned config=0;config<8;++config) for(unsigned dn=0;dn<2;++dn) {

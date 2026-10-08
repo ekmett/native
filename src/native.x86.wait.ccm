@@ -4,7 +4,7 @@ module;
 #include "native/isa_import.h"
 #include <cstdint>
 #include <x86intrin.h>
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/targets.h"
 
 import native.x86.features;
@@ -42,9 +42,9 @@ namespace native {
   /// Wakeups may be spurious, so the predicate is checked again after monitoring.
   /// \post f(p)
   /// \snippet api.cc capabilities
-  template <waiter W> native_flatten
+  template <waiter W> hint_flatten
   void wait_until(volatile auto * p, auto f)
-    noexcept(noexcept(!f(p)) && noexcept(W::monitor(p)) && noexcept(W::mwait(0))) native_blocking {
+    noexcept(noexcept(!f(p)) && noexcept(W::monitor(p)) && noexcept(W::mwait(0))) hint_blocking {
     [[assume(W::supported)]];
     while (!f(p)) {
       W::monitor(p);
@@ -61,7 +61,7 @@ namespace native {
     [[gnu::target("mwaitx")]] static void monitor(volatile void * p) noexcept;
     /// \ingroup x86_mwaitx
     /// Issue MWAITX with the supplied timer operand; monitor must already be armed.
-    [[gnu::target("mwaitx")]] static void mwait(std::uint32_t timer = 0) noexcept native_blocking;
+    [[gnu::target("mwaitx")]] static void mwait(std::uint32_t timer = 0) noexcept hint_blocking;
     /// \hideinitializer \hideinlinesource
     static const bool supported;
   };
@@ -75,7 +75,7 @@ namespace native {
     [[gnu::target("waitpkg")]] static void monitor(volatile void * p) noexcept;
     /// \ingroup x86_waitpkg
     /// Issue UMWAIT with this absolute deadline operand; return the intrinsic status.
-    [[gnu::target("waitpkg")]] static std::uint8_t mwait(std::uint64_t timer = 0) noexcept native_blocking;
+    [[gnu::target("waitpkg")]] static std::uint8_t mwait(std::uint64_t timer = 0) noexcept hint_blocking;
     /// \hideinlinesource
     static const bool supported;
   };
@@ -86,8 +86,8 @@ namespace native {
   /// Call only after admitting WAITPKG on the executing CPU.
   template<isa<x86> Arch = NATIVE_BASELINE, unsigned Control = 1>
     requires(Arch.has(x86_feature::waitpkg) && Control < 2)
-  native_inline native_artificial native_target("waitpkg")
-  std::uint8_t tpause(std::uint64_t deadline) noexcept native_blocking {
+  hint_inline hint_artificial hint_target("waitpkg")
+  std::uint8_t tpause(std::uint64_t deadline) noexcept hint_blocking {
     return __builtin_ia32_tpause(Control, std::uint32_t(deadline >> 32),
       std::uint32_t(deadline));
   }
@@ -96,9 +96,9 @@ namespace native {
   struct spin {
     using timer_t = std::uint64_t;
     /// Ignore the address; PAUSE waiting does not arm a hardware monitor.
-    native_inline native_artificial static void monitor(volatile void *) noexcept {}
+    hint_inline hint_artificial static void monitor(volatile void *) noexcept {}
     /// Issue one PAUSE, ignoring the timer; no sleep duration or memory ordering is promised.
-    native_inline native_artificial static void mwait(std::uint32_t = 0) noexcept native_blocking { _mm_pause(); }
+    hint_inline hint_artificial static void mwait(std::uint32_t = 0) noexcept hint_blocking { _mm_pause(); }
     /// \hideinlinesource
     inline static constinit bool supported = true;
   };
@@ -128,13 +128,13 @@ namespace native {
   [[gnu::target("mwaitx")]] void mwaitx::monitor(volatile void * p) noexcept {
     _mm_monitorx(const_cast<void *>(p), 0, 0);
   }
-  [[gnu::target("mwaitx")]] void mwaitx::mwait(std::uint32_t timer) noexcept native_blocking {
+  [[gnu::target("mwaitx")]] void mwaitx::mwait(std::uint32_t timer) noexcept hint_blocking {
     _mm_mwaitx(0, 0, timer);
   }
   [[gnu::target("waitpkg")]] void umwait::monitor(volatile void * p) noexcept {
     _umonitor(const_cast<void *>(p));
   }
-  [[gnu::target("waitpkg")]] std::uint8_t umwait::mwait(std::uint64_t timer) noexcept native_blocking {
+  [[gnu::target("waitpkg")]] std::uint8_t umwait::mwait(std::uint64_t timer) noexcept hint_blocking {
     return _umwait(1, timer);
   }
 

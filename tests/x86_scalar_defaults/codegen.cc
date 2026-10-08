@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/targets.h>
 #include "strong_imports.h"
 
 using native::x86_feature;
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_0(std::uint32_t a, std::uint32_t b) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::andn<native::x86_feature::bmi1>(a, b);
@@ -15,7 +15,7 @@ std::uint32_t native_scalar_default_0(std::uint32_t a, std::uint32_t b) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_1(std::uint32_t a, std::uint32_t control) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::bextr<native::x86_feature::bmi1>(a, control);
@@ -24,7 +24,7 @@ std::uint32_t native_scalar_default_1(std::uint32_t a, std::uint32_t control) no
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_2(std::uint32_t a, unsigned start, unsigned length) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::bextr<native::x86_feature::bmi1>(a, start, length);
@@ -33,7 +33,7 @@ std::uint32_t native_scalar_default_2(std::uint32_t a, unsigned start, unsigned 
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_3(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::blsi<native::x86_feature::bmi1>(a);
@@ -42,7 +42,7 @@ std::uint32_t native_scalar_default_3(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_4(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::blsmsk<native::x86_feature::bmi1>(a);
@@ -51,7 +51,7 @@ std::uint32_t native_scalar_default_4(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_5(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::blsr<native::x86_feature::bmi1>(a);
@@ -60,7 +60,7 @@ std::uint32_t native_scalar_default_5(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_6(std::uint32_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::bzhi<native::x86_feature::bmi2>(a, count);
@@ -69,7 +69,7 @@ std::uint32_t native_scalar_default_6(std::uint32_t a, unsigned count) noexcept 
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_7(std::uint32_t a, std::uint32_t b, std::uint32_t* high) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::mulx<native::x86_feature::bmi2>(a, b, high);
@@ -78,7 +78,7 @@ std::uint32_t native_scalar_default_7(std::uint32_t a, std::uint32_t b, std::uin
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_8(std::uint32_t a, std::uint32_t mask) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::pdep<native::x86_feature::bmi2>(a, mask);
@@ -87,7 +87,7 @@ std::uint32_t native_scalar_default_8(std::uint32_t a, std::uint32_t mask) noexc
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_9(std::uint32_t a, std::uint32_t mask) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::pext<native::x86_feature::bmi2>(a, mask);
@@ -96,7 +96,7 @@ std::uint32_t native_scalar_default_9(std::uint32_t a, std::uint32_t mask) noexc
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_10(std::uint32_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::shlx<native::x86_feature::bmi2>(a, count);
@@ -105,7 +105,7 @@ std::uint32_t native_scalar_default_10(std::uint32_t a, unsigned count) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_11(std::uint32_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::shrx<native::x86_feature::bmi2>(a, count);
@@ -114,7 +114,7 @@ std::uint32_t native_scalar_default_11(std::uint32_t a, unsigned count) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint32_t native_scalar_default_12(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::rorx<native::x86_feature::bmi2, 7>(a);
@@ -123,7 +123,7 @@ std::uint32_t native_scalar_default_12(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_13(std::uint64_t a, std::uint64_t b) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::andn<native::x86_feature::bmi1>(a, b);
@@ -132,7 +132,7 @@ std::uint64_t native_scalar_default_13(std::uint64_t a, std::uint64_t b) noexcep
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_14(std::uint64_t a, std::uint32_t control) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::bextr<native::x86_feature::bmi1>(a, control);
@@ -141,7 +141,7 @@ std::uint64_t native_scalar_default_14(std::uint64_t a, std::uint32_t control) n
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_15(std::uint64_t a, unsigned start, unsigned length) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::bextr<native::x86_feature::bmi1>(a, start, length);
@@ -150,7 +150,7 @@ std::uint64_t native_scalar_default_15(std::uint64_t a, unsigned start, unsigned
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_16(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::blsi<native::x86_feature::bmi1>(a);
@@ -159,7 +159,7 @@ std::uint64_t native_scalar_default_16(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_17(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::blsmsk<native::x86_feature::bmi1>(a);
@@ -168,7 +168,7 @@ std::uint64_t native_scalar_default_17(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_18(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::blsr<native::x86_feature::bmi1>(a);
@@ -177,7 +177,7 @@ std::uint64_t native_scalar_default_18(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_19(std::uint64_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::bzhi<native::x86_feature::bmi2>(a, count);
@@ -186,7 +186,7 @@ std::uint64_t native_scalar_default_19(std::uint64_t a, unsigned count) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_20(std::uint64_t a, std::uint64_t b, std::uint64_t* high) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::mulx<native::x86_feature::bmi2>(a, b, high);
@@ -195,7 +195,7 @@ std::uint64_t native_scalar_default_20(std::uint64_t a, std::uint64_t b, std::ui
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_21(std::uint64_t a, std::uint64_t mask) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::pdep<native::x86_feature::bmi2>(a, mask);
@@ -204,7 +204,7 @@ std::uint64_t native_scalar_default_21(std::uint64_t a, std::uint64_t mask) noex
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_22(std::uint64_t a, std::uint64_t mask) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::pext<native::x86_feature::bmi2>(a, mask);
@@ -213,7 +213,7 @@ std::uint64_t native_scalar_default_22(std::uint64_t a, std::uint64_t mask) noex
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_23(std::uint64_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::shlx<native::x86_feature::bmi2>(a, count);
@@ -222,7 +222,7 @@ std::uint64_t native_scalar_default_23(std::uint64_t a, unsigned count) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_24(std::uint64_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::shrx<native::x86_feature::bmi2>(a, count);
@@ -231,7 +231,7 @@ std::uint64_t native_scalar_default_24(std::uint64_t a, unsigned count) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::uint64_t native_scalar_default_25(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::rorx<native::x86_feature::bmi2, 7>(a);
@@ -240,7 +240,7 @@ std::uint64_t native_scalar_default_25(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::int32_t native_scalar_default_26(std::int32_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::sarx<native::x86_feature::bmi2>(a, count);
@@ -249,7 +249,7 @@ std::int32_t native_scalar_default_26(std::int32_t a, unsigned count) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi2")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi2")
 std::int64_t native_scalar_default_27(std::int64_t a, unsigned count) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::sarx<native::x86_feature::bmi2>(a, count);
@@ -258,7 +258,7 @@ std::int64_t native_scalar_default_27(std::int64_t a, unsigned count) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint16_t native_scalar_default_28(std::uint16_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::tzcnt<native::x86_feature::bmi1>(a);
@@ -267,7 +267,7 @@ std::uint16_t native_scalar_default_28(std::uint16_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint32_t native_scalar_default_29(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::tzcnt<native::x86_feature::bmi1>(a);
@@ -276,7 +276,7 @@ std::uint32_t native_scalar_default_29(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("bmi")
+extern "C" hint_noinline __attribute__((used)) hint_target("bmi")
 std::uint64_t native_scalar_default_30(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::tzcnt<native::x86_feature::bmi1>(a);
@@ -285,7 +285,7 @@ std::uint64_t native_scalar_default_30(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("popcnt")
+extern "C" hint_noinline __attribute__((used)) hint_target("popcnt")
 std::uint16_t native_scalar_default_31(std::uint16_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::popcnt<native::x86_feature::popcnt>(a);
@@ -294,7 +294,7 @@ std::uint16_t native_scalar_default_31(std::uint16_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("popcnt")
+extern "C" hint_noinline __attribute__((used)) hint_target("popcnt")
 std::uint32_t native_scalar_default_32(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::popcnt<native::x86_feature::popcnt>(a);
@@ -303,7 +303,7 @@ std::uint32_t native_scalar_default_32(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("popcnt")
+extern "C" hint_noinline __attribute__((used)) hint_target("popcnt")
 std::uint64_t native_scalar_default_33(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::popcnt<native::x86_feature::popcnt>(a);
@@ -312,7 +312,7 @@ std::uint64_t native_scalar_default_33(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("lzcnt")
+extern "C" hint_noinline __attribute__((used)) hint_target("lzcnt")
 std::uint16_t native_scalar_default_34(std::uint16_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::lzcnt<native::x86_feature::lzcnt>(a);
@@ -321,7 +321,7 @@ std::uint16_t native_scalar_default_34(std::uint16_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("lzcnt")
+extern "C" hint_noinline __attribute__((used)) hint_target("lzcnt")
 std::uint32_t native_scalar_default_35(std::uint32_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::lzcnt<native::x86_feature::lzcnt>(a);
@@ -330,7 +330,7 @@ std::uint32_t native_scalar_default_35(std::uint32_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("lzcnt")
+extern "C" hint_noinline __attribute__((used)) hint_target("lzcnt")
 std::uint64_t native_scalar_default_36(std::uint64_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::lzcnt<native::x86_feature::lzcnt>(a);
@@ -339,7 +339,7 @@ std::uint64_t native_scalar_default_36(std::uint64_t a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("crc32")
+extern "C" hint_noinline __attribute__((used)) hint_target("crc32")
 std::uint32_t native_scalar_default_37(std::uint32_t a, std::uint8_t b) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::crc32c<native::x86_feature::crc32>(a, b);
@@ -348,7 +348,7 @@ std::uint32_t native_scalar_default_37(std::uint32_t a, std::uint8_t b) noexcept
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("crc32")
+extern "C" hint_noinline __attribute__((used)) hint_target("crc32")
 std::uint32_t native_scalar_default_38(std::uint32_t a, std::uint16_t b) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::crc32c<native::x86_feature::crc32>(a, b);
@@ -357,7 +357,7 @@ std::uint32_t native_scalar_default_38(std::uint32_t a, std::uint16_t b) noexcep
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("crc32")
+extern "C" hint_noinline __attribute__((used)) hint_target("crc32")
 std::uint32_t native_scalar_default_39(std::uint32_t a, std::uint32_t b) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::crc32c<native::x86_feature::crc32>(a, b);
@@ -366,7 +366,7 @@ std::uint32_t native_scalar_default_39(std::uint32_t a, std::uint32_t b) noexcep
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("crc32")
+extern "C" hint_noinline __attribute__((used)) hint_target("crc32")
 std::uint32_t native_scalar_default_40(std::uint32_t a, std::uint64_t b) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::crc32c<native::x86_feature::crc32>(a, b);
@@ -375,7 +375,7 @@ std::uint32_t native_scalar_default_40(std::uint32_t a, std::uint64_t b) noexcep
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("f16c")
+extern "C" hint_noinline __attribute__((used)) hint_target("f16c")
 std::uint16_t native_scalar_default_41(float a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::cvtss_sh<native::x86_feature::f16c, 7>(a);
@@ -384,7 +384,7 @@ std::uint16_t native_scalar_default_41(float a) noexcept {
 #endif
 }
 
-extern "C" native_noinline __attribute__((used)) native_target("f16c")
+extern "C" hint_noinline __attribute__((used)) hint_target("f16c")
 float native_scalar_default_42(std::uint16_t a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   return native::cvtsh_ss<native::x86_feature::f16c>(a);
@@ -394,7 +394,7 @@ float native_scalar_default_42(std::uint16_t a) noexcept {
 }
 
 // A discarded result must still update MXCSR or raise an unmasked exception.
-extern "C" native_noinline __attribute__((used)) native_target("f16c")
+extern "C" hint_noinline __attribute__((used)) hint_target("f16c")
 void native_scalar_default_discard(float a) noexcept {
 #if NATIVE_SCALAR_EXPLICIT
   (void)native::cvtss_sh<native::x86_feature::f16c, 0>(a);

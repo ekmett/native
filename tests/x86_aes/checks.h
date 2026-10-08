@@ -163,7 +163,7 @@ namespace aes_fixture {
   }
 
   template<unsigned... I>
-  native_noinline native_target("aes")
+  hint_noinline hint_target("aes")
   void evaluate(bytes const & input, bytes const & key, outputs & result,
     std::integer_sequence<unsigned, I...>) {
     auto a = vector<strong>::load(input.data());
@@ -174,7 +174,7 @@ namespace aes_fixture {
     native::aesdeclast<strong>(a, b).store(result[3].data());
     native::aesimc<strong>(a).store(result[4].data());
     unsigned index = 5;
-    ([&] native_target("aes") {
+    ([&] hint_target("aes") {
       native::aeskeygenassist<strong, I>(a).store(result[index++].data());
     }(), ...);
   }
@@ -257,7 +257,7 @@ namespace aes_fixture {
   static_assert(decrypt_constant<strong>() == plaintext);
   static_assert(decrypt_constant<weak>() == plaintext);
 
-  native_noinline native_target("aes")
+  hint_noinline hint_target("aes")
   bool full_cipher() {
     auto state = vector<strong>::load(initial.data());
     for (unsigned i = 1; i < 10; ++i) {

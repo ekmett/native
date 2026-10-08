@@ -16,7 +16,7 @@ using vector = native::simd<float,4,native::neon>;
 #endif
 
 template<bool Log, std::size_t... I>
-native_inline void evaluate(float * out, float const * in, std::index_sequence<I...>) {
+hint_inline void evaluate(float * out, float const * in, std::index_sequence<I...>) {
   native::wide values{std::array{vector::load(in + I * vector::lanes)...}};
   if constexpr (Log) {
     auto result = math::log2(values);

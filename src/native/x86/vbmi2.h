@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #if NATIVE_HOST_X86
 #include <immintrin.h>
@@ -15,7 +15,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpcompressb(
     __m128i source,
     __mmask16 mask,
@@ -28,7 +28,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpcompressb(
     __mmask16 mask,
     __m128i value) noexcept {
@@ -40,7 +40,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_inline native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  hint_inline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   void mask_vpcompressb(
     void * destination,
     __mmask16 mask,
@@ -53,7 +53,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpexpandb(
     __m128i source,
     __mmask16 mask,
@@ -66,7 +66,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpexpandb(
     __mmask16 mask,
     __m128i value) noexcept {
@@ -78,7 +78,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpexpandb(
     __m128i source,
     __mmask16 mask,
@@ -91,7 +91,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpexpandb_128(
     __mmask16 mask,
     void const * memory) noexcept {
@@ -103,7 +103,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpcompressw(
     __m128i source,
     __mmask8 mask,
@@ -116,7 +116,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpcompressw(
     __mmask8 mask,
     __m128i value) noexcept {
@@ -128,7 +128,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_inline native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  hint_inline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   void mask_vpcompressw(
     void * destination,
     __mmask8 mask,
@@ -141,7 +141,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpexpandw(
     __m128i source,
     __mmask8 mask,
@@ -154,7 +154,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpexpandw(
     __mmask8 mask,
     __m128i value) noexcept {
@@ -166,7 +166,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpexpandw(
     __m128i source,
     __mmask8 mask,
@@ -179,7 +179,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpexpandw_128(
     __mmask8 mask,
     void const * memory) noexcept {
@@ -191,7 +191,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshldw(
     __m128i a,
     __m128i b) noexcept {
@@ -203,7 +203,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshldw(
     __m128i source,
     __mmask8 mask,
@@ -217,7 +217,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshldw(
     __mmask8 mask,
     __m128i a,
@@ -230,7 +230,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshldvw(
     __m128i a,
     __m128i b,
@@ -243,7 +243,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshldvw(
     __m128i a,
     __mmask8 mask,
@@ -257,7 +257,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshldvw(
     __mmask8 mask,
     __m128i a,
@@ -271,7 +271,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshrdw(
     __m128i a,
     __m128i b) noexcept {
@@ -283,7 +283,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshrdw(
     __m128i source,
     __mmask8 mask,
@@ -297,7 +297,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshrdw(
     __mmask8 mask,
     __m128i a,
@@ -310,7 +310,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshrdvw(
     __m128i a,
     __m128i b,
@@ -323,7 +323,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshrdvw(
     __m128i a,
     __mmask8 mask,
@@ -337,7 +337,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshrdvw(
     __mmask8 mask,
     __m128i a,
@@ -351,7 +351,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshldd(
     __m128i a,
     __m128i b) noexcept {
@@ -363,7 +363,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshldd(
     __m128i source,
     __mmask8 mask,
@@ -377,7 +377,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshldd(
     __mmask8 mask,
     __m128i a,
@@ -390,7 +390,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshldvd(
     __m128i a,
     __m128i b,
@@ -403,7 +403,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshldvd(
     __m128i a,
     __mmask8 mask,
@@ -417,7 +417,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshldvd(
     __mmask8 mask,
     __m128i a,
@@ -431,7 +431,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshrdd(
     __m128i a,
     __m128i b) noexcept {
@@ -443,7 +443,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshrdd(
     __m128i source,
     __mmask8 mask,
@@ -457,7 +457,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshrdd(
     __mmask8 mask,
     __m128i a,
@@ -470,7 +470,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshrdvd(
     __m128i a,
     __m128i b,
@@ -483,7 +483,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshrdvd(
     __m128i a,
     __mmask8 mask,
@@ -497,7 +497,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshrdvd(
     __mmask8 mask,
     __m128i a,
@@ -511,7 +511,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshldq(
     __m128i a,
     __m128i b) noexcept {
@@ -523,7 +523,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshldq(
     __m128i source,
     __mmask8 mask,
@@ -537,7 +537,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshldq(
     __mmask8 mask,
     __m128i a,
@@ -550,7 +550,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshldvq(
     __m128i a,
     __m128i b,
@@ -563,7 +563,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshldvq(
     __m128i a,
     __mmask8 mask,
@@ -577,7 +577,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshldvq(
     __mmask8 mask,
     __m128i a,
@@ -591,7 +591,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshrdq(
     __m128i a,
     __m128i b) noexcept {
@@ -603,7 +603,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshrdq(
     __m128i source,
     __mmask8 mask,
@@ -617,7 +617,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshrdq(
     __mmask8 mask,
     __m128i a,
@@ -630,7 +630,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i vpshrdvq(
     __m128i a,
     __m128i b,
@@ -643,7 +643,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i mask_vpshrdvq(
     __m128i a,
     __mmask8 mask,
@@ -657,7 +657,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m128i maskz_vpshrdvq(
     __mmask8 mask,
     __m128i a,
@@ -671,7 +671,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpcompressb(
     __m256i source,
     __mmask32 mask,
@@ -684,7 +684,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpcompressb(
     __mmask32 mask,
     __m256i value) noexcept {
@@ -696,7 +696,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_inline native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  hint_inline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   void mask_vpcompressb(
     void * destination,
     __mmask32 mask,
@@ -709,7 +709,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpexpandb(
     __m256i source,
     __mmask32 mask,
@@ -722,7 +722,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpexpandb(
     __mmask32 mask,
     __m256i value) noexcept {
@@ -734,7 +734,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpexpandb(
     __m256i source,
     __mmask32 mask,
@@ -747,7 +747,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpexpandb_256(
     __mmask32 mask,
     void const * memory) noexcept {
@@ -759,7 +759,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpcompressw(
     __m256i source,
     __mmask16 mask,
@@ -772,7 +772,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpcompressw(
     __mmask16 mask,
     __m256i value) noexcept {
@@ -784,7 +784,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  native_inline native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  hint_inline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   void mask_vpcompressw(
     void * destination,
     __mmask16 mask,
@@ -797,7 +797,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpexpandw(
     __m256i source,
     __mmask16 mask,
@@ -810,7 +810,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpexpandw(
     __mmask16 mask,
     __m256i value) noexcept {
@@ -822,7 +822,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpexpandw(
     __m256i source,
     __mmask16 mask,
@@ -835,7 +835,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpexpandw_256(
     __mmask16 mask,
     void const * memory) noexcept {
@@ -847,7 +847,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshldw(
     __m256i a,
     __m256i b) noexcept {
@@ -859,7 +859,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshldw(
     __m256i source,
     __mmask16 mask,
@@ -873,7 +873,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshldw(
     __mmask16 mask,
     __m256i a,
@@ -886,7 +886,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshldvw(
     __m256i a,
     __m256i b,
@@ -899,7 +899,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshldvw(
     __m256i a,
     __mmask16 mask,
@@ -913,7 +913,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshldvw(
     __mmask16 mask,
     __m256i a,
@@ -927,7 +927,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshrdw(
     __m256i a,
     __m256i b) noexcept {
@@ -939,7 +939,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshrdw(
     __m256i source,
     __mmask16 mask,
@@ -953,7 +953,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshrdw(
     __mmask16 mask,
     __m256i a,
@@ -966,7 +966,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshrdvw(
     __m256i a,
     __m256i b,
@@ -979,7 +979,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshrdvw(
     __m256i a,
     __mmask16 mask,
@@ -993,7 +993,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshrdvw(
     __mmask16 mask,
     __m256i a,
@@ -1007,7 +1007,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshldd(
     __m256i a,
     __m256i b) noexcept {
@@ -1019,7 +1019,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshldd(
     __m256i source,
     __mmask8 mask,
@@ -1033,7 +1033,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshldd(
     __mmask8 mask,
     __m256i a,
@@ -1046,7 +1046,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshldvd(
     __m256i a,
     __m256i b,
@@ -1059,7 +1059,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshldvd(
     __m256i a,
     __mmask8 mask,
@@ -1073,7 +1073,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshldvd(
     __mmask8 mask,
     __m256i a,
@@ -1087,7 +1087,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshrdd(
     __m256i a,
     __m256i b) noexcept {
@@ -1099,7 +1099,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshrdd(
     __m256i source,
     __mmask8 mask,
@@ -1113,7 +1113,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshrdd(
     __mmask8 mask,
     __m256i a,
@@ -1126,7 +1126,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshrdvd(
     __m256i a,
     __m256i b,
@@ -1139,7 +1139,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshrdvd(
     __m256i a,
     __mmask8 mask,
@@ -1153,7 +1153,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshrdvd(
     __mmask8 mask,
     __m256i a,
@@ -1167,7 +1167,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshldq(
     __m256i a,
     __m256i b) noexcept {
@@ -1179,7 +1179,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshldq(
     __m256i source,
     __mmask8 mask,
@@ -1193,7 +1193,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshldq(
     __mmask8 mask,
     __m256i a,
@@ -1206,7 +1206,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshldvq(
     __m256i a,
     __m256i b,
@@ -1219,7 +1219,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshldvq(
     __m256i a,
     __mmask8 mask,
@@ -1233,7 +1233,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshldvq(
     __mmask8 mask,
     __m256i a,
@@ -1247,7 +1247,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshrdq(
     __m256i a,
     __m256i b) noexcept {
@@ -1259,7 +1259,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshrdq(
     __m256i source,
     __mmask8 mask,
@@ -1273,7 +1273,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshrdq(
     __mmask8 mask,
     __m256i a,
@@ -1286,7 +1286,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i vpshrdvq(
     __m256i a,
     __m256i b,
@@ -1299,7 +1299,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i mask_vpshrdvq(
     __m256i a,
     __mmask8 mask,
@@ -1313,7 +1313,7 @@ namespace native::detail::x86_vbmi2 {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
   __m256i maskz_vpshrdvq(
     __mmask8 mask,
     __m256i a,
@@ -1326,7 +1326,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpcompressb(
     __m512i source,
     __mmask64 mask,
@@ -1338,7 +1338,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpcompressb(
     __mmask64 mask,
     __m512i value) noexcept {
@@ -1349,7 +1349,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_inline native_target("avx512f,avx512bw,avx512vbmi2")
+  hint_inline hint_target("avx512f,avx512bw,avx512vbmi2")
   void mask_vpcompressb(
     void * destination,
     __mmask64 mask,
@@ -1361,7 +1361,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpexpandb(
     __m512i source,
     __mmask64 mask,
@@ -1373,7 +1373,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpexpandb(
     __mmask64 mask,
     __m512i value) noexcept {
@@ -1384,7 +1384,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpexpandb(
     __m512i source,
     __mmask64 mask,
@@ -1396,7 +1396,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpexpandb_512(
     __mmask64 mask,
     void const * memory) noexcept {
@@ -1407,7 +1407,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpcompressw(
     __m512i source,
     __mmask32 mask,
@@ -1419,7 +1419,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpcompressw(
     __mmask32 mask,
     __m512i value) noexcept {
@@ -1430,7 +1430,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  native_inline native_target("avx512f,avx512bw,avx512vbmi2")
+  hint_inline hint_target("avx512f,avx512bw,avx512vbmi2")
   void mask_vpcompressw(
     void * destination,
     __mmask32 mask,
@@ -1442,7 +1442,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpexpandw(
     __m512i source,
     __mmask32 mask,
@@ -1454,7 +1454,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpexpandw(
     __mmask32 mask,
     __m512i value) noexcept {
@@ -1465,7 +1465,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpexpandw(
     __m512i source,
     __mmask32 mask,
@@ -1477,7 +1477,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_pure native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_pure hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpexpandw_512(
     __mmask32 mask,
     void const * memory) noexcept {
@@ -1488,7 +1488,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshldw(
     __m512i a,
     __m512i b) noexcept {
@@ -1499,7 +1499,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshldw(
     __m512i source,
     __mmask32 mask,
@@ -1512,7 +1512,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshldw(
     __mmask32 mask,
     __m512i a,
@@ -1524,7 +1524,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshldvw(
     __m512i a,
     __m512i b,
@@ -1536,7 +1536,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshldvw(
     __m512i a,
     __mmask32 mask,
@@ -1549,7 +1549,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshldvw(
     __mmask32 mask,
     __m512i a,
@@ -1562,7 +1562,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshrdw(
     __m512i a,
     __m512i b) noexcept {
@@ -1573,7 +1573,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshrdw(
     __m512i source,
     __mmask32 mask,
@@ -1586,7 +1586,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshrdw(
     __mmask32 mask,
     __m512i a,
@@ -1598,7 +1598,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshrdvw(
     __m512i a,
     __m512i b,
@@ -1610,7 +1610,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshrdvw(
     __m512i a,
     __mmask32 mask,
@@ -1623,7 +1623,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshrdvw(
     __mmask32 mask,
     __m512i a,
@@ -1636,7 +1636,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshldd(
     __m512i a,
     __m512i b) noexcept {
@@ -1647,7 +1647,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshldd(
     __m512i source,
     __mmask16 mask,
@@ -1660,7 +1660,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshldd(
     __mmask16 mask,
     __m512i a,
@@ -1672,7 +1672,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshldvd(
     __m512i a,
     __m512i b,
@@ -1684,7 +1684,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshldvd(
     __m512i a,
     __mmask16 mask,
@@ -1697,7 +1697,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshldvd(
     __mmask16 mask,
     __m512i a,
@@ -1710,7 +1710,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshrdd(
     __m512i a,
     __m512i b) noexcept {
@@ -1721,7 +1721,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshrdd(
     __m512i source,
     __mmask16 mask,
@@ -1734,7 +1734,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshrdd(
     __mmask16 mask,
     __m512i a,
@@ -1746,7 +1746,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshrdvd(
     __m512i a,
     __m512i b,
@@ -1758,7 +1758,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshrdvd(
     __m512i a,
     __mmask16 mask,
@@ -1771,7 +1771,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshrdvd(
     __mmask16 mask,
     __m512i a,
@@ -1784,7 +1784,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshldq(
     __m512i a,
     __m512i b) noexcept {
@@ -1795,7 +1795,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshldq(
     __m512i source,
     __mmask8 mask,
@@ -1808,7 +1808,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshldq(
     __mmask8 mask,
     __m512i a,
@@ -1820,7 +1820,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshldvq(
     __m512i a,
     __m512i b,
@@ -1832,7 +1832,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshldvq(
     __m512i a,
     __mmask8 mask,
@@ -1845,7 +1845,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshldvq(
     __mmask8 mask,
     __m512i a,
@@ -1858,7 +1858,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshrdq(
     __m512i a,
     __m512i b) noexcept {
@@ -1869,7 +1869,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshrdq(
     __m512i source,
     __mmask8 mask,
@@ -1882,7 +1882,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshrdq(
     __mmask8 mask,
     __m512i a,
@@ -1894,7 +1894,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i vpshrdvq(
     __m512i a,
     __m512i b,
@@ -1906,7 +1906,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i mask_vpshrdvq(
     __m512i a,
     __mmask8 mask,
@@ -1919,7 +1919,7 @@ namespace native::detail::x86_vbmi2 {
     requires(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi2))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512bw,avx512vbmi2")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512bw,avx512vbmi2")
   __m512i maskz_vpshrdvq(
     __mmask8 mask,
     __m512i a,

@@ -33,8 +33,8 @@ header = '\n'.join(line for line in original.splitlines()
                    if not line.startswith('#include') and line != '#pragma once')
 prefix = '''#include <arm_neon.h>
 #define NATIVE_HOST_NEON 1
-#define native_inline inline __attribute__((always_inline))
-#define native_target(x) __attribute__((target(x)))
+#define hint_inline inline __attribute__((always_inline))
+#define hint_target(x) __attribute__((target(x)))
 namespace std {
   using size_t = __SIZE_TYPE__;
   template<class T, T... I> struct integer_sequence {};
@@ -48,7 +48,7 @@ template<class R> struct vector_storage {
   static vector_storage from_native(R x) { return {x}; }
 };
 '''
-pattern = r'native_inline native_target\("neon"\) (u?int\d+x\d+_t) (\w+)\(([^)]+)\) noexcept'
+pattern = r'hint_inline hint_target\("neon"\) (u?int\d+x\d+_t) (\w+)\(([^)]+)\) noexcept'
 records = []
 source = prefix + header + '\n'
 for ret, op, params in re.findall(pattern, original):

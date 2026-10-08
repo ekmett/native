@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <utility>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #if defined(__PCLMUL__) || defined(__VPCLMULQDQ__) || defined(__AVX__) || defined(__AVX512F__)
 #error Carry-less multiplication admission must run at the baseline
 #endif

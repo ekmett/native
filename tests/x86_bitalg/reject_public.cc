@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.bitalg;
 
 #if NATIVE_TEST_WIDTH == 512
@@ -87,56 +87,56 @@ using wmask = native::predicate<wlanes, arch>;
 // One operation per target-mismatch translation unit reaches Clang code generation.
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpopcntb(bvector value) noexcept {
   return native::vpopcntb<arch>(value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpopcntb(bvector source, bmask mask, bvector value) noexcept {
   return native::mask_vpopcntb<arch>(source, mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpopcntb(bmask mask, bvector value) noexcept {
   return native::maskz_vpopcntb<arch>(mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpopcntw(wvector value) noexcept {
   return native::vpopcntw<arch>(value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 4)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpopcntw(wvector source, wmask mask, wvector value) noexcept {
   return native::mask_vpopcntw<arch>(source, mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 5)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpopcntw(wmask mask, wvector value) noexcept {
   return native::maskz_vpopcntw<arch>(mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 6) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpshufbitqmb(qvector value, bvector control) noexcept {
   return native::vpshufbitqmb<arch>(value, control);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 7)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpshufbitqmb(bmask mask, qvector value, bvector control) noexcept {
   return native::mask_vpshufbitqmb<arch>(mask, value, control);
 }

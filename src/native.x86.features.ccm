@@ -4,7 +4,7 @@ module;
 #include <array>
 #include <cstdint>
 #include <string_view>
-#include "native/attributes.h"
+#include <hint.h>
 #if defined(_MSC_VER)
 #include <intrin.h>
 #else

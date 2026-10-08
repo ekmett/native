@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.vbmi;
 
 #if NATIVE_TEST_WIDTH == 512
@@ -76,84 +76,84 @@ using bmask = native::predicate<blanes, arch>;
 
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpermb(bvector indices, bvector value) noexcept {
   return native::vpermb<arch>(indices, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpermb(bvector source, bmask mask, bvector indices, bvector value) noexcept {
   return native::mask_vpermb<arch>(source, mask, indices, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpermb(bmask mask, bvector indices, bvector value) noexcept {
   return native::maskz_vpermb<arch>(mask, indices, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpermt2b(bvector a, bvector indices, bvector b) noexcept {
   return native::vpermt2b<arch>(a, indices, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 4)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpermt2b(bvector a, bmask mask, bvector indices, bvector b) noexcept {
   return native::mask_vpermt2b<arch>(a, mask, indices, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 5)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpermt2b(bmask mask, bvector a, bvector indices, bvector b) noexcept {
   return native::maskz_vpermt2b<arch>(mask, a, indices, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 6) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpermi2b(bvector indices, bvector a, bvector b) noexcept {
   return native::vpermi2b<arch>(indices, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 7)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpermi2b(bvector indices, bmask mask, bvector a, bvector b) noexcept {
   return native::mask_vpermi2b<arch>(indices, mask, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 8)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpermi2b(bmask mask, bvector indices, bvector a, bvector b) noexcept {
   return native::maskz_vpermi2b<arch>(mask, indices, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 9) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpmultishiftqb(bvector control, qvector value) noexcept {
   return native::vpmultishiftqb<arch>(control, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 10)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpmultishiftqb(bvector source, bmask mask, bvector control, qvector value) noexcept {
   return native::mask_vpmultishiftqb<arch>(source, mask, control, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 11)
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpmultishiftqb(bmask mask, bvector control, qvector value) noexcept {
   return native::maskz_vpmultishiftqb<arch>(mask, control, value);
 }

@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <utility>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if defined(__AES__) || defined(__VAES__) || defined(__AVX__)
 #error AES admission must run at the provider baseline

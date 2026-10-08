@@ -8,14 +8,14 @@
 // Clang from concatenating adjacent stack arguments into one wider VPERMB.
 constexpr auto broad = native::target_features<native::x86>("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi");
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermb_128_plain(
   __m128i indices,
   __m128i value) noexcept {
   return native::detail::x86_vbmi::vpermb<broad>(indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermb_128_merge(
   __m128i source,
   __mmask16 mask,
@@ -24,7 +24,7 @@ __m128i native_vpermb_128_merge(
   return native::detail::x86_vbmi::mask_vpermb<broad>(source, mask, indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermb_128_zero(
   __mmask16 mask,
   __m128i indices,
@@ -32,7 +32,7 @@ __m128i native_vpermb_128_zero(
   return native::detail::x86_vbmi::maskz_vpermb<broad>(mask, indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermt2b_128_plain(
   __m128i a,
   __m128i indices,
@@ -40,7 +40,7 @@ __m128i native_vpermt2b_128_plain(
   return native::detail::x86_vbmi::vpermt2b<broad>(a, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermt2b_128_merge(
   __m128i a,
   __mmask16 mask,
@@ -49,7 +49,7 @@ __m128i native_vpermt2b_128_merge(
   return native::detail::x86_vbmi::mask_vpermt2b<broad>(a, mask, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermt2b_128_zero(
   __mmask16 mask,
   __m128i a,
@@ -58,7 +58,7 @@ __m128i native_vpermt2b_128_zero(
   return native::detail::x86_vbmi::maskz_vpermt2b<broad>(mask, a, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermi2b_128_plain(
   __m128i a,
   __m128i indices,
@@ -66,7 +66,7 @@ __m128i native_vpermi2b_128_plain(
   return native::detail::x86_vbmi::vpermi2b<broad>(indices, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermi2b_128_merge(
   __m128i a,
   __mmask16 mask,
@@ -75,7 +75,7 @@ __m128i native_vpermi2b_128_merge(
   return native::detail::x86_vbmi::mask_vpermi2b<broad>(indices, mask, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpermi2b_128_zero(
   __mmask16 mask,
   __m128i a,
@@ -84,14 +84,14 @@ __m128i native_vpermi2b_128_zero(
   return native::detail::x86_vbmi::maskz_vpermi2b<broad>(mask, indices, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpmultishiftqb_128_plain(
   __m128i control,
   __m128i value) noexcept {
   return native::detail::x86_vbmi::vpmultishiftqb<broad>(control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpmultishiftqb_128_merge(
   __m128i source,
   __mmask16 mask,
@@ -100,7 +100,7 @@ __m128i native_vpmultishiftqb_128_merge(
   return native::detail::x86_vbmi::mask_vpmultishiftqb<broad>(source, mask, control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m128i native_vpmultishiftqb_128_zero(
   __mmask16 mask,
   __m128i control,
@@ -108,14 +108,14 @@ __m128i native_vpmultishiftqb_128_zero(
   return native::detail::x86_vbmi::maskz_vpmultishiftqb<broad>(mask, control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermb_256_plain(
   __m256i indices,
   __m256i value) noexcept {
   return native::detail::x86_vbmi::vpermb<broad>(indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermb_256_merge(
   __m256i source,
   __mmask32 mask,
@@ -124,7 +124,7 @@ __m256i native_vpermb_256_merge(
   return native::detail::x86_vbmi::mask_vpermb<broad>(source, mask, indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermb_256_zero(
   __mmask32 mask,
   __m256i indices,
@@ -132,7 +132,7 @@ __m256i native_vpermb_256_zero(
   return native::detail::x86_vbmi::maskz_vpermb<broad>(mask, indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermt2b_256_plain(
   __m256i a,
   __m256i indices,
@@ -140,7 +140,7 @@ __m256i native_vpermt2b_256_plain(
   return native::detail::x86_vbmi::vpermt2b<broad>(a, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermt2b_256_merge(
   __m256i a,
   __mmask32 mask,
@@ -149,7 +149,7 @@ __m256i native_vpermt2b_256_merge(
   return native::detail::x86_vbmi::mask_vpermt2b<broad>(a, mask, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermt2b_256_zero(
   __mmask32 mask,
   __m256i a,
@@ -158,7 +158,7 @@ __m256i native_vpermt2b_256_zero(
   return native::detail::x86_vbmi::maskz_vpermt2b<broad>(mask, a, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermi2b_256_plain(
   __m256i a,
   __m256i indices,
@@ -166,7 +166,7 @@ __m256i native_vpermi2b_256_plain(
   return native::detail::x86_vbmi::vpermi2b<broad>(indices, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermi2b_256_merge(
   __m256i a,
   __mmask32 mask,
@@ -175,7 +175,7 @@ __m256i native_vpermi2b_256_merge(
   return native::detail::x86_vbmi::mask_vpermi2b<broad>(indices, mask, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpermi2b_256_zero(
   __mmask32 mask,
   __m256i a,
@@ -184,14 +184,14 @@ __m256i native_vpermi2b_256_zero(
   return native::detail::x86_vbmi::maskz_vpermi2b<broad>(mask, indices, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpmultishiftqb_256_plain(
   __m256i control,
   __m256i value) noexcept {
   return native::detail::x86_vbmi::vpmultishiftqb<broad>(control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpmultishiftqb_256_merge(
   __m256i source,
   __mmask32 mask,
@@ -200,7 +200,7 @@ __m256i native_vpmultishiftqb_256_merge(
   return native::detail::x86_vbmi::mask_vpmultishiftqb<broad>(source, mask, control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m256i native_vpmultishiftqb_256_zero(
   __mmask32 mask,
   __m256i control,
@@ -208,14 +208,14 @@ __m256i native_vpmultishiftqb_256_zero(
   return native::detail::x86_vbmi::maskz_vpmultishiftqb<broad>(mask, control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermb_512_plain(
   __m512i indices,
   __m512i value) noexcept {
   return native::detail::x86_vbmi::vpermb<broad>(indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermb_512_merge(
   __m512i source,
   __mmask64 mask,
@@ -224,7 +224,7 @@ __m512i native_vpermb_512_merge(
   return native::detail::x86_vbmi::mask_vpermb<broad>(source, mask, indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermb_512_zero(
   __mmask64 mask,
   __m512i indices,
@@ -232,7 +232,7 @@ __m512i native_vpermb_512_zero(
   return native::detail::x86_vbmi::maskz_vpermb<broad>(mask, indices, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermt2b_512_plain(
   __m512i a,
   __m512i indices,
@@ -240,7 +240,7 @@ __m512i native_vpermt2b_512_plain(
   return native::detail::x86_vbmi::vpermt2b<broad>(a, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermt2b_512_merge(
   __m512i a,
   __mmask64 mask,
@@ -249,7 +249,7 @@ __m512i native_vpermt2b_512_merge(
   return native::detail::x86_vbmi::mask_vpermt2b<broad>(a, mask, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermt2b_512_zero(
   __mmask64 mask,
   __m512i a,
@@ -258,7 +258,7 @@ __m512i native_vpermt2b_512_zero(
   return native::detail::x86_vbmi::maskz_vpermt2b<broad>(mask, a, indices, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermi2b_512_plain(
   __m512i a,
   __m512i indices,
@@ -266,7 +266,7 @@ __m512i native_vpermi2b_512_plain(
   return native::detail::x86_vbmi::vpermi2b<broad>(indices, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermi2b_512_merge(
   __m512i a,
   __mmask64 mask,
@@ -275,7 +275,7 @@ __m512i native_vpermi2b_512_merge(
   return native::detail::x86_vbmi::mask_vpermi2b<broad>(indices, mask, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpermi2b_512_zero(
   __mmask64 mask,
   __m512i a,
@@ -284,14 +284,14 @@ __m512i native_vpermi2b_512_zero(
   return native::detail::x86_vbmi::maskz_vpermi2b<broad>(mask, indices, a, b);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpmultishiftqb_512_plain(
   __m512i control,
   __m512i value) noexcept {
   return native::detail::x86_vbmi::vpmultishiftqb<broad>(control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpmultishiftqb_512_merge(
   __m512i source,
   __mmask64 mask,
@@ -300,7 +300,7 @@ __m512i native_vpmultishiftqb_512_merge(
   return native::detail::x86_vbmi::mask_vpmultishiftqb<broad>(source, mask, control, value);
 }
 
-extern "C" native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
+extern "C" hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi")
 __m512i native_vpmultishiftqb_512_zero(
   __mmask64 mask,
   __m512i control,
@@ -308,7 +308,7 @@ __m512i native_vpmultishiftqb_512_zero(
   return native::detail::x86_vbmi::maskz_vpmultishiftqb<broad>(mask, control, value);
 }
 
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_vbmi_baseline(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

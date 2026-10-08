@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.ifma;
 #if NATIVE_TEST_FORM == 0
 #define NATIVE_TEST_FULL_TARGET "avxifma"
@@ -104,42 +104,42 @@ using mask_type = native::predicate<lanes, arch>;
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_madd52lo(vector accumulator, vector a, vector b) noexcept {
   return native::madd52lo<arch>(accumulator, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1) && NATIVE_TEST_HAS_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_madd52lo(vector accumulator, vector a, vector b, mask_type mask) noexcept {
   return native::mask_madd52lo<arch>(accumulator, mask, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2) && NATIVE_TEST_HAS_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_madd52lo(vector accumulator, vector a, vector b, mask_type mask) noexcept {
   return native::maskz_madd52lo<arch>(mask, accumulator, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_madd52hi(vector accumulator, vector a, vector b) noexcept {
   return native::madd52hi<arch>(accumulator, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 4) && NATIVE_TEST_HAS_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_madd52hi(vector accumulator, vector a, vector b, mask_type mask) noexcept {
   return native::mask_madd52hi<arch>(accumulator, mask, a, b);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 5) && NATIVE_TEST_HAS_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_madd52hi(vector accumulator, vector a, vector b, mask_type mask) noexcept {
   return native::maskz_madd52hi<arch>(mask, accumulator, a, b);
 }

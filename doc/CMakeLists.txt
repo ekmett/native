@@ -38,12 +38,12 @@ set(DOXYGEN_PREDEFINED
   "NATIVE_WIDE_TARGET:="
   "NATIVE_HAS_AVX2:=1" "NATIVE_HAS_AVX512F:=1" "NATIVE_HAS_AVX512DQ:=1"
   "NATIVE_HAS_AVX512BW:=1" "NATIVE_HAS_AVX512VL:=1" "NATIVE_HAS_ARM_NEON:=0"
-  "native_inline:=inline" "native_flatten:=" "native_noinline:="
-  "native_const:=" "native_pure:=" "native_lifetimebound:="
-  "native_artificial:=" "native_noescape:=" "native_reinitializes:="
-  "native_empty_bases:=" "native_restrict:=" "native_hidden:="
-  "native_nonnull(x):=" "native_null_terminated_string_arg(x):="
-  "native_target(x):=" "native_diagnose_if(condition,message):=")
+  "hint_inline:=inline" "hint_flatten:=" "hint_noinline:="
+  "hint_const:=" "hint_pure:=" "hint_lifetimebound:="
+  "hint_artificial:=" "hint_noescape:=" "hint_reinitializes:="
+  "hint_empty_bases:=" "hint_hidden:="
+  "hint_nonnull(x):=" "hint_null_terminated_string_arg(x):="
+  "hint_target(x):=" "hint_diagnose_if(condition,message):=")
 # The compiler includes wide's fragments once per target family. Doxygen scans
 # input headers independently and cannot reconstruct their class context. Stage
 # one expansion in the actual owning header, retaining signatures and comments;

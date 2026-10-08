@@ -34,62 +34,62 @@ constexpr auto requirements = [] {
   return value;
 }();
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpconflictd(register_type value) noexcept {
   return native::detail::x86_avx512cd::vpconflictd<requirements>(value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpconflictd(register_type source, dmask_type mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::mask_vpconflictd<requirements>(source, mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpconflictd(dmask_type mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::maskz_vpconflictd<requirements>(mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vplzcntd(register_type value) noexcept {
   return native::detail::x86_avx512cd::vplzcntd<requirements>(value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vplzcntd(register_type source, dmask_type mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::mask_vplzcntd<requirements>(source, mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vplzcntd(dmask_type mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::maskz_vplzcntd<requirements>(mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpconflictq(register_type value) noexcept {
   return native::detail::x86_avx512cd::vpconflictq<requirements>(value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpconflictq(register_type source, __mmask8 mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::mask_vpconflictq<requirements>(source, mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpconflictq(__mmask8 mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::maskz_vpconflictq<requirements>(mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vplzcntq(register_type value) noexcept {
   return native::detail::x86_avx512cd::vplzcntq<requirements>(value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vplzcntq(register_type source, __mmask8 mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::mask_vplzcntq<requirements>(source, mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vplzcntq(__mmask8 mask, register_type value) noexcept {
   return native::detail::x86_avx512cd::maskz_vplzcntq<requirements>(mask, value);
 }

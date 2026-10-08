@@ -8,7 +8,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <native/attributes.h>
+#include <hint.h>
 #include "support/guarded_pages.h"
 #include "../half_storage/native_bridge.h"
 import native;
@@ -83,7 +83,7 @@ extern "C" bool bf16_storage() {
   return true;
 }
 
-extern "C" native_noinline void bf16_dot2(std::uint16_t const *a,std::uint16_t const *b,
+extern "C" hint_noinline void bf16_dot2(std::uint16_t const *a,std::uint16_t const *b,
     float const *c,float *out) noexcept {
   native::dot2(B::load_bits(a),B::load_bits(b),F::load(c)).store(out);
 }

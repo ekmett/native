@@ -21,7 +21,7 @@ export namespace native {
 
   /// Accumulate low 52-bit products in 2 lanes; unmasked.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("avxifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avxifma")
   constexpr simd<std::uint64_t, 2, Arch> madd52lo(
     simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -36,7 +36,7 @@ export namespace native {
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> madd52lo(
     simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -58,7 +58,7 @@ export namespace native {
 
   /// Accumulate low 52-bit products in 4 lanes; unmasked.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("avxifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avxifma")
   constexpr simd<std::uint64_t, 4, Arch> madd52lo(
     simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -73,7 +73,7 @@ export namespace native {
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> madd52lo(
     simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -95,7 +95,7 @@ export namespace native {
 
   /// Accumulate low 52-bit products in 8 lanes; unmasked.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma")
   constexpr simd<std::uint64_t, 8, Arch> madd52lo(
     simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval {
@@ -121,7 +121,7 @@ export namespace native {
   /// Accumulate low 52-bit products in 2 lanes; inactive lanes retain the accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_madd52lo(
     simd<std::uint64_t, 2, Arch> accumulator, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -144,7 +144,7 @@ export namespace native {
   /// Accumulate low 52-bit products in 4 lanes; inactive lanes retain the accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_madd52lo(
     simd<std::uint64_t, 4, Arch> accumulator, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -166,7 +166,7 @@ export namespace native {
 
   /// Accumulate low 52-bit products in 8 lanes; inactive lanes retain the accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma")
   constexpr simd<std::uint64_t, 8, Arch> mask_madd52lo(
     simd<std::uint64_t, 8, Arch> accumulator, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval {
@@ -192,7 +192,7 @@ export namespace native {
   /// Accumulate low 52-bit products in 2 lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_madd52lo(
     predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -215,7 +215,7 @@ export namespace native {
   /// Accumulate low 52-bit products in 4 lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_madd52lo(
     predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -237,7 +237,7 @@ export namespace native {
 
   /// Accumulate low 52-bit products in 8 lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma")
   constexpr simd<std::uint64_t, 8, Arch> maskz_madd52lo(
     predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval {
@@ -262,7 +262,7 @@ export namespace native {
 
   /// Accumulate high 52-bit products in 2 lanes; unmasked.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("avxifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avxifma")
   constexpr simd<std::uint64_t, 2, Arch> madd52hi(
     simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -277,7 +277,7 @@ export namespace native {
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> madd52hi(
     simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -299,7 +299,7 @@ export namespace native {
 
   /// Accumulate high 52-bit products in 4 lanes; unmasked.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("avxifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avxifma")
   constexpr simd<std::uint64_t, 4, Arch> madd52hi(
     simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -314,7 +314,7 @@ export namespace native {
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) &&
       Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> madd52hi(
     simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -336,7 +336,7 @@ export namespace native {
 
   /// Accumulate high 52-bit products in 8 lanes; unmasked.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma")
   constexpr simd<std::uint64_t, 8, Arch> madd52hi(
     simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval {
@@ -362,7 +362,7 @@ export namespace native {
   /// Accumulate high 52-bit products in 2 lanes; inactive lanes retain the accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_madd52hi(
     simd<std::uint64_t, 2, Arch> accumulator, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -385,7 +385,7 @@ export namespace native {
   /// Accumulate high 52-bit products in 4 lanes; inactive lanes retain the accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_madd52hi(
     simd<std::uint64_t, 4, Arch> accumulator, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -407,7 +407,7 @@ export namespace native {
 
   /// Accumulate high 52-bit products in 8 lanes; inactive lanes retain the accumulator.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma")
   constexpr simd<std::uint64_t, 8, Arch> mask_madd52hi(
     simd<std::uint64_t, 8, Arch> accumulator, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval {
@@ -433,7 +433,7 @@ export namespace native {
   /// Accumulate high 52-bit products in 2 lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_madd52hi(
     predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval {
@@ -456,7 +456,7 @@ export namespace native {
   /// Accumulate high 52-bit products in 4 lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_madd52hi(
     predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval {
@@ -478,7 +478,7 @@ export namespace native {
 
   /// Accumulate high 52-bit products in 8 lanes; inactive lanes become zero.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512ifma")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512ifma")
   constexpr simd<std::uint64_t, 8, Arch> maskz_madd52hi(
     predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval {

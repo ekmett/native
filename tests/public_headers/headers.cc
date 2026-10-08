@@ -1,5 +1,5 @@
 #include <native/config.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if __has_include(<native/simd.h>) || __has_include(<native/simd/config.h>)
 #error Module implementation headers must not leak through native::headers

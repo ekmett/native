@@ -42,7 +42,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
   struct narrowed { halfs scalar{}, four{}, eight{}; unsigned scalar_flags{}, four_flags{}, eight_flags{}; };
 
   // Pointer/reference arguments keep vector ABIs behind runtime admission.
-  native_target("f16c,no-avx2,no-avx512fp16") native_noinline
+  hint_target("f16c,no-avx2,no-avx512fp16") hint_noinline
   widened evaluate_widen(halfs const& input, unsigned csr) {
     widened out;
     __m128i h;
@@ -67,7 +67,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
   }
 
   template<unsigned Imm8>
-  native_target("f16c,no-avx2,no-avx512fp16") native_noinline
+  hint_target("f16c,no-avx2,no-avx512fp16") hint_noinline
   narrowed evaluate_narrow(singles const& input, unsigned csr) {
     narrowed out;
     __m128 lo, hi; __m256 all;
@@ -140,7 +140,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
 
   // Deliberately discard results. Every instruction must still affect MXCSR.
   template<unsigned Imm8>
-  native_target("f16c,no-avx2,no-avx512fp16") native_noinline
+  hint_target("f16c,no-avx2,no-avx512fp16") hint_noinline
   unsigned discarded_narrow(std::uint32_t bits, unsigned csr, unsigned lanes) {
     float a = std::bit_cast<float>(bits);
     _mm_setcsr(csr);
@@ -149,7 +149,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
     else (void)native::cvtps_ph<arch, Imm8>(native::simd<float, sizeof(_mm256_set1_ps(a)) / sizeof(float), arch>::from_native(_mm256_set1_ps(a))).to_native();
     return _mm_getcsr();
   }
-  native_target("f16c,no-avx2,no-avx512fp16") native_noinline
+  hint_target("f16c,no-avx2,no-avx512fp16") hint_noinline
   unsigned discarded_widen(std::uint16_t bits, unsigned csr, unsigned lanes) {
     _mm_setcsr(csr);
     if (lanes == 1) (void)native::cvtsh_ss<arch>(bits);
@@ -157,7 +157,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
     else (void)native::cvtph_ps<arch, 8>(native::simd<native::fp16, 8, arch>::from_native(_mm_set1_epi16(short(bits)))).to_native();
     return _mm_getcsr();
   }
-  native_target("f16c,no-avx2,no-avx512fp16") native_noinline
+  hint_target("f16c,no-avx2,no-avx512fp16") hint_noinline
   bool ignored_upper(unsigned csr) {
     auto h = _mm_set_epi16(0x7c01, 0x7c01, 0x7c01, 0x7c01, 0x3c00, 0, 1, 0x7c00);
     _mm_setcsr(csr);

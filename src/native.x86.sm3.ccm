@@ -2,7 +2,7 @@
 module;
 #include "native/isa_import.h"
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include <array>
 #include <bit>
 #include <cstdint>
@@ -60,7 +60,7 @@ namespace native {
   /// First SM3 schedule step.
   template<isa<x86> Arch>
     requires(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("sm3")
+  [[nodiscard]] hint_inline hint_const hint_target("sm3")
   constexpr simd<std::uint32_t, 4, Arch> sm3msg1(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     if consteval { return detail::x86_sm3_constant::sm3msg1(a, b, c); }
     else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm3msg1_epi32(a.to_native(), b.to_native(), c.to_native())); }
@@ -77,7 +77,7 @@ namespace native {
   /// Final SM3 schedule step.
   template<isa<x86> Arch>
     requires(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("sm3")
+  [[nodiscard]] hint_inline hint_const hint_target("sm3")
   constexpr simd<std::uint32_t, 4, Arch> sm3msg2(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     if consteval { return detail::x86_sm3_constant::sm3msg2(a, b, c); }
     else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm3msg2_epi32(a.to_native(), b.to_native(), c.to_native())); }
@@ -94,7 +94,7 @@ namespace native {
   /// Two SM3 rounds; Imm8 is masked with 0x3e. a holds unrotated CDGH and b holds ABEF.
   template<isa<x86> Arch, unsigned Imm8>
     requires(Arch.has(x86_feature::sm3) && Arch.has(x86_feature::avx) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("sm3")
+  [[nodiscard]] hint_inline hint_const hint_target("sm3")
   constexpr simd<std::uint32_t, 4, Arch> sm3rnds2(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     if consteval { return detail::x86_sm3_constant::sm3rnds2<Imm8>(a, b, c); }
     else { return simd<std::uint32_t, 4, Arch>::from_native(_mm_sm3rnds2_epi32(a.to_native(), b.to_native(), c.to_native(), Imm8)); }

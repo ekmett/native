@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Repeated in each raw backend's target scope. These ordinary-inline leaves
-// let a generic native_inline algorithm reach its caller before leaf inlining.
+// let a generic hint_inline algorithm reach its caller before leaf inlining.
 namespace wide::detail {
   template<class V> requires requires { V::architecture; } && NATIVE_ARCH_REQUIRES(V::architecture)
   struct native_ops<V> {

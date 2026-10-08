@@ -10,49 +10,49 @@
 namespace native {
   /// Binary32 SIMD128 exp; multiply/add stages round separately, without relaxed SIMD.
   template<bool Flush = false, unsigned Degree = 6, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr simd<float,4,A> exp(simd<float,4,A> x) noexcept {
+  [[nodiscard]] hint_inline constexpr simd<float,4,A> exp(simd<float,4,A> x) noexcept {
     return ::math::exp<Flush, Degree>(x);
   }
   /// Advance every independent SIMD128 polynomial chain stage by stage.
   template<bool Flush = false, unsigned Degree = 6, std::size_t N, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto exp(std::array<simd<float,4,A>,N> const & x) noexcept {
+  [[nodiscard]] hint_inline constexpr auto exp(std::array<simd<float,4,A>,N> const & x) noexcept {
     return ::math::exp<Flush, Degree>(x);
   }
   template<bool Flush, unsigned Degree = 6, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto exp(simd<float,4,A> x, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
+  [[nodiscard]] hint_inline constexpr auto exp(simd<float,4,A> x, std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
     return ::math::exp<Flush, Degree>(x);
   }
   template<bool Flush, unsigned Degree = 6, std::size_t N, isa<> A> requires(Degree >= 1 && Degree <= 7 && A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto exp(std::array<simd<float,4,A>,N> const & x,
+  [[nodiscard]] hint_inline constexpr auto exp(std::array<simd<float,4,A>,N> const & x,
       std::bool_constant<Flush>, std::integral_constant<unsigned, Degree> = {}) noexcept {
     return ::math::exp<Flush, Degree>(x);
   }
   /// Binary32 SIMD128 exp2; multiply/add stages round separately, without relaxed SIMD.
   template<bool Flush = false, isa<> A> requires(A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr simd<float,4,A> exp2(simd<float,4,A> x) noexcept {
+  [[nodiscard]] hint_inline constexpr simd<float,4,A> exp2(simd<float,4,A> x) noexcept {
     return ::math::exp2<Flush>(x);
   }
   /// Advance every independent SIMD128 polynomial chain stage by stage.
   template<bool Flush = false, std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto exp2(std::array<simd<float,4,A>,N> const & x) noexcept {
+  [[nodiscard]] hint_inline constexpr auto exp2(std::array<simd<float,4,A>,N> const & x) noexcept {
     return ::math::exp2<Flush>(x);
   }
   template<bool Flush, isa<> A> requires(A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto exp2(simd<float,4,A> x, std::bool_constant<Flush>) noexcept {
+  [[nodiscard]] hint_inline constexpr auto exp2(simd<float,4,A> x, std::bool_constant<Flush>) noexcept {
     return ::math::exp2<Flush>(x);
   }
   template<bool Flush, std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto exp2(std::array<simd<float,4,A>,N> const & x,
+  [[nodiscard]] hint_inline constexpr auto exp2(std::array<simd<float,4,A>,N> const & x,
       std::bool_constant<Flush>) noexcept {
     return ::math::exp2<Flush>(x);
   }
 #define NATIVE_WASM_MATH(name) \
   template<isa<> A> requires(A.has(wasm_feature::simd128)) \
-  [[nodiscard]] native_inline constexpr auto name(simd<float,4,A> x) noexcept { \
+  [[nodiscard]] hint_inline constexpr auto name(simd<float,4,A> x) noexcept { \
     return ::math::name(x); \
   } \
   template<std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128)) \
-  [[nodiscard]] native_inline constexpr auto name(std::array<simd<float,4,A>,N> const & x) noexcept { \
+  [[nodiscard]] hint_inline constexpr auto name(std::array<simd<float,4,A>,N> const & x) noexcept { \
     return ::math::name(x); \
   }
   /// Finite binary32 lanes with |x| < 8192; multiply/add stages round separately.
@@ -69,12 +69,12 @@ namespace native {
 #undef NATIVE_WASM_MATH
   /// Binary32 SIMD128 atan2(y,x), with separately rounded multiply/add stages.
   template<isa<> A> requires(A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto atan2(simd<float,4,A> y, simd<float,4,A> x) noexcept {
+  [[nodiscard]] hint_inline constexpr auto atan2(simd<float,4,A> y, simd<float,4,A> x) noexcept {
     return ::math::atan2(y,x);
   }
   /// Advance each atan2 stage across matching SIMD128 register arrays.
   template<std::size_t N, isa<> A> requires(A.has(wasm_feature::simd128))
-  [[nodiscard]] native_inline constexpr auto atan2(std::array<simd<float,4,A>,N> const & y,
+  [[nodiscard]] hint_inline constexpr auto atan2(std::array<simd<float,4,A>,N> const & y,
       std::array<simd<float,4,A>,N> const & x) noexcept { return ::math::atan2(y,x); }
 }
 #pragma clang attribute pop

@@ -32,7 +32,7 @@ export namespace native {
   // 128-bit registers.
   /// Multiply corresponding bytes in GF(2^8).
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni))
-  [[nodiscard]] native_inline native_const native_target("gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8mulb(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -42,7 +42,7 @@ export namespace native {
 
   /// Apply the binary matrix in each 64-bit lane and XOR Imm8.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8affineqb(simd<std::uint8_t, 16, Arch> a, simd<std::uint64_t, 2, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -52,7 +52,7 @@ export namespace native {
 
   /// Invert each field byte, apply its lane's binary matrix, and XOR Imm8.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8affineinvqb(simd<std::uint8_t, 16, Arch> a, simd<std::uint64_t, 2, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -63,7 +63,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8mulb.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8mulb_mask(simd<std::uint8_t, 16, Arch> src, predicate<16, Arch> k, simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, src, k.to_bitset()); }
     else {
@@ -74,7 +74,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8mulb.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8mulb_maskz(predicate<16, Arch> k, simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, simd<std::uint8_t, 16, Arch>{}, k.to_bitset()); }
     else {
@@ -85,7 +85,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8affineqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8affineqb_mask(simd<std::uint8_t, 16, Arch> src, predicate<16, Arch> k, simd<std::uint8_t, 16, Arch> a, simd<std::uint64_t, 2, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, src, k.to_bitset()); }
     else {
@@ -96,7 +96,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8affineqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8affineqb_maskz(predicate<16, Arch> k, simd<std::uint8_t, 16, Arch> a, simd<std::uint64_t, 2, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, simd<std::uint8_t, 16, Arch>{}, k.to_bitset()); }
     else {
@@ -107,7 +107,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8affineinvqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8affineinvqb_mask(simd<std::uint8_t, 16, Arch> src, predicate<16, Arch> k, simd<std::uint8_t, 16, Arch> a, simd<std::uint64_t, 2, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, src, k.to_bitset()); }
     else {
@@ -118,7 +118,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8affineinvqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 16, Arch> gf2p8affineinvqb_maskz(predicate<16, Arch> k, simd<std::uint8_t, 16, Arch> a, simd<std::uint64_t, 2, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, simd<std::uint8_t, 16, Arch>{}, k.to_bitset()); }
     else {
@@ -129,7 +129,7 @@ export namespace native {
   // 256-bit registers.
   /// Multiply corresponding bytes in GF(2^8).
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("avx,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8mulb(simd<std::uint8_t, 32, Arch> a, simd<std::uint8_t, 32, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -139,7 +139,7 @@ export namespace native {
 
   /// Apply the binary matrix in each 64-bit lane and XOR Imm8.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8affineqb(simd<std::uint8_t, 32, Arch> a, simd<std::uint64_t, 4, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -149,7 +149,7 @@ export namespace native {
 
   /// Invert each field byte, apply its lane's binary matrix, and XOR Imm8.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8affineinvqb(simd<std::uint8_t, 32, Arch> a, simd<std::uint64_t, 4, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -160,7 +160,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8mulb.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8mulb_mask(simd<std::uint8_t, 32, Arch> src, predicate<32, Arch> k, simd<std::uint8_t, 32, Arch> a, simd<std::uint8_t, 32, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, src, k.to_bitset()); }
     else {
@@ -171,7 +171,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8mulb.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8mulb_maskz(predicate<32, Arch> k, simd<std::uint8_t, 32, Arch> a, simd<std::uint8_t, 32, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, simd<std::uint8_t, 32, Arch>{}, k.to_bitset()); }
     else {
@@ -182,7 +182,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8affineqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8affineqb_mask(simd<std::uint8_t, 32, Arch> src, predicate<32, Arch> k, simd<std::uint8_t, 32, Arch> a, simd<std::uint64_t, 4, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, src, k.to_bitset()); }
     else {
@@ -193,7 +193,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8affineqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8affineqb_maskz(predicate<32, Arch> k, simd<std::uint8_t, 32, Arch> a, simd<std::uint64_t, 4, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, simd<std::uint8_t, 32, Arch>{}, k.to_bitset()); }
     else {
@@ -204,7 +204,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8affineinvqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8affineinvqb_mask(simd<std::uint8_t, 32, Arch> src, predicate<32, Arch> k, simd<std::uint8_t, 32, Arch> a, simd<std::uint64_t, 4, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, src, k.to_bitset()); }
     else {
@@ -215,7 +215,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8affineinvqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Arch.has(x86_feature::avx512vl) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,avx512vl,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,avx512vl,gfni")
   constexpr simd<std::uint8_t, 32, Arch> gf2p8affineinvqb_maskz(predicate<32, Arch> k, simd<std::uint8_t, 32, Arch> a, simd<std::uint64_t, 4, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, simd<std::uint8_t, 32, Arch>{}, k.to_bitset()); }
     else {
@@ -226,7 +226,7 @@ export namespace native {
   // 512-bit registers.
   /// Multiply corresponding bytes in GF(2^8).
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f))
-  [[nodiscard]] native_inline native_const native_target("avx512f,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8mulb(simd<std::uint8_t, 64, Arch> a, simd<std::uint8_t, 64, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -236,7 +236,7 @@ export namespace native {
 
   /// Apply the binary matrix in each 64-bit lane and XOR Imm8.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8affineqb(simd<std::uint8_t, 64, Arch> a, simd<std::uint64_t, 8, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -246,7 +246,7 @@ export namespace native {
 
   /// Invert each field byte, apply its lane's binary matrix, and XOR Imm8.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8affineinvqb(simd<std::uint8_t, 64, Arch> a, simd<std::uint64_t, 8, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -257,7 +257,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8mulb.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw))
-  [[nodiscard]] native_inline native_const native_target("avx512bw,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8mulb_mask(simd<std::uint8_t, 64, Arch> src, predicate<64, Arch> k, simd<std::uint8_t, 64, Arch> a, simd<std::uint8_t, 64, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, src, k.to_bitset()); }
     else {
@@ -268,7 +268,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8mulb.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw))
-  [[nodiscard]] native_inline native_const native_target("avx512bw,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8mulb_maskz(predicate<64, Arch> k, simd<std::uint8_t, 64, Arch> a, simd<std::uint8_t, 64, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::field_multiply(a, b, simd<std::uint8_t, 64, Arch>{}, k.to_bitset()); }
     else {
@@ -279,7 +279,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8affineqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8affineqb_mask(simd<std::uint8_t, 64, Arch> src, predicate<64, Arch> k, simd<std::uint8_t, 64, Arch> a, simd<std::uint64_t, 8, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, src, k.to_bitset()); }
     else {
@@ -290,7 +290,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8affineqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8affineqb_maskz(predicate<64, Arch> k, simd<std::uint8_t, 64, Arch> a, simd<std::uint64_t, 8, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, false>(a, matrix, simd<std::uint8_t, 64, Arch>{}, k.to_bitset()); }
     else {
@@ -301,7 +301,7 @@ export namespace native {
   /// Merge inactive bytes from src after gf2p8affineinvqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8affineinvqb_mask(simd<std::uint8_t, 64, Arch> src, predicate<64, Arch> k, simd<std::uint8_t, 64, Arch> a, simd<std::uint64_t, 8, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, src, k.to_bitset()); }
     else {
@@ -312,7 +312,7 @@ export namespace native {
   /// Zero inactive bytes after gf2p8affineinvqb.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::gfni) && Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512bw,gfni")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512bw,gfni")
   constexpr simd<std::uint8_t, 64, Arch> gf2p8affineinvqb_maskz(predicate<64, Arch> k, simd<std::uint8_t, 64, Arch> a, simd<std::uint64_t, 8, Arch> matrix) noexcept {
     if consteval { return detail::x86_instruction_constant::field_affine<Imm8, true>(a, matrix, simd<std::uint8_t, 64, Arch>{}, k.to_bitset()); }
     else {

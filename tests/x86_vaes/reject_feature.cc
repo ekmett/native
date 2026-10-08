@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/x86/vaes.h>
 #if NATIVE_TEST_WIDTH == 128
 #define NATIVE_TEST_FULL_TARGET "avx,aes"
@@ -75,28 +75,28 @@ constexpr auto arch = full_arch;
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesenc(register_type a, register_type b) noexcept {
   return native::detail::x86_vaes::vaesenc<requirements>(a, b);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesenclast(register_type a, register_type b) noexcept {
   return native::detail::x86_vaes::vaesenclast<requirements>(a, b);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesdec(register_type a, register_type b) noexcept {
   return native::detail::x86_vaes::vaesdec<requirements>(a, b);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesdeclast(register_type a, register_type b) noexcept {
   return native::detail::x86_vaes::vaesdeclast<requirements>(a, b);
 }

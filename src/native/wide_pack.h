@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/value_traits.h"
 #include <array>
 #include <concepts>
@@ -31,7 +31,7 @@ namespace wide {
 
   namespace detail {
     template<std::size_t I,class P>
-    native_inline constexpr decltype(auto) source_get(P&& value) noexcept {
+    hint_inline constexpr decltype(auto) source_get(P&& value) noexcept {
       if constexpr (shape_t<P>::kind==family::legacy)
         return std::get<I>(std::forward<P>(value).registers);
       else return std::get<I>(std::forward<P>(value));
@@ -57,13 +57,13 @@ namespace wide {
         std::array<adapted_t<T>,1>,adapted_t<T>>;
     };
 
-    template<adaptable T> native_inline constexpr adapted_t<T> adapt_element(T&& value);
+    template<adaptable T> hint_inline constexpr adapted_t<T> adapt_element(T&& value);
     template<class P,std::size_t... I>
-    native_inline constexpr adapted_t<P> adapt_pack(P&& value,std::index_sequence<I...>) {
+    hint_inline constexpr adapted_t<P> adapt_pack(P&& value,std::index_sequence<I...>) {
       return {{adapt_element(source_get<I>(std::forward<P>(value)))...}};
     }
     template<adaptable T>
-    native_inline constexpr adapted_t<T> adapt_element(T&& value) {
+    hint_inline constexpr adapted_t<T> adapt_element(T&& value) {
       if constexpr (shape_t<T>::kind==family::leaf)
         return adapted_t<T>(std::forward<T>(value));
       else return adapt_pack(std::forward<T>(value),std::make_index_sequence<shape_t<T>::size>{});
@@ -76,7 +76,7 @@ namespace wide {
 
   /// Own a standard array of SIMD leaves; a scalar or SIMD input has extent one.
   template<promotable T>
-  native_inline constexpr canonical_t<T> promote(T&& value) {
+  hint_inline constexpr canonical_t<T> promote(T&& value) {
     if constexpr (detail::shape_t<T>::kind==detail::family::leaf)
       return {{detail::adapt_element(std::forward<T>(value))}};
     else return detail::adapt_element(std::forward<T>(value));
@@ -102,9 +102,9 @@ namespace wide {
       }
     }
 
-    template<class Original,class R> native_inline constexpr auto restore_element(R&& value);
+    template<class Original,class R> hint_inline constexpr auto restore_element(R&& value);
     template<class Original,class P,std::size_t... I>
-    native_inline constexpr auto restore_pack(P&& value,std::index_sequence<I...>) {
+    hint_inline constexpr auto restore_pack(P&& value,std::index_sequence<I...>) {
       using S=shape_t<Original>;
       using E=typename S::template element_type<0>;
       using V=typename shape_t<P>::template element_type<0>;
@@ -117,7 +117,7 @@ namespace wide {
         restore_element<E>(std::get<I>(std::forward<P>(value)))...}}};
     }
     template<class Original,class R>
-    native_inline constexpr auto restore_element(R&& value) {
+    hint_inline constexpr auto restore_element(R&& value) {
       if constexpr (shape_t<Original>::kind!=family::leaf)
         return restore_pack<Original>(std::forward<R>(value),
           std::make_index_sequence<shape_t<Original>::size>{});
@@ -134,7 +134,7 @@ namespace wide {
   /// Restore the source shape while retaining transformed result element types.
   template<class Original,pack P> requires promotable<Original> &&
     (detail::compatible_pack<Original,P>())
-  native_inline constexpr auto demote(P&& result) {
+  hint_inline constexpr auto demote(P&& result) {
     if constexpr (detail::shape_t<Original>::kind==detail::family::leaf)
       return detail::restore_element<Original>(std::get<0>(std::forward<P>(result)));
     else return detail::restore_pack<Original>(std::forward<P>(result),
@@ -154,7 +154,7 @@ namespace wide {
     template<class F,class... P> using mapped_t=
       std::remove_cvref_t<std::invoke_result_t<F&,element_argument_t<P>...>>;
     template<std::size_t I,class F,class... P>
-    native_inline constexpr decltype(auto) map_element(F& function,P&&... value) {
+    hint_inline constexpr decltype(auto) map_element(F& function,P&&... value) {
       return std::invoke(function,std::get<I>(std::forward<P>(value))...);
     }
     template<class F,class P,class... Rest,std::size_t... I>
@@ -170,7 +170,7 @@ namespace wide {
       }
     }
     template<class F,class P,class... Rest,std::size_t... I>
-    native_inline constexpr auto map_pack(F&& function,std::index_sequence<I...>,P&& first,Rest&&... rest) {
+    hint_inline constexpr auto map_pack(F&& function,std::index_sequence<I...>,P&& first,Rest&&... rest) {
       return std::array<mapped_t<F,P,Rest...>,sizeof...(I)>{{
         map_element<I>(function,std::forward<P>(first),std::forward<Rest>(rest)...)...}};
     }
@@ -180,7 +180,7 @@ namespace wide {
   template<class F,pack P,pack... Rest>
     requires ((detail::shape_t<P>::size==detail::shape_t<Rest>::size) && ...) &&
       (detail::map_compatible<F,P,Rest...>(std::make_index_sequence<detail::shape_t<P>::size>{}))
-  native_inline constexpr auto map(F&& function,P&& first,Rest&&... rest) {
+  hint_inline constexpr auto map(F&& function,P&& first,Rest&&... rest) {
     return detail::map_pack(std::forward<F>(function),
       std::make_index_sequence<detail::shape_t<P>::size>{},
       std::forward<P>(first),std::forward<Rest>(rest)...);

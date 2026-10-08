@@ -144,7 +144,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
 
   // Pointer arguments keep optional vector ABIs behind the admission boundary.
 #define GFNI_EVALUATE(NAME, V, N, ARCH, TARGET) \
-  native_target(TARGET) native_noinline \
+  hint_target(TARGET) hint_noinline \
   void NAME(inputs<N> const& input, outputs<N>& output) { \
     V a, b; \
     __builtin_memcpy(&a, input.a.data(), N); \
@@ -166,7 +166,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
 #undef GFNI_EVALUATE
 
 #define GFNI_EVALUATE_MASK(NAME, V, K, N, ARCH, TARGET) \
-  native_target(TARGET) native_noinline \
+  hint_target(TARGET) hint_noinline \
   void NAME(inputs<N> const& input, std::uint64_t bits, outputs<N>& merged, outputs<N>& zeroed) { \
     V a, b, source; \
     __builtin_memcpy(&a, input.a.data(), N); \

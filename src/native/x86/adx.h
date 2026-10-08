@@ -2,7 +2,7 @@
 #pragma once
 
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include <cstdint>
 #if NATIVE_HOST_X86
@@ -19,13 +19,13 @@ namespace native::detail::x86_adx {
   }
 
   template<isa<x86> Arch> requires(Arch.has(x86_feature::adx))
-  [[nodiscard]] native_inline native_target("adx")
+  [[nodiscard]] hint_inline hint_target("adx")
   std::uint8_t addcarryx(std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept {
     return _addcarryx_u32(carry, a, b, result);
   }
 
   template<isa<x86> Arch> requires(Arch.has(x86_feature::adx))
-  [[nodiscard]] native_inline native_target("adx")
+  [[nodiscard]] hint_inline hint_target("adx")
   std::uint8_t addcarryx(std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept {
     // The intrinsic output uses unsigned long long even on LP64 platforms.
     unsigned long long sum;
@@ -51,7 +51,7 @@ namespace native {
 
   /// Add 32-bit operands with carry, writing the modular result.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::adx))
-  [[nodiscard]] native_inline native_target("adx")
+  [[nodiscard]] hint_inline hint_target("adx")
   constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept {
     if consteval {
@@ -63,7 +63,7 @@ namespace native {
 
   /// Add 64-bit operands with carry, writing the modular result.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::adx))
-  [[nodiscard]] native_inline native_target("adx")
+  [[nodiscard]] hint_inline hint_target("adx")
   constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept {
     if consteval {

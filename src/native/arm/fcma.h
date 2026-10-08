@@ -2,7 +2,7 @@
 #pragma once
 /// \cond
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include "native/arm/detail/register_order.h"
 #if NATIVE_HOST_NEON
@@ -21,7 +21,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x2_t fcadd(float32x2_t a, float32x2_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -33,7 +33,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x2_t fcmla(float32x2_t acc, float32x2_t a, float32x2_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -47,7 +47,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x2_t fcmla_lane(float32x2_t acc, float32x2_t a, float32x2_t b) noexcept {
     return fcmla<Arch, Rotation>(acc, a, b);
   }
@@ -56,7 +56,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x2_t fcmla_lane(float32x2_t acc, float32x2_t a, float32x4_t b) noexcept {
     if constexpr(Lane == 0)
       return fcmla<Arch, Rotation>(acc, a, vget_low_f32(b));
@@ -66,7 +66,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x4_t fcadd(float32x4_t a, float32x4_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -78,7 +78,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x4_t fcmla(float32x4_t acc, float32x4_t a, float32x4_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -92,7 +92,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x4_t fcmla_lane(float32x4_t acc, float32x4_t a, float32x2_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -106,7 +106,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float32x4_t fcmla_lane(float32x4_t acc, float32x4_t a, float32x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -118,7 +118,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float64x2_t fcadd(float64x2_t a, float64x2_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -130,7 +130,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
   float64x2_t fcmla(float64x2_t acc, float64x2_t a, float64x2_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -142,7 +142,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x4_t fcadd(float16x4_t a, float16x4_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -154,7 +154,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x4_t fcmla(float16x4_t acc, float16x4_t a, float16x4_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -168,7 +168,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x4_t fcmla_lane(float16x4_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -182,7 +182,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x4_t fcmla_lane(float16x4_t acc, float16x4_t a, float16x8_t b) noexcept {
     // The 64-bit half form encodes only the low two complex pairs.
     if constexpr(Lane >= 2)
@@ -197,7 +197,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x8_t fcadd(float16x8_t a, float16x8_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -209,7 +209,7 @@ namespace native::detail {
 
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x8_t fcmla(float16x8_t acc, float16x8_t a, float16x8_t b) noexcept {
     a = detail::arm_register_order(a);
     b = detail::arm_register_order(b);
@@ -223,7 +223,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x8_t fcmla_lane(float16x8_t acc, float16x8_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -237,7 +237,7 @@ namespace native::detail {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
-  [[nodiscard]] native_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
   float16x8_t fcmla_lane(float16x8_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);

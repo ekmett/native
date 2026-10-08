@@ -7,8 +7,8 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
     struct fp32_bit_bridge<::native::simd<float,N,Arch>> {
       using value_type=::native::simd<float,N,Arch>;
       using bits_type=typename value_type::bits_type;
-      static native_inline constexpr bits_type encode(value_type x) noexcept { return x.bits(); }
-      static native_inline constexpr value_type decode(bits_type x) noexcept { return value_type::from_bits(x); }
+      static hint_inline constexpr bits_type encode(value_type x) noexcept { return x.bits(); }
+      static hint_inline constexpr value_type decode(bits_type x) noexcept { return value_type::from_bits(x); }
     };
   } // namespace detail
   template <class V>
@@ -18,23 +18,23 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
 
 namespace NATIVE_BACKEND_NAMESPACE::native {
   namespace detail {
-    template <unsigned_register U> native_inline constexpr U flush_clear_bits(U bits, U clear) noexcept {
+    template <unsigned_register U> hint_inline constexpr U flush_clear_bits(U bits, U clear) noexcept {
       return bits & (clear ^ U(0xffffffffu));
     }
 #if NATIVE_HAS_AVX2
-    native_inline constexpr uint32x8 flush_clear_bits(uint32x8 bits, uint32x8 clear) noexcept {
+    hint_inline constexpr uint32x8 flush_clear_bits(uint32x8 bits, uint32x8 clear) noexcept {
       if consteval { return bits & (clear ^ uint32x8(0xffffffffu)); }
       return uint32x8::from_native(_mm256_andnot_si256(clear.value, bits.value));
     }
 #endif
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
-    native_inline constexpr uint32x16 flush_clear_bits(uint32x16 bits, uint32x16 clear) noexcept {
+    hint_inline constexpr uint32x16 flush_clear_bits(uint32x16 bits, uint32x16 clear) noexcept {
       if consteval { return bits & (clear ^ uint32x16(0xffffffffu)); }
       return uint32x16::from_native(_mm512_andnot_si512(clear.value, bits.value));
     }
 #endif
 #if NATIVE_HAS_ARM_NEON
-    native_inline constexpr uint32x4 flush_clear_bits(uint32x4 bits, uint32x4 clear) noexcept {
+    hint_inline constexpr uint32x4 flush_clear_bits(uint32x4 bits, uint32x4 clear) noexcept {
       if consteval { return bits & (clear ^ uint32x4(0xffffffffu)); }
       return uint32x4::from_native(vbicq_u8(bits.value, clear.value));
     }
@@ -49,7 +49,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
    * \snippet api.cc bit_transport
    */
   template <fp32_bits_register V, std::size_t N>
-  [[nodiscard]] native_inline constexpr std::array<V, N> flush_to_zero(std::array<V, N> const & x) noexcept {
+  [[nodiscard]] hint_inline constexpr std::array<V, N> flush_to_zero(std::array<V, N> const & x) noexcept {
     if consteval {
       std::array<V,N> result{};
       for(std::size_t i=0;i<N;++i) result[i]=::native::detail::float_constant::map([](auto bits) {
@@ -83,7 +83,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   }
   /// \ingroup vector_math
   /// Apply the same bit-preserving signed-zero flush to one register.
-  template <fp32_bits_register V> [[nodiscard]] native_inline constexpr V flush_to_zero(V x) noexcept {
+  template <fp32_bits_register V> [[nodiscard]] hint_inline constexpr V flush_to_zero(V x) noexcept {
     return flush_to_zero(std::array{x})[0];
   }
 } // namespace NATIVE_BACKEND_NAMESPACE::native

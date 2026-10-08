@@ -7,7 +7,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/targets.h>
 
 #if NATIVE_TEST_INTERFACE == 1
@@ -23,7 +23,7 @@ import native;
 
 #include "checks.h"
 
-extern "C" native_noinline unsigned long long native_vnni_baseline_import(
+extern "C" hint_noinline unsigned long long native_vnni_baseline_import(
     unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

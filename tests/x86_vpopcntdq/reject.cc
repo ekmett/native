@@ -47,39 +47,39 @@ constexpr auto requirements = [] {
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_d(register_type value) noexcept {
   return native::detail::x86_vpopcntdq::vpopcntd<requirements>(value);
 }
 #endif
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_d(register_type source, dmask_type mask,
                             register_type value) noexcept {
   return native::detail::x86_vpopcntdq::mask_vpopcntd<requirements>(source, mask, value);
 }
 #endif
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_d(dmask_type mask, register_type value) noexcept {
   return native::detail::x86_vpopcntdq::maskz_vpopcntd<requirements>(mask, value);
 }
 #endif
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_q(register_type value) noexcept {
   return native::detail::x86_vpopcntdq::vpopcntq<requirements>(value);
 }
 #endif
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 4
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_q(register_type source, __mmask8 mask,
                             register_type value) noexcept {
   return native::detail::x86_vpopcntdq::mask_vpopcntq<requirements>(source, mask, value);
 }
 #endif
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 5
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_q(__mmask8 mask, register_type value) noexcept {
   return native::detail::x86_vpopcntdq::maskz_vpopcntq<requirements>(mask, value);
 }

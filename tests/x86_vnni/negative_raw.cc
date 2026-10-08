@@ -116,7 +116,7 @@ using a_type = reg;
 using b_type = reg;
 #endif
 
-native_noinline native_target(NATIVE_VNNI_CALLER)
+hint_noinline hint_target(NATIVE_VNNI_CALLER)
 reg rejected(acc_type acc, mask k, a_type a, b_type b) noexcept {
   return NATIVE_VNNI_CALL(acc, k, a, b);
 }

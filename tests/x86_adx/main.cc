@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if defined(__ADX__) || defined(__AVXIFMA__) || defined(__AVX512IFMA__) || defined(__AVX__)
 #error IFMA/ADX admission must run at the provider baseline
@@ -78,14 +78,14 @@ namespace adx_fixture {
   static_assert(constant<weak>(255, ~std::uint64_t{0}, ~std::uint64_t{0}) ==
     result<std::uint64_t>{~std::uint64_t{0}, 1});
 
-  native_noinline native_target("adx")
+  hint_noinline hint_target("adx")
   void evaluate(std::uint8_t carry, std::uint64_t a, std::uint64_t b,
     result<std::uint32_t> & narrow, result<std::uint64_t> & wide) noexcept {
     narrow[1] = native::addcarryx<strong>(carry, std::uint32_t(a), std::uint32_t(b), &narrow[0]);
     wide[1] = native::addcarryx<strong>(carry, a, b, &wide[0]);
   }
 
-  native_noinline native_target("adx")
+  hint_noinline hint_target("adx")
   std::uint8_t chain(std::array<std::uint64_t, 4> const & a,
     std::array<std::uint64_t, 4> const & b, std::array<std::uint64_t, 4> & sum) noexcept {
     std::uint8_t carry = 0;
@@ -136,7 +136,7 @@ namespace adx_fixture {
   }
 }
 
-extern "C" native_noinline unsigned native_adx_baseline_import(unsigned a, unsigned b) noexcept {
+extern "C" hint_noinline unsigned native_adx_baseline_import(unsigned a, unsigned b) noexcept {
   return (a ^ b) + a;
 }
 

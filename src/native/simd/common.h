@@ -1,5 +1,5 @@
 #pragma once
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include "native/mask_traits.h"
 #include "native/value_traits.h"
@@ -75,7 +75,7 @@ namespace native {
   template <std::size_t K> struct imm_t {
     static constexpr std::size_t value = K;
     /// Return the immediate value K during constant evaluation.
-    [[nodiscard]] native_inline native_const consteval operator std::size_t() const noexcept { return K; }
+    [[nodiscard]] hint_inline hint_const consteval operator std::size_t() const noexcept { return K; }
   };
   /// \ingroup vectors
   /// The value form of an immediate: for example, `broadcast(v, ::native::imm<1>)`.
@@ -89,27 +89,27 @@ namespace native {
   struct mask_lane {
     using storage_type=U;
     /// Initialize this lane to false.
-    native_inline constexpr mask_lane() noexcept = default;
+    hint_inline constexpr mask_lane() noexcept = default;
     /// Represent the supplied truth value as zero or all-one bits.
-    explicit native_inline constexpr mask_lane(bool value) noexcept : value_(value?U(~U(0)):U(0)) {}
+    explicit hint_inline constexpr mask_lane(bool value) noexcept : value_(value?U(~U(0)):U(0)) {}
     /// Normalize nonzero bits to a true, all-one lane.
-    [[nodiscard]] static native_inline native_const constexpr mask_lane from_bits(U value) noexcept { return mask_lane(value!=0); }
+    [[nodiscard]] static hint_inline hint_const constexpr mask_lane from_bits(U value) noexcept { return mask_lane(value!=0); }
     /// Return the canonical zero or all-one representation.
-    [[nodiscard]] native_inline native_pure constexpr U to_bits() const noexcept { return value_; }
+    [[nodiscard]] hint_inline hint_pure constexpr U to_bits() const noexcept { return value_; }
     /// Return the lane truth value.
-    [[nodiscard]] native_inline native_pure constexpr bool to_bool() const noexcept { return value_!=0; }
+    [[nodiscard]] hint_inline hint_pure constexpr bool to_bool() const noexcept { return value_!=0; }
     /// Return the lane-wise logical complement, retaining this mask type.
-    [[nodiscard]] friend native_inline native_const constexpr mask_lane operator!(mask_lane a) noexcept { return mask_lane(!a.to_bool()); }
+    [[nodiscard]] friend hint_inline hint_const constexpr mask_lane operator!(mask_lane a) noexcept { return mask_lane(!a.to_bool()); }
     /// Invert each lane truth value, preserving the mask representation.
-    [[nodiscard]] friend native_inline native_const constexpr mask_lane operator~(mask_lane a) noexcept { return !a; }
+    [[nodiscard]] friend hint_inline hint_const constexpr mask_lane operator~(mask_lane a) noexcept { return !a; }
     /// Bitwise AND of corresponding lane representations.
-    [[nodiscard]] friend native_inline native_const constexpr mask_lane operator&(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()&&b.to_bool()); }
+    [[nodiscard]] friend hint_inline hint_const constexpr mask_lane operator&(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()&&b.to_bool()); }
     /// Bitwise OR of corresponding lane representations.
-    [[nodiscard]] friend native_inline native_const constexpr mask_lane operator|(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()||b.to_bool()); }
+    [[nodiscard]] friend hint_inline hint_const constexpr mask_lane operator|(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()||b.to_bool()); }
     /// Bitwise XOR of corresponding lane representations.
-    [[nodiscard]] friend native_inline native_const constexpr mask_lane operator^(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()!=b.to_bool()); }
+    [[nodiscard]] friend hint_inline hint_const constexpr mask_lane operator^(mask_lane a,mask_lane b) noexcept { return mask_lane(a.to_bool()!=b.to_bool()); }
     /// Compare the two canonical lane truth values and return bool.
-    [[nodiscard]] friend native_inline native_const constexpr bool operator==(mask_lane,mask_lane) noexcept = default;
+    [[nodiscard]] friend hint_inline hint_const constexpr bool operator==(mask_lane,mask_lane) noexcept = default;
   private:
     U value_=0;
   };

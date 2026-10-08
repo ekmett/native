@@ -644,8 +644,7 @@ alone is insufficient. `native::headers` supplies `-fms-extensions` for Clang's
 GNU-style driver; clang-cl enables it already.
 
 Include `<hint.h>` for [Hint](https://github.com/ekmett/hint) compiler annotations
-and `<native/targets.h>` for source target macros. `<native/attributes.h>`
-provides the corresponding `native_*` compatibility names. Modules do not export macros.
+and `<native/targets.h>` for source target macros. Modules do not export macros.
 Installed module sources and build metadata let CMake regenerate compatible
 BMIs. Provider modules compile without PCHs; consumer PCHs must agree with their
 translation unit's compiler, exception and preprocessing settings. See

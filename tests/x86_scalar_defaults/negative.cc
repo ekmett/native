@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_SCALAR_NEGATIVE < 6
 #include "weak_imports.h"
 #else
@@ -8,62 +8,62 @@
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 0
-native_target("bmi")
+hint_target("bmi")
 std::uint32_t rejected(std::uint32_t a) { return native::andn(a, a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 1
-native_target("bmi2")
+hint_target("bmi2")
 std::uint32_t rejected(std::uint32_t a) { return native::rorx<7>(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 2
-native_target("popcnt")
+hint_target("popcnt")
 std::uint32_t rejected(std::uint32_t a) { return native::popcnt(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 3
-native_target("lzcnt")
+hint_target("lzcnt")
 std::uint32_t rejected(std::uint32_t a) { return native::lzcnt(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 4
-native_target("crc32")
+hint_target("crc32")
 std::uint32_t rejected(std::uint32_t a) { return native::crc32c(a, a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 5
-native_target("f16c")
+hint_target("f16c")
 std::uint16_t rejected(float a) { return native::cvtss_sh<0>(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 6
-native_target("no-bmi")
+hint_target("no-bmi")
 std::uint32_t rejected(std::uint32_t a) { return native::andn(a, a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 7
-native_target("no-bmi2")
+hint_target("no-bmi2")
 std::uint32_t rejected(std::uint32_t a) { return native::rorx<7>(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 8
-native_target("no-popcnt")
+hint_target("no-popcnt")
 std::uint32_t rejected(std::uint32_t a) { return native::popcnt(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 9
-native_target("no-lzcnt")
+hint_target("no-lzcnt")
 std::uint32_t rejected(std::uint32_t a) { return native::lzcnt(a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 10
-native_target("no-crc32")
+hint_target("no-crc32")
 std::uint32_t rejected(std::uint32_t a) { return native::crc32c(a, a); }
 #endif
 
 #if NATIVE_SCALAR_NEGATIVE == 11
-native_target("no-f16c")
+hint_target("no-f16c")
 std::uint16_t rejected(float a) { return native::cvtss_sh<0>(a); }
 #endif
 

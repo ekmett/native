@@ -52,7 +52,7 @@ static_assert(!raw_popcount<__m128i> && !raw_popcount<__m256i>);
 static_assert(!raw_popcount<native::simd<std::int32_t,4,exact_vl>>);
 
 #define NATIVE_TEST_VPOPCNT_WRAPPER(Name, Vector, Requirements) \
-  template<class T> native_noinline void Name( \
+  template<class T> hint_noinline void Name( \
       T* plain, T* merged, T* zeroed, T const* source, T const* input, unsigned mask) noexcept { \
     using M = std::conditional_t<sizeof(Vector) == 64 && sizeof(T) == 4, __mmask16, __mmask8>; \
     Vector src, value; \
@@ -86,7 +86,7 @@ NATIVE_TARGET_POP()
 #undef NATIVE_TEST_VPOPCNT_WRAPPER
 
 // This oracle is compiled at the baseline outside every optional target scope.
-template<class T> native_noinline T scalar_popcount(T value) noexcept {
+template<class T> hint_noinline T scalar_popcount(T value) noexcept {
   T count = 0;
   for (unsigned bit = 0; bit != std::numeric_limits<T>::digits; ++bit)
     count += static_cast<T>((value >> bit) & T{1});

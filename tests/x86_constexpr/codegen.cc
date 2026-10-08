@@ -2,7 +2,7 @@
 #include <bit>
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #if !NATIVE_CONSTEXPR_RAW
 import native.x86.bmi1;
 import native.x86.bmi2;
@@ -12,14 +12,14 @@ import native.x86.crc32c;
 #endif
 
 #if NATIVE_CONSTEXPR_RAW
-native_inline native_target("bmi2")
+hint_inline hint_target("bmi2")
 std::uint32_t multiply_raw(std::uint32_t a, std::uint32_t b, std::uint32_t* high) {
   unsigned int upper;
   auto low = _mulx_u32(a, b, &upper);
   *high = upper;
   return low;
 }
-native_inline native_target("bmi2")
+hint_inline hint_target("bmi2")
 std::uint64_t multiply_raw(std::uint64_t a, std::uint64_t b, std::uint64_t* high) {
   unsigned long long upper;
   auto low = _mulx_u64(a, b, &upper);
@@ -31,7 +31,7 @@ std::uint64_t multiply_raw(std::uint64_t a, std::uint64_t b, std::uint64_t* high
 #define NATIVE_CONSTEXPR_RESULT(raw, api) api
 #endif
 #define NATIVE_CONSTEXPR_PAIR(name, feature, type, parameters, raw, api) \
-  extern "C" native_noinline __attribute__((used)) native_target(feature) \
+  extern "C" hint_noinline __attribute__((used)) hint_target(feature) \
   type name parameters noexcept { return NATIVE_CONSTEXPR_RESULT(raw, api); }
 
 NATIVE_CONSTEXPR_PAIR(native_constexpr_0, "bmi", std::uint32_t,

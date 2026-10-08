@@ -19,27 +19,27 @@ constexpr auto count512 = native::target_features<native::x86>(
 constexpr auto countvl = native::feature_closure(count512 & native::x86_feature::avx512vl);
 
 #define NATIVE_COUNT_FIXTURES(width, reg, dmask, requirement, features) \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntd_##width##_plain(reg value) noexcept { \
     return native::detail::x86_vpopcntdq::vpopcntd<requirement>(value); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntd_##width##_merge(reg source, dmask mask, reg value) noexcept { \
     return native::detail::x86_vpopcntdq::mask_vpopcntd<requirement>(source, mask, value); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntd_##width##_zero(dmask mask, reg value) noexcept { \
     return native::detail::x86_vpopcntdq::maskz_vpopcntd<requirement>(mask, value); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntq_##width##_plain(reg value) noexcept { \
     return native::detail::x86_vpopcntdq::vpopcntq<requirement>(value); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntq_##width##_merge(reg source, __mmask8 mask, reg value) noexcept { \
     return native::detail::x86_vpopcntdq::mask_vpopcntq<requirement>(source, mask, value); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntq_##width##_zero(__mmask8 mask, reg value) noexcept { \
     return native::detail::x86_vpopcntdq::maskz_vpopcntq<requirement>(mask, value); \
   }
@@ -54,7 +54,7 @@ NATIVE_COUNT_FIXTURES(512, __m512i, __mmask16, count512,
 #undef NATIVE_COUNT_EXTRA_TARGETS
 
 // An ordinary function in the same translation unit retains its baseline.
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_vpopcntdq_baseline(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

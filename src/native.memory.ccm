@@ -5,7 +5,7 @@ module;
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include "native/attributes.h"
+#include <hint.h>
 
 #if defined(__unix__) || defined(__APPLE__)
 #include <sys/mman.h>
@@ -32,7 +32,7 @@ export namespace native {
     /// \pre A non-null p comes from an allocation compatible with std::free.
     /// \hideinlinesource
     template <trivially_destructible T>
-    native_inline native_artificial
+    hint_inline hint_artificial
     static void operator()(T * p) noexcept {
       std::free(const_cast<std::remove_const_t<T>*>(p));
     }
@@ -55,10 +55,10 @@ export namespace native {
   /// \pre \p str is non-null
   /// \post result owns an independent null-terminated copy, or is null if allocation fails
   /// \hideinlinesource
-  [[nodiscard]] native_inline native_artificial
-  native_nonnull(1) native_null_terminated_string_arg(1)
+  [[nodiscard]] hint_inline hint_artificial
+  hint_nonnull(1) hint_null_terminated_string_arg(1)
   unique_str dup(
-    native_noescape char const * str
+    hint_noescape char const * str
   ) noexcept {
     auto const size = std::strlen(str) + 1;
     auto * copy = static_cast<char *>(std::malloc(size));
@@ -80,7 +80,7 @@ export namespace native {
     /// A null pointer is a no-op.
     /// \pre A non-null p is a successful mmap result with this recorded byte length.
     /// \hideinlinesource
-    native_inline native_artificial
+    hint_inline hint_artificial
     void operator()(void * p) const noexcept {
       if (p != nullptr)
         munmap(p, size);
@@ -96,7 +96,7 @@ export namespace native {
   /// This does not call mmap or turn MAP_FAILED into an empty owner.
   /// \pre \p p is a non-null successful mmap result, not MAP_FAILED
   /// \hideinlinesource
-  native_inline native_artificial native_nonnull(1)
+  hint_inline hint_artificial hint_nonnull(1)
   mmap_ptr make_mmap_ptr(void * p, std::size_t size) noexcept {
     return mmap_ptr(p,c_munmap(size));
   }

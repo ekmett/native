@@ -20,7 +20,7 @@ export namespace native {
 
   /// Count set bits in each of the 16 32-bit lanes; results are in [0, 32].
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq")
   constexpr simd<std::uint32_t, 16, Arch> vpopcntd(simd<std::uint32_t, 16, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -30,7 +30,7 @@ export namespace native {
 
   /// Inactive lanes retain source; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq")
   constexpr simd<std::uint32_t, 16, Arch> mask_vpopcntd(simd<std::uint32_t, 16, Arch> source, predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
@@ -40,7 +40,7 @@ export namespace native {
 
   /// Inactive lanes become zero; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq")
   constexpr simd<std::uint32_t, 16, Arch> maskz_vpopcntd(predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, mask.to_bitset()); }
     else {
@@ -50,7 +50,7 @@ export namespace native {
 
   /// Count set bits in each of the 8 64-bit lanes; results are in [0, 64].
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq")
   constexpr simd<std::uint64_t, 8, Arch> vpopcntq(simd<std::uint64_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -60,7 +60,7 @@ export namespace native {
 
   /// Inactive lanes retain source; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq")
   constexpr simd<std::uint64_t, 8, Arch> mask_vpopcntq(simd<std::uint64_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
@@ -70,7 +70,7 @@ export namespace native {
 
   /// Inactive lanes become zero; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq")
   constexpr simd<std::uint64_t, 8, Arch> maskz_vpopcntq(predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, mask.to_bitset()); }
     else {
@@ -81,7 +81,7 @@ export namespace native {
   /// Count set bits in each of the 4 32-bit lanes; results are in [0, 32].
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> vpopcntd(simd<std::uint32_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -92,7 +92,7 @@ export namespace native {
   /// Inactive lanes retain source; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> mask_vpopcntd(simd<std::uint32_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
@@ -103,7 +103,7 @@ export namespace native {
   /// Inactive lanes become zero; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint32_t, 4, Arch> maskz_vpopcntd(predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, mask.to_bitset()); }
     else {
@@ -114,7 +114,7 @@ export namespace native {
   /// Count set bits in each of the 2 64-bit lanes; results are in [0, 64].
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> vpopcntq(simd<std::uint64_t, 2, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -125,7 +125,7 @@ export namespace native {
   /// Inactive lanes retain source; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> mask_vpopcntq(simd<std::uint64_t, 2, Arch> source, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
@@ -136,7 +136,7 @@ export namespace native {
   /// Inactive lanes become zero; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint64_t, 2, Arch> maskz_vpopcntq(predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, mask.to_bitset()); }
     else {
@@ -147,7 +147,7 @@ export namespace native {
   /// Count set bits in each of the 8 32-bit lanes; results are in [0, 32].
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> vpopcntd(simd<std::uint32_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -158,7 +158,7 @@ export namespace native {
   /// Inactive lanes retain source; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> mask_vpopcntd(simd<std::uint32_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
@@ -169,7 +169,7 @@ export namespace native {
   /// Inactive lanes become zero; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint32_t, 8, Arch> maskz_vpopcntd(predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, mask.to_bitset()); }
     else {
@@ -180,7 +180,7 @@ export namespace native {
   /// Count set bits in each of the 4 64-bit lanes; results are in [0, 64].
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> vpopcntq(simd<std::uint64_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, ~std::uint64_t{0}); }
     else {
@@ -191,7 +191,7 @@ export namespace native {
   /// Inactive lanes retain source; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> mask_vpopcntq(simd<std::uint64_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
@@ -202,7 +202,7 @@ export namespace native {
   /// Inactive lanes become zero; mask bits above the lane count are ignored.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))
-  [[nodiscard]] native_inline native_const native_target("avx512f,avx512vpopcntdq,avx512vl")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,avx512vpopcntdq,avx512vl")
   constexpr simd<std::uint64_t, 4, Arch> maskz_vpopcntq(predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, mask.to_bitset()); }
     else {

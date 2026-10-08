@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if defined(__GFNI__) || defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__)
 #error GFNI admission must run in a baseline translation unit

@@ -25,7 +25,7 @@ namespace candidate {
   // The timing bank contains ordinary normal operands without tiny ratios.
   template<class V, std::size_t N>
     requires (::wide::detail::binary32_register<V>)
-  [[nodiscard]] native_inline constexpr auto atan2_newton_kernel(
+  [[nodiscard]] hint_inline constexpr auto atan2_newton_kernel(
       std::array<V, N> const & y, std::array<V, N> const & x) noexcept {
     namespace w = ::wide;
     auto const c = [&](float value) { return w::constant_like(y, value); };
@@ -88,7 +88,7 @@ namespace candidate {
 }
 namespace fixture {
   template<bool Newton,std::size_t... I>
-  native_inline void batch(float* dst,float const* y,float const* x,std::index_sequence<I...>) {
+  hint_inline void batch(float* dst,float const* y,float const* x,std::index_sequence<I...>) {
     auto a=std::array{v::load(y+I*v::lanes)...};
     auto b=std::array{v::load(x+I*v::lanes)...};
     if constexpr(Newton) {
@@ -100,7 +100,7 @@ namespace fixture {
     }
   }
   template<std::size_t N,bool Newton>
-  native_noinline double measure(float* dst,float const* y,float const* x,std::size_t size,unsigned rounds) {
+  hint_noinline double measure(float* dst,float const* y,float const* x,std::size_t size,unsigned rounds) {
     auto const start=std::chrono::steady_clock::now();
     for(unsigned r=0;r<rounds;++r) {
       for(std::size_t i=0;i<size;i+=N*v::lanes)batch<Newton>(dst+i,y+i,x+i,std::make_index_sequence<N>{});

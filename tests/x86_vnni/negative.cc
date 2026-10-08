@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
 #include <type_traits>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.vnni;
 
 // CMake selects one operation per translation unit: target-mismatch diagnostics
@@ -99,7 +99,7 @@ using a_type=native::simd<float,NATIVE_VNNI_WIDTH/32,requirement>;
 #else
 using a_type=a_vector;
 #endif
-native_noinline native_target(NATIVE_VNNI_CALLER)
+hint_noinline hint_target(NATIVE_VNNI_CALLER)
 auto rejected(accumulator acc, mask k, a_type a, b_vector b) noexcept {
   return NATIVE_VNNI_CALL(acc, k, a, b);
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <native/attributes.h>
+#include <hint.h>
 #include <array>
 #include <cstdint>
 #include <cstdio>
@@ -17,14 +17,14 @@ import native;
 constexpr auto half_arch=native::neon_fp16;
 constexpr auto bf_arch=native::neon_bf16;
 constexpr std::size_t half_lanes=8;
-#define half_target native_target("neon,fullfp16")
-#define bf_target native_target("neon,bf16")
+#define half_target hint_target("neon,fullfp16")
+#define bf_target hint_target("neon,bf16")
 #else
 constexpr auto half_arch=native::avx512_fp16;
 constexpr auto bf_arch=native::avx512_bf16;
 constexpr std::size_t half_lanes=32;
-#define half_target native_target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16")
-#define bf_target native_target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16")
+#define half_target hint_target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512fp16")
+#define bf_target hint_target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16")
 #endif
 using H=native::simd<native::fp16,half_lanes,half_arch>;
 struct half_case { std::array<std::uint16_t,half_lanes> a{},b{},c{}; };
@@ -58,7 +58,7 @@ constexpr auto half_cases=native_test::property_cases<64>(native_test::property_
     (a<=b).to_bitset(),(a>b).to_bitset(),(a>=b).to_bitset()}; \
   return result
 consteval half_result constant_half(half_case const & c) { HALF_EVALUATE; }
-half_target native_noinline half_result runtime_half(half_case const & c) { HALF_EVALUATE; }
+half_target hint_noinline half_result runtime_half(half_case const & c) { HALF_EVALUATE; }
 #undef HALF_EVALUATE
 constexpr auto half_expected=[] consteval {
   std::array<half_result,half_cases.size()> result{};
@@ -93,7 +93,7 @@ template<std::size_t N> constexpr auto dot_cases=native_test::property_cases<64>
   native::dot2(B::load_bits(c.a.data()),B::load_bits(c.b.data()),V::load_bits(c.c.data())).store_bits(result.data()); \
   return result
 template<std::size_t N> consteval auto constant_dot(dot_case<N> const & c) { DOT_EVALUATE; }
-template<std::size_t N> bf_target native_noinline auto runtime_dot(dot_case<N> const & c) { DOT_EVALUATE; }
+template<std::size_t N> bf_target hint_noinline auto runtime_dot(dot_case<N> const & c) { DOT_EVALUATE; }
 #undef DOT_EVALUATE
 template<std::size_t N> constexpr auto dot_expected=[] consteval {
   std::array<std::array<std::uint32_t,N/2>,64> result{};

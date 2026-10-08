@@ -2,7 +2,7 @@
 module;
 #include "native/isa_import.h"
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include <array>
 #include <bit>
 #include <cstdint>
@@ -61,7 +61,7 @@ namespace native {
   /// First SHA-512 schedule step; only the low lane of b is used.
   template<isa<x86> Arch>
     requires(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("sha512")
+  [[nodiscard]] hint_inline hint_const hint_target("sha512")
   constexpr simd<std::uint64_t, 4, Arch> sha512msg1(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval { return detail::x86_sha512_constant::sha512msg1(a, b); }
     else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512msg1_epi64(a.to_native(), b.to_native())); }
@@ -78,7 +78,7 @@ namespace native {
   /// Final SHA-512 schedule step with recurrence through the low output lanes.
   template<isa<x86> Arch>
     requires(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("sha512")
+  [[nodiscard]] hint_inline hint_const hint_target("sha512")
   constexpr simd<std::uint64_t, 4, Arch> sha512msg2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval { return detail::x86_sha512_constant::sha512msg2(a, b); }
     else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512msg2_epi64(a.to_native(), b.to_native())); }
@@ -95,7 +95,7 @@ namespace native {
   /// Two SHA-512 rounds: a is CDGH, b is ABEF, c contains two message-plus-constant words.
   template<isa<x86> Arch>
     requires(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx))
-  [[nodiscard]] native_inline native_const native_target("sha512")
+  [[nodiscard]] hint_inline hint_const hint_target("sha512")
   constexpr simd<std::uint64_t, 4, Arch> sha512rnds2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
     if consteval { return detail::x86_sha512_constant::sha512rnds2(a, b, c); }
     else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512rnds2_epi64(a.to_native(), b.to_native(), c.to_native())); }

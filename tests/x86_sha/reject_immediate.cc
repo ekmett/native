@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.sha;
 
 #if NATIVE_TEST_WEAK
@@ -10,7 +10,7 @@ constexpr auto arch = native::target_features<native::x86>("sha");
 #endif
 using vector = native::simd<std::uint32_t, 4, arch>;
 
-native_noinline native_target("sha")
+hint_noinline hint_target("sha")
 auto reject_selector(vector value, unsigned selector) {
 #if NATIVE_TEST_IMMEDIATE == 1
   return native::sha1rnds4<arch, 4>(value, value);

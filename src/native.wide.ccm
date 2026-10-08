@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include "native/value_traits.h"
 #include "native/wide_pack.h"

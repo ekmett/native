@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_TEST_INTERFACE == 1
 import native.x86.bitalg;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -19,7 +19,7 @@ import native;
 #include <cstdint>
 #include <cstdio>
 #include <initializer_list>
-#include <native/attributes.h>
+#include <hint.h>
 
 inline constexpr auto full_width = native::target_features<native::x86>("avx512bitalg");
 inline constexpr auto short_width = native::target_features<native::x86>("avx512bitalg,avx512vl");
@@ -215,7 +215,7 @@ static_assert(shuffle_constant<sse2_storage>(anchor_words, anchor_controls, 0x81
 
 // The literal target stays visible at each runtime entry from baseline code.
 template<class T, std::size_t N>
-native_noinline native_target("avx512f,avx512bw,avx512bitalg")
+hint_noinline hint_target("avx512f,avx512bw,avx512bitalg")
 void population_512(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, full_width>;
   auto value = vector_type::load(input);
@@ -233,7 +233,7 @@ void population_512(T * result, T const * input, T const * source, std::uint64_t
 }
 
 template<std::size_t Q>
-native_noinline native_target("avx512f,avx512bw,avx512bitalg")
+hint_noinline hint_target("avx512f,avx512bw,avx512bitalg")
 void shuffle_512(std::uint64_t * result, std::uint64_t const * input,
   std::uint8_t const * control, std::uint64_t mask) noexcept {
   auto value = native::simd<std::uint64_t, Q, full_width>::load(input);
@@ -245,7 +245,7 @@ void shuffle_512(std::uint64_t * result, std::uint64_t const * input,
 
 // The literal target stays visible at each runtime entry from baseline code.
 template<class T, std::size_t N>
-native_noinline native_target("avx512f,avx512bw,avx512bitalg,avx512vl")
+hint_noinline hint_target("avx512f,avx512bw,avx512bitalg,avx512vl")
 void population_vl(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, short_width>;
   auto value = vector_type::load(input);
@@ -263,7 +263,7 @@ void population_vl(T * result, T const * input, T const * source, std::uint64_t 
 }
 
 template<std::size_t Q>
-native_noinline native_target("avx512f,avx512bw,avx512bitalg,avx512vl")
+hint_noinline hint_target("avx512f,avx512bw,avx512bitalg,avx512vl")
 void shuffle_vl(std::uint64_t * result, std::uint64_t const * input,
   std::uint8_t const * control, std::uint64_t mask) noexcept {
   auto value = native::simd<std::uint64_t, Q, short_width>::load(input);
@@ -275,7 +275,7 @@ void shuffle_vl(std::uint64_t * result, std::uint64_t const * input,
 
 // The literal target stays visible at each runtime entry from baseline code.
 template<class T, std::size_t N>
-native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
+hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
 void population_broad(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, broad>;
   auto value = vector_type::load(input);
@@ -293,7 +293,7 @@ void population_broad(T * result, T const * input, T const * source, std::uint64
 }
 
 template<std::size_t Q>
-native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
+hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
 void shuffle_broad(std::uint64_t * result, std::uint64_t const * input,
   std::uint8_t const * control, std::uint64_t mask) noexcept {
   auto value = native::simd<std::uint64_t, Q, broad>::load(input);
@@ -440,7 +440,7 @@ bool check_shuffle(std::uint64_t & state) {
   return true;
 }
 
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_bitalg_baseline_import(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

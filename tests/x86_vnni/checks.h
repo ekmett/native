@@ -315,7 +315,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
       native::dpwssd<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native(), native::dpwssds<A>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), A>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), A>::from_native(a), native::simd<std::int16_t, sizeof(b) / sizeof(std::int16_t), A>::from_native(b)).to_native()}; \
     __builtin_memcpy(plain, result, sizeof(result))
 #define NATIVE_VNNI_CORE(Name, V, N) \
-  extern "C" native_noinline __attribute__((target("avxvnni"))) void Name( \
+  extern "C" hint_noinline __attribute__((target("avxvnni"))) void Name( \
       inputs<N> const* input, outputs<N, 4>* plain, unsigned, outputs<N, 4>*, outputs<N, 4>*) { \
     NATIVE_VNNI_LOAD(V); \
     NATIVE_VNNI_CORE_RESULTS(V, core); \
@@ -325,7 +325,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
 #undef NATIVE_VNNI_CORE
 
 #define NATIVE_VNNI_EVEX(Name, V, K, N, A, Target) \
-  extern "C" native_noinline __attribute__((target(Target))) void Name( \
+  extern "C" hint_noinline __attribute__((target(Target))) void Name( \
       inputs<N> const* input, outputs<N, 4>* plain, unsigned bits, \
       outputs<N, 4>* merged, outputs<N, 4>* zeroed) { \
     NATIVE_VNNI_LOAD(V); \
@@ -345,7 +345,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
 #undef NATIVE_VNNI_CORE_RESULTS
 
 #define NATIVE_VNNI_INT8(Name, V, N) \
-  extern "C" native_noinline __attribute__((target("avxvnniint8"))) void Name( \
+  extern "C" hint_noinline __attribute__((target("avxvnniint8"))) void Name( \
       inputs<N> const* input, outputs<N, 6>* plain, unsigned, outputs<N, 6>*, outputs<N, 6>*) { \
     NATIVE_VNNI_LOAD(V); \
     V result[] = {native::dpbssd<int8>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int8>::from_native(acc), native::simd<std::int8_t, sizeof(a) / sizeof(std::int8_t), int8>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), int8>::from_native(b)).to_native(), native::dpbssds<int8>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int8>::from_native(acc), native::simd<std::int8_t, sizeof(a) / sizeof(std::int8_t), int8>::from_native(a), native::simd<std::int8_t, sizeof(b) / sizeof(std::int8_t), int8>::from_native(b)).to_native(), \
@@ -357,7 +357,7 @@ static_assert(!accepts_family<native::isa<native::wasm>{}>);
   NATIVE_VNNI_INT8(invoke_int8_256, __m256i, 32)
 #undef NATIVE_VNNI_INT8
 #define NATIVE_VNNI_INT16(Name, V, N) \
-  extern "C" native_noinline __attribute__((target("avxvnniint16"))) void Name( \
+  extern "C" hint_noinline __attribute__((target("avxvnniint16"))) void Name( \
       inputs<N> const* input, outputs<N, 6>* plain, unsigned, outputs<N, 6>*, outputs<N, 6>*) { \
     NATIVE_VNNI_LOAD(V); \
     V result[] = {native::dpwsud<int16>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int16>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), int16>::from_native(a), native::simd<std::uint16_t, sizeof(b) / sizeof(std::uint16_t), int16>::from_native(b)).to_native(), native::dpwsuds<int16>(native::simd<std::int32_t, sizeof(acc) / sizeof(std::int32_t), int16>::from_native(acc), native::simd<std::int16_t, sizeof(a) / sizeof(std::int16_t), int16>::from_native(a), native::simd<std::uint16_t, sizeof(b) / sizeof(std::uint16_t), int16>::from_native(b)).to_native(), \

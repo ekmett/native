@@ -21,7 +21,7 @@ export namespace native {
   template<bool Flush=false, unsigned Degree=6, std::size_t L, std::size_t N, isa<> Arch> \
     requires (Degree >= 1 && Degree <= 7) && (detail::exp_target<Arch> == i) && \
       requires(std::array<simd<float, L, Arch>, N> const & x) { ::native::exp<Flush, Degree>(x); } \
-  [[nodiscard]] native_inline constexpr wide<simd<float, L, Arch>, N> \
+  [[nodiscard]] hint_inline constexpr wide<simd<float, L, Arch>, N> \
   exp(wide<simd<float, L, Arch>, N> const & input) \
       noexcept(noexcept(wide<simd<float, L, Arch>, N>{::native::exp<Flush, Degree>(input.registers)})) { \
     return wide<simd<float, L, Arch>, N>{::native::exp<Flush, Degree>(input.registers)}; \

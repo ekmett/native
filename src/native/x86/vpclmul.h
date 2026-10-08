@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #if NATIVE_HOST_X86
 #include <immintrin.h>
@@ -16,7 +16,7 @@ namespace native::detail::x86_vpclmul {
   /// Multiply selected halves of one 128-bit lane using PCLMUL and AVX.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::pclmul) &&
       Arch.has(x86_feature::avx) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx,pclmul")
+  [[nodiscard]] hint_inline hint_const hint_target("avx,pclmul")
   __m128i vpclmulqdq(__m128i a, __m128i b) noexcept {
     return _mm_clmulepi64_si128(a, b, Imm8);
   }
@@ -24,7 +24,7 @@ namespace native::detail::x86_vpclmul {
   /// Multiply selected halves independently in two 128-bit lanes; AVX suffices.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx,vpclmulqdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx,vpclmulqdq")
   __m256i vpclmulqdq(__m256i a, __m256i b) noexcept {
     return _mm256_clmulepi64_epi128(a, b, Imm8);
   }
@@ -32,7 +32,7 @@ namespace native::detail::x86_vpclmul {
   /// Multiply selected halves independently in four 128-bit lanes; needs AVX512F.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx512f) && Imm8 <= 255)
-  [[nodiscard]] native_inline native_const native_target("avx512f,vpclmulqdq")
+  [[nodiscard]] hint_inline hint_const hint_target("avx512f,vpclmulqdq")
   __m512i vpclmulqdq(__m512i a, __m512i b) noexcept {
     return _mm512_clmulepi64_epi128(a, b, Imm8);
   }

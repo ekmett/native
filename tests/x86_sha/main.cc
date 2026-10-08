@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if defined(__SHA__) || defined(__AES__) || defined(__VAES__) || defined(__AVX__)
 #error Crypto admission must run at the provider baseline
@@ -238,7 +238,7 @@ namespace sha_fixture {
   }
   static_assert(digest256<strong>() && digest256<weak>());
 
-  native_noinline native_target("sha")
+  hint_noinline hint_target("sha")
   void evaluate(words const & a, words const & b, words const & c, results & out) noexcept {
     auto x = vector<strong>::load(a.data());
     auto y = vector<strong>::load(b.data());
@@ -286,7 +286,7 @@ namespace sha_fixture {
   }
 }
 
-extern "C" native_noinline unsigned native_sha_baseline_import(unsigned a, unsigned b) noexcept {
+extern "C" hint_noinline unsigned native_sha_baseline_import(unsigned a, unsigned b) noexcept {
   return (a ^ b) + a;
 }
 

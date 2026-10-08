@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.vpopcntdq;
 
 #if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || \
@@ -22,27 +22,27 @@ constexpr auto count512 = native::target_features<native::x86>(
 constexpr auto countvl = native::feature_closure(count512 & native::x86_feature::avx512vl);
 
 #define NATIVE_COUNT_FIXTURES(width, reg, dmask, requirement, features) \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntd_##width##_plain(reg value) noexcept { \
     return native::vpopcntd<requirement>(native::simd<std::uint32_t, sizeof(value) / sizeof(std::uint32_t), requirement>::from_native(value)).to_native(); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntd_##width##_merge(reg source, dmask mask, reg value) noexcept { \
     return native::mask_vpopcntd<requirement>(native::simd<std::uint32_t, sizeof(source) / sizeof(std::uint32_t), requirement>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint32_t), requirement>::from_bitset(mask), native::simd<std::uint32_t, sizeof(value) / sizeof(std::uint32_t), requirement>::from_native(value)).to_native(); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntd_##width##_zero(dmask mask, reg value) noexcept { \
     return native::maskz_vpopcntd<requirement>(native::predicate<sizeof(value) / sizeof(std::uint32_t), requirement>::from_bitset(mask), native::simd<std::uint32_t, sizeof(value) / sizeof(std::uint32_t), requirement>::from_native(value)).to_native(); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntq_##width##_plain(reg value) noexcept { \
     return native::vpopcntq<requirement>(native::simd<std::uint64_t, sizeof(value) / sizeof(std::uint64_t), requirement>::from_native(value)).to_native(); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntq_##width##_merge(reg source, __mmask8 mask, reg value) noexcept { \
     return native::mask_vpopcntq<requirement>(native::simd<std::uint64_t, sizeof(source) / sizeof(std::uint64_t), requirement>::from_native(source), native::predicate<sizeof(source) / sizeof(std::uint64_t), requirement>::from_bitset(mask), native::simd<std::uint64_t, sizeof(value) / sizeof(std::uint64_t), requirement>::from_native(value)).to_native(); \
   } \
-  extern "C" native_noinline native_target(features NATIVE_COUNT_EXTRA_TARGETS) \
+  extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \
   reg native_vpopcntq_##width##_zero(__mmask8 mask, reg value) noexcept { \
     return native::maskz_vpopcntq<requirement>(native::predicate<sizeof(value) / sizeof(std::uint64_t), requirement>::from_bitset(mask), native::simd<std::uint64_t, sizeof(value) / sizeof(std::uint64_t), requirement>::from_native(value)).to_native(); \
   }
@@ -57,7 +57,7 @@ NATIVE_COUNT_FIXTURES(512, __m512i, __mmask16, count512,
 #undef NATIVE_COUNT_EXTRA_TARGETS
 
 // An ordinary function in the same translation unit retains its baseline.
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_vpopcntdq_baseline(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

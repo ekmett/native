@@ -6,54 +6,54 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   namespace detail {
     template <class V> struct trig_conversion;
     template <> struct trig_conversion<fp32x1> {
-      static native_inline uint32x1 integer(fp32x1 x) noexcept {
+      static hint_inline uint32x1 integer(fp32x1 x) noexcept {
         return uint32x1(static_cast<std::uint32_t>(x.value));
       }
-      static native_inline fp32x1 floating(uint32x1 x) noexcept {
+      static hint_inline fp32x1 floating(uint32x1 x) noexcept {
         return fp32x1(static_cast<float>(x.value));
       }
     };
 #if NATIVE_HAS_AVX2
     template <> struct trig_conversion<fp32x4> {
-      static native_inline uint32x4 integer(fp32x4 x) noexcept {
+      static hint_inline uint32x4 integer(fp32x4 x) noexcept {
         return uint32x4::from_native(_mm_cvttps_epi32(x.value));
       }
-      static native_inline fp32x4 floating(uint32x4 x) noexcept {
+      static hint_inline fp32x4 floating(uint32x4 x) noexcept {
         return fp32x4(_mm_cvtepi32_ps(x.value));
       }
     };
     template <> struct trig_conversion<fp32x8> {
-      static native_inline uint32x8 integer(fp32x8 x) noexcept {
+      static hint_inline uint32x8 integer(fp32x8 x) noexcept {
         return uint32x8::from_native(_mm256_cvttps_epi32(x.value));
       }
-      static native_inline fp32x8 floating(uint32x8 x) noexcept {
+      static hint_inline fp32x8 floating(uint32x8 x) noexcept {
         return fp32x8(_mm256_cvtepi32_ps(x.value));
       }
     };
 #endif
 #if NATIVE_HAS_AVX512F && NATIVE_HAS_AVX512DQ
     template <> struct trig_conversion<fp32x16> {
-      static native_inline uint32x16 integer(fp32x16 x) noexcept {
+      static hint_inline uint32x16 integer(fp32x16 x) noexcept {
         return uint32x16::from_native(_mm512_cvttps_epi32(x.value));
       }
-      static native_inline fp32x16 floating(uint32x16 x) noexcept {
+      static hint_inline fp32x16 floating(uint32x16 x) noexcept {
         return fp32x16(_mm512_cvtepi32_ps(x.value));
       }
     };
 #endif
 #if NATIVE_HAS_ARM_NEON
     template <> struct trig_conversion<fp32x4> {
-      static native_inline uint32x4 integer(fp32x4 x) noexcept {
+      static hint_inline uint32x4 integer(fp32x4 x) noexcept {
         return uint32x4::from_native(vreinterpretq_u8_s32(vcvtq_s32_f32(x.value)));
       }
-      static native_inline fp32x4 floating(uint32x4 x) noexcept {
+      static hint_inline fp32x4 floating(uint32x4 x) noexcept {
         return fp32x4(vcvtq_f32_s32(vreinterpretq_s32_u8(x.value)));
       }
     };
 #endif
     enum class trig_kind { sine, cosine, paired };
     template <trig_kind K, float_register V, std::size_t N>
-    native_flatten native_inline auto trig(std::array<V, N> const & input) noexcept {
+    hint_flatten hint_inline auto trig(std::array<V, N> const & input) noexcept {
       using B = fp32_bit_bridge<V>;
       using I = typename B::bits_type;
       using C = trig_conversion<V>;
@@ -107,15 +107,15 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
     }
   } // namespace detail
   template <float_register V, std::size_t N>
-  native_inline std::array<V, N> sin(std::array<V, N> const & x) noexcept {
+  hint_inline std::array<V, N> sin(std::array<V, N> const & x) noexcept {
     return detail::trig<detail::trig_kind::sine>(x);
   }
   template <float_register V, std::size_t N>
-  native_inline std::array<V, N> cos(std::array<V, N> const & x) noexcept {
+  hint_inline std::array<V, N> cos(std::array<V, N> const & x) noexcept {
     return detail::trig<detail::trig_kind::cosine>(x);
   }
   template <float_register V, std::size_t N>
-  native_inline std::pair<std::array<V, N>, std::array<V, N>> sincos(std::array<V, N> const & x) noexcept {
+  hint_inline std::pair<std::array<V, N>, std::array<V, N>> sincos(std::array<V, N> const & x) noexcept {
     return detail::trig<detail::trig_kind::paired>(x);
   }
 } // namespace NATIVE_BACKEND_NAMESPACE::native

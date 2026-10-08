@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/isa.h>
 #include <native/targets.h>
 
@@ -97,7 +97,7 @@ namespace {
   static_assert(feature_admission());
 }
 
-extern "C" native_noinline bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t state) noexcept {
+extern "C" hint_noinline bool native_vaes_admission(std::uint32_t feature_bits, std::uint64_t state) noexcept {
   snapshot cpu;
   cpu.leaf7_ecx = feature_bits;
   cpu.xcr0 = state;

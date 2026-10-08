@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if defined(__ADX__) || defined(__AVXIFMA__) || defined(__AVX512IFMA__) || defined(__AVX__)
 #error IFMA/ADX admission must run at the provider baseline
@@ -133,7 +133,7 @@ namespace ifma_fixture {
   }
   static_assert(boundary_cases());
 
-  native_noinline native_target("avxifma")
+  hint_noinline hint_target("avxifma")
   void evaluate_vex128(words<2> const & accumulator, words<2> const & a, words<2> const & b,
     std::uint64_t bits, results<2> & out) noexcept {
     using vector = native::simd<std::uint64_t, 2, vex>;
@@ -144,7 +144,7 @@ namespace ifma_fixture {
     native::madd52hi<vex>(sum, x, y).store(out[3].data());
   }
 
-  native_noinline native_target("avxifma")
+  hint_noinline hint_target("avxifma")
   void evaluate_vex256(words<4> const & accumulator, words<4> const & a, words<4> const & b,
     std::uint64_t bits, results<4> & out) noexcept {
     using vector = native::simd<std::uint64_t, 4, vex>;
@@ -155,7 +155,7 @@ namespace ifma_fixture {
     native::madd52hi<vex>(sum, x, y).store(out[3].data());
   }
 
-  native_noinline native_target("avx512ifma,avx512vl")
+  hint_noinline hint_target("avx512ifma,avx512vl")
   void evaluate_evex128(words<2> const & accumulator, words<2> const & a, words<2> const & b,
     std::uint64_t bits, results<2> & out) noexcept {
     using vector = native::simd<std::uint64_t, 2, evex_vl>;
@@ -171,7 +171,7 @@ namespace ifma_fixture {
     native::maskz_madd52hi<evex_vl>(mask, sum, x, y).store(out[5].data());
   }
 
-  native_noinline native_target("avx512ifma,avx512vl")
+  hint_noinline hint_target("avx512ifma,avx512vl")
   void evaluate_evex256(words<4> const & accumulator, words<4> const & a, words<4> const & b,
     std::uint64_t bits, results<4> & out) noexcept {
     using vector = native::simd<std::uint64_t, 4, evex_vl>;
@@ -187,7 +187,7 @@ namespace ifma_fixture {
     native::maskz_madd52hi<evex_vl>(mask, sum, x, y).store(out[5].data());
   }
 
-  native_noinline native_target("avx512ifma")
+  hint_noinline hint_target("avx512ifma")
   void evaluate_evex512(words<8> const & accumulator, words<8> const & a, words<8> const & b,
     std::uint64_t bits, results<8> & out) noexcept {
     using vector = native::simd<std::uint64_t, 8, evex>;
@@ -258,7 +258,7 @@ namespace ifma_fixture {
   }
 }
 
-extern "C" native_noinline unsigned native_ifma_baseline_import(unsigned a, unsigned b) noexcept {
+extern "C" hint_noinline unsigned native_ifma_baseline_import(unsigned a, unsigned b) noexcept {
   return (a ^ b) + a;
 }
 

@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <initializer_list>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_TEST_INTERFACE == 1
 import native.x86.avx512cd;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -22,7 +22,7 @@ import native;
 #include <cstdio>
 #include <initializer_list>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 inline constexpr auto cd512 = native::target_features<native::x86>("avx512f,avx512cd");
 inline constexpr auto cdvl = native::target_features<native::x86>("avx512f,avx512cd,avx512vl");
@@ -191,7 +191,7 @@ static_assert(boundary_d_result[1][4] == 17 && boundary_q_result[1][2] == 17);
 
 // Each native entry keeps its literal target visible at the baseline call boundary.
 template<class T, std::size_t N>
-native_noinline native_target("avx512f,avx512cd")
+hint_noinline hint_target("avx512f,avx512cd")
 void invoke_512(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, cd512>;
   auto value = vector_type::load(input);
@@ -215,7 +215,7 @@ void invoke_512(T * result, T const * input, T const * source, std::uint64_t mas
 }
 
 template<class T, std::size_t N>
-native_noinline native_target("avx512f,avx512cd,avx512vl")
+hint_noinline hint_target("avx512f,avx512cd,avx512vl")
 void invoke_vl(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, cdvl>;
   auto value = vector_type::load(input);
@@ -239,7 +239,7 @@ void invoke_vl(T * result, T const * input, T const * source, std::uint64_t mask
 }
 
 template<class T, std::size_t N>
-native_noinline native_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd")
+hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd")
 void invoke_broad(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, cd_broad>;
   auto value = vector_type::load(input);
@@ -356,7 +356,7 @@ bool check_vectors(std::uint64_t & state) {
   return true;
 }
 
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_avx512cd_baseline_import(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

@@ -8,7 +8,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <native/attributes.h>
+#include <hint.h>
 #include "support/guarded_pages.h"
 #include "../half_storage/native_bridge.h"
 import native;
@@ -83,33 +83,33 @@ extern "C" bool fp16_storage() {
   return true;
 }
 
-extern "C" native_noinline void fp16_add(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_add(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
   (B::load_bits(a)+B::load_bits(b)).store_bits(out);
 }
-extern "C" native_noinline void fp16_sub(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_sub(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
   (B::load_bits(a)-B::load_bits(b)).store_bits(out);
 }
-extern "C" native_noinline void fp16_mul(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_mul(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
   (B::load_bits(a)*B::load_bits(b)).store_bits(out);
 }
-extern "C" native_noinline void fp16_div(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_div(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
   (B::load_bits(a)/B::load_bits(b)).store_bits(out);
 }
-extern "C" native_noinline void fp16_sqrt(std::uint16_t const *a,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_sqrt(std::uint16_t const *a,std::uint16_t *out) noexcept {
   sqrt(B::load_bits(a)).store_bits(out);
 }
-extern "C" native_noinline void fp16_fma(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t const *c,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_fma(std::uint16_t const *a,std::uint16_t const *b,std::uint16_t const *c,std::uint16_t *out) noexcept {
   native::fma(B::load_bits(a),B::load_bits(b),B::load_bits(c)).store_bits(out);
 }
-extern "C" native_noinline void fp16_neg(std::uint16_t const *a,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_neg(std::uint16_t const *a,std::uint16_t *out) noexcept {
   (-B::load_bits(a)).store_bits(out);
 }
-extern "C" native_noinline void fp16_compare(std::uint16_t const *a,std::uint16_t const *b,std::uint64_t *out) noexcept {
+extern "C" hint_noinline void fp16_compare(std::uint16_t const *a,std::uint16_t const *b,std::uint64_t *out) noexcept {
   auto x=B::load_bits(a),y=B::load_bits(b);
   out[0]=(x==y).to_bitset();out[1]=(x!=y).to_bitset();
   out[2]=(x<y).to_bitset();out[3]=(x<=y).to_bitset();
   out[4]=(x>y).to_bitset();out[5]=(x>=y).to_bitset();
 }
-extern "C" native_noinline void fp16_select(std::uint64_t mask,std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
+extern "C" hint_noinline void fp16_select(std::uint64_t mask,std::uint16_t const *a,std::uint16_t const *b,std::uint16_t *out) noexcept {
   select(B::mask::from_bitset(mask),B::load_bits(a),B::load_bits(b)).store_bits(out);
 }

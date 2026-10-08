@@ -3,7 +3,7 @@
 import native;
 #include "checks.h"
 
-native_target("avx2,fma,f16c") native_noinline bool bridges() {
+hint_target("avx2,fma,f16c") hint_noinline bool bridges() {
   constexpr auto A = native::avx2 & native::x86_feature::f16c;
   using V = native::simd<float, 8, A>;
   V input(1.5f);

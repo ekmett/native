@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
 #include <cstdio>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_TEST_INTERFACE == 0
 #include <native/arm/crc.h>
 import native.arm.features;
@@ -32,7 +32,7 @@ std::uint32_t reference(std::uint32_t crc,std::uint64_t value,unsigned width,std
 std::uint64_t next(std::uint64_t & state) {
   state^=state<<13;state^=state>>7;state^=state<<17;return state;
 }
-native_target("crc") bool check() {
+hint_target("crc") bool check() {
   std::uint64_t state=0x123456789abcdefull;
   for(unsigned i=0;i<4096;++i) {
     auto acc=std::uint32_t(next(state));auto word=next(state);

@@ -40,7 +40,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sqadd(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -97,7 +97,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   uqadd(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -154,7 +154,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sqsub(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -211,7 +211,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   uqsub(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -267,7 +267,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
       (sizeof(T) == 2 || sizeof(T) == 4) && (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sqdmulh(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(a, b, [](auto x, auto y) {
@@ -308,7 +308,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
       (sizeof(T) == 2 || sizeof(T) == 4) && (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sqrdmulh(simd<T, N, Arch> a, simd<T, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(a, b, [](auto x, auto y) {
@@ -350,7 +350,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(a, b, [](auto x, auto y) {
@@ -408,7 +408,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   srshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -466,7 +466,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -524,7 +524,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   sqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -581,7 +581,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   ushl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(a, b, [](auto x, auto y) {
@@ -639,7 +639,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   urshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -697,7 +697,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   uqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -755,7 +755,7 @@ namespace native {
     requires(Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   uqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     if consteval {
       return detail::arm_neon_constant::binary(
@@ -811,7 +811,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
-  [[nodiscard]] native_inline native_target("neon") constexpr auto
+  [[nodiscard]] hint_inline hint_target("neon") constexpr auto
   sqxtn(simd<T, N, Arch> a) noexcept {
     using element =
         std::conditional_t<sizeof(T) == 2, std::int8_t,
@@ -849,7 +849,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
-  [[nodiscard]] native_inline native_target("neon") constexpr auto sqxtn_high(
+  [[nodiscard]] hint_inline hint_target("neon") constexpr auto sqxtn_high(
       simd<std::conditional_t<sizeof(T) == 2, std::int8_t,
                               std::conditional_t<sizeof(T) == 4, std::int16_t, std::int32_t>>,
            N, Arch>
@@ -899,7 +899,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
-  [[nodiscard]] native_inline native_target("neon") constexpr auto
+  [[nodiscard]] hint_inline hint_target("neon") constexpr auto
   uqxtn(simd<T, N, Arch> a) noexcept {
     using element =
         std::conditional_t<sizeof(T) == 2, std::uint8_t,
@@ -937,7 +937,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
-  [[nodiscard]] native_inline native_target("neon") constexpr auto uqxtn_high(
+  [[nodiscard]] hint_inline hint_target("neon") constexpr auto uqxtn_high(
       simd<std::conditional_t<sizeof(T) == 2, std::uint8_t,
                               std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>,
            N, Arch>
@@ -987,7 +987,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
-  [[nodiscard]] native_inline native_target("neon") constexpr auto
+  [[nodiscard]] hint_inline hint_target("neon") constexpr auto
   sqxtun(simd<T, N, Arch> a) noexcept {
     using element =
         std::conditional_t<sizeof(T) == 2, std::uint8_t,
@@ -1025,7 +1025,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8))
-  [[nodiscard]] native_inline native_target("neon") constexpr auto sqxtun_high(
+  [[nodiscard]] hint_inline hint_target("neon") constexpr auto sqxtun_high(
       simd<std::conditional_t<sizeof(T) == 2, std::uint8_t,
                               std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>,
            N, Arch>
@@ -1075,7 +1075,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) <= 4) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   clz(simd<T, N, Arch> a) noexcept {
     if consteval {
       return detail::arm_neon_bits::unary(a, [](T value) {
@@ -1107,7 +1107,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && (sizeof(T) <= 4) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   cls(simd<T, N, Arch> a) noexcept {
     if consteval {
       return detail::arm_neon_bits::unary(a, [](T value) {
@@ -1143,7 +1143,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   rbit(simd<T, N, Arch> a) noexcept {
     if consteval {
       return detail::arm_neon_bits::unary(a, [](T value) {
@@ -1168,7 +1168,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   rev16(simd<T, N, Arch> a) noexcept {
     if consteval {
       return detail::arm_neon_bits::reverse<16>(a);
@@ -1186,7 +1186,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) <= 2) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   rev32(simd<T, N, Arch> a) noexcept {
     if consteval {
       return detail::arm_neon_bits::reverse<32>(a);
@@ -1210,7 +1210,7 @@ namespace native {
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) <= 4) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16))
-  [[nodiscard]] native_inline native_target("neon") constexpr simd<T, N, Arch>
+  [[nodiscard]] hint_inline hint_target("neon") constexpr simd<T, N, Arch>
   rev64(simd<T, N, Arch> a) noexcept {
     if consteval {
       return detail::arm_neon_bits::reverse<64>(a);

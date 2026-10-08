@@ -20,7 +20,7 @@ namespace native {
 #endif
       ) &&
       requires { sizeof(simd<From, N, Arch>); sizeof(simd<To, 2 * N, Arch>); })
-  [[nodiscard]] native_inline constexpr native_const simd<To, 2 * N, Arch> narrow_concat(
+  [[nodiscard]] hint_inline constexpr hint_const simd<To, 2 * N, Arch> narrow_concat(
       simd<From, N, Arch> a, simd<From, N, Arch> b) noexcept {
     using result = simd<To, 2 * N, Arch>;
     if consteval {

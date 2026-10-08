@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.vaes;
 #if NATIVE_TEST_WIDTH == 128
 #define NATIVE_TEST_FULL_TARGET "avx,aes"
@@ -86,28 +86,28 @@ using vector = native::simd<std::uint8_t, NATIVE_TEST_WIDTH / 8, arch>;
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesenc(vector a, vector b) noexcept {
   return native::vaesenc<arch>(a, b);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesenclast(vector a, vector b) noexcept {
   return native::vaesenclast<arch>(a, b);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesdec(vector a, vector b) noexcept {
   return native::vaesdec<arch>(a, b);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vaesdeclast(vector a, vector b) noexcept {
   return native::vaesdeclast<arch>(a, b);
 }

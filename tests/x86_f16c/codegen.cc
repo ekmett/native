@@ -2,7 +2,7 @@
 #include <native/x86/f16c.h>
 constexpr native::isa<native::x86> arch{native::x86_feature::f16c};
 // Four-lane widening probes read exactly eight bytes in both interfaces.
-#define ENTRY extern "C" native_target("f16c,no-avx2,no-avx512fp16") native_noinline
+#define ENTRY extern "C" hint_target("f16c,no-avx2,no-avx512fp16") hint_noinline
 ENTRY std::uint16_t native_f16c_narrow1(float x) { return native::detail::x86_f16c::cvtss_sh<arch, 0>(x); }
 ENTRY __m128i native_f16c_narrow4(__m128 x) { return native::detail::x86_f16c::cvtps_ph<arch, 3>(x); }
 ENTRY __m128i native_f16c_narrow8(__m256 x) { return native::detail::x86_f16c::cvtps_ph<arch, 4>(x); }

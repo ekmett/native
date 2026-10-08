@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 
 #if defined(__SHA__) || defined(__AES__) || defined(__VAES__) || defined(__AVX__)
 #error Crypto admission must run at the provider baseline
@@ -179,7 +179,7 @@ namespace vaes_fixture {
     0x6b, 0x5b, 0xea, 0x43, 0x02, 0x6a, 0x50, 0x49};
   static_assert(constant<vex128, 16>(initial, round_key)[0] == first);
 
-  native_noinline native_target("avx,aes")
+  hint_noinline hint_target("avx,aes")
   void evaluate128(block<16> const & a, block<16> const & key, results<16> & out) noexcept {
     using vector = native::simd<std::uint8_t, 16, vex128>;
     auto x = vector::load(a.data());
@@ -190,7 +190,7 @@ namespace vaes_fixture {
     native::vaesdeclast<vex128>(x, y).store(out[3].data());
   }
 
-  native_noinline native_target("avx,vaes")
+  hint_noinline hint_target("avx,vaes")
   void evaluate256(block<32> const & a, block<32> const & key, results<32> & out) noexcept {
     using vector = native::simd<std::uint8_t, 32, vex256>;
     auto x = vector::load(a.data());
@@ -201,7 +201,7 @@ namespace vaes_fixture {
     native::vaesdeclast<vex256>(x, y).store(out[3].data());
   }
 
-  native_noinline native_target("avx512f,vaes")
+  hint_noinline hint_target("avx512f,vaes")
   void evaluate512(block<64> const & a, block<64> const & key, results<64> & out) noexcept {
     using vector = native::simd<std::uint8_t, 64, evex512>;
     auto x = vector::load(a.data());
@@ -251,7 +251,7 @@ namespace vaes_fixture {
   }
 }
 
-extern "C" native_noinline unsigned native_vaes_baseline_import(unsigned a, unsigned b) noexcept {
+extern "C" hint_noinline unsigned native_vaes_baseline_import(unsigned a, unsigned b) noexcept {
   return (a ^ b) + a;
 }
 

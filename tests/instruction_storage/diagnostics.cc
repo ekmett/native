@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-#include <native/attributes.h>
+#include <hint.h>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -10,10 +10,10 @@ import native.simd;
 #endif
 #if defined(__aarch64__) || defined(_M_ARM64)
 constexpr auto diagnostic_arch=native::neon;
-#define diagnostic_target native_target("neon")
+#define diagnostic_target hint_target("neon")
 #else
 constexpr auto diagnostic_arch=native::avx2;
-#define diagnostic_target native_target("avx2,fma")
+#define diagnostic_target hint_target("avx2,fma")
 #endif
 using I=native::simd<std::int32_t,4,diagnostic_arch>;
 using F=native::simd<float,4,diagnostic_arch>;

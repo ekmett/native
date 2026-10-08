@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/config.h>
-#include <native/attributes.h>
+#include <hint.h>
 #include <cmath>
 #if NATIVE_HOST_NEON
 #include <arm_neon.h>
@@ -11,11 +11,11 @@ import native.simd;
 using namespace native;
 
 #define PAIR(name,attribute,T,V,public_expression,raw_expression) \
-extern "C" attribute native_noinline T native_float_##name(T a,T b,T c) { \
+extern "C" attribute hint_noinline T native_float_##name(T a,T b,T c) { \
   auto x=V::from_native(a),y=V::from_native(b),z=V::from_native(c); \
   return (public_expression).to_native(); \
 } \
-extern "C" attribute native_noinline T native_float_##name##_raw(T a,T b,T c) {return raw_expression;}
+extern "C" attribute hint_noinline T native_float_##name##_raw(T a,T b,T c) {return raw_expression;}
 using scalar_float=simd<float,1,scalar>;
 PAIR(scalar_add,,float,scalar_float,x+y,a+b)
 PAIR(scalar_sub,,float,scalar_float,x-y,a-b)
@@ -28,7 +28,7 @@ PAIR(scalar_ceil,,float,scalar_float,ceil(x),std::ceil(a))
 PAIR(scalar_neg,,float,scalar_float,-x,-a)
 #if NATIVE_HOST_NEON
 using native_float4=simd<float,4,neon>;
-#define FULL(name,expression,raw) PAIR(arm4_##name,native_target("neon"),float32x4_t,native_float4,expression,raw)
+#define FULL(name,expression,raw) PAIR(arm4_##name,hint_target("neon"),float32x4_t,native_float4,expression,raw)
 FULL(add,x+y,vaddq_f32(a,b))
 FULL(sub,x-y,vsubq_f32(a,b))
 FULL(mul,x*y,vmulq_f32(a,b))
@@ -40,13 +40,13 @@ FULL(ceil,ceil(x),vrndpq_f32(a))
 FULL(round,round_even(x),vrndnq_f32(a))
 #undef FULL
 #define SHORT_ARCH neon
-#define SHORT_TARGET native_target("neon")
+#define SHORT_TARGET hint_target("neon")
 #define SHORT_FMA(a,b,c) __builtin_bit_cast(short_native,vfmaq_f32(__builtin_bit_cast(float32x4_t,c),__builtin_bit_cast(float32x4_t,a),__builtin_bit_cast(float32x4_t,b)))
 #elif NATIVE_HOST_X86
 using native_float4=simd<float,4,avx2>;
 using native_float8=simd<float,8,avx2>;
 using native_float16=simd<float,16,avx512>;
-#define FULL(name,expression,raw) PAIR(x86_4_##name,native_target("avx2,fma"),__m128,native_float4,expression,raw)
+#define FULL(name,expression,raw) PAIR(x86_4_##name,hint_target("avx2,fma"),__m128,native_float4,expression,raw)
 FULL(add,x+y,_mm_add_ps(a,b))
 FULL(sub,x-y,_mm_sub_ps(a,b))
 FULL(mul,x*y,_mm_mul_ps(a,b))
@@ -57,7 +57,7 @@ FULL(floor,floor(x),_mm_round_ps(a,_MM_FROUND_TO_NEG_INF|_MM_FROUND_NO_EXC))
 FULL(ceil,ceil(x),_mm_round_ps(a,_MM_FROUND_TO_POS_INF|_MM_FROUND_NO_EXC))
 FULL(round,round_even(x),_mm_round_ps(a,_MM_FROUND_TO_NEAREST_INT|_MM_FROUND_NO_EXC))
 #undef FULL
-#define FULL(name,expression,raw) PAIR(x86_8_##name,native_target("avx2,fma"),__m256,native_float8,expression,raw)
+#define FULL(name,expression,raw) PAIR(x86_8_##name,hint_target("avx2,fma"),__m256,native_float8,expression,raw)
 FULL(add,x+y,_mm256_add_ps(a,b))
 FULL(sub,x-y,_mm256_sub_ps(a,b))
 FULL(mul,x*y,_mm256_mul_ps(a,b))
@@ -68,7 +68,7 @@ FULL(floor,floor(x),_mm256_round_ps(a,_MM_FROUND_TO_NEG_INF|_MM_FROUND_NO_EXC))
 FULL(ceil,ceil(x),_mm256_round_ps(a,_MM_FROUND_TO_POS_INF|_MM_FROUND_NO_EXC))
 FULL(round,round_even(x),_mm256_round_ps(a,_MM_FROUND_TO_NEAREST_INT|_MM_FROUND_NO_EXC))
 #undef FULL
-#define FULL(name,expression,raw) PAIR(x86_16_##name,native_target("avx512f,avx512dq,avx512bw,avx512vl,avx2,fma"),__m512,native_float16,expression,raw)
+#define FULL(name,expression,raw) PAIR(x86_16_##name,hint_target("avx512f,avx512dq,avx512bw,avx512vl,avx2,fma"),__m512,native_float16,expression,raw)
 FULL(add,x+y,_mm512_add_ps(a,b))
 FULL(sub,x-y,_mm512_sub_ps(a,b))
 FULL(mul,x*y,_mm512_mul_ps(a,b))
@@ -80,7 +80,7 @@ FULL(ceil,ceil(x),_mm512_roundscale_ps(a,_MM_FROUND_TO_POS_INF|_MM_FROUND_NO_EXC
 FULL(round,round_even(x),_mm512_roundscale_ps(a,_MM_FROUND_TO_NEAREST_INT|_MM_FROUND_NO_EXC))
 #undef FULL
 #define SHORT_ARCH avx2
-#define SHORT_TARGET native_target("avx2,fma")
+#define SHORT_TARGET hint_target("avx2,fma")
 #define SHORT_FMA(a,b,c) __builtin_bit_cast(short_native,_mm_fmadd_ps(__builtin_bit_cast(__m128,a),__builtin_bit_cast(__m128,b),__builtin_bit_cast(__m128,c)))
 #endif
 #if NATIVE_HOST_X86 || NATIVE_HOST_NEON

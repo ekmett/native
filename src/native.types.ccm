@@ -10,7 +10,7 @@ module;
 #if !defined(_MSC_VER) && __has_include(<cxxabi.h>)
 #include <cxxabi.h>
 #endif
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/mask_traits.h"
 
 export module native.types;

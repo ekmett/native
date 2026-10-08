@@ -6,6 +6,6 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdio>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/targets.h>
 #pragma STDC FENV_ACCESS ON

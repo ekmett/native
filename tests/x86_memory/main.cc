@@ -7,7 +7,7 @@
 #include <cstring>
 #include <limits>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_TEST_INTERFACE == 2
 import native;
 #else
@@ -64,7 +64,7 @@ inline constexpr auto profile_1 = native::target_features<native::x86>("avx512f"
 inline constexpr auto profile_2 = native::target_features<native::x86>("avx512f,avx512vl");
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_0(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -93,7 +93,7 @@ static_assert(check_0<4,float>());
 static_assert(check_0<8,float>());
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_1(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -123,7 +123,7 @@ static_assert(check_1<4,float>());
 static_assert(check_1<8,float>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_1(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -147,7 +147,7 @@ bool guard_1(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_2(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -175,7 +175,7 @@ static_assert(check_2<4,float>());
 static_assert(check_2<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_2(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -197,7 +197,7 @@ bool guard_2(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_3(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -225,7 +225,7 @@ static_assert(check_3<4,float>());
 static_assert(check_3<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_3(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -241,7 +241,7 @@ bool guard_3(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_4(int seed = 0) {
   using value_type = native::simd<T,8,profile_0>;
   using index_type = native::simd<std::int32_t,8,profile_0>;
@@ -270,7 +270,7 @@ static_assert(check_4<4,float>());
 static_assert(check_4<8,float>());
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_5(int seed = 0) {
   using value_type = native::simd<T,8,profile_0>;
   using index_type = native::simd<std::int32_t,8,profile_0>;
@@ -300,7 +300,7 @@ static_assert(check_5<4,float>());
 static_assert(check_5<8,float>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_5(T * base) {
   using value_type = native::simd<T,8,profile_0>;
   using index_type = native::simd<std::int32_t,8,profile_0>;
@@ -324,7 +324,7 @@ bool guard_5(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_6(int seed = 0) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -352,7 +352,7 @@ static_assert(check_6<4,float>());
 static_assert(check_6<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_6(T * base) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -374,7 +374,7 @@ bool guard_6(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_7(int seed = 0) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -402,7 +402,7 @@ static_assert(check_7<4,float>());
 static_assert(check_7<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_7(T * base) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -418,7 +418,7 @@ bool guard_7(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_8(int seed = 0) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -446,7 +446,7 @@ static_assert(check_8<4,float>());
 static_assert(check_8<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_8(T * base) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -468,7 +468,7 @@ bool guard_8(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_9(int seed = 0) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -496,7 +496,7 @@ static_assert(check_9<4,float>());
 static_assert(check_9<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_9(T * base) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -512,7 +512,7 @@ bool guard_9(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_10(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -545,7 +545,7 @@ static_assert(check_10<4,std::uint32_t>());
 static_assert(check_10<8,std::uint32_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_11(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -579,7 +579,7 @@ static_assert(check_11<4,std::uint32_t>());
 static_assert(check_11<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_11(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -603,7 +603,7 @@ bool guard_11(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_12(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -635,7 +635,7 @@ static_assert(check_12<4,std::uint32_t>());
 static_assert(check_12<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_12(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -657,7 +657,7 @@ bool guard_12(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_13(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -689,7 +689,7 @@ static_assert(check_13<4,std::uint32_t>());
 static_assert(check_13<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_13(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -705,7 +705,7 @@ bool guard_13(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_14(int seed = 0) {
   using value_type = native::simd<T,8,profile_0>;
   using index_type = native::simd<std::int32_t,8,profile_0>;
@@ -738,7 +738,7 @@ static_assert(check_14<4,std::uint32_t>());
 static_assert(check_14<8,std::uint32_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_15(int seed = 0) {
   using value_type = native::simd<T,8,profile_0>;
   using index_type = native::simd<std::int32_t,8,profile_0>;
@@ -772,7 +772,7 @@ static_assert(check_15<4,std::uint32_t>());
 static_assert(check_15<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_15(T * base) {
   using value_type = native::simd<T,8,profile_0>;
   using index_type = native::simd<std::int32_t,8,profile_0>;
@@ -796,7 +796,7 @@ bool guard_15(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_16(int seed = 0) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -828,7 +828,7 @@ static_assert(check_16<4,std::uint32_t>());
 static_assert(check_16<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_16(T * base) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -850,7 +850,7 @@ bool guard_16(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_17(int seed = 0) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -882,7 +882,7 @@ static_assert(check_17<4,std::uint32_t>());
 static_assert(check_17<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_17(T * base) {
   using value_type = native::simd<T,8,profile_2>;
   using index_type = native::simd<std::int32_t,8,profile_2>;
@@ -898,7 +898,7 @@ bool guard_17(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_18(int seed = 0) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -930,7 +930,7 @@ static_assert(check_18<4,std::uint32_t>());
 static_assert(check_18<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_18(T * base) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -952,7 +952,7 @@ bool guard_18(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_19(int seed = 0) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -984,7 +984,7 @@ static_assert(check_19<4,std::uint32_t>());
 static_assert(check_19<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_19(T * base) {
   using value_type = native::simd<T,16,profile_1>;
   using index_type = native::simd<std::int32_t,16,profile_1>;
@@ -1000,7 +1000,7 @@ bool guard_19(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_20(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1030,7 +1030,7 @@ static_assert(check_20<4,double>());
 static_assert(check_20<8,double>());
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_21(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1061,7 +1061,7 @@ static_assert(check_21<4,double>());
 static_assert(check_21<8,double>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_21(T * base) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1085,7 +1085,7 @@ bool guard_21(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_22(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1114,7 +1114,7 @@ static_assert(check_22<4,double>());
 static_assert(check_22<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_22(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1136,7 +1136,7 @@ bool guard_22(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_23(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1165,7 +1165,7 @@ static_assert(check_23<4,double>());
 static_assert(check_23<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_23(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1181,7 +1181,7 @@ bool guard_23(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_24(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1210,7 +1210,7 @@ static_assert(check_24<4,double>());
 static_assert(check_24<8,double>());
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_25(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1240,7 +1240,7 @@ static_assert(check_25<4,double>());
 static_assert(check_25<8,double>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_25(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1264,7 +1264,7 @@ bool guard_25(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_26(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1292,7 +1292,7 @@ static_assert(check_26<4,double>());
 static_assert(check_26<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_26(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1314,7 +1314,7 @@ bool guard_26(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_27(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1342,7 +1342,7 @@ static_assert(check_27<4,double>());
 static_assert(check_27<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_27(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1358,7 +1358,7 @@ bool guard_27(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_28(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1386,7 +1386,7 @@ static_assert(check_28<4,double>());
 static_assert(check_28<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_28(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1408,7 +1408,7 @@ bool guard_28(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_29(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1436,7 +1436,7 @@ static_assert(check_29<4,double>());
 static_assert(check_29<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_29(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1452,7 +1452,7 @@ bool guard_29(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_30(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1486,7 +1486,7 @@ static_assert(check_30<4,std::uint64_t>());
 static_assert(check_30<8,std::uint64_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_31(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1521,7 +1521,7 @@ static_assert(check_31<4,std::uint64_t>());
 static_assert(check_31<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_31(T * base) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1545,7 +1545,7 @@ bool guard_31(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_32(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1578,7 +1578,7 @@ static_assert(check_32<4,std::uint64_t>());
 static_assert(check_32<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_32(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1600,7 +1600,7 @@ bool guard_32(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_33(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1633,7 +1633,7 @@ static_assert(check_33<4,std::uint64_t>());
 static_assert(check_33<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_33(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1649,7 +1649,7 @@ bool guard_33(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_34(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1682,7 +1682,7 @@ static_assert(check_34<4,std::uint64_t>());
 static_assert(check_34<8,std::uint64_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_35(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1716,7 +1716,7 @@ static_assert(check_35<4,std::uint64_t>());
 static_assert(check_35<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_35(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int32_t,4,profile_0>;
@@ -1740,7 +1740,7 @@ bool guard_35(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_36(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1772,7 +1772,7 @@ static_assert(check_36<4,std::uint64_t>());
 static_assert(check_36<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_36(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1794,7 +1794,7 @@ bool guard_36(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_37(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1826,7 +1826,7 @@ static_assert(check_37<4,std::uint64_t>());
 static_assert(check_37<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_37(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int32_t,4,profile_2>;
@@ -1842,7 +1842,7 @@ bool guard_37(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_38(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1874,7 +1874,7 @@ static_assert(check_38<4,std::uint64_t>());
 static_assert(check_38<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_38(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1896,7 +1896,7 @@ bool guard_38(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_39(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1928,7 +1928,7 @@ static_assert(check_39<4,std::uint64_t>());
 static_assert(check_39<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_39(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int32_t,8,profile_1>;
@@ -1944,7 +1944,7 @@ bool guard_39(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_40(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -1973,7 +1973,7 @@ static_assert(check_40<4,float>());
 static_assert(check_40<8,float>());
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_41(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2003,7 +2003,7 @@ static_assert(check_41<4,float>());
 static_assert(check_41<8,float>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_41(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2027,7 +2027,7 @@ bool guard_41(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_42(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2055,7 +2055,7 @@ static_assert(check_42<4,float>());
 static_assert(check_42<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_42(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2077,7 +2077,7 @@ bool guard_42(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_43(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2105,7 +2105,7 @@ static_assert(check_43<4,float>());
 static_assert(check_43<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_43(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2121,7 +2121,7 @@ bool guard_43(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_44(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -2150,7 +2150,7 @@ static_assert(check_44<4,float>());
 static_assert(check_44<8,float>());
 
 template<int Scale, class T = float>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_45(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -2180,7 +2180,7 @@ static_assert(check_45<4,float>());
 static_assert(check_45<8,float>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_45(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -2204,7 +2204,7 @@ bool guard_45(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_46(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2232,7 +2232,7 @@ static_assert(check_46<4,float>());
 static_assert(check_46<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_46(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2254,7 +2254,7 @@ bool guard_46(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_47(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2282,7 +2282,7 @@ static_assert(check_47<4,float>());
 static_assert(check_47<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_47(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2298,7 +2298,7 @@ bool guard_47(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_48(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2326,7 +2326,7 @@ static_assert(check_48<4,float>());
 static_assert(check_48<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_48(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2348,7 +2348,7 @@ bool guard_48(T * base) {
 }
 
 template<int Scale, class T = float>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_49(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2376,7 +2376,7 @@ static_assert(check_49<4,float>());
 static_assert(check_49<8,float>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_49(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2392,7 +2392,7 @@ bool guard_49(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_50(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2425,7 +2425,7 @@ static_assert(check_50<4,std::uint32_t>());
 static_assert(check_50<8,std::uint32_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_51(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2459,7 +2459,7 @@ static_assert(check_51<4,std::uint32_t>());
 static_assert(check_51<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_51(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2483,7 +2483,7 @@ bool guard_51(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_52(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2515,7 +2515,7 @@ static_assert(check_52<4,std::uint32_t>());
 static_assert(check_52<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_52(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2537,7 +2537,7 @@ bool guard_52(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_53(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2569,7 +2569,7 @@ static_assert(check_53<4,std::uint32_t>());
 static_assert(check_53<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_53(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2585,7 +2585,7 @@ bool guard_53(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_54(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -2618,7 +2618,7 @@ static_assert(check_54<4,std::uint32_t>());
 static_assert(check_54<8,std::uint32_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_55(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -2652,7 +2652,7 @@ static_assert(check_55<4,std::uint32_t>());
 static_assert(check_55<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_55(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -2676,7 +2676,7 @@ bool guard_55(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_56(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2708,7 +2708,7 @@ static_assert(check_56<4,std::uint32_t>());
 static_assert(check_56<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_56(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2730,7 +2730,7 @@ bool guard_56(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_57(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2762,7 +2762,7 @@ static_assert(check_57<4,std::uint32_t>());
 static_assert(check_57<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_57(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -2778,7 +2778,7 @@ bool guard_57(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_58(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2810,7 +2810,7 @@ static_assert(check_58<4,std::uint32_t>());
 static_assert(check_58<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_58(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2832,7 +2832,7 @@ bool guard_58(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_59(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2864,7 +2864,7 @@ static_assert(check_59<4,std::uint32_t>());
 static_assert(check_59<8,std::uint32_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_59(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -2880,7 +2880,7 @@ bool guard_59(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_60(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2909,7 +2909,7 @@ static_assert(check_60<4,double>());
 static_assert(check_60<8,double>());
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_61(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2939,7 +2939,7 @@ static_assert(check_61<4,double>());
 static_assert(check_61<8,double>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_61(T * base) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -2963,7 +2963,7 @@ bool guard_61(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_62(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -2991,7 +2991,7 @@ static_assert(check_62<4,double>());
 static_assert(check_62<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_62(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3013,7 +3013,7 @@ bool guard_62(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_63(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3041,7 +3041,7 @@ static_assert(check_63<4,double>());
 static_assert(check_63<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_63(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3057,7 +3057,7 @@ bool guard_63(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_64(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -3086,7 +3086,7 @@ static_assert(check_64<4,double>());
 static_assert(check_64<8,double>());
 
 template<int Scale, class T = double>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_65(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -3116,7 +3116,7 @@ static_assert(check_65<4,double>());
 static_assert(check_65<8,double>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_65(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -3140,7 +3140,7 @@ bool guard_65(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_66(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3168,7 +3168,7 @@ static_assert(check_66<4,double>());
 static_assert(check_66<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_66(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3190,7 +3190,7 @@ bool guard_66(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_67(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3218,7 +3218,7 @@ static_assert(check_67<4,double>());
 static_assert(check_67<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_67(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3234,7 +3234,7 @@ bool guard_67(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_68(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3262,7 +3262,7 @@ static_assert(check_68<4,double>());
 static_assert(check_68<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_68(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3284,7 +3284,7 @@ bool guard_68(T * base) {
 }
 
 template<int Scale, class T = double>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_69(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3312,7 +3312,7 @@ static_assert(check_69<4,double>());
 static_assert(check_69<8,double>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_69(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3328,7 +3328,7 @@ bool guard_69(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_70(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -3361,7 +3361,7 @@ static_assert(check_70<4,std::uint64_t>());
 static_assert(check_70<8,std::uint64_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_71(int seed = 0) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -3395,7 +3395,7 @@ static_assert(check_71<4,std::uint64_t>());
 static_assert(check_71<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_71(T * base) {
   using value_type = native::simd<T,2,profile_0>;
   using index_type = native::simd<std::int64_t,2,profile_0>;
@@ -3419,7 +3419,7 @@ bool guard_71(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_72(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3451,7 +3451,7 @@ static_assert(check_72<4,std::uint64_t>());
 static_assert(check_72<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_72(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3473,7 +3473,7 @@ bool guard_72(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_73(int seed = 0) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3505,7 +3505,7 @@ static_assert(check_73<4,std::uint64_t>());
 static_assert(check_73<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_73(T * base) {
   using value_type = native::simd<T,2,profile_2>;
   using index_type = native::simd<std::int64_t,2,profile_2>;
@@ -3521,7 +3521,7 @@ bool guard_73(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_74(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -3554,7 +3554,7 @@ static_assert(check_74<4,std::uint64_t>());
 static_assert(check_74<8,std::uint64_t>());
 
 template<int Scale, class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 constexpr bool check_75(int seed = 0) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -3588,7 +3588,7 @@ static_assert(check_75<4,std::uint64_t>());
 static_assert(check_75<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool guard_75(T * base) {
   using value_type = native::simd<T,4,profile_0>;
   using index_type = native::simd<std::int64_t,4,profile_0>;
@@ -3612,7 +3612,7 @@ bool guard_75(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_76(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3644,7 +3644,7 @@ static_assert(check_76<4,std::uint64_t>());
 static_assert(check_76<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_76(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3666,7 +3666,7 @@ bool guard_76(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 constexpr bool check_77(int seed = 0) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3698,7 +3698,7 @@ static_assert(check_77<4,std::uint64_t>());
 static_assert(check_77<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool guard_77(T * base) {
   using value_type = native::simd<T,4,profile_2>;
   using index_type = native::simd<std::int64_t,4,profile_2>;
@@ -3714,7 +3714,7 @@ bool guard_77(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_78(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3746,7 +3746,7 @@ static_assert(check_78<4,std::uint64_t>());
 static_assert(check_78<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_78(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3768,7 +3768,7 @@ bool guard_78(T * base) {
 }
 
 template<int Scale, class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 constexpr bool check_79(int seed = 0) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3800,7 +3800,7 @@ static_assert(check_79<4,std::uint64_t>());
 static_assert(check_79<8,std::uint64_t>());
 
 template<class T>
-native_noinline native_target("avx512f")
+hint_noinline hint_target("avx512f")
 bool guard_79(T * base) {
   using value_type = native::simd<T,8,profile_1>;
   using index_type = native::simd<std::int64_t,8,profile_1>;
@@ -3818,7 +3818,7 @@ bool guard_79(T * base) {
 
 // Runtime-only byte addressing uses memcpy oracles so no misaligned C++ lvalue
 // is formed. Forward writes independently model partially overlapping stores.
-native_noinline native_target("avx2")
+hint_noinline hint_target("avx2")
 bool check_unaligned_avx2() {
   using v = native::simd<std::uint32_t,4,profile_0>;
   using i = native::simd<std::int32_t,4,profile_0>;
@@ -3835,7 +3835,7 @@ bool check_unaligned_avx2() {
   return result == std::array<std::uint32_t,4>{expected[0],0,expected[2],0};
 }
 
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 bool check_unaligned_avx512() {
   using v = native::simd<std::uint32_t,4,profile_2>;
   using i = native::simd<std::int32_t,4,profile_2>;

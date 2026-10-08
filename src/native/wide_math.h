@@ -145,21 +145,21 @@ namespace wide::detail {
     ((native_pack_argument<A> || native_leaf_argument<A>) && ...) &&
     (lift_size_matches<lift_size<A...>(),A>() && ...) && lift_result_valid<F,A...>();
   template<std::size_t I,class A>
-  native_inline constexpr decltype(auto) lift_operand(A const & value) {
+  hint_inline constexpr decltype(auto) lift_operand(A const & value) {
     if constexpr (pack<A>) return std::get<I>(value);
     else return (value);
   }
   template<std::size_t I,class F,class... A>
-  native_inline constexpr auto lift_element(F const & function,A const &... arguments) {
+  hint_inline constexpr auto lift_element(F const & function,A const &... arguments) {
     return function(lift_operand<I>(arguments)...);
   }
   template<class F,class... A,std::size_t... I>
-  native_inline constexpr auto lift_array(F const & function,std::index_sequence<I...>,A const &... arguments) {
+  hint_inline constexpr auto lift_array(F const & function,std::index_sequence<I...>,A const &... arguments) {
     using R=std::remove_cvref_t<std::invoke_result_t<F const &,lift_argument_t<A> const &...>>;
     return std::array<R,sizeof...(I)>{{lift_element<I>(function,arguments...)...}};
   }
   template<class F,class... A> requires liftable<F,A...>
-  native_inline constexpr auto lift(F function,A const &... arguments) {
+  hint_inline constexpr auto lift(F function,A const &... arguments) {
     return lift_array(function,std::make_index_sequence<lift_size<A...>()>{},arguments...);
   }
 
@@ -168,7 +168,7 @@ namespace wide::detail {
   struct name { \
     template<class V> \
       requires requires(V a) { a op a; } \
-    native_inline constexpr auto operator()(V const & a, V const & b) const { \
+    hint_inline constexpr auto operator()(V const & a, V const & b) const { \
       return native_ops<V>::bridge(a, b); \
     } \
   };
@@ -192,7 +192,7 @@ namespace wide::detail {
   struct name { \
     template<class V> \
       requires requires(V a) { { op a } -> std::same_as<V>; } \
-    native_inline constexpr auto operator()(V const & a) const { \
+    hint_inline constexpr auto operator()(V const & a) const { \
       return native_ops<V>::bridge(a); \
     } \
   };
@@ -206,7 +206,7 @@ namespace wide::detail {
   struct name { \
     template<class V> \
       requires requires(V a) { { operation(a) } -> std::same_as<V>; } \
-    native_inline constexpr auto operator()(V const & a) const { \
+    hint_inline constexpr auto operator()(V const & a) const { \
       return native_ops<V>::bridge(a); \
     } \
   };
@@ -220,100 +220,100 @@ namespace wide::detail {
 #undef NATIVE_WIDE_UNARY_MATH
   struct minimum {
     template<class V> requires requires(V a) { select(a<a,a,a); }
-    native_inline constexpr auto operator()(V const & a,V const & b) const { return native_ops<V>::minimum(a,b); }
+    hint_inline constexpr auto operator()(V const & a,V const & b) const { return native_ops<V>::minimum(a,b); }
   };
   struct maximum {
     template<class V> requires requires(V a) { select(a>a,a,a); }
-    native_inline constexpr auto operator()(V const & a,V const & b) const { return native_ops<V>::maximum(a,b); }
+    hint_inline constexpr auto operator()(V const & a,V const & b) const { return native_ops<V>::maximum(a,b); }
   };
   struct fused {
     template<class V> requires requires(V a) { fma(a,a,a); }
-    native_inline constexpr auto operator()(V const & a,V const & b,V const & c) const { return native_ops<V>::fused(a,b,c); }
+    hint_inline constexpr auto operator()(V const & a,V const & b,V const & c) const { return native_ops<V>::fused(a,b,c); }
   };
   struct polynomial_madd {
     template<class V>
-    native_inline constexpr auto operator()(V const & a,V const & b,V const & c) const {
+    hint_inline constexpr auto operator()(V const & a,V const & b,V const & c) const {
       return native_ops<V>::polynomial_madd(a,b,c);
     }
   };
   struct exp_power_operation {
     template<class V>
-    native_inline constexpr auto operator()(V const & n) const { return native_ops<V>::exp_power(n); }
+    hint_inline constexpr auto operator()(V const & n) const { return native_ops<V>::exp_power(n); }
   };
   template<class P> requires liftable<exp_power_operation,P>
-  native_inline constexpr auto exp_power(P const & n) noexcept { return lift(exp_power_operation{},n); }
+  hint_inline constexpr auto exp_power(P const & n) noexcept { return lift(exp_power_operation{},n); }
   struct exp_scale {
     template<class M,class V>
-    native_inline constexpr auto operator()(M const & m,V const & replacement,V const & a,V const & n) const {
+    hint_inline constexpr auto operator()(M const & m,V const & replacement,V const & a,V const & n) const {
       return native_ops<V>::exp_scale(m,replacement,a,n);
     }
   };
   template<class P,class Q,class R> requires liftable<polynomial_madd,P,Q,R>
-  native_inline constexpr auto madd(P const & a,Q const & b,R const & c) noexcept {
+  hint_inline constexpr auto madd(P const & a,Q const & b,R const & c) noexcept {
     return lift(polynomial_madd{},a,b,c);
   }
   template<class M,class P,class Q> requires liftable<exp_scale,M,P,P,Q>
-  native_inline constexpr auto scale_exp(M const & in_range,P const & replacement,P const & y,Q const & n) noexcept {
+  hint_inline constexpr auto scale_exp(M const & in_range,P const & replacement,P const & y,Q const & n) noexcept {
     return lift(exp_scale{},in_range,replacement,y,n);
   }
   struct scale {
     template<class M,class V> requires requires(M m,V a) { masked_scaleb_zero(m,a,a); }
-    native_inline constexpr auto operator()(M const & m,V const & a,V const & n) const { return native_ops<V>::scale(m,a,n); }
+    hint_inline constexpr auto operator()(M const & m,V const & a,V const & n) const { return native_ops<V>::scale(m,a,n); }
   };
   struct scale_all {
     template<class V> requires requires(V a) { scaleb(a,a); }
-    native_inline constexpr auto operator()(V const & a,V const & n) const { return native_ops<V>::scale_all(a,n); }
+    hint_inline constexpr auto operator()(V const & a,V const & n) const { return native_ops<V>::scale_all(a,n); }
   };
   struct choose {
     template<class M,class V> requires requires(M m,V a) { select(m,a,a); }
-    native_inline constexpr auto operator()(M const & m,V const & a,V const & b) const { return native_ops<V>::choose(m,a,b); }
+    hint_inline constexpr auto operator()(M const & m,V const & a,V const & b) const { return native_ops<V>::choose(m,a,b); }
   };
   struct scale_merge {
     template<class M,class V> requires requires(M m,V a) { masked_scaleb(m,a,a,a); }
-    native_inline constexpr auto operator()(M const & m,V const & prior,V const & a,V const & n) const {
+    hint_inline constexpr auto operator()(M const & m,V const & prior,V const & a,V const & n) const {
       return native_ops<V>::scale_merge(m,prior,a,n);
     }
   };
   struct encode {
     template<class V> requires std::same_as<typename V::value_type,float> && requires(V a) { a.bits(); }
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::encode(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::encode(a); }
   };
   struct decode {
     template<class V> requires std::same_as<typename V::value_type,std::uint32_t> &&
       requires(V a) { V::template rebind<float>::from_bits(a); }
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::decode(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::decode(a); }
   };
   template<unsigned Shift> struct shift_left {
     template<class V> requires requires(V a) { a.template left<Shift>(); }
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template left<Shift>(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template left<Shift>(a); }
   };
   template<unsigned Shift> struct shift_right {
     template<class V> requires requires(V a) { a.template right<Shift>(); }
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template right<Shift>(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template right<Shift>(a); }
   };
   template<class T> struct mask_words {
     template<class V> requires requires(V a) { ::native::mask_bits<T>(a); }
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template mask_words<T>(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::template mask_words<T>(a); }
   };
   struct trig_integer_operation {
     template<class V> requires std::same_as<typename V::value_type,float>
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::trig_integer(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::trig_integer(a); }
   };
   struct tanh_coefficient {
     std::array<std::uint32_t,8> table;
     template<class V> requires std::same_as<typename V::value_type,std::uint32_t>
-    native_inline constexpr auto operator()(V const & index) const noexcept {
+    hint_inline constexpr auto operator()(V const & index) const noexcept {
       return native_ops<V>::tanh_coefficient(index,table);
     }
   };
   struct signed_float_operation {
     template<class V> requires std::same_as<typename V::value_type,std::uint32_t>
-    native_inline constexpr auto operator()(V const & a) const { return native_ops<V>::signed_float(a); }
+    hint_inline constexpr auto operator()(V const & a) const { return native_ops<V>::signed_float(a); }
   };
   template<class P> requires liftable<trig_integer_operation,P>
-  native_inline constexpr auto trig_integer(P const & a) noexcept { return lift(trig_integer_operation{},a); }
+  hint_inline constexpr auto trig_integer(P const & a) noexcept { return lift(trig_integer_operation{},a); }
   template<class P> requires liftable<signed_float_operation,P>
-  native_inline constexpr auto signed_float(P const & a) noexcept { return lift(signed_float_operation{},a); }
+  hint_inline constexpr auto signed_float(P const & a) noexcept { return lift(signed_float_operation{},a); }
 
 }
 
@@ -322,13 +322,13 @@ namespace wide {
   template<class V,std::size_t N,class T>
     requires detail::native_leaf_argument<V> &&
       (std::same_as<T,float> || std::same_as<T,std::uint32_t>) && std::same_as<typename V::value_type,T>
-  [[nodiscard]] native_inline constexpr V constant_like(std::array<V,N> const &, T value) noexcept {
+  [[nodiscard]] hint_inline constexpr V constant_like(std::array<V,N> const &, T value) noexcept {
     return detail::native_ops<V>::constant(value);
   }
 #define NATIVE_WIDE_BINARY_API(name, operation) \
   template<class P, class Q> \
     requires detail::liftable<detail::operation, P, Q> \
-  [[nodiscard]] native_inline constexpr auto name(P const & a, Q const & b) noexcept { \
+  [[nodiscard]] hint_inline constexpr auto name(P const & a, Q const & b) noexcept { \
     return detail::lift(detail::operation{}, a, b); \
   }
 
@@ -353,7 +353,7 @@ namespace wide {
 #define NATIVE_WIDE_UNARY_API(name, operation) \
   template<class P> \
     requires detail::liftable<detail::operation, P> \
-  [[nodiscard]] native_inline constexpr auto name(P const & a) noexcept { \
+  [[nodiscard]] hint_inline constexpr auto name(P const & a) noexcept { \
     return detail::lift(detail::operation{}, a); \
   }
 
@@ -372,42 +372,42 @@ namespace wide {
   /// Compute a*b+c with fused rounding in each SIMD lane of the result array.
   /// Array operands have equal lengths; a SIMD operand is shared across them.
   template<class P,class Q,class R> requires detail::liftable<detail::fused,P,Q,R>
-  [[nodiscard]] native_inline constexpr auto fma(P const & a, Q const & b, R const & c) noexcept {
+  [[nodiscard]] hint_inline constexpr auto fma(P const & a, Q const & b, R const & c) noexcept {
     return detail::lift(detail::fused{},a,b,c);
   }
   /// Scale active lanes of a by 2^floor(n), writing positive zero elsewhere.
   /// Apply the native masked scaling operation at each array position.
   template<class P,class Q,class R> requires detail::liftable<detail::scale,P,Q,R>
-  [[nodiscard]] native_inline constexpr auto masked_scaleb_zero(P const & m, Q const & a, R const & n) noexcept {
+  [[nodiscard]] hint_inline constexpr auto masked_scaleb_zero(P const & m, Q const & a, R const & n) noexcept {
     return detail::lift(detail::scale{},m,a,n);
   }
   /// Choose lanes from a where m is true and b elsewhere, at each array position.
   /// Array operands have equal lengths; a SIMD operand is shared across them.
   template<class M,class P,class Q> requires detail::liftable<detail::choose,M,P,Q>
-  [[nodiscard]] native_inline constexpr auto select(M const & m,P const & a,Q const & b) noexcept {
+  [[nodiscard]] hint_inline constexpr auto select(M const & m,P const & a,Q const & b) noexcept {
     return detail::lift(detail::choose{},m,a,b);
   }
   /// Scale active lanes of a by 2^floor(n), preserving prior in inactive lanes.
   /// Apply the native masked scaling operation at each array position.
   template<class M,class P,class Q,class R> requires detail::liftable<detail::scale_merge,M,P,Q,R>
-  [[nodiscard]] native_inline constexpr auto masked_scaleb(M const & m,P const & prior,Q const & a,R const & n) noexcept {
+  [[nodiscard]] hint_inline constexpr auto masked_scaleb(M const & m,P const & prior,Q const & a,R const & n) noexcept {
     return detail::lift(detail::scale_merge{},m,prior,a,n);
   }
   /// Shift each integer lane left by Shift bits, preserving the array shape.
   /// Participation follows the SIMD element's compile-time shift constraints.
   template<unsigned Shift,class P> requires detail::liftable<detail::shift_left<Shift>,P>
-  [[nodiscard]] native_inline constexpr auto left(P const & a) noexcept {
+  [[nodiscard]] hint_inline constexpr auto left(P const & a) noexcept {
     return detail::lift(detail::shift_left<Shift>{},a);
   }
   /// Shift each integer lane right by Shift bits, preserving the array shape.
   template<unsigned Shift,class P> requires detail::liftable<detail::shift_right<Shift>,P>
-  [[nodiscard]] native_inline constexpr auto right(P const & a) noexcept {
+  [[nodiscard]] hint_inline constexpr auto right(P const & a) noexcept {
     return detail::lift(detail::shift_right<Shift>{},a);
   }
   /// Expand each mask lane to an unsigned integer zero/all-one word for T.
   /// Preserve the array shape and each SIMD element's lane count.
   template<class T,class P> requires detail::liftable<detail::mask_words<T>,P>
-  [[nodiscard]] native_inline constexpr auto mask_bits(P const & a) noexcept {
+  [[nodiscard]] hint_inline constexpr auto mask_bits(P const & a) noexcept {
     return detail::lift(detail::mask_words<T>{},a);
   }
 
@@ -434,7 +434,7 @@ namespace math {
         std::same_as<typename ::wide::detail::shape_t<C>::template element_type<0>, horner_register_t<T>>));
 
     template<class P, class C0, class C1, class... C>
-    native_inline constexpr auto horner_kernel(P const & z, C0 const & first,
+    hint_inline constexpr auto horner_kernel(P const & z, C0 const & first,
         C1 const & second, C const &... rest) noexcept {
       auto h = ::wide::detail::madd(first, z, second);
       ((h = ::wide::detail::madd(h, z, rest)), ...);
@@ -447,7 +447,7 @@ namespace math {
       P const & input;
 
       template<class C>
-      native_inline constexpr auto operator()(C const & value) const noexcept {
+      hint_inline constexpr auto operator()(C const & value) const noexcept {
         using shape = ::wide::detail::shape_t<C>;
         if constexpr (shape::kind == ::wide::detail::family::legacy)
           return ::wide::map(*this, value.registers);
@@ -460,7 +460,7 @@ namespace math {
     };
 
     template<class T, class C0, class... C>
-    native_inline constexpr auto evaluate_horner(T const & z,
+    hint_inline constexpr auto evaluate_horner(T const & z,
         C0 const & first, C const &... rest) noexcept {
       auto const input = ::wide::promote(z);
       auto const coefficient = horner_coefficient_conversion<decltype(input)>{input};
@@ -480,7 +480,7 @@ namespace math {
       template<::wide::promotable T>
         requires (::wide::detail::binary32_array<::wide::canonical_t<T>>) &&
           (horner_coefficient<T, C> && ...)
-      [[nodiscard]] native_inline constexpr auto operator()(T const & z) const noexcept {
+      [[nodiscard]] hint_inline constexpr auto operator()(T const & z) const noexcept {
         auto const & [...values] = coefficients;
         return evaluate_horner(z, values...);
       }
@@ -498,7 +498,7 @@ namespace math {
   template<::wide::promotable C0, ::wide::promotable... C>
     requires (::wide::detail::binary32_array<::wide::canonical_t<C0>>) &&
       ((::wide::detail::binary32_array<::wide::canonical_t<C>>) && ...)
-  [[nodiscard]] native_inline constexpr auto horner(C0 first, C... rest) noexcept {
+  [[nodiscard]] hint_inline constexpr auto horner(C0 first, C... rest) noexcept {
     return detail::horner_polynomial<C0, C...>{{first, rest...}};
   }
 
@@ -507,7 +507,7 @@ namespace math {
     // keep the constant exactly one; six is the default accuracy/cost choice.
     template<unsigned Degree, class V, std::size_t N>
       requires (Degree >= 1 && Degree <= 7) && (::wide::detail::binary32_register<V>)
-    native_inline constexpr auto exp_polynomial(std::array<V, N> const & r) noexcept {
+    hint_inline constexpr auto exp_polynomial(std::array<V, N> const & r) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(r, value); };
       if constexpr (Degree == 1)
         return ::math::horner(c(0x1.ec7054p-1f), c(1.f))(r);
@@ -534,7 +534,7 @@ namespace math {
     // The single polynomial body, shared by generic and targeted entry points.
     template<bool Flush, unsigned Degree = 6, class V, std::size_t N>
       requires (Degree >= 1 && Degree <= 7) && (::wide::detail::binary32_register<V>)
-    [[nodiscard]] native_inline constexpr auto exp_reduced(std::array<V, N> const & x) noexcept {
+    [[nodiscard]] hint_inline constexpr auto exp_reduced(std::array<V, N> const & x) noexcept {
       auto const c = [&](float value) { return ::wide::constant_like(x, value); };
       auto const active = ::wide::mask_not(::wide::cmp_lt(x, c(Flush ? -87.33654022216796875f : -104.f)));
       // Classify independently; range flags are consumed only at the finish.
@@ -562,7 +562,7 @@ namespace math {
   /// six is the default. Reduction, range cutoffs and scaling are shared.
   template<bool Flush = false, unsigned Degree = 6, ::wide::promotable T>
     requires (Degree >= 1 && Degree <= 7) && (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto exp(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto exp(T const & input) noexcept {
     // MSVC's array<T,0> may construct a dummy T; an empty batch needs no work.
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
       return std::remove_cvref_t<T>(input);
@@ -578,7 +578,7 @@ namespace math {
   /// -126. Otherwise subnormal accuracy follows the backend's bounded scaling.
   template<bool Flush = false, ::wide::promotable T>
     requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto exp2(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto exp2(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
       return std::remove_cvref_t<T>(input);
     } else {
@@ -604,7 +604,7 @@ namespace math {
 // Adapted from FTZ's seven-interval tanh polynomial, with native arithmetic.
 namespace math::detail {
   template<class V,std::size_t N> requires (::wide::detail::binary32_register<V>)
-  [[nodiscard]] native_inline constexpr auto tanh_kernel(std::array<V,N> const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto tanh_kernel(std::array<V,N> const & input) noexcept {
     namespace w=::wide;
     auto const word=w::bits(input);
     auto const u=[&](std::uint32_t value) {return w::constant_like(word,value);};
@@ -653,7 +653,7 @@ namespace math {
   /// Hyperbolic tangent; preserve signed zero and tiny inputs, and saturate
   /// infinities to signed one. NaNs return a quiet NaN without a payload promise.
   template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto tanh(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto tanh(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size==0) return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::tanh_kernel(::wide::promote(input)));
   }
@@ -666,7 +666,7 @@ namespace math::detail {
   // A tiny finite result may underflow according to the caller's FP mode.
   template<class V, std::size_t N>
     requires (::wide::detail::binary32_register<V>)
-  [[nodiscard]] native_inline constexpr auto atan2_kernel(
+  [[nodiscard]] hint_inline constexpr auto atan2_kernel(
       std::array<V, N> const & y, std::array<V, N> const & x) noexcept {
     namespace w = ::wide;
     auto const c = [&](float value) { return w::constant_like(y, value); };
@@ -710,7 +710,7 @@ namespace math {
   /// Subnormal inputs are signed zero; tiny outputs follow the caller's FP mode.
   template<::wide::promotable T>
     requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto atan2(T const & y, T const & x) noexcept {
+  [[nodiscard]] hint_inline constexpr auto atan2(T const & y, T const & x) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
       return std::remove_cvref_t<T>(y);
     else return ::wide::demote<T>(detail::atan2_kernel(::wide::promote(y), ::wide::promote(x)));
@@ -749,7 +749,7 @@ namespace math {
   namespace detail {
     template<bool Gain, class V, std::size_t N>
       requires (::wide::detail::binary32_register<V>)
-    [[nodiscard]] native_inline constexpr auto expm1_kernel(
+    [[nodiscard]] hint_inline constexpr auto expm1_kernel(
         std::array<V, N> const & input) noexcept {
       if constexpr (N == 0) return input;
       else {
@@ -802,7 +802,7 @@ namespace math {
   /// NaNs propagate, negative infinity maps to -1, and early overflow follows exp.
   template<::wide::promotable T>
     requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto expm1(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto expm1(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
       return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::expm1_kernel<false>(::wide::promote(input)));
@@ -812,7 +812,7 @@ namespace math {
   /// Nonnegative damping inputs approach one; no domain-admission protocol.
   template<::wide::promotable T>
     requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto damping_gain(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto damping_gain(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
       return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::expm1_kernel<true>(::wide::promote(input)));
@@ -823,7 +823,7 @@ namespace math::detail {
   // Direct base-two reduction and a newly generated Sollya polynomial.
   template<class V, std::size_t N>
     requires (::wide::detail::binary32_register<V>)
-  [[nodiscard]] native_inline constexpr auto log2_kernel(std::array<V, N> const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto log2_kernel(std::array<V, N> const & input) noexcept {
     namespace w = ::wide;
     auto const c = [&](float value) { return w::constant_like(input, value); };
     auto const word = w::bits(input);
@@ -862,7 +862,7 @@ namespace math::detail {
   // NaNs and domain errors return the FTZ graph's canonical quiet NaN.
   template<bool OnePlus, class V, std::size_t N>
     requires (::wide::detail::binary32_register<V>)
-  [[nodiscard]] native_inline constexpr auto log_kernel(std::array<V, N> const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto log_kernel(std::array<V, N> const & input) noexcept {
     namespace w = ::wide;
     auto const c = [&](float value) { return w::constant_like(input, value); };
     auto const word = w::bits(input);
@@ -939,20 +939,20 @@ namespace math::detail {
 namespace math {
   /// Natural logarithm; subnormal inputs are treated as signed zero.
   template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto log(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto log(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::log_kernel<false>(::wide::promote(input)));
   }
   /// Binary logarithm; subnormal inputs are treated as signed zero.
   /// Normal powers of two are exact, including positive zero at one.
   template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto log2(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto log2(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::log2_kernel(::wide::promote(input)));
   }
   /// Cancellation-safe log(1+x), preserving signed zero and tiny inputs.
   template<::wide::promotable T> requires (::wide::detail::binary32_array<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto log1p(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto log1p(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) return std::remove_cvref_t<T>(input);
     else return ::wide::demote<T>(detail::log_kernel<true>(::wide::promote(input)));
   }
@@ -971,7 +971,7 @@ namespace math {
 
     // Precondition: every lane is finite and |x| < 8192.
     template<trig_kind K, ::wide::pack P>
-    [[nodiscard]] native_inline constexpr auto trig(P const & original) noexcept {
+    [[nodiscard]] hint_inline constexpr auto trig(P const & original) noexcept {
       auto const encoded = ::wide::bits(original);
       auto const c = [&](float value) { return ::wide::constant_like(original, value); };
       auto const i = [&](std::uint32_t value) { return ::wide::constant_like(encoded, value); };
@@ -1015,7 +1015,7 @@ namespace math {
 
     template<trig_kind K, ::wide::promotable T>
       requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-    [[nodiscard]] native_inline constexpr auto trig_result(T const & input) noexcept {
+    [[nodiscard]] hint_inline constexpr auto trig_result(T const & input) noexcept {
       if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) {
         if constexpr (K == trig_kind::paired)
           return std::pair{std::remove_cvref_t<T>(input), std::remove_cvref_t<T>(input)};
@@ -1029,23 +1029,23 @@ namespace math {
 
   /// Sine in radians; finite binary32 lanes with |x| < 8192.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto sin(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto sin(T const & input) noexcept {
     return detail::trig_result<detail::trig_kind::sine>(input);
   }
   /// Cosine in radians; finite binary32 lanes with |x| < 8192.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto cos(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto cos(T const & input) noexcept {
     return detail::trig_result<detail::trig_kind::cosine>(input);
   }
   /// Paired sine/cosine sharing one reducer; each result retains the input shape.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto sincos(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto sincos(T const & input) noexcept {
     return detail::trig_result<detail::trig_kind::paired>(input);
   }
 
   /// Replace subnormal binary32 lanes with signed zero without changing FP controls.
   template<::wide::promotable T> requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>)
-  [[nodiscard]] native_inline constexpr auto flush_to_zero(T const & input) noexcept {
+  [[nodiscard]] hint_inline constexpr auto flush_to_zero(T const & input) noexcept {
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0)
       return std::remove_cvref_t<T>(input);
     else {
@@ -1063,7 +1063,7 @@ namespace math {
 #define NATIVE_PROMOTED_UNARY(name) \
   template<::wide::promotable T> \
     requires (::wide::detail::binary32_pack<::wide::canonical_t<T>>) \
-  [[nodiscard]] native_inline constexpr auto name(T const & input) noexcept { \
+  [[nodiscard]] hint_inline constexpr auto name(T const & input) noexcept { \
     if constexpr (::wide::detail::shape_t<::wide::canonical_t<T>>::size == 0) \
       return std::remove_cvref_t<T>(input); \
     else return ::wide::demote<T>(::wide::name(::wide::promote(input))); \

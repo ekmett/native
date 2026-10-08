@@ -11,5 +11,6 @@
 
 \defgroup attributes Attributes
   \details
-    Attributes can be applied to structs, functions, types, pointers, and methods to change or document their behavior.
+    Compiler annotations come from [Hint](https://ekmett.github.io/hint/).
+    Include `<hint.h>` for the `hint_*` macros.
 */

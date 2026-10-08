@@ -8,7 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-#include <native/attributes.h>
+#include <hint.h>
 #include "../core_regression/support/fp_environment.h"
 #if NATIVE_ROUNDING_HEADER
 #define NATIVE_PROFILE NATIVE_ROUNDING_PROFILE
@@ -115,7 +115,7 @@ static_assert(!has_rounding<native::wide<int,2>>);
 // ABI attribution. The emitted leaves must contain rounding instructions, not
 // calls to a scalar lane loop. The scalar profile remains baseline-compatible.
 #define ROUND_LEAF(name, op, lanes) \
-extern "C" native_noinline void name(float * output,float const * input) { \
+extern "C" hint_noinline void name(float * output,float const * input) { \
   native::store_simd(output,native::op(native::load_simd<V<lanes>>(input))); \
 }
 ROUND_LEAF(round_floor_1,floor,1)

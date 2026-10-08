@@ -20,10 +20,10 @@ namespace exp_before {
   namespace detail {
     template<float_register V> struct exp_state {
       V x, n, r, y;
-      native_inline explicit exp_state(V input) : x(input) {}
+      hint_inline explicit exp_state(V input) : x(input) {}
     };
     template<float_register V> struct exp_stages {
-      template<class ... S> native_inline wide<V, sizeof...(S)> operator()(S ... a) const noexcept {
+      template<class ... S> hint_inline wide<V, sizeof...(S)> operator()(S ... a) const noexcept {
         ((a.r = min(max(a.x, V(-104)), V(88.72283935546875f))), ...);
         ((a.n = round_even(a.r * V(1.4426950408889634f))), ...);
         ((a.r = fma(a.n, V(-0x1.62e400p-1f), a.r)), ...);
@@ -55,7 +55,7 @@ namespace exp_before {
   }
   namespace detail {
     template<float_register V> struct exp_registers {
-      template<class ... X> native_inline auto operator()(X ... x) const noexcept {
+      template<class ... X> hint_inline auto operator()(X ... x) const noexcept {
         return exp_stages<V>{}(exp_state<V>(x)...);
       }
     };
@@ -64,14 +64,14 @@ namespace exp_before {
   // Apply the accepted range policy after the historical graph; no FP control changes.
   // Each dependency stage expands across independent register chains.
   template<float_register V, std::size_t N>
-  [[nodiscard]] native_inline native_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
+  [[nodiscard]] hint_inline hint_pure wide<V, N> exp(wide<V, N> const & input) noexcept {
     return input.apply(detail::exp_registers<V>{});
   }
-  template<float_register V> [[nodiscard]] native_inline native_pure V exp(V x) noexcept { return exp_before::exp(wide<V, 1>{{x}}).registers[0]; }
+  template<float_register V> [[nodiscard]] hint_inline hint_pure V exp(V x) noexcept { return exp_before::exp(wide<V, 1>{{x}}).registers[0]; }
 #if defined(__ARM_NEON)
   // Compatibility for existing channel-packed callers.
-  [[nodiscard]] native_inline native_pure float32x4_t exp(float32x4_t x) noexcept { return exp_before::exp(fp32x4(x)).value; }
-  template<std::size_t N> [[nodiscard]] native_inline native_pure wide<float32x4_t, N> exp(wide<float32x4_t, N> x) noexcept {
+  [[nodiscard]] hint_inline hint_pure float32x4_t exp(float32x4_t x) noexcept { return exp_before::exp(fp32x4(x)).value; }
+  template<std::size_t N> [[nodiscard]] hint_inline hint_pure wide<float32x4_t, N> exp(wide<float32x4_t, N> x) noexcept {
     wide<fp32x4, N> input;
     for (std::size_t i = 0; i < N; ++i) input.registers[i] = fp32x4(x.registers[i]);
     auto output = exp(input);

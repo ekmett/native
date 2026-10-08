@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include <bit>
 #include <cstdint>
@@ -20,7 +20,7 @@ namespace native {
   /// Count the set bits of a 16-bit value; zero returns zero.
   /// Arch must contain POPCNT; runtime callers must enable and admit that feature.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::popcnt))
-  [[nodiscard]] native_inline native_const __attribute__((target("popcnt")))
+  [[nodiscard]] hint_inline hint_const __attribute__((target("popcnt")))
   constexpr std::uint16_t popcnt(std::uint16_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return static_cast<std::uint16_t>(std::popcount(value));
@@ -32,7 +32,7 @@ namespace native {
   /// Count the set bits of a 32-bit value; zero returns zero.
   /// Arch must contain POPCNT; runtime callers must enable and admit that feature.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::popcnt))
-  [[nodiscard]] native_inline native_const __attribute__((target("popcnt")))
+  [[nodiscard]] hint_inline hint_const __attribute__((target("popcnt")))
   constexpr std::uint32_t popcnt(std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return static_cast<std::uint32_t>(std::popcount(value));
@@ -44,7 +44,7 @@ namespace native {
   /// Count the set bits of a 64-bit value; zero returns zero.
   /// Arch must contain POPCNT; runtime callers must enable and admit that feature.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::popcnt))
-  [[nodiscard]] native_inline native_const __attribute__((target("popcnt")))
+  [[nodiscard]] hint_inline hint_const __attribute__((target("popcnt")))
   constexpr std::uint64_t popcnt(std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return static_cast<std::uint64_t>(std::popcount(value));

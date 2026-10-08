@@ -8,7 +8,7 @@
 #include <memory>
 #include <type_traits>
 #include <utility>
-#include <native/attributes.h>
+#include <hint.h>
 #include "support/guarded_pages.h"
 #include "../half_storage/native_bridge.h"
 import native;
@@ -29,15 +29,15 @@ template<std::size_t N> constexpr bool shape() {
 }
 static_assert(shape<8>() && shape<16>() && shape<32>());
 
-extern "C" native_noinline void bf16_dot2_8(std::uint16_t const * a, std::uint16_t const * b,
+extern "C" hint_noinline void bf16_dot2_8(std::uint16_t const * a, std::uint16_t const * b,
     std::uint32_t const * c, std::uint32_t * out) noexcept {
   native::dot2(bf16_vector<8>::load_bits(a), bf16_vector<8>::load_bits(b), float_vector<8>::load_bits(c)).store_bits(out);
 }
-extern "C" native_noinline void bf16_dot2_16(std::uint16_t const * a, std::uint16_t const * b,
+extern "C" hint_noinline void bf16_dot2_16(std::uint16_t const * a, std::uint16_t const * b,
     std::uint32_t const * c, std::uint32_t * out) noexcept {
   native::dot2(bf16_vector<16>::load_bits(a), bf16_vector<16>::load_bits(b), float_vector<16>::load_bits(c)).store_bits(out);
 }
-extern "C" native_noinline void bf16_dot2(std::uint16_t const * a, std::uint16_t const * b,
+extern "C" hint_noinline void bf16_dot2(std::uint16_t const * a, std::uint16_t const * b,
     std::uint32_t const * c, std::uint32_t * out) noexcept {
   native::dot2(bf16_vector<32>::load_bits(a), bf16_vector<32>::load_bits(b), float_vector<32>::load_bits(c)).store_bits(out);
 }

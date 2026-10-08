@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <native/config.h>
-#include <native/attributes.h>
+#include <hint.h>
 #include "../property_check.h"
 #include "../core_regression/support/fp_environment.h"
 #include <cmath>
@@ -29,18 +29,18 @@ namespace fixture {
 #undef NATIVE_FLOAT_TARGET
 #if NATIVE_HOST_NEON
 #define NATIVE_FLOAT_ARCH neon
-#define NATIVE_FLOAT_TARGET native_target("neon")
+#define NATIVE_FLOAT_TARGET hint_target("neon")
 #include "calculate.h"
 #undef NATIVE_FLOAT_ARCH
 #undef NATIVE_FLOAT_TARGET
 #elif NATIVE_HOST_X86
 #define NATIVE_FLOAT_ARCH avx2
-#define NATIVE_FLOAT_TARGET native_target("avx2,fma")
+#define NATIVE_FLOAT_TARGET hint_target("avx2,fma")
 #include "calculate.h"
 #undef NATIVE_FLOAT_ARCH
 #undef NATIVE_FLOAT_TARGET
 #define NATIVE_FLOAT_ARCH avx512
-#define NATIVE_FLOAT_TARGET native_target("avx512f,avx512dq,avx512bw,avx512vl,avx2,fma")
+#define NATIVE_FLOAT_TARGET hint_target("avx512f,avx512dq,avx512bw,avx512vl,avx2,fma")
 #include "calculate.h"
 #undef NATIVE_FLOAT_ARCH
 #undef NATIVE_FLOAT_TARGET
@@ -119,7 +119,7 @@ namespace fixture {
     }
     return out;
   }
-  template<class V> native_inline bool run() {
+  template<class V> hint_inline bool run() {
     static_assert(edges<V>());
     for(std::size_t i=0;i<16;++i) {
       auto actual=calculate<V>(inputs<V::lanes>[i]);
@@ -157,7 +157,7 @@ static_assert(::math::exp(0.f)==1.f && ::math::sin(0.f)==0.f && ::math::cos(0.f)
 static_assert(fixture::edges<simd<float,2,neon>>());
 static_assert(fixture::edges<simd<float,3,neon>>());
 static_assert(fixture::edges<simd<float,4,neon>>());
-native_target("neon") bool native_run() {
+hint_target("neon") bool native_run() {
   return fixture::run<simd<float,2,neon>>() && fixture::run<simd<float,3,neon>>() && fixture::run<simd<float,4,neon>>();
 }
 #elif NATIVE_HOST_X86
@@ -166,10 +166,10 @@ static_assert(fixture::edges<simd<float,3,avx2>>());
 static_assert(fixture::edges<simd<float,4,avx2>>());
 static_assert(fixture::edges<simd<float,8,avx2>>());
 static_assert(fixture::edges<simd<float,16,avx512>>());
-native_target("avx2,fma") bool avx2_run() {
+hint_target("avx2,fma") bool avx2_run() {
   return fixture::run<simd<float,2,avx2>>() && fixture::run<simd<float,3,avx2>>() && fixture::run<simd<float,4,avx2>>() && fixture::run<simd<float,8,avx2>>();
 }
-native_target("avx512f,avx512dq,avx512bw,avx512vl,avx2,fma") bool avx512_run() {
+hint_target("avx512f,avx512dq,avx512bw,avx512vl,avx2,fma") bool avx512_run() {
   return fixture::run<simd<float,4,avx512>>() && fixture::run<simd<float,8,avx512>>() && fixture::run<simd<float,16,avx512>>();
 }
 #endif

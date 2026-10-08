@@ -40,7 +40,7 @@ namespace {
 }
 
 #if NATIVE_AES_CASE != 1 || NATIVE_AES_POSITIVE
-native_target("aes")
+hint_target("aes")
 #endif
 auto aes_boundary(input state, key_input key, unsigned immediate) noexcept {
 #if NATIVE_AES_OPERATION == 0

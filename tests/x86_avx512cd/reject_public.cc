@@ -2,7 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.avx512cd;
 
 #if NATIVE_TEST_WIDTH == 512
@@ -79,84 +79,84 @@ using qmask = native::predicate<qlanes, arch>;
 // Target failures use one operation per translation unit because Clang stops
 // code generation after its first target mismatch. Other diagnostics are semantic.
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 0) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpconflictd(dvector value) noexcept {
   return native::vpconflictd<arch>(value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 1
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpconflictd(dvector source, dmask mask, dvector value) noexcept {
   return native::mask_vpconflictd<arch>(source, mask, value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 2
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpconflictd(dmask mask, dvector value) noexcept {
   return native::maskz_vpconflictd<arch>(mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 3) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vplzcntd(dvector value) noexcept {
   return native::vplzcntd<arch>(value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 4
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vplzcntd(dvector source, dmask mask, dvector value) noexcept {
   return native::mask_vplzcntd<arch>(source, mask, value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 5
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vplzcntd(dmask mask, dvector value) noexcept {
   return native::maskz_vplzcntd<arch>(mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 6) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vpconflictq(qvector value) noexcept {
   return native::vpconflictq<arch>(value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 7
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vpconflictq(qvector source, qmask mask, qvector value) noexcept {
   return native::mask_vpconflictq<arch>(source, mask, value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 8
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vpconflictq(qmask mask, qvector value) noexcept {
   return native::maskz_vpconflictq<arch>(mask, value);
 }
 #endif
 
 #if (!defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 9) && !NATIVE_TEST_MASK
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_vplzcntq(qvector value) noexcept {
   return native::vplzcntq<arch>(value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 10
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_mask_vplzcntq(qvector source, qmask mask, qvector value) noexcept {
   return native::mask_vplzcntq<arch>(source, mask, value);
 }
 #endif
 
 #if !defined(NATIVE_TEST_OPERATION) || NATIVE_TEST_OPERATION == 11
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_maskz_vplzcntq(qmask mask, qvector value) noexcept {
   return native::maskz_vplzcntq<arch>(mask, value);
 }

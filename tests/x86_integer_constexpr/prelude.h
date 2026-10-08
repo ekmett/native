@@ -12,6 +12,6 @@
 #include <type_traits>
 #include <utility>
 #include <immintrin.h>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/targets.h>
 #include "../property_check.h"

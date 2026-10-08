@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include "native/attributes.h"
+#include <hint.h>
 #include <cstdio>
 #include <x86intrin.h>
 import native.x86.wait;
 import native.x86.features;
 static_assert(__is_same(decltype(&native::umwait::mwait),
-  std::uint8_t (*)(std::uint64_t) noexcept native_blocking));
+  std::uint8_t (*)(std::uint64_t) noexcept hint_blocking));
 static_assert(native::waiter<native::umwait>);
 extern "C" [[gnu::target("waitpkg"), gnu::noinline]]
 unsigned char pause_deadline(std::uint64_t deadline) {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstddef>
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 import native.simd;
 
 // Compact masks have scalar storage, even when their tag selects vector kernels.
@@ -11,7 +11,7 @@ constexpr auto profile = native::target_features<native::x86>(
   "avx2,avx512f,avx512dq,avx512bw,avx512vl");
 
 template<std::size_t N>
-native_noinline constexpr bool roundtrip(std::uint64_t bits) noexcept {
+hint_noinline constexpr bool roundtrip(std::uint64_t bits) noexcept {
   using M = native::predicate<N, profile>;
   constexpr auto active = ~std::uint64_t{0} >> (64 - N);
   auto mask = M::from_bitset(bits);

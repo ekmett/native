@@ -39,42 +39,42 @@ constexpr auto requirements = [] {
   return value;
 }();
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpopcntb(register_type value) noexcept {
   return native::detail::x86_bitalg::vpopcntb<requirements>(value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpopcntb(register_type source, bmask mask, register_type value) noexcept {
   return native::detail::x86_bitalg::mask_vpopcntb<requirements>(source, mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpopcntb(bmask mask, register_type value) noexcept {
   return native::detail::x86_bitalg::maskz_vpopcntb<requirements>(mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpopcntw(register_type value) noexcept {
   return native::detail::x86_bitalg::vpopcntw<requirements>(value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpopcntw(register_type source, wmask mask, register_type value) noexcept {
   return native::detail::x86_bitalg::mask_vpopcntw<requirements>(source, mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpopcntw(wmask mask, register_type value) noexcept {
   return native::detail::x86_bitalg::maskz_vpopcntw<requirements>(mask, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 bmask reject_vpshufbitqmb(register_type value, register_type control) noexcept {
   return native::detail::x86_bitalg::vpshufbitqmb<requirements>(value, control);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 bmask reject_mask_vpshufbitqmb(bmask mask, register_type value, register_type control) noexcept {
   return native::detail::x86_bitalg::mask_vpshufbitqmb<requirements>(mask, value, control);
 }

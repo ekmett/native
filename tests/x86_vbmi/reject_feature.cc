@@ -36,12 +36,12 @@ constexpr auto requirements = [] {
   return value;
 }();
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpermb(register_type indices, register_type value) noexcept {
   return native::detail::x86_vbmi::vpermb<requirements>(indices, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpermb(
   register_type source,
   bmask mask,
@@ -50,17 +50,17 @@ register_type reject_mask_vpermb(
   return native::detail::x86_vbmi::mask_vpermb<requirements>(source, mask, indices, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpermb(bmask mask, register_type indices, register_type value) noexcept {
   return native::detail::x86_vbmi::maskz_vpermb<requirements>(mask, indices, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpermt2b(register_type a, register_type indices, register_type b) noexcept {
   return native::detail::x86_vbmi::vpermt2b<requirements>(a, indices, b);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpermt2b(
   register_type a,
   bmask mask,
@@ -69,7 +69,7 @@ register_type reject_mask_vpermt2b(
   return native::detail::x86_vbmi::mask_vpermt2b<requirements>(a, mask, indices, b);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpermt2b(
   bmask mask,
   register_type a,
@@ -78,12 +78,12 @@ register_type reject_maskz_vpermt2b(
   return native::detail::x86_vbmi::maskz_vpermt2b<requirements>(mask, a, indices, b);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpermi2b(register_type indices, register_type a, register_type b) noexcept {
   return native::detail::x86_vbmi::vpermi2b<requirements>(indices, a, b);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpermi2b(
   register_type indices,
   bmask mask,
@@ -92,7 +92,7 @@ register_type reject_mask_vpermi2b(
   return native::detail::x86_vbmi::mask_vpermi2b<requirements>(indices, mask, a, b);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpermi2b(
   bmask mask,
   register_type indices,
@@ -101,12 +101,12 @@ register_type reject_maskz_vpermi2b(
   return native::detail::x86_vbmi::maskz_vpermi2b<requirements>(mask, indices, a, b);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_vpmultishiftqb(register_type control, register_type value) noexcept {
   return native::detail::x86_vbmi::vpmultishiftqb<requirements>(control, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_mask_vpmultishiftqb(
   register_type source,
   bmask mask,
@@ -115,7 +115,7 @@ register_type reject_mask_vpmultishiftqb(
   return native::detail::x86_vbmi::mask_vpmultishiftqb<requirements>(source, mask, control, value);
 }
 
-extern "C" native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+extern "C" hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 register_type reject_maskz_vpmultishiftqb(bmask mask, register_type control, register_type value) noexcept {
   return native::detail::x86_vbmi::maskz_vpmultishiftqb<requirements>(mask, control, value);
 }

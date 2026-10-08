@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/isa.h>
 #include <native/targets.h>
 
@@ -74,7 +74,7 @@ namespace {
   static_assert(admission());
 }
 
-extern "C" native_noinline bool native_sha_admission(std::uint32_t sha_bits, std::uint32_t storage_bits) noexcept {
+extern "C" hint_noinline bool native_sha_admission(std::uint32_t sha_bits, std::uint32_t storage_bits) noexcept {
   snapshot cpu;
   cpu.leaf7_ebx = sha_bits;
   cpu.leaf1_edx = storage_bits;

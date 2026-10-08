@@ -3,7 +3,7 @@
 import native;
 #include "checks.h"
 namespace bf16_fixture {
-  native_target("bf16") bool bridges() {
+  hint_target("bf16") bool bridges() {
     environment saved; fpcr(0);
     using B=native::simd<native::bf16,8,native::neon_bf16>;
     using F=native::simd<float,4,native::neon_bf16>;
@@ -26,7 +26,7 @@ namespace bf16_fixture {
     return true;
   }
 
-  native_target("bf16") bool dot2_controls(bool enhanced) {
+  hint_target("bf16") bool dot2_controls(bool enhanced) {
     environment saved;
     using B=native::simd<native::bf16,8,native::neon_bf16>;
     using F=native::simd<float,4,native::neon_bf16>;

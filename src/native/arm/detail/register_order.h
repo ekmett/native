@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
 #include "native/config.h"
-#include "native/attributes.h"
+#include <hint.h>
 #if NATIVE_HOST_NEON
 #include <arm_neon.h>
 #endif
@@ -13,7 +13,7 @@ namespace native {
     // including each element's bytes. Its 64-bit coercion already has native
     // register order. Apply the same involution on inputs and outputs.
     template<class T>
-    native_inline T arm_register_order(T x) noexcept {
+    hint_inline T arm_register_order(T x) noexcept {
 #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
       if constexpr(sizeof(T) == 8) {
         return x;

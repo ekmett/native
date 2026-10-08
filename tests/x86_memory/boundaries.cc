@@ -3,7 +3,7 @@
 #include <concepts>
 #include <cstdint>
 #include <limits>
-#include <native/attributes.h>
+#include <hint.h>
 import native.x86.memory;
 
 constexpr auto full = native::target_features<native::x86>("avx512f,avx512vl");
@@ -50,19 +50,19 @@ static_assert(weak_semantics());
 
 #if NATIVE_MEMORY_REJECT == 9
 // The public wrapper cannot inline into a baseline caller.
-native_noinline auto rejection(float const * p, indices i) {
+hint_noinline auto rejection(float const * p, indices i) {
   return native::vgatherdps<4,4>(p,i);
 }
 #elif NATIVE_MEMORY_REJECT == 10
-native_noinline auto rejection(float const * p, native::simd<std::int32_t,4,weak> i) {
+hint_noinline auto rejection(float const * p, native::simd<std::int32_t,4,weak> i) {
   return native::vgatherdps<4,4>(p,i);
 }
 #elif NATIVE_MEMORY_REJECT == 11
-native_noinline auto rejection(float const * p, native::simd<std::int32_t,4,avx> i) {
+hint_noinline auto rejection(float const * p, native::simd<std::int32_t,4,avx> i) {
   return native::mask_vgatherdps<4>(native::simd<float,4,avx>{},native::predicate<4,avx>{},p,i);
 }
 #elif NATIVE_MEMORY_REJECT == 12
-native_noinline void rejection(float * p, native::simd<std::int32_t,4,avx> i, native::simd<float,4,avx> v) {
+hint_noinline void rejection(float * p, native::simd<std::int32_t,4,avx> i, native::simd<float,4,avx> v) {
   native::mask_vscatterdps<4>(p,native::predicate<4,avx>{},i,v);
 }
 #elif NATIVE_MEMORY_REJECT == 13
@@ -89,16 +89,16 @@ constexpr auto rejected_constant = [] {
 }();
 #elif NATIVE_MEMORY_REJECT == 17
 constexpr auto only_f = native::target_features<native::x86>("avx512f");
-native_noinline auto rejection(float const * p, native::simd<std::int32_t,4,only_f> i) {
+hint_noinline auto rejection(float const * p, native::simd<std::int32_t,4,only_f> i) {
   return native::mask_vgatherdps<4>(native::simd<float,4,only_f>{},native::predicate<4,only_f>{},p,i);
 }
 #elif NATIVE_MEMORY_REJECT == 18
 constexpr auto only_f = native::target_features<native::x86>("avx512f");
-native_noinline void rejection(float * p, native::simd<std::int32_t,4,only_f> i, native::simd<float,4,only_f> v) {
+hint_noinline void rejection(float * p, native::simd<std::int32_t,4,only_f> i, native::simd<float,4,only_f> v) {
   native::mask_vscatterdps<4>(p,native::predicate<4,only_f>{},i,v);
 }
 #else
-native_noinline native_target("avx512f,avx512vl")
+hint_noinline hint_target("avx512f,avx512vl")
 auto rejection(float const * p, indices i, values v) {
 #if NATIVE_MEMORY_REJECT == 1
   return native::vgatherdps<0,4>(p,i);

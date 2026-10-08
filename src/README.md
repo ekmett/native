@@ -15,7 +15,7 @@ start with the [value guide](../docs/modules.md) or
 | `native.math.ccm` | Promoted numerical kernels and targeted math forwarding |
 | `native.{x86,arm}.*.ccm`, `native/{x86,arm}/` | Capability observers and instruction families |
 | `native.numerics.ccm` | Scalar FP16/BF16 storage, conversions and numerical utilities |
-| `native/attributes.h` | Compatibility names for the [Hint](https://github.com/ekmett/hint) compiler annotations |
+| `<hint.h>` | [Hint](https://ekmett.github.io/hint/) compiler annotations |
 
 The shared implementation is `<native/simd.h>`; Apple's SDK remains available
 as `<simd/simd.h>`. The public class template is `native::simd`.
@@ -127,7 +127,7 @@ method and the expression checked by its constraint. It expands to:
 struct add {
   template<class V>
     requires requires(V a) { a + a; }
-  native_inline constexpr auto operator()(V const & a, V const & b) const {
+  hint_inline constexpr auto operator()(V const & a, V const & b) const {
     return native_ops<V>::add(a, b);
   }
 };
@@ -136,7 +136,7 @@ struct add {
 The operation lists below these macros are the catalog. Read one expanded
 operation to understand the shape, then read the rows to see which operations
 exist. Keep each row on its own line. The backend methods retain their ordinary
-`inline` spelling; changing that to `native_inline` changes when target-sensitive
+`inline` spelling; changing that to `hint_inline` changes when target-sensitive
 inlining must happen.
 
 ### Target-list mapping

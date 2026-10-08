@@ -6,7 +6,7 @@ constexpr auto requirements=native::neon;
 constexpr auto requirements=native::target_features<native::arm>("crc");
 #endif
 #if TEST_KIND != 1
-native_target("crc")
+hint_target("crc")
 #endif
 std::uint32_t rejected(std::uint32_t a,std::uint64_t b) {
 #if TEST_KIND == 2

@@ -15,7 +15,7 @@ constexpr native::isa<native::x86> int8{native::x86_feature::avxvnniint8};
 constexpr native::isa<native::x86> int16{native::x86_feature::avxvnniint16};
 
 #define NATIVE_VNNI_PLAIN(operation, width, reg, family, requirement, features) \
-  extern "C" native_noinline native_target(features) \
+  extern "C" hint_noinline hint_target(features) \
   reg native_vnni_##family##_##operation##_##width##_plain( \
       reg acc, reg a, reg b) noexcept { \
     return native::detail::x86_vnni::operation<requirement>(acc, a, b); \
@@ -23,12 +23,12 @@ constexpr native::isa<native::x86> int16{native::x86_feature::avxvnniint16};
 
 #define NATIVE_VNNI_MASKED(operation, width, reg, mask, requirement, features) \
   NATIVE_VNNI_PLAIN(operation, width, reg, evex, requirement, features) \
-  extern "C" native_noinline native_target(features) \
+  extern "C" hint_noinline hint_target(features) \
   reg native_vnni_evex_##operation##_##width##_merge( \
       reg acc, unsigned k, reg a, reg b) noexcept { \
     return native::detail::x86_vnni::mask_##operation<requirement>(acc, k, a, b); \
   } \
-  extern "C" native_noinline native_target(features) \
+  extern "C" hint_noinline hint_target(features) \
   reg native_vnni_evex_##operation##_##width##_zero( \
       unsigned k, reg acc, reg a, reg b) noexcept { \
     return native::detail::x86_vnni::maskz_##operation<requirement>(k, acc, a, b); \
@@ -73,7 +73,7 @@ NATIVE_VNNI_EXTENSION(dpwuuds, int16, "avxvnniint16,no-avx512f")
 #undef NATIVE_VNNI_MASKED
 #undef NATIVE_VNNI_PLAIN
 
-extern "C" native_noinline unsigned long long
+extern "C" hint_noinline unsigned long long
 native_vnni_baseline(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }

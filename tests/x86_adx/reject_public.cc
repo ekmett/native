@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #include <cstdint>
-#include <native/attributes.h>
+#include <hint.h>
 #if NATIVE_TEST_PRIVATE
 #include <native/x86/adx.h>
 #else
@@ -31,7 +31,7 @@ using output = value const;
 using output = value;
 #endif
 
-native_noinline native_target(NATIVE_TEST_CALLER_TARGET)
+hint_noinline hint_target(NATIVE_TEST_CALLER_TARGET)
 auto reject_addcarryx(std::uint8_t carry, value a, value b, output * result) noexcept {
 #if NATIVE_TEST_PRIVATE
   return native::detail::x86_adx::addcarryx<arch>(carry, a, b, result);

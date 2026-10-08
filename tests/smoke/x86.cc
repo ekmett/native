@@ -5,13 +5,13 @@
 #include <concepts>
 #include <cstdint>
 #include <cstdio>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/targets.h>
 import native.x86;
 
 namespace {
   template<class T, std::size_t N, auto A>
-  native_inline constexpr auto lanes(native::simd<T,N,A> const & value) noexcept {
+  hint_inline constexpr auto lanes(native::simd<T,N,A> const & value) noexcept {
     if consteval {
       std::array<T,N> result{};
       value.store_memory(result.data());
@@ -24,7 +24,7 @@ namespace {
   }
 
   template<class T, std::size_t N, auto A>
-  native_inline constexpr bool all(native::simd<T,N,A> const & value, T expected) noexcept {
+  hint_inline constexpr bool all(native::simd<T,N,A> const & value, T expected) noexcept {
     for (auto actual : lanes(value))
       if (actual != expected) return false;
     return true;

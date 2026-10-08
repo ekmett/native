@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
-#include <native/attributes.h>
+#include <hint.h>
 #include <native/targets.h>
 #if NATIVE_TEST_INTERFACE == 0
 #include <native/x86/crc32c.h>
@@ -127,7 +127,7 @@ namespace crc32c_fixture {
 
   NATIVE_TARGET_PUSH(test_crc32c)
   template<class T>
-  native_noinline std::uint32_t invoke(std::uint32_t accumulator, T value) noexcept {
+  hint_noinline std::uint32_t invoke(std::uint32_t accumulator, T value) noexcept {
     return native::crc32c<requirements>(accumulator, value);
   }
   NATIVE_TARGET_POP()

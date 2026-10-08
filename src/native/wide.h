@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
-#include "native/attributes.h"
+#include <hint.h>
 #include "native/isa.h"
 #include "native/value_traits.h"
 #include "native/wide_pack.h"
@@ -88,16 +88,16 @@ namespace native {
     constexpr wide() requires (!detail::wide_target_default<T,N>) = default;
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
-    [[nodiscard]] native_inline constexpr T & get() & noexcept native_lifetimebound { return registers[I]; }
+    [[nodiscard]] hint_inline constexpr T & get() & noexcept hint_lifetimebound { return registers[I]; }
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
-    [[nodiscard]] native_inline constexpr T const & get() const & noexcept native_lifetimebound { return registers[I]; }
+    [[nodiscard]] hint_inline constexpr T const & get() const & noexcept hint_lifetimebound { return registers[I]; }
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
-    [[nodiscard]] native_inline constexpr T && get() && noexcept native_lifetimebound { return std::move(registers[I]); }
+    [[nodiscard]] hint_inline constexpr T && get() && noexcept hint_lifetimebound { return std::move(registers[I]); }
     /// Access element `I`, preserving constness and the value category of the pack.
     template<std::size_t I> requires (I < N)
-    [[nodiscard]] native_inline constexpr T const && get() const && noexcept native_lifetimebound { return std::move(registers[I]); }
+    [[nodiscard]] hint_inline constexpr T const && get() const && noexcept hint_lifetimebound { return std::move(registers[I]); }
 
   private:
     struct conversion_tag {};
