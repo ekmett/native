@@ -32,7 +32,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16_t sqrdmlah(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -43,7 +43,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -62,7 +62,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -78,7 +78,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x4_t sqrdmlah(int16x4_t accumulator, int16x4_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -89,7 +89,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x4_t sqrdmlah_lane(int16x4_t accumulator, int16x4_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -108,7 +108,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x4_t sqrdmlah_lane(int16x4_t accumulator, int16x4_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -124,7 +124,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x8_t sqrdmlah(int16x8_t accumulator, int16x8_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -135,7 +135,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x8_t sqrdmlah_lane(int16x8_t accumulator, int16x8_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -154,7 +154,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x8_t sqrdmlah_lane(int16x8_t accumulator, int16x8_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -170,7 +170,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32_t sqrdmlah(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -181,7 +181,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -193,7 +193,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -209,7 +209,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x2_t sqrdmlah(int32x2_t accumulator, int32x2_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -220,7 +220,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x2_t sqrdmlah_lane(int32x2_t accumulator, int32x2_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -232,7 +232,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x2_t sqrdmlah_lane(int32x2_t accumulator, int32x2_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -248,7 +248,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x4_t sqrdmlah(int32x4_t accumulator, int32x4_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -259,7 +259,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x4_t sqrdmlah_lane(int32x4_t accumulator, int32x4_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -271,7 +271,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x4_t sqrdmlah_lane(int32x4_t accumulator, int32x4_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -287,7 +287,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16_t sqrdmlsh(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -298,7 +298,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -317,7 +317,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -333,7 +333,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x4_t sqrdmlsh(int16x4_t accumulator, int16x4_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -344,7 +344,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x4_t sqrdmlsh_lane(int16x4_t accumulator, int16x4_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -363,7 +363,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x4_t sqrdmlsh_lane(int16x4_t accumulator, int16x4_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -379,7 +379,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x8_t sqrdmlsh(int16x8_t accumulator, int16x8_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -390,7 +390,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x8_t sqrdmlsh_lane(int16x8_t accumulator, int16x8_t lhs, int16x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -409,7 +409,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int16x8_t sqrdmlsh_lane(int16x8_t accumulator, int16x8_t lhs, int16x8_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -425,7 +425,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32_t sqrdmlsh(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -436,7 +436,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -448,7 +448,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -464,7 +464,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x2_t sqrdmlsh(int32x2_t accumulator, int32x2_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -475,7 +475,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x2_t sqrdmlsh_lane(int32x2_t accumulator, int32x2_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -487,7 +487,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x2_t sqrdmlsh_lane(int32x2_t accumulator, int32x2_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -503,7 +503,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::rdm))
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x4_t sqrdmlsh(int32x4_t accumulator, int32x4_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -514,7 +514,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x4_t sqrdmlsh_lane(int32x4_t accumulator, int32x4_t lhs, int32x2_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);
@@ -526,7 +526,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("rdm")))
+  [[nodiscard]] hint_inline hint_target("rdm")
   int32x4_t sqrdmlsh_lane(int32x4_t accumulator, int32x4_t lhs, int32x4_t rhs) noexcept {
     auto result = detail::rdm_register_order(accumulator);
     auto left = detail::rdm_register_order(lhs);

@@ -20,7 +20,7 @@ namespace native {
   /// Count leading zero bits of a 16-bit value; zero returns 16.
   /// Arch must contain LZCNT; runtime callers must enable and admit that feature.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::lzcnt))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("lzcnt")))
+  [[nodiscard]] hint_inline hint_const hint_target("lzcnt")
   constexpr std::uint16_t lzcnt(std::uint16_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return static_cast<std::uint16_t>(std::countl_zero(value));
@@ -32,7 +32,7 @@ namespace native {
   /// Count leading zero bits of a 32-bit value; zero returns 32.
   /// Arch must contain LZCNT; runtime callers must enable and admit that feature.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::lzcnt))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("lzcnt")))
+  [[nodiscard]] hint_inline hint_const hint_target("lzcnt")
   constexpr std::uint32_t lzcnt(std::uint32_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return static_cast<std::uint32_t>(std::countl_zero(value));
@@ -44,7 +44,7 @@ namespace native {
   /// Count leading zero bits of a 64-bit value; zero returns 64.
   /// Arch must contain LZCNT; runtime callers must enable and admit that feature.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::lzcnt))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("lzcnt")))
+  [[nodiscard]] hint_inline hint_const hint_target("lzcnt")
   constexpr std::uint64_t lzcnt(std::uint64_t value) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return static_cast<std::uint64_t>(std::countl_zero(value));

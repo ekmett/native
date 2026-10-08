@@ -73,7 +73,7 @@ namespace native {
   /// FCADD on 1 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 2, Arch> fcadd(simd<float, 2, Arch> a, simd<float, 2, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
@@ -94,7 +94,7 @@ namespace native {
   /// FCMLA on 1 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 2, Arch> fcmla(
       simd<float, 2, Arch> acc,
       simd<float, 2, Arch> a,
@@ -124,7 +124,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 2, Arch> fcmla_lane(
       simd<float, 2, Arch> acc,
       simd<float, 2, Arch> a,
@@ -156,7 +156,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 2, Arch> fcmla_lane(
       simd<float, 2, Arch> acc,
       simd<float, 2, Arch> a,
@@ -186,7 +186,7 @@ namespace native {
   /// FCADD on 2 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 4, Arch> fcadd(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
@@ -207,7 +207,7 @@ namespace native {
   /// FCMLA on 2 binary32 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 4, Arch> fcmla(
       simd<float, 4, Arch> acc,
       simd<float, 4, Arch> a,
@@ -237,7 +237,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 1)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 4, Arch> fcmla_lane(
       simd<float, 4, Arch> acc,
       simd<float, 4, Arch> a,
@@ -269,7 +269,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<float, 4, Arch> fcmla_lane(
       simd<float, 4, Arch> acc,
       simd<float, 4, Arch> a,
@@ -299,7 +299,7 @@ namespace native {
   /// FCADD on 1 binary64 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<double, 2, Arch> fcadd(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
@@ -320,7 +320,7 @@ namespace native {
   /// FCMLA on 1 binary64 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum")))
+  [[nodiscard]] hint_inline hint_target("complxnum")
   constexpr simd<double, 2, Arch> fcmla(
       simd<double, 2, Arch> acc,
       simd<double, 2, Arch> a,
@@ -348,7 +348,7 @@ namespace native {
   /// FCADD on 2 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 4, Arch> fcadd(simd<fp16, 4, Arch> a, simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
@@ -369,7 +369,7 @@ namespace native {
   /// FCMLA on 2 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 4, Arch> fcmla(
       simd<fp16, 4, Arch> acc,
       simd<fp16, 4, Arch> a,
@@ -399,7 +399,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 4, Arch> fcmla_lane(
       simd<fp16, 4, Arch> acc,
       simd<fp16, 4, Arch> a,
@@ -431,7 +431,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 4, Arch> fcmla_lane(
       simd<fp16, 4, Arch> acc,
       simd<fp16, 4, Arch> a,
@@ -461,7 +461,7 @@ namespace native {
   /// FCADD on 4 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 90 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 8, Arch> fcadd(simd<fp16, 8, Arch> a, simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
@@ -482,7 +482,7 @@ namespace native {
   /// FCMLA on 4 binary16 complex pair(s), rotation in degrees.
   template<isa<arm> Arch, unsigned Rotation> requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
     && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270))
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 8, Arch> fcmla(
       simd<fp16, 8, Arch> acc,
       simd<fp16, 8, Arch> a,
@@ -512,7 +512,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 2)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 8, Arch> fcmla_lane(
       simd<fp16, 8, Arch> acc,
       simd<fp16, 8, Arch> a,
@@ -544,7 +544,7 @@ namespace native {
     requires(Arch.has(arm_feature::complxnum) && Arch.has(arm_feature::neon_fp16)
       && (Rotation == 0 || Rotation == 90 || Rotation == 180 || Rotation == 270)
       && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("complxnum,fullfp16")))
+  [[nodiscard]] hint_inline hint_target("complxnum,fullfp16")
   constexpr simd<fp16, 8, Arch> fcmla_lane(
       simd<fp16, 8, Arch> acc,
       simd<fp16, 8, Arch> a,

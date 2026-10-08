@@ -18,7 +18,7 @@ namespace native::detail {
 
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlal(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -29,7 +29,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlal_lane(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -40,7 +40,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlal_lane(float32x2_t acc, float16x4_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -51,7 +51,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlal(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -62,7 +62,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlal_lane(float32x4_t acc, float16x8_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -73,7 +73,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlal_lane(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -84,7 +84,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlal2(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -95,7 +95,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlal2_lane(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -106,7 +106,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlal2_lane(float32x2_t acc, float16x4_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -117,7 +117,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlal2(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -128,7 +128,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlal2_lane(float32x4_t acc, float16x8_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -139,7 +139,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlal2_lane(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -150,7 +150,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlsl(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -161,7 +161,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlsl_lane(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -172,7 +172,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlsl_lane(float32x2_t acc, float16x4_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -183,7 +183,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlsl(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -194,7 +194,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlsl_lane(float32x4_t acc, float16x8_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -205,7 +205,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlsl_lane(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -216,7 +216,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlsl2(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -227,7 +227,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlsl2_lane(float32x2_t acc, float16x4_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -238,7 +238,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x2_t fmlsl2_lane(float32x2_t acc, float16x4_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -249,7 +249,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::fp16fml))
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlsl2(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -260,7 +260,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 4)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlsl2_lane(float32x4_t acc, float16x8_t a, float16x4_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);
@@ -271,7 +271,7 @@ namespace native::detail {
   }
 
   template<isa<arm> Arch, unsigned Lane> requires(Arch.has(arm_feature::fp16fml) && Lane < 8)
-  [[nodiscard]] hint_inline __attribute__((target("fp16fml")))
+  [[nodiscard]] hint_inline hint_target("fp16fml")
   float32x4_t fmlsl2_lane(float32x4_t acc, float16x8_t a, float16x8_t b) noexcept {
     acc = detail::arm_register_order(acc);
     a = detail::arm_register_order(a);

@@ -13,73 +13,73 @@
 namespace native::detail {
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   int32x2_t sdot(int32x2_t accumulator, int8x8_t lhs, int8x8_t rhs) noexcept {
     return vdot_s32(accumulator, lhs, rhs);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   int32x2_t sdot_lane(int32x2_t accumulator, int8x8_t lhs, int8x8_t rhs) noexcept {
     return vdot_lane_s32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   int32x2_t sdot_lane(int32x2_t accumulator, int8x8_t lhs, int8x16_t rhs) noexcept {
     return vdot_laneq_s32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   int32x4_t sdot(int32x4_t accumulator, int8x16_t lhs, int8x16_t rhs) noexcept {
     return vdotq_s32(accumulator, lhs, rhs);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   int32x4_t sdot_lane(int32x4_t accumulator, int8x16_t lhs, int8x8_t rhs) noexcept {
     return vdotq_lane_s32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   int32x4_t sdot_lane(int32x4_t accumulator, int8x16_t lhs, int8x16_t rhs) noexcept {
     return vdotq_laneq_s32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   uint32x2_t udot(uint32x2_t accumulator, uint8x8_t lhs, uint8x8_t rhs) noexcept {
     return vdot_u32(accumulator, lhs, rhs);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   uint32x2_t udot_lane(uint32x2_t accumulator, uint8x8_t lhs, uint8x8_t rhs) noexcept {
     return vdot_lane_u32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   uint32x2_t udot_lane(uint32x2_t accumulator, uint8x8_t lhs, uint8x16_t rhs) noexcept {
     return vdot_laneq_u32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   uint32x4_t udot(uint32x4_t accumulator, uint8x16_t lhs, uint8x16_t rhs) noexcept {
     return vdotq_u32(accumulator, lhs, rhs);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   uint32x4_t udot_lane(uint32x4_t accumulator, uint8x16_t lhs, uint8x8_t rhs) noexcept {
     return vdotq_lane_u32(accumulator, lhs, rhs, Lane);
   }
 
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   uint32x4_t udot_lane(uint32x4_t accumulator, uint8x16_t lhs, uint8x16_t rhs) noexcept {
     return vdotq_laneq_u32(accumulator, lhs, rhs, Lane);
   }

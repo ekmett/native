@@ -112,7 +112,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 10
 #define NATIVE_WIDE_DETAIL detail::wide_avx2_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_1)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_1)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -122,7 +122,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 9
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_base_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_2)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_2)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -132,7 +132,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 7
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_3)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_3)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -142,7 +142,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 8
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_vl_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_4)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_4)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -152,7 +152,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 3
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_vl_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_5)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_5)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -162,7 +162,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 5
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_bf16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_7)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_7)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -172,7 +172,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 1
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_vl_bf16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_9)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_9)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -182,7 +182,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 6
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_fp16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_11)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_11)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -192,7 +192,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 2
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_vl_fp16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_13)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_13)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -202,7 +202,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 4
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_bf16_fp16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_15)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_15)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -212,7 +212,7 @@ namespace native {
 #if defined(__x86_64__) || defined(_M_X64)
 #define NATIVE_WIDE_INDEX 0
 #define NATIVE_WIDE_DETAIL detail::wide_avx512_bw_vl_bf16_fp16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_17)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_17)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -222,7 +222,7 @@ namespace native {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define NATIVE_WIDE_INDEX 14
 #define NATIVE_WIDE_DETAIL detail::wide_neon_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_20)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_20)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -232,7 +232,7 @@ namespace native {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define NATIVE_WIDE_INDEX 12
 #define NATIVE_WIDE_DETAIL detail::wide_neon_bf16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_21)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_21)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -242,7 +242,7 @@ namespace native {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define NATIVE_WIDE_INDEX 13
 #define NATIVE_WIDE_DETAIL detail::wide_neon_fp16_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_22)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_22)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -252,7 +252,7 @@ namespace native {
 #if defined(__aarch64__) || defined(_M_ARM64)
 #define NATIVE_WIDE_INDEX 11
 #define NATIVE_WIDE_DETAIL detail::wide_neon_half_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_23)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_23)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -262,7 +262,7 @@ namespace native {
 #if NATIVE_HOST_WASM
 #define NATIVE_WIDE_INDEX 16
 #define NATIVE_WIDE_DETAIL detail::wide_wasm_detail
-#define NATIVE_WIDE_TARGET __attribute__((target(NATIVE_KERNEL_TARGET_WASM)))
+#define NATIVE_WIDE_TARGET hint_target(NATIVE_KERNEL_TARGET_WASM)
 #include "native/wide_members.h"
 #undef NATIVE_WIDE_TARGET
 #undef NATIVE_WIDE_DETAIL
@@ -461,7 +461,7 @@ namespace wide::detail {
 #if NATIVE_HOST_WASM
     // Let generic demotion reach the caller before inlining SIMD128 constructors.
     template<class R> requires (::native::detail::wide_target<R> == 16)
-    __attribute__((target("simd128"))) static inline constexpr rebind<R> restore(std::array<R,N> const & values) {
+    hint_target("simd128") static inline constexpr rebind<R> restore(std::array<R,N> const & values) {
       return rebind<R>{values};
     }
 #endif

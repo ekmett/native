@@ -18,7 +18,7 @@ namespace native {
   // All vector operands share Arch; native registers remain implementation details.
   /// SDOT: four byte products per accumulator lane, modulo 2^32.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::int32_t, 2, Arch> sdot(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int8_t, 8, Arch> lhs,
@@ -44,7 +44,7 @@ namespace native {
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::int32_t, 2, Arch> sdot_lane(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int8_t, 8, Arch> lhs,
@@ -70,7 +70,7 @@ namespace native {
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::int32_t, 2, Arch> sdot_lane(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int8_t, 8, Arch> lhs,
@@ -96,7 +96,7 @@ namespace native {
 
   /// SDOT: four byte products per accumulator lane, modulo 2^32.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::int32_t, 4, Arch> sdot(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int8_t, 16, Arch> lhs,
@@ -122,7 +122,7 @@ namespace native {
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::int32_t, 4, Arch> sdot_lane(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int8_t, 16, Arch> lhs,
@@ -148,7 +148,7 @@ namespace native {
 
   /// SDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::int32_t, 4, Arch> sdot_lane(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int8_t, 16, Arch> lhs,
@@ -174,7 +174,7 @@ namespace native {
 
   /// UDOT: four byte products per accumulator lane, modulo 2^32.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::uint32_t, 2, Arch> udot(
       simd<std::uint32_t, 2, Arch> accumulator,
       simd<std::uint8_t, 8, Arch> lhs,
@@ -200,7 +200,7 @@ namespace native {
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::uint32_t, 2, Arch> udot_lane(
       simd<std::uint32_t, 2, Arch> accumulator,
       simd<std::uint8_t, 8, Arch> lhs,
@@ -226,7 +226,7 @@ namespace native {
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::uint32_t, 2, Arch> udot_lane(
       simd<std::uint32_t, 2, Arch> accumulator,
       simd<std::uint8_t, 8, Arch> lhs,
@@ -252,7 +252,7 @@ namespace native {
 
   /// UDOT: four byte products per accumulator lane, modulo 2^32.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::dotprod))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::uint32_t, 4, Arch> udot(
       simd<std::uint32_t, 4, Arch> accumulator,
       simd<std::uint8_t, 16, Arch> lhs,
@@ -278,7 +278,7 @@ namespace native {
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 2)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::uint32_t, 4, Arch> udot_lane(
       simd<std::uint32_t, 4, Arch> accumulator,
       simd<std::uint8_t, 16, Arch> lhs,
@@ -304,7 +304,7 @@ namespace native {
 
   /// UDOT by element: broadcast rhs byte group Lane to every accumulator lane.
   template<isa<arm> Arch, int Lane> requires(Arch.has(arm_feature::dotprod) && Lane >= 0 && Lane < 4)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("dotprod")))
+  [[nodiscard]] hint_inline hint_const hint_target("dotprod")
   constexpr simd<std::uint32_t, 4, Arch> udot_lane(
       simd<std::uint32_t, 4, Arch> accumulator,
       simd<std::uint8_t, 16, Arch> lhs,

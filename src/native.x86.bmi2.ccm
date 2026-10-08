@@ -65,7 +65,7 @@ namespace native {
 
   /// Zero bits at and above index's low eight bits; an index at least the width leaves value unchanged.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t bzhi(std::uint32_t value, unsigned index) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_zero_high(value, index);
@@ -75,7 +75,7 @@ namespace native {
   }
   /// BZHI with a 64-bit value and the same low-eight-bit index semantics.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t bzhi(std::uint64_t value, unsigned index) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_zero_high(value, index);
@@ -86,7 +86,7 @@ namespace native {
 
   /// Return the low product and write the high product to a valid output pointer.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_target("bmi2")
   constexpr std::uint32_t mulx(std::uint32_t a, std::uint32_t b, std::uint32_t* high) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_multiply(a, b, high);
@@ -99,7 +99,7 @@ namespace native {
   }
   /// Return the low 64 bits and write the high 64 bits of the unsigned 128-bit product.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_target("bmi2")
   constexpr std::uint64_t mulx(std::uint64_t a, std::uint64_t b, std::uint64_t* high) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_multiply(a, b, high);
@@ -114,7 +114,7 @@ namespace native {
 
   /// Parallel bit deposit (PDEP): place the low popcount(mask) bits into mask's set positions, in order.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t pdep(std::uint32_t value, std::uint32_t mask) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_deposit(value, mask);
@@ -124,7 +124,7 @@ namespace native {
   }
   /// Parallel bit deposit (PDEP), with 64-bit operands.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t pdep(std::uint64_t value, std::uint64_t mask) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_deposit(value, mask);
@@ -135,7 +135,7 @@ namespace native {
 
   /// Parallel bit extract (PEXT): gather mask's selected bits into the low bits, in order.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t pext(std::uint32_t value, std::uint32_t mask) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_extract(value, mask);
@@ -145,7 +145,7 @@ namespace native {
   }
   /// Parallel bit extract (PEXT), with 64-bit operands.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t pext(std::uint64_t value, std::uint64_t mask) noexcept {
     if (__builtin_is_constant_evaluated()) {
       return detail::bmi2_extract(value, mask);
@@ -156,52 +156,52 @@ namespace native {
 
   /// Logical left shift using the low five bits of count.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t shlx(std::uint32_t value, unsigned count) noexcept {
     return value << (count & 31u);
   }
   /// Logical left shift using the low six bits of count.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t shlx(std::uint64_t value, unsigned count) noexcept {
     return value << (count & 63u);
   }
 
   /// Logical right shift using the low five bits of count.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t shrx(std::uint32_t value, unsigned count) noexcept {
     return value >> (count & 31u);
   }
   /// Logical right shift using the low six bits of count.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t shrx(std::uint64_t value, unsigned count) noexcept {
     return value >> (count & 63u);
   }
 
   /// Arithmetic right shift using the low five bits of count, propagating the sign bit.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::int32_t sarx(std::int32_t value, unsigned count) noexcept {
     return value >> (count & 31u);
   }
   /// Arithmetic right shift using the low six bits of count, propagating the sign bit.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::bmi2))
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::int64_t sarx(std::int64_t value, unsigned count) noexcept {
     return value >> (count & 63u);
   }
 
   /// Rotate right by an immediate byte; the low five bits select the 32-bit rotation.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::bmi2) && Imm8 <= 255)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t rorx(std::uint32_t value) noexcept {
     return std::rotr(value, int(Imm8));
   }
   /// Rotate right by an immediate byte; the low six bits select the 64-bit rotation.
   template<isa<x86> Arch, unsigned Imm8> requires(Arch.has(x86_feature::bmi2) && Imm8 <= 255)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t rorx(std::uint64_t value) noexcept {
     return std::rotr(value, int(Imm8));
   }
@@ -416,7 +416,7 @@ extern "C++" namespace native {
   /// rorx<Arch, Imm8> also selects an explicit architecture.
   template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(Arch.has(x86_feature::bmi2) && Imm8 <= 255)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint32_t rorx(std::uint32_t value) noexcept {
     return rorx<Arch, Imm8>(value);
   }
@@ -425,7 +425,7 @@ extern "C++" namespace native {
   /// rorx<Arch, Imm8> also selects an explicit architecture.
   template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
     requires(Arch.has(x86_feature::bmi2) && Imm8 <= 255)
-  [[nodiscard]] hint_inline hint_const __attribute__((target("bmi2")))
+  [[nodiscard]] hint_inline hint_const hint_target("bmi2")
   constexpr std::uint64_t rorx(std::uint64_t value) noexcept {
     return rorx<Arch, Imm8>(value);
   }
