@@ -85,6 +85,11 @@ that compile kernels in separate translation units.
 Imports do not export macros. `native::headers` supplies `config.h`, `attributes.h`,
 `isa.h` and `targets.h` under the `native/` include directory. Native implementation
 headers are installed privately under `lib/native/include` for BMI regeneration.
+Compiler annotations come from [Hint](https://github.com/ekmett/hint), exposed
+through `native::headers`. CMake reuses `hint::hint` or an installed Hint package,
+and otherwise fetches the pinned revision. `<native/attributes.h>` forwards the
+`native_*` names to `<hint.h>`; new code can use `hint_*` directly.
+
 The ISA metadata header requires C++20 and the Clang property extension; the host
 modules require C++26. `NATIVE_TARGET_ISA(name)` yields a checked ISA value for a
 registered source target.

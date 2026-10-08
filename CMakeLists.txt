@@ -47,10 +47,20 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+if(NOT TARGET hint::hint)
+  include(FetchContent)
+  FetchContent_Declare(hint
+    GIT_REPOSITORY https://github.com/ekmett/hint.git
+    GIT_TAG 9685ad404b57075a8e91fa3deef9c3fd759b7237
+    FIND_PACKAGE_ARGS 0.1 CONFIG)
+  FetchContent_MakeAvailable(hint)
+endif()
+
 # Configuration, attributes and source-level target generation are textual.
 # Downstream libraries can consume them without enabling the host module build.
 add_library(native_headers INTERFACE)
 add_library(native::headers ALIAS native_headers)
+target_link_libraries(native_headers INTERFACE hint::hint)
 set_target_properties(native_headers PROPERTIES EXPORT_NAME headers)
 # Named swizzle properties use Clang's Microsoft property extension. Carry this
 # requirement with the headers as well as modules, including relocated consumers.
@@ -173,13 +183,23 @@ endif()
 
 configure_file(etc/cmake/nativeProfile.cmake "${CMAKE_CURRENT_BINARY_DIR}/nativeProfile.cmake" COPYONLY)
 configure_package_config_file(etc/cmake/nativeConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/install/nativeConfig.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native"
+  PATH_VARS CMAKE_INSTALL_DATADIR)
+# Build-tree consumers also need to locate a source-built Hint package. Keep
+# that path out of the installed, relocatable Native configuration.
+if(hint_BINARY_DIR)
+  set(native_hint_build_hint "HINTS \"${hint_BINARY_DIR}\"")
+endif()
+configure_package_config_file(etc/cmake/nativeConfig.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/nativeConfig.cmake"
   INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native"
   PATH_VARS CMAKE_INSTALL_DATADIR)
+unset(native_hint_build_hint)
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/nativeConfigVersion.cmake"
   VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/nativeProfile.cmake"
-  "${CMAKE_CURRENT_BINARY_DIR}/nativeConfig.cmake"
+  "${CMAKE_CURRENT_BINARY_DIR}/install/nativeConfig.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/nativeConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
 

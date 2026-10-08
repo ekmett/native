@@ -15,7 +15,7 @@ start with the [value guide](../docs/modules.md) or
 | `native.math.ccm` | Promoted numerical kernels and targeted math forwarding |
 | `native.{x86,arm}.*.ccm`, `native/{x86,arm}/` | Capability observers and instruction families |
 | `native.numerics.ccm` | Scalar FP16/BF16 storage, conversions and numerical utilities |
-| `native/attributes.h` | Named compiler modifiers for textual inclusion |
+| `native/attributes.h` | Compatibility names for the [Hint](https://github.com/ekmett/hint) compiler annotations |
 
 The shared implementation is `<native/simd.h>`; Apple's SDK remains available
 as `<simd/simd.h>`. The public class template is `native::simd`.
