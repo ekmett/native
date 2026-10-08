@@ -21,6 +21,14 @@ html:root {
   --nav-menu-active-bg: var(--thc-wash);
   --nav-splitbar-bg-color: var(--thc-line);
   --fragment-background-color: var(--thc-code);
+  --code-keyword-color: var(--thc-accent);
+  --code-type-keyword-color: var(--thc-heading);
+  --code-flow-keyword-color: var(--thc-accent);
+  --code-comment-color: var(--thc-muted);
+  --code-preprocessor-color: var(--thc-link);
+  --code-string-literal-color: var(--thc-accent);
+  --code-char-literal-color: var(--thc-accent);
+  --code-xml-cdata-color: var(--thc-ink);
   --fragment-foreground-color: var(--thc-ink);
   --fragment-border-color: var(--thc-line);
   --memdecl-background-color: var(--thc-pale);
@@ -150,3 +158,8 @@ a:focus-visible, input:focus-visible, button:focus-visible {
   .contents > .textblock { font-size: 16px; }
   div.fragment { padding: 12px; }
 }
+
+/* The enclosing site already provides the project header and left rail. */
+html[data-thc-embedded] #titlearea,
+html[data-thc-embedded] #side-nav { display: none; }
+html[data-thc-embedded] #doc-content { margin-left: 0 !important; }

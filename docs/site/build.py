@@ -48,10 +48,10 @@ def build(source, api, output, name, pandoc):
 
     def decorate(text, page, reference=False):
         tags = f'<meta name="docs-revision" content="{revision}">'
-        tags += f'<script src="{relative(Path("assets/theme.js"), page)}"></script>'
-        tags += f'<link rel="stylesheet" href="{relative(Path("assets/site.css"), page)}">'
+        tags += f'<script src="{relative(Path("assets/theme.js"), page)}?v={revision}"></script>'
+        tags += f'<link rel="stylesheet" href="{relative(Path("assets/site.css"), page)}?v={revision}">'
         if reference:
-            tags += f'<link rel="stylesheet" href="{relative(Path("assets/reference.css"), page)}">'
+            tags += f'<link rel="stylesheet" href="{relative(Path("assets/reference.css"), page)}?v={revision}">'
         if '</head>' not in text:
             raise ValueError(f'Missing HTML head: {page}')
         return text.replace('</head>', tags + '</head>', 1)
@@ -127,8 +127,8 @@ def build(source, api, output, name, pandoc):
     manifest = json.dumps(pages).replace('<', '\\u003c')
     shell = f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="docs-project" content="{name}"><title>{name} documentation</title>{icon}
-<script src="assets/theme.js"></script><link rel="stylesheet" href="assets/site.css"></head>
+<meta name="docs-revision" content="{revision}"><meta name="docs-project" content="{name}"><title>{name} documentation</title>{icon}
+<script src="assets/theme.js?v={revision}"></script><link rel="stylesheet" href="assets/site.css?v={revision}"></head>
 <body class="thc-shell"><button class="thc-menu" type="button" aria-expanded="false" aria-controls="thc-rail">Documentation menu</button>
 <div class="thc-shell-layout"><aside class="thc-rail" id="thc-rail">
 <a class="thc-brand" href="home.html" data-page="home.html" target="thc-content">{name}<span> / docs</span></a>
@@ -141,8 +141,8 @@ def build(source, api, output, name, pandoc):
 <p class="thc-nav-label">Guides</p>{nav}<p class="thc-nav-label">Reference</p>
 {reference_nav}</nav>
 <div class="thc-rail-footer"><a href="{repo}/commit/{revision}">Source · {revision[:12]}</a></div></aside>
-<iframe id="thc-content" name="thc-content" title="{name} documentation content" src="home.html"></iframe></div>
-<script type="application/json" id="thc-pages">{manifest}</script><script src="assets/site.js" defer></script></body></html>'''
+<iframe id="thc-content" name="thc-content" title="{name} documentation content" src="home.html?v={revision}"></iframe></div>
+<script type="application/json" id="thc-pages">{manifest}</script><script src="assets/site.js?v={revision}" defer></script></body></html>'''
     (output / 'index.html').write_text(shell)
     (output / '.nojekyll').touch()
     # Existing links into the formerly top-level Doxygen site keep their anchors.

@@ -7,6 +7,7 @@
   const rail = document.getElementById("thc-rail");
   const pages = new Set(JSON.parse(document.getElementById("thc-pages").textContent));
   const base = new URL("./", location.href);
+  const revision = document.querySelector('meta[name="docs-revision"]').content;
   let current = "home.html";
 
   // Only paths copied into this exact revision's site can be selected. URL
@@ -17,6 +18,7 @@
     try {
       const url = new URL(value, base);
       if (url.origin !== base.origin || !url.pathname.startsWith(base.pathname)) return null;
+      url.searchParams.delete("v");
       const page = decodeURIComponent(url.pathname.slice(base.pathname.length));
       return pages.has(page) ? page + url.search + url.hash : null;
     } catch (_) { return null; }
@@ -46,7 +48,9 @@
     if (loaded !== valid) {
       // A shell click already made one history entry. Replacing the child URL
       // avoids adding a second entry to the browser's joint frame history.
-      const absolute = new URL(valid, base).href;
+      const destination = new URL(valid, base);
+      destination.searchParams.set("v", revision);
+      const absolute = destination.href;
       if (loaded) frame.contentWindow.location.replace(absolute);
       else frame.setAttribute("src", absolute);
     }
@@ -93,7 +97,12 @@
         if (/^(javascript|data):/i.test(link.href)) { event.preventDefault(); return; }
         link.target = "_blank"; link.rel = "noopener noreferrer";
       }
-      else link.target = "_self";
+      else {
+        const destination = new URL(link.href);
+        destination.searchParams.set("v", revision);
+        link.href = destination.href;
+        link.target = "_self";
+      }
     }, true);
     inner.defaultView.addEventListener("hashchange", () => {
       const next = frameRoute();
