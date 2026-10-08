@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-"""Expand a conservative subset of CMake's Clang module maps before sccache.
+"""Cache ordinary Clang compilations while keeping named modules uncached.
 
 This is deliberately not a general response-file parser. Unknown response or
 PCH syntax runs the original compiler invocation without caching. Explicit PCH
 binary inputs are hashed through SCCACHE_EXTRAFILES. CMake's files are never
-rewritten. Windows clang-cl module, PCH and response-file invocations bypass
-caching with their original arguments; ordinary compilations remain cacheable.
+rewritten. Named-module providers and importers use the original compiler argv
+on every platform: restored BMIs can crash Clang while fresh builds succeed.
+Windows clang-cl PCH and response-file invocations also bypass caching;
+ordinary compilations remain cacheable.
 Unsupported compiler names bypass caching directly.
 """
 import errno
@@ -194,6 +196,16 @@ def main(arguments):
         return 0
     original = ['sccache', *arguments]
     normalized = normalize(arguments)
+    # Restored ARM BMIs crash Clang23 in imported inline assembly (nightly
+    # 37745349032); an identical fresh build passes. Keep this pipeline uncached.
+    if any(arg.startswith(('-fmodule', '-fprebuilt-module', '-fimplicit-module',
+                           '-fno-implicit-module', '-emit-module', '--precompile',
+                           '-Xclang=-fmodule', '-Xclang=-emit-module')) or
+           arg in ('c++-module', '-xc++-module') or
+           arg.endswith(('.ccm', '.cppm', '.cxxm', '.c++m', '.ixx', '.mpp', '.mxx', '.pcm', '.bmi'))
+           for arg in normalized[1:]):
+        os.execvp(arguments[0], arguments)
+        return 0
     if os.name != 'nt':
         inputs = pch_inputs(normalized)
         if inputs is None:

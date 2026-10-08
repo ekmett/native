@@ -51,29 +51,25 @@ def main():
         flags = ['-std=c++20', '-O2', '-flto=thin']
         header = Path('prefix.h')
         header.write_text('#pragma once\ninline constexpr int value = 42;\n')
-        Path('probe.cppm').write_text('module;\n#include "prefix.h"\n'
-                                    'export module probe;\nexport int answer() { return value; }\n')
-        Path('consumer.cc').write_text('import probe;\nint use() { return answer(); }\n')
-        Path('probe.modmap').write_text('-x c++-module\n-fmodule-output="probe.pcm"\n')
+        Path('probe.cc').write_text('#include "prefix.h"\nint answer() { return value; }\n')
         pch = ['-Xclang', '-include-pch', '-Xclang', str(root / 'prefix.pch')]
         producer = [sys.executable, str(launcher), compiler, *flags, *pch,
-                    '@probe.modmap', '-c', 'probe.cppm', '-o', 'probe.o']
+                    '-c', 'probe.cc', '-o', 'probe.o']
 
         def build_pch():
             run([compiler, *flags, '-x', 'c++-header', 'prefix.h', '-o', 'prefix.pch'])
 
         def preprocess():
             return run([compiler, *flags, *pch, '-E', '-P', '-fminimize-whitespace',
-                        '-x', 'c++-module', 'probe.cppm'])
+                        'probe.cc'])
 
         def counters(stats):
             return tuple(int(re.search(r'^Cache ' + field + r'\s+(\d+)\s*$', stats, re.M)[1])
                          for field in ['hits', 'misses'])
 
         def stage(name, expected_hits):
-            # Remove only these two fixture outputs, retaining all cached artifacts.
-            for filename in ['probe.o', 'probe.pcm']:
-                Path(filename).unlink(missing_ok=True)
+            # Retain all cache entries while forcing the ordinary compilation.
+            Path('probe.o').unlink(missing_ok=True)
             previous = counters(run(['sccache', '--show-stats']))
             run(producer)
             stats = run(['sccache', '--show-stats'])
@@ -83,10 +79,7 @@ def main():
                 assert errors is not None and int(errors[1]) == 0, (name, stats)
             hits, misses = (after - before for after, before in zip(counters(stats), previous))
             assert (hits, misses) == (expected_hits, 1 - expected_hits), (name, stats)
-            # Deliberately uncached: Clang must validate the actual restored BMI/PCH.
-            run([compiler, *flags, '-fmodule-file=probe=probe.pcm', '-c', 'consumer.cc',
-                 '-o', 'consumer.o'])
-            print(f'{name}: hits={hits}, misses={misses}; fresh importer passed', flush=True)
+            print(f'{name}: hits={hits}, misses={misses}', flush=True)
 
         build_pch()
         initial_preprocessed = preprocess()

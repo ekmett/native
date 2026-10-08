@@ -72,6 +72,16 @@ class LauncherTests(PosixLauncherTests):
         self.arguments = ['/toolchain/clang++', '-c', 'source with space.cc',
                           '@' + str(self.path), '-o', 'output with space.o']
 
+    def test_named_modules_bypass_cache_with_original_arguments(self):
+        cases = [self.arguments,
+                 ['clang++', '-x', 'c++-module', '-c', 'owner.ccm'],
+                 ['clang++', '-fmodule-file=native=src/native.pcm', '-c', 'main.cc']]
+        for arguments in cases:
+            with self.subTest(arguments=arguments):
+                with patch.object(launcher.os, 'execvp') as execute:
+                    launcher.main(arguments)
+                    execute.assert_called_once_with(arguments[0], arguments)
+
     def test_expansion_preserves_other_argv_and_file(self):
         before = self.path.read_bytes()
         result = launcher.normalize(self.arguments)
@@ -125,6 +135,7 @@ class LauncherTests(PosixLauncherTests):
                     self.assertEqual(execute.call_count, 1)
 
     def test_exec_retries_original_only_for_argument_size(self):
+        self.path.write_text('')
         with patch.object(launcher.os, 'execvp', side_effect=[OSError(errno.E2BIG, 'long'), None]) as execute:
             launcher.main(self.arguments)
             self.assertEqual(execute.call_count, 2)
@@ -161,6 +172,7 @@ class LauncherTests(PosixLauncherTests):
 
     @unittest.skipIf(os.name == 'nt', 'POSIX exec and GNU-style Clang only')
     def test_real_launcher_forwards_exit_output_and_arguments(self):
+        self.path.write_text('')
         fake = self.root / 'sccache'
         fake.write_text('#!' + sys.executable + '\nimport json, sys\n'
                         'print(json.dumps(sys.argv[1:]))\n'
@@ -270,7 +282,7 @@ class PchTests(PosixLauncherTests):
         self.addCleanup(self.directory.cleanup)
         self.pch = Path(self.directory.name) / 'with space.pch'
         self.pch.write_bytes(b'first binary')
-        self.arguments = ['clang++', '-c', 'module.ccm']
+        self.arguments = ['clang++', '-c', 'ordinary.cc']
 
     def test_explicit_and_forwarded_inputs(self):
         for flags in [['-include-pch', str(self.pch)],
@@ -305,9 +317,9 @@ class PchTests(PosixLauncherTests):
 
     def test_e2big_keeps_original_response_and_pch_arguments(self):
         modmap = self.pch.with_suffix('.modmap')
-        modmap.write_text('-fmodule-file="native=src/native.pcm"\n')
+        modmap.write_text('')
         arguments = [*self.arguments, '-include-pch', str(self.pch), '@' + str(modmap)]
-        expected = ['sccache', *arguments[:-1], '-fmodule-file=native=src/native.pcm']
+        expected = ['sccache', *arguments[:-1]]
         with patch.dict(os.environ, {'SCCACHE_EXTRAFILES': '/existing/file'}):
             with patch.object(launcher.os, 'execvp', side_effect=[OSError(errno.E2BIG, 'long'), None]) as execute:
                 launcher.main(arguments)
