@@ -70,6 +70,62 @@ namespace native {
   NATIVE_POLYFILL_MASKED(masked_mul,*)
 #undef NATIVE_POLYFILL_MASKED
 
+#define NATIVE_POLYFILL_NATIVE_HALF_UNARY(NAME) \
+  /** Supply a permitted scalar operation absent from native half's storage API. */ \
+  template<class T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && \
+    detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 && !detail::polyfill_operation_shape<T,N,A>) \
+  constexpr simd<T,N,A> NAME(simd<T,N,A> value) noexcept { \
+    using S=typename detail::polyfill_chunk<T,1,detail::hardware_isa<A>>::type; \
+    std::array<T,N> lanes{}; value.store(lanes.data()); \
+    for(std::size_t i=0;i<N;++i) NAME(S::load(lanes.data()+i)).store(lanes.data()+i); \
+    return simd<T,N,A>::load(lanes.data()); \
+  }
+  NATIVE_POLYFILL_NATIVE_HALF_UNARY(abs)
+  NATIVE_POLYFILL_NATIVE_HALF_UNARY(floor)
+  NATIVE_POLYFILL_NATIVE_HALF_UNARY(ceil)
+  NATIVE_POLYFILL_NATIVE_HALF_UNARY(trunc)
+  NATIVE_POLYFILL_NATIVE_HALF_UNARY(round_even)
+#undef NATIVE_POLYFILL_NATIVE_HALF_UNARY
+  /// Bridge a matching compact mask to native half's existing vector-mask selection.
+  template<class T,std::size_t N,isa<> A,class M> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) &&
+    detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 && !detail::polyfill_operation_shape<T,N,A>) &&
+    (std::same_as<M,predicate<N,A>> || std::same_as<M,detail::polyfill_predicate<N,A>>)
+  constexpr simd<T,N,A> select(M mask,simd<T,N,A> a,simd<T,N,A> b) noexcept {
+    return select(simd<T,N,A>::mask_type::from_bitset(mask.to_bitset()),a,b);
+  }
+#define NATIVE_POLYFILL_NATIVE_HALF_SCALAR(OP) \
+  /** Broadcast a matching half scalar before the native lane operation. */ \
+  template<class T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && \
+    detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 && !detail::polyfill_operation_shape<T,N,A>) \
+  constexpr auto operator OP(simd<T,N,A> a,T b) noexcept { return a OP simd<T,N,A>(b); } \
+  /** Broadcast a matching half scalar before the native lane operation. */ \
+  template<class T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && \
+    detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 && !detail::polyfill_operation_shape<T,N,A>) \
+  constexpr auto operator OP(T a,simd<T,N,A> b) noexcept { return simd<T,N,A>(a) OP b; }
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(+)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(-)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(*)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(/)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(==)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(!=)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(<)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(<=)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(>)
+  NATIVE_POLYFILL_NATIVE_HALF_SCALAR(>=)
+#undef NATIVE_POLYFILL_NATIVE_HALF_SCALAR
+#define NATIVE_POLYFILL_NATIVE_HALF_ASSIGN(OP) \
+  /** Apply permitted native half arithmetic in place. */ \
+  template<class T,std::size_t N,isa<> A,class U> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && \
+    detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 && !detail::polyfill_operation_shape<T,N,A>) && \
+    (std::same_as<U,T> || std::same_as<U,simd<T,N,A>>) \
+  constexpr simd<T,N,A> & operator OP##=(simd<T,N,A> & a,U b) noexcept { return a=a OP b; }
+  NATIVE_POLYFILL_NATIVE_HALF_ASSIGN(+)
+  NATIVE_POLYFILL_NATIVE_HALF_ASSIGN(-)
+  NATIVE_POLYFILL_NATIVE_HALF_ASSIGN(*)
+  NATIVE_POLYFILL_NATIVE_HALF_ASSIGN(/)
+#undef NATIVE_POLYFILL_NATIVE_HALF_ASSIGN
+
+
   /// Broadcast one compile-time-selected logical lane.
   template<std::size_t I,class T,std::size_t N,isa<> A>
     requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> && (I<N)

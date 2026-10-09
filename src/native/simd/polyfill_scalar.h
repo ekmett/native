@@ -11,23 +11,20 @@ namespace native::detail {
   template<class F> inline polyfill_half_control polyfill_float_environment() noexcept {
     polyfill_half_control result;
 #if NATIVE_HOST_NEON
-    std::uint64_t control;
-    __asm__ volatile("mrs %0, fpcr":"=r"(control)::"memory");
-    constexpr constexpr_float::rounding modes[]{constexpr_float::rounding::nearest_even,
-      constexpr_float::rounding::upward,constexpr_float::rounding::downward,constexpr_float::rounding::toward_zero};
-    result.mode=modes[(control>>22)&3];
-    result.policy.flush_inputs=result.policy.flush_outputs=(control&(std::uint64_t{1}<<(std::same_as<F,constexpr_float::binary16>?19:24)))!=0;
-    if(control&(std::uint64_t{1}<<25)) result.policy.nan=constexpr_float::nan_propagation::default_nan;
+    auto control=arm_float_control::current();
+    result.mode=control.rounding_mode(); result.policy=control.template policy<F>();
 #elif NATIVE_HOST_X86
     std::uint32_t control;
     __asm__ volatile("stmxcsr %0":"=m"(control)::"memory");
     constexpr constexpr_float::rounding modes[]{constexpr_float::rounding::nearest_even,
       constexpr_float::rounding::downward,constexpr_float::rounding::upward,constexpr_float::rounding::toward_zero};
     result.mode=modes[(control>>13)&3];
+    if constexpr(std::same_as<F,constexpr_float::binary16>) result.policy=half_constant::arithmetic_policy<false>();
+    else result.policy.default_nan_negative=true;
     // Native x86 half arithmetic ignores MXCSR DAZ/FTZ.
     if constexpr(!std::same_as<F,constexpr_float::binary16>) {
       result.policy.flush_inputs=(control&(1u<<6))!=0;
-      result.policy.flush_outputs=(control&(1u<<15))!=0;
+      result.policy.flush_outputs_after_rounding=(control&(1u<<15))!=0;
     }
 #endif
     return result;
@@ -45,6 +42,11 @@ namespace native::detail {
     using native_type=T;
     using format=typename polyfill_element_traits<T>::format;
     using word=typename format::bits_type;
+    static constexpr auto constant_policy=[] {
+      if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::binary16)
+        return half_constant::arithmetic_policy<!NATIVE_HOST_X86>();
+      else return constexpr_float::policy{};
+    }();
     using mask=polyfill_predicate<1,A>;
     T value{};
     constexpr polyfill_scalar() noexcept=default;
@@ -67,7 +69,7 @@ namespace native::detail {
     /** Apply element-format arithmetic with one rounding. */ \
     friend constexpr polyfill_scalar operator OP(polyfill_scalar a,polyfill_scalar b) noexcept \
       requires(polyfill_element_traits<T>::arithmetic) { \
-      if consteval { return element(constexpr_float::FN<format>(bits(a.value),bits(b.value))); } \
+      if consteval { return element(constexpr_float::FN<format>(bits(a.value),bits(b.value),constexpr_float::rounding::nearest_even,constant_policy)); } \
       else { \
         if constexpr(sizeof(T)==2) { \
           auto control=polyfill_half_environment(); \
@@ -83,7 +85,12 @@ namespace native::detail {
 #undef NATIVE_POLYFILL_SCALAR_BINARY
     /// Negate by changing only the sign bit.
     friend constexpr polyfill_scalar operator-(polyfill_scalar a) noexcept
-      requires(polyfill_element_traits<T>::arithmetic) { return element(bits(a.value)^format::sign_mask); }
+      requires(polyfill_element_traits<T>::arithmetic) {
+#if NATIVE_HOST_NEON
+      if !consteval { return element(arm_float_control::current().template negate<format>(bits(a.value))); }
+#endif
+      return element(bits(a.value)^format::sign_mask);
+    }
     /// Compare without treating NaNs as ordered values.
     friend constexpr mask operator<(polyfill_scalar a,polyfill_scalar b) noexcept
       requires(polyfill_element_traits<T>::arithmetic) {
@@ -111,7 +118,7 @@ namespace native::detail {
     /// Fuse multiply and add, rounding once to the lane format.
     friend constexpr polyfill_scalar fma(polyfill_scalar a,polyfill_scalar b,polyfill_scalar c) noexcept
       requires(polyfill_element_traits<T>::arithmetic) {
-      if consteval { return element(constexpr_float::fma_bits<format>(bits(a.value),bits(b.value),bits(c.value))); }
+      if consteval { return element(constexpr_float::fma_bits<format>(bits(a.value),bits(b.value),bits(c.value),constexpr_float::rounding::nearest_even,constant_policy)); }
       else {
         if constexpr(sizeof(T)==2) {
           auto control=polyfill_half_environment();
@@ -123,7 +130,7 @@ namespace native::detail {
     /// Correctly rounded square root in the lane format.
     friend constexpr polyfill_scalar sqrt(polyfill_scalar a) noexcept
       requires(polyfill_element_traits<T>::arithmetic) {
-      if consteval { return element(constexpr_float::sqrt_bits<format>(bits(a.value))); }
+      if consteval { return element(constexpr_float::sqrt_bits<format>(bits(a.value),constexpr_float::rounding::nearest_even,constant_policy)); }
       else {
         if constexpr(sizeof(T)==2) {
           auto control=polyfill_half_environment();
@@ -138,7 +145,8 @@ namespace native::detail {
     /** Round to an integral value in the element format. */ \
     friend constexpr polyfill_scalar NAME(polyfill_scalar a) noexcept \
       requires(polyfill_element_traits<T>::arithmetic) { \
-      return element(constexpr_float::round_integral_bits<format>(bits(a.value),constexpr_float::rounding::MODE)); \
+      if consteval { return element(constexpr_float::round_integral_bits<format>(bits(a.value),constexpr_float::rounding::MODE,constant_policy)); } \
+      else { return element(constexpr_float::round_integral_bits<format>(bits(a.value),constexpr_float::rounding::MODE,polyfill_float_environment<format>().policy)); } \
     }
     NATIVE_POLYFILL_SCALAR_ROUND(floor,downward)
     NATIVE_POLYFILL_SCALAR_ROUND(ceil,upward)

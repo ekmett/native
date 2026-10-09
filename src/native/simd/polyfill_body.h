@@ -41,6 +41,16 @@ namespace native {
         result.value_[i]=operation(chunk_type::from_native(values.value_[i])...).to_native();
       return result;
     }
+    using scalar_chunk_type=typename detail::polyfill_chunk<T,1,detail::hardware_isa<A>>::type;
+    template<class F,class... V>
+    static constexpr simd map_scalar(F operation,V const &... values) noexcept {
+      auto input=std::tuple{[&] { std::array<T,N> lanes{}; values.store(lanes.data()); return lanes; }()...};
+      std::array<T,N> output{};
+      for(std::size_t i=0;i<N;++i) std::apply([&](auto const &... lanes) {
+        operation(scalar_chunk_type::load(lanes.data()+i)...).store(output.data()+i);
+      },input);
+      return load(output.data());
+    }
     template<class F>
     static constexpr mask compare(F operation,simd const & a,simd const & b) noexcept {
       std::uint64_t bits=0;
@@ -158,7 +168,7 @@ namespace native {
       if consteval {
         for(std::size_t i=0;i<N;++i) words[i]=p[i];
       } else {
-        std::memcpy(words.data(),p,N*sizeof(word_type));
+        std::memcpy(words.data(),reinterpret_cast<unsigned char const *>(p),N*sizeof(word_type));
       }
       auto values=std::bit_cast<std::array<T,N>>(words);
       return load(values.data());
@@ -175,7 +185,7 @@ namespace native {
       if consteval {
         for(std::size_t i=0;i<count;++i) words[i]=p[i];
       } else {
-        if(count) std::memcpy(words.data(),p,count*sizeof(word_type));
+        if(count) std::memcpy(words.data(),reinterpret_cast<unsigned char const *>(p),count*sizeof(word_type));
       }
       return load_bits(words.data());
     }
@@ -187,7 +197,7 @@ namespace native {
       if consteval {
         for(std::size_t i=0;i<count;++i) p[i]=words[i];
       } else {
-        if(count) std::memcpy(p,words.data(),count*sizeof(word_type));
+        if(count) std::memcpy(reinterpret_cast<unsigned char *>(p),words.data(),count*sizeof(word_type));
       }
     }
     /// Construct canonical mask lanes from a logical bitset.
@@ -219,12 +229,15 @@ namespace native {
 #define NATIVE_POLYFILL_BINARY(OP) \
     /** Apply the native register operation to corresponding logical lanes. */ \
     friend constexpr simd operator OP(simd a,simd b) noexcept \
-      requires requires(chunk_type x) { { x OP x } -> std::same_as<chunk_type>; } { \
-      return map([](auto x,auto y) { return x OP y; },a,b); \
+      requires(requires(chunk_type x) { { x OP x } -> std::same_as<chunk_type>; } || \
+        requires(scalar_chunk_type x) { { x OP x } -> std::same_as<scalar_chunk_type>; }) { \
+      if constexpr(requires(chunk_type x) { { x OP x } -> std::same_as<chunk_type>; }) \
+        return map([](auto x,auto y) { return x OP y; },a,b); \
+      else return map_scalar([](auto x,auto y) { return x OP y; },a,b); \
     } \
     /** Apply the corresponding operation in place. */ \
     constexpr simd & operator OP##=(simd b) noexcept \
-      requires requires(chunk_type x) { { x OP x } -> std::same_as<chunk_type>; } { return *this=*this OP b; }
+      requires requires(simd x) { { x OP x } -> std::same_as<simd>; } { return *this=*this OP b; }
     NATIVE_POLYFILL_BINARY(+)
     NATIVE_POLYFILL_BINARY(-)
     NATIVE_POLYFILL_BINARY(*)
@@ -342,10 +355,16 @@ namespace native {
     }
     /// Compute a*b+c with each register's fused lane semantics.
     friend constexpr simd fma(simd a,simd b,simd c) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x,auto y,auto z) { return fma(x,y,z); },a,b,c); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { fma(x,x,x); }) return map([](auto x,auto y,auto z) { return fma(x,y,z); },a,b,c);
+      else return map_scalar([](auto x,auto y,auto z) { return fma(x,y,z); },a,b,c);
+    }
     /// Compute square roots with each register's floating-point semantics.
     friend constexpr simd sqrt(simd value) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return sqrt(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { sqrt(x); }) return map([](auto x) { return sqrt(x); },value);
+      else return map_scalar([](auto x) { return sqrt(x); },value);
+    }
     /// Count the set bits of each unsigned lane using the native chunk operation.
     friend constexpr simd popcount(simd value) noexcept
       requires(simd_integer_element<T> && std::is_unsigned_v<T>) {
@@ -353,16 +372,28 @@ namespace native {
     }
     /// Clear the sign bit of each floating-point lane.
     friend constexpr simd abs(simd value) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return abs(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { abs(x); }) return map([](auto x) { return abs(x); },value);
+      else return map_scalar([](auto x) { return abs(x); },value);
+    }
     /// Round floating-point lanes toward negative infinity.
     friend constexpr simd floor(simd value) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return floor(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { floor(x); }) return map([](auto x) { return floor(x); },value);
+      else return map_scalar([](auto x) { return floor(x); },value);
+    }
     /// Round floating-point lanes toward positive infinity.
     friend constexpr simd ceil(simd value) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return ceil(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { ceil(x); }) return map([](auto x) { return ceil(x); },value);
+      else return map_scalar([](auto x) { return ceil(x); },value);
+    }
     /// Round floating-point lanes toward zero.
     friend constexpr simd trunc(simd value) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return trunc(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { trunc(x); }) return map([](auto x) { return trunc(x); },value);
+      else return map_scalar([](auto x) { return trunc(x); },value);
+    }
     /// Select the smaller lane using the underlying floating-point comparison.
     friend constexpr simd min(simd a,simd b) noexcept
       requires(detail::polyfill_element_traits<T>::arithmetic) { return select(a<b,a,b); }
@@ -371,7 +402,10 @@ namespace native {
       requires(detail::polyfill_element_traits<T>::arithmetic) { return select(a>b,a,b); }
     /// Round to nearest integral values, choosing even at ties.
     friend constexpr simd round_even(simd value) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return round_even(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) {
+      if constexpr(requires(chunk_type x) { round_even(x); }) return map([](auto x) { return round_even(x); },value);
+      else return map_scalar([](auto x) { return round_even(x); },value);
+    }
   };
 }
 

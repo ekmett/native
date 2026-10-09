@@ -407,6 +407,10 @@ namespace polyfill_test {
     for(auto x:output) if(float(x)!=7.f) return false;
     sqrt(V(T(4.f))).store(output.data());
     for(auto x:output) if(float(x)!=2.f) return false;
+    floor(V(T(2.5f))).store(output.data());
+    for(auto x:output) if(float(x)!=2.f) return false;
+    abs(V(T(-2.f))).store(output.data());
+    for(auto x:output) if(float(x)!=2.f) return false;
     return (V(T(1.f))<V(T(2.f))).to_bitset()==0x1ffff;
   }
   static_assert(extra_storage<double,isa<>(polyfill)>() && extra_arithmetic<double,isa<>(polyfill)>());
@@ -414,6 +418,19 @@ namespace polyfill_test {
   static_assert(extra_storage<fp16,isa<>(polyfill)>() && extra_storage<bf16,isa<>(polyfill)>());
   static_assert(extra_storage<fp16,permitted>() && extra_storage<bf16,permitted>());
   static_assert(extra_arithmetic<fp16,isa<>(polyfill)>() && extra_arithmetic<fp16,permitted>());
+#if NATIVE_HOST_NEON
+  static_assert(extra_arithmetic<fp16,neon_fp16|polyfill>());
+  constexpr bool native_half_helpers() {
+    constexpr auto A=neon_fp16|polyfill; using H=simd<fp16,8,A>;
+    std::array<fp16,8> output{};
+    auto value=floor(H(fp16(2.5f))); value+=fp16(1.f); value.store(output.data());
+    for(auto lane:output) if(float(lane)!=3.f) return false;
+    masked_mul_zero(predicate<8,A>::from_bitset(0x55),value,H(fp16(2.f))).store(output.data());
+    for(std::size_t i=0;i<8;++i) if(float(output[i])!=((i&1)?0.f:6.f)) return false;
+    return true;
+  }
+  static_assert(native_half_helpers());
+#endif
   template<class V> concept elementwise_add=requires(V a) { a+a; };
   static_assert(!elementwise_add<simd<bf16,17,polyfill>>);
   constexpr bool storage_only_operations() {
@@ -501,6 +518,18 @@ namespace polyfill_test {
       scaleb(F::load_bits(nan_bits.data()),F(0.f)).store_bits(scaled_bits.data());
       for(auto bits:scaled_bits) if(bits!=0x7fc00000u) valid=false;
     }
+    // AH retains binary32 inputs under FZ; FIZ independently flushes them.
+    nan_bits.fill(0x80000001u); write((saved|(1ull<<24)|2)&~((1ull<<25)|1));
+    std::uint64_t observed; __asm__ volatile("mrs %0, fpcr":"=r"(observed)::"memory");
+    scaleb(F(1.f),F::load_bits(nan_bits.data())).store_bits(scaled_bits.data());
+    auto expected=(observed&2)?0x3f000000u:0x3f800000u;
+    for(auto bits:scaled_bits) if(bits!=expected) valid=false;
+    // Alternative handling leaves NaN representation signs untouched under FNEG.
+    one.fill(0x7e12); write(saved|2);
+    __asm__ volatile("mrs %0, fpcr":"=r"(observed)::"memory");
+    (-V::load_bits(one.data())).store_bits(output.data());
+    for(auto bits:output) if(bits!=((observed&2)?0x7e12:0xfe12)) valid=false;
+
 #endif
     write(saved);
     return valid;

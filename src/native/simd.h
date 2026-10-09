@@ -23,6 +23,7 @@
 #if NATIVE_HOST_NEON
 #include <arm_neon.h>
 #include "native/arm/detail/register_order.h"
+#include "native/arm/float_control.h"
 #endif
 
 namespace native::detail::float_constant {
