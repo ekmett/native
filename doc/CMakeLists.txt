@@ -150,6 +150,10 @@ foreach(page IN LISTS docs_pages)
     string(REGEX REPLACE "\n- \\[([^]]+)\\]\\((x86|arm|wasm)\\.md\\)"
       "\n- \\\\subpage md_docs_2\\2 \"\\1\"" docs_markdown "${docs_markdown}")
   elseif(page STREQUAL "README.md")
+    # Source-only badge targets are not pages in the generated API reference.
+    string(REPLACE "](CMakeLists.txt)"
+      "](https://github.com/ekmett/native/blob/main/CMakeLists.txt)"
+      docs_markdown "${docs_markdown}")
     string(REPLACE "[Documentation](docs/index.md)"
       "\\subpage md_docs_2index \"Documentation\"" docs_markdown "${docs_markdown}")
   endif()
@@ -206,6 +210,8 @@ add_dependencies(native_docs native_docs_clean)
 
 # Module summaries need aliases for Doxygen 1.18 crawler/navigation destinations.
 add_custom_command(TARGET native_docs POST_BUILD
+  COMMAND "${CMAKE_COMMAND}" -E copy_directory
+    "${PROJECT_SOURCE_DIR}/assets/badges" "${PROJECT_BINARY_DIR}/docs/html/assets/badges"
   COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/fix_module_anchors.py"
     "${PROJECT_BINARY_DIR}/docs/html"
   VERBATIM)
