@@ -12,20 +12,32 @@ extern "C++" namespace native {
   template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
   constexpr std::uint16_t popcnt(std::uint16_t value) noexcept;
 
-  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt) && !Arch.has(polyfill))
   consteval std::uint16_t popcnt(std::uint16_t value) noexcept;
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt) && Arch.has(polyfill))
+  constexpr std::uint16_t popcnt(std::uint16_t value) noexcept;
 
   template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
   constexpr std::uint32_t popcnt(std::uint32_t value) noexcept;
 
-  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt) && !Arch.has(polyfill))
   consteval std::uint32_t popcnt(std::uint32_t value) noexcept;
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt) && Arch.has(polyfill))
+  constexpr std::uint32_t popcnt(std::uint32_t value) noexcept;
 
   template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::popcnt))
   constexpr std::uint64_t popcnt(std::uint64_t value) noexcept;
 
-  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt) && !Arch.has(polyfill))
   consteval std::uint64_t popcnt(std::uint64_t value) noexcept;
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::popcnt) && Arch.has(polyfill))
+  constexpr std::uint64_t popcnt(std::uint64_t value) noexcept;
 
 }
 #endif

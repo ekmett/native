@@ -15,7 +15,7 @@ namespace native {
  * Scalar bit counts requiring only extended CPUID leaf 0x80000001 ECX bit 5.
  * Runtime calls require x86_feature::lzcnt in the supplied ISA.
  * Admit that feature before entering a matching target scope. No vector OS state is required.
- * Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
+ * Constant evaluation supports every x86 Arch; polyfill permits runtime emulation without the feature.
  * \{ */
   /// Count leading zero bits of a 16-bit value; zero returns 16.
   /// Arch must contain LZCNT; runtime callers must enable and admit that feature.
@@ -54,24 +54,45 @@ namespace native {
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint16_t lzcnt(std::uint16_t value) noexcept {
     return lzcnt<isa<x86>{x86_feature::lzcnt}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint16_t lzcnt(std::uint16_t value) noexcept {
+    return static_cast<std::uint16_t>(std::countl_zero(value));
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t lzcnt(std::uint32_t value) noexcept {
     return lzcnt<isa<x86>{x86_feature::lzcnt}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t lzcnt(std::uint32_t value) noexcept {
+    return static_cast<std::uint32_t>(std::countl_zero(value));
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t lzcnt(std::uint64_t value) noexcept {
     return lzcnt<isa<x86>{x86_feature::lzcnt}>(value);
+  }
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::lzcnt) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t lzcnt(std::uint64_t value) noexcept {
+    return static_cast<std::uint64_t>(std::countl_zero(value));
   }
 
 /// \}

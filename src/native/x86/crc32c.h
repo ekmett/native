@@ -19,7 +19,7 @@ namespace native {
  * that feature. No vector OS state is required. Each update consumes the
  * operand's bits from least to most significant, using reflected polynomial
  * 0x82f63b78. No initial or final complement is applied.
- * Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
+ * Constant evaluation supports every x86 Arch; polyfill permits runtime emulation without the feature.
  * \{ */
   /// Update a 32-bit CRC32C accumulator with exactly eight bits.
   template<isa<x86> Arch> requires(Arch.has(x86_feature::crc32))
@@ -69,32 +69,60 @@ namespace native {
 #endif
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
     return crc32c<isa<x86>{x86_feature::crc32}>(accumulator, value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
+    return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
     return crc32c<isa<x86>{x86_feature::crc32}>(accumulator, value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
+    return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
     return crc32c<isa<x86>{x86_feature::crc32}>(accumulator, value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
+    return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
+  }
+
 #if defined(__x86_64__) || defined(_M_X64) || defined(NATIVE_DOXYGEN)
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
     return crc32c<isa<x86>{x86_feature::crc32}>(accumulator, value);
+  }
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::crc32) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
+    return detail::crc_update(accumulator, value, sizeof(value) * 8, 0x82f63b78u);
   }
 #endif
 

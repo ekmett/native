@@ -25,7 +25,7 @@ namespace native {
   /// \defgroup x86_bmi1 BMI1
   /// \ingroup cpu_x86
   /// Integer bit operations; runtime calls require x86_feature::bmi1 and target "bmi".
-  /// Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
+  /// Constant evaluation supports every x86 Arch; polyfill permits runtime emulation without the feature.
   /// \{
 
   /// ANDN: complement the first operand, then AND with the second.
@@ -186,108 +186,213 @@ namespace native {
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t andn(std::uint32_t first, std::uint32_t second) noexcept {
     return andn<isa<x86>{x86_feature::bmi1}>(first, second);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t andn(std::uint32_t first, std::uint32_t second) noexcept {
+    return (~first) & second;
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t andn(std::uint64_t first, std::uint64_t second) noexcept {
     return andn<isa<x86>{x86_feature::bmi1}>(first, second);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t andn(std::uint64_t first, std::uint64_t second) noexcept {
+    return (~first) & second;
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t bextr(std::uint32_t value, std::uint32_t control) noexcept {
     return bextr<isa<x86>{x86_feature::bmi1}>(value, control);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t bextr(std::uint32_t value, std::uint32_t control) noexcept {
+    return detail::bmi1_extract(value, control & 255u, (control >> 8) & 255u);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t bextr(std::uint64_t value, std::uint32_t control) noexcept {
     return bextr<isa<x86>{x86_feature::bmi1}>(value, control);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t bextr(std::uint64_t value, std::uint32_t control) noexcept {
+    return detail::bmi1_extract(value, control & 255u, (control >> 8) & 255u);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t bextr(std::uint32_t value, unsigned start, unsigned length) noexcept {
     return bextr<isa<x86>{x86_feature::bmi1}>(value, start, length);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t bextr(std::uint32_t value, unsigned start, unsigned length) noexcept {
+    return detail::bmi1_extract(value, start, length);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t bextr(std::uint64_t value, unsigned start, unsigned length) noexcept {
     return bextr<isa<x86>{x86_feature::bmi1}>(value, start, length);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t bextr(std::uint64_t value, unsigned start, unsigned length) noexcept {
+    return detail::bmi1_extract(value, start, length);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t blsi(std::uint32_t value) noexcept {
     return blsi<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t blsi(std::uint32_t value) noexcept {
+    return value & (std::uint32_t{0} - value);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t blsi(std::uint64_t value) noexcept {
     return blsi<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t blsi(std::uint64_t value) noexcept {
+    return value & (std::uint64_t{0} - value);
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t blsmsk(std::uint32_t value) noexcept {
     return blsmsk<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t blsmsk(std::uint32_t value) noexcept {
+    return value ^ (value - std::uint32_t{1});
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t blsmsk(std::uint64_t value) noexcept {
     return blsmsk<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t blsmsk(std::uint64_t value) noexcept {
+    return value ^ (value - std::uint64_t{1});
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t blsr(std::uint32_t value) noexcept {
     return blsr<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t blsr(std::uint32_t value) noexcept {
+    return value & (value - std::uint32_t{1});
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t blsr(std::uint64_t value) noexcept {
     return blsr<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t blsr(std::uint64_t value) noexcept {
+    return value & (value - std::uint64_t{1});
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint16_t tzcnt(std::uint16_t value) noexcept {
     return tzcnt<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint16_t tzcnt(std::uint16_t value) noexcept {
+    return static_cast<std::uint16_t>(std::countr_zero(value));
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t tzcnt(std::uint32_t value) noexcept {
     return tzcnt<isa<x86>{x86_feature::bmi1}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t tzcnt(std::uint32_t value) noexcept {
+    return static_cast<std::uint32_t>(std::countr_zero(value));
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t tzcnt(std::uint64_t value) noexcept {
     return tzcnt<isa<x86>{x86_feature::bmi1}>(value);
+  }
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::bmi1) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t tzcnt(std::uint64_t value) noexcept {
+    return static_cast<std::uint64_t>(std::countr_zero(value));
   }
 
   /// \}

@@ -15,7 +15,7 @@ namespace native {
  * Scalar bit counts requiring only CPUID leaf 1 ECX bit 23.
  * Runtime calls require x86_feature::popcnt in the supplied ISA.
  * Admit that feature before entering a matching target scope. No vector OS state is required.
- * Constant evaluation supports every x86 Arch; weak tags select consteval overloads.
+ * Constant evaluation supports every x86 Arch; polyfill permits runtime emulation without the feature.
  * \{ */
   /// Count the set bits of a 16-bit value; zero returns zero.
   /// Arch must contain POPCNT; runtime callers must enable and admit that feature.
@@ -54,24 +54,45 @@ namespace native {
   }
 
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint16_t popcnt(std::uint16_t value) noexcept {
     return popcnt<isa<x86>{x86_feature::popcnt}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint16_t popcnt(std::uint16_t value) noexcept {
+    return static_cast<std::uint16_t>(std::popcount(value));
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint32_t popcnt(std::uint32_t value) noexcept {
     return popcnt<isa<x86>{x86_feature::popcnt}>(value);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t popcnt(std::uint32_t value) noexcept {
+    return static_cast<std::uint32_t>(std::popcount(value));
+  }
+
   /// Evaluate the same operation at compile time when Arch lacks the feature.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt) && !Arch.has(polyfill))
   [[nodiscard]]
   consteval std::uint64_t popcnt(std::uint64_t value) noexcept {
     return popcnt<isa<x86>{x86_feature::popcnt}>(value);
+  }
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::popcnt) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint64_t popcnt(std::uint64_t value) noexcept {
+    return static_cast<std::uint64_t>(std::popcount(value));
   }
 
 /// \}

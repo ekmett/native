@@ -44,7 +44,7 @@ namespace native {
   /// Add two 32/64-bit values and one if the input carry is nonzero. Write the
   /// modular sum through a valid output pointer and return carry-out as 0 or 1.
   /// Strong tags require ADX and a compatible caller target; weak tags support
-  /// constant evaluation only. Module defaults use the provider's baseline.
+  /// constant evaluation; polyfill also permits runtime emulation. Module defaults use the provider's baseline.
   /// Clang 23 may lower its addcarryx intrinsic to ADD/ADC. These value-level
   /// operations do not expose independent ADCX/ADOX flag chains.
   /// \{
@@ -74,15 +74,29 @@ namespace native {
   }
 
   /// Constant 32-bit addition with carry without ADX.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::adx))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::adx) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint8_t addcarryx(
     std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept {
     return detail::x86_adx::add(carry, a, b, result);
   }
 
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::adx) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept {
+    return detail::x86_adx::add(carry, a, b, result);
+  }
+
   /// Constant 64-bit addition with carry without ADX.
-  template<isa<x86> Arch> requires(!Arch.has(x86_feature::adx))
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::adx) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept {
+    return detail::x86_adx::add(carry, a, b, result);
+  }
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::adx) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept {
     return detail::x86_adx::add(carry, a, b, result);
   }

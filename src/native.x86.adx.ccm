@@ -14,16 +14,26 @@ extern "C++" namespace native {
   constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
 
-  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx) && !Arch.has(polyfill))
   consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx) && Arch.has(polyfill))
+  constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint32_t a, std::uint32_t b, std::uint32_t * result) noexcept;
 
   template<isa<x86> Arch = NATIVE_BASELINE> requires(Arch.has(x86_feature::adx))
   constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
 
-  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx) && !Arch.has(polyfill))
   consteval std::uint8_t addcarryx(
+    std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
+
+  /// Emulate the value semantics at runtime when Arch explicitly permits polyfills.
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::adx) && Arch.has(polyfill))
+  constexpr std::uint8_t addcarryx(
     std::uint8_t carry, std::uint64_t a, std::uint64_t b, std::uint64_t * result) noexcept;
 }
 #endif
