@@ -37,6 +37,7 @@ prefix = '''#include <arm_neon.h>
 #define hint_target(x) __attribute__((target(x)))
 namespace std {
   using size_t = __SIZE_TYPE__;
+  template<class T, size_t N> struct array;
   template<class T, T... I> struct integer_sequence {};
   template<size_t... I> using index_sequence = integer_sequence<size_t, I...>;
   template<size_t N> using make_index_sequence = __make_integer_seq<integer_sequence, size_t, N>;

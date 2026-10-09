@@ -45,7 +45,7 @@ def check(html):
         'md_docs_2' + arch + '.html' for arch in ['x86', 'arm', 'wasm']}
     assert page_children('index') == {'md_doc_2building.html'} | {
         'md_docs_2' + page + '.html' for page in
-        ['modules', 'abi-lookup', 'omnibus', 'transcendentals', 'instructions']}
+        ['modules', 'polyfill-operations', 'abi-lookup', 'omnibus', 'transcendentals', 'instructions']}
     topics = {row[1] for row in tree('topics')}
     for arch in ['arm', 'x86', 'wasm']:
         parent = 'group__cpu__' + arch
