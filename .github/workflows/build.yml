@@ -264,6 +264,26 @@ jobs:
           cmake --build build/package --parallel
           ctest --test-dir build/package --parallel --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/package-tests.xml"
+      - name: Collect test reports
+        id: test_reports
+        if: ${{ !cancelled() }}
+        run: |
+          reports=()
+          for report in build/tests.xml build/package-tests.xml; do
+            if [[ -f "$report" ]]; then reports+=("$report"); fi
+          done
+          (IFS=,; echo "files=${reports[*]}") >> "$GITHUB_OUTPUT"
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && steps.test_reports.outputs.files != '' }}
+        uses: codecov/codecov-action@f9fe539f5290016afa014f8ef31597d3a61c2dea # v7
+        with:
+          report_type: test_results
+          use_oidc: true
+          files: ${{ steps.test_reports.outputs.files }}
+          disable_search: true
+          flags: ${{ runner.os }}_${{ runner.arch }},${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'extended' || 'smoke' }},exceptions_${{ matrix.exceptions }},${{ inputs.coverage && 'instrumented' || 'regular' }}
+          name: ${{ matrix.platform.runner }}-exceptions-${{ matrix.exceptions }}-${{ inputs.coverage && 'coverage' || 'build' }}
+          fail_ci_if_error: true
       - name: Generate coverage report
         id: coverage
         if: always() && inputs.coverage && steps.build.outcome == 'success'
