@@ -12,7 +12,7 @@ option(NATIVE_TEST_EXTENDED "Build exhaustive, codegen and compiler-rejection te
 option(NATIVE_BUILD_DOCS "Build API documentation (requires Doxygen)" OFF)
 # Retained as a compatibility setting; single-module providers build BMIs directly.
 option(NATIVE_ENABLE_PCH "Compatibility setting (module providers do not use PCH)" OFF)
-option(NATIVE_ENABLE_EXCEPTIONS "Enable C++ exceptions in the library and its consumers" OFF)
+option(NATIVE_ENABLE_EXCEPTIONS "Enable C++ exceptions in the library and its consumers" ON)
 option(NATIVE_ENABLE_IPO "Enable supported host interprocedural optimization" OFF)
 option(NATIVE_ENABLE_ASAN "Instrument host targets with AddressSanitizer" OFF)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")

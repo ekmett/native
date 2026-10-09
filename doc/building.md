@@ -21,8 +21,9 @@ selects the primary regression implementation. Neither changes the hub API.
 The default host tests are a small smoke suite. Set `NATIVE_TEST_EXTENDED=ON`
 for exhaustive numerical checks, compiler-rejection tests and assembly comparisons.
 
-`NATIVE_ENABLE_EXCEPTIONS` defaults to OFF. Producer and consumer compiler,
-standard-library and exception modes must agree. `NATIVE_ENABLE_ASAN` enables
+`NATIVE_ENABLE_EXCEPTIONS` defaults to ON. Set it to OFF for an exception-free
+build. Compiler, standard-library and exception modes must agree throughout
+the dependency graph. `NATIVE_ENABLE_ASAN` enables
 host-memory checks. ISA properties and named swizzles require Clang's property
 extension; exported targets supply `-fms-extensions` for `clang++`, and `clang-cl`
 accepts it directly.
