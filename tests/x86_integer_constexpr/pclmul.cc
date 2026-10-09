@@ -11,7 +11,7 @@ namespace pclmul_constant_test {
     N == 2 ? "sse2" : N == 4 ? "avx" : "avx512f");
 
   template<native::isa<native::x86> A, bool Legacy, std::size_t N, unsigned... I>
-  consteval auto calculate(inputs<N> input, std::integer_sequence<unsigned,I...>) {
+  constexpr auto calculate(inputs<N> input, std::integer_sequence<unsigned,I...>) {
     using V = native::simd<word,N,A>;
     outputs<N,sizeof...(I)> result{};
     auto a = V::load(input.a.data()), b = V::load(input.b.data());
@@ -100,7 +100,36 @@ namespace pclmul_constant_test {
     return true;
   }
 }
+#ifdef NATIVE_TEST_POLYFILL
+namespace pclmul_constant_test {
+  template<native::isa<native::x86> A, bool Legacy, std::size_t N>
+  bool polyfill_cases() {
+    auto settings=property_config(32); property_rng random{settings.seed};
+    for(std::size_t i=0;i<settings.cases;++i) {
+      auto in=make_case<N>(random); auto actual=calculate<A,Legacy>(in,selectors{});
+      outputs<N,4> expected{};
+      for(unsigned selector=0;selector<4;++selector) for(std::size_t lane=0;lane<N;lane+=2) {
+        auto product=polynomial(in.a[lane+(selector&1)],in.b[lane+(selector>>1)]);
+        expected[selector][lane]=product[0]; expected[selector][lane+1]=product[1];
+      }
+      if(!property_equal("PCLMUL polyfill",settings.seed,i,expected,actual,in.a,in.b)) return false;
+    }
+    return true;
+  }
+  template<native::isa<native::x86> A> bool polyfill_cases() {
+    return polyfill_cases<A,true,2>() && polyfill_cases<A,false,2>() &&
+      polyfill_cases<A,false,4>() && polyfill_cases<A,false,8>();
+  }
+}
+#endif
+
 int main() {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr native::isa<native::x86> scalar=native::polyfill;
+  constexpr auto split=native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill;
+  return !(pclmul_constant_test::polyfill_cases<scalar>() &&
+    pclmul_constant_test::polyfill_cases<split>());
+#else
   using namespace pclmul_constant_test;
   auto cpu=native::observe_x86_capabilities(); unsigned executed=0;
   auto run=[&](char const* name,auto arch,auto body) {
@@ -114,4 +143,5 @@ int main() {
      !run("VPCLMUL256",vex256,[]{return compare<4>(evaluate_vex256<0,1,16,17>);}) ||
      !run("VPCLMUL512",evex512,[]{return compare<8>(evaluate_evex512<0,1,16,17>);})) return 1;
   return executed ? 0 : 77;
+#endif
 }

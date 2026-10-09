@@ -3,11 +3,12 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.ifma;
+#include "../polyfill_codegen.h"
 
 #ifndef NATIVE_TEST_TARGET_0
 #define NATIVE_TEST_TARGET_0 "avxifma"
 #endif
-constexpr auto arch_vex128 = native::target_features<native::x86>(NATIVE_TEST_TARGET_0);
+constexpr auto arch_vex128 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_0));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_0)
 __m128i native_madd52lo_vex128(__m128i accumulator, __m128i a, __m128i b) noexcept {
@@ -30,7 +31,7 @@ __m128i native_madd52hi_vex128(__m128i accumulator, __m128i a, __m128i b) noexce
 #ifndef NATIVE_TEST_TARGET_1
 #define NATIVE_TEST_TARGET_1 "avxifma"
 #endif
-constexpr auto arch_vex256 = native::target_features<native::x86>(NATIVE_TEST_TARGET_1);
+constexpr auto arch_vex256 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_1));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_1)
 __m256i native_madd52lo_vex256(__m256i accumulator, __m256i a, __m256i b) noexcept {
@@ -53,7 +54,7 @@ __m256i native_madd52hi_vex256(__m256i accumulator, __m256i a, __m256i b) noexce
 #ifndef NATIVE_TEST_TARGET_2
 #define NATIVE_TEST_TARGET_2 "avx512ifma,avx512vl"
 #endif
-constexpr auto arch_evex128 = native::target_features<native::x86>(NATIVE_TEST_TARGET_2);
+constexpr auto arch_evex128 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_2));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_2)
 __m128i native_madd52lo_evex128(__m128i accumulator, __m128i a, __m128i b) noexcept {
@@ -116,7 +117,7 @@ __m128i native_maskz_madd52hi_evex128(__m128i accumulator, __m128i a, __m128i b,
 #ifndef NATIVE_TEST_TARGET_3
 #define NATIVE_TEST_TARGET_3 "avx512ifma,avx512vl"
 #endif
-constexpr auto arch_evex256 = native::target_features<native::x86>(NATIVE_TEST_TARGET_3);
+constexpr auto arch_evex256 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_3));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_3)
 __m256i native_madd52lo_evex256(__m256i accumulator, __m256i a, __m256i b) noexcept {
@@ -179,7 +180,7 @@ __m256i native_maskz_madd52hi_evex256(__m256i accumulator, __m256i a, __m256i b,
 #ifndef NATIVE_TEST_TARGET_4
 #define NATIVE_TEST_TARGET_4 "avx512ifma"
 #endif
-constexpr auto arch_evex512 = native::target_features<native::x86>(NATIVE_TEST_TARGET_4);
+constexpr auto arch_evex512 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_4));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_4)
 __m512i native_madd52lo_evex512(__m512i accumulator, __m512i a, __m512i b) noexcept {

@@ -5,6 +5,14 @@
 #include <cstdio>
 #include <initializer_list>
 #include <hint.h>
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_FIXTURE_RUNTIME(Target)
+#define NATIVE_FIXTURE_CONSTANTS(...)
+#else
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
+#define NATIVE_FIXTURE_CONSTANTS(...) static_assert(__VA_ARGS__)
+#endif
+
 #if NATIVE_TEST_INTERFACE == 1
 import native.x86.vbmi2;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -22,10 +30,22 @@ import native;
 #include <hint.h>
 #include "support/guarded_pages.h"
 
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto full_width = native::isa<native::x86>(native::polyfill);
+#else
 inline constexpr auto full_width = native::target_features<native::x86>("avx512vbmi2");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto short_width = (native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill);
+#else
 inline constexpr auto short_width = native::target_features<native::x86>("avx512vbmi2,avx512vl");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto broad = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
 inline constexpr auto broad = native::target_features<native::x86>(
   "avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2");
+#endif
 inline constexpr auto sse2_storage = native::target_features<native::x86>("sse2");
 inline constexpr auto avx_storage = native::target_features<native::x86>("avx");
 inline constexpr auto avx512_storage = native::target_features<native::x86>("avx512f");
@@ -212,14 +232,14 @@ consteval bool immediate_constants() {
   }
   return true;
 }
-static_assert(constants<sse2_storage, std::uint8_t, 16, 0>());
-static_assert(constants<sse2_storage, std::uint8_t, 16, 64>());
-static_assert(constants<sse2_storage, std::uint8_t, 16, 128>());
-static_assert(constants<sse2_storage, std::uint8_t, 16, 192>());
-static_assert(constants<sse2_storage, std::uint16_t, 8, 0>());
-static_assert(constants<sse2_storage, std::uint16_t, 8, 64>());
-static_assert(constants<sse2_storage, std::uint16_t, 8, 128>());
-static_assert(constants<sse2_storage, std::uint16_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint8_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint8_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint8_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint8_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint16_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint16_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint16_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint16_t, 8, 192>());
 static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 0>());
 static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 1>());
 static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 15>());
@@ -230,10 +250,10 @@ static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 63>());
 static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 64>());
 static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 127>());
 static_assert(immediate_constants<sse2_storage, std::uint16_t, 8, 255>());
-static_assert(constants<sse2_storage, std::uint32_t, 4, 0>());
-static_assert(constants<sse2_storage, std::uint32_t, 4, 64>());
-static_assert(constants<sse2_storage, std::uint32_t, 4, 128>());
-static_assert(constants<sse2_storage, std::uint32_t, 4, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint32_t, 4, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint32_t, 4, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint32_t, 4, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint32_t, 4, 192>());
 static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 0>());
 static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 1>());
 static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 15>());
@@ -244,10 +264,10 @@ static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 63>());
 static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 64>());
 static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 127>());
 static_assert(immediate_constants<sse2_storage, std::uint32_t, 4, 255>());
-static_assert(constants<sse2_storage, std::uint64_t, 2, 0>());
-static_assert(constants<sse2_storage, std::uint64_t, 2, 64>());
-static_assert(constants<sse2_storage, std::uint64_t, 2, 128>());
-static_assert(constants<sse2_storage, std::uint64_t, 2, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint64_t, 2, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint64_t, 2, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint64_t, 2, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint64_t, 2, 192>());
 static_assert(immediate_constants<sse2_storage, std::uint64_t, 2, 0>());
 static_assert(immediate_constants<sse2_storage, std::uint64_t, 2, 1>());
 static_assert(immediate_constants<sse2_storage, std::uint64_t, 2, 15>());
@@ -259,14 +279,14 @@ static_assert(immediate_constants<sse2_storage, std::uint64_t, 2, 64>());
 static_assert(immediate_constants<sse2_storage, std::uint64_t, 2, 127>());
 static_assert(immediate_constants<sse2_storage, std::uint64_t, 2, 255>());
 
-static_assert(constants<short_width, std::uint8_t, 16, 0>());
-static_assert(constants<short_width, std::uint8_t, 16, 64>());
-static_assert(constants<short_width, std::uint8_t, 16, 128>());
-static_assert(constants<short_width, std::uint8_t, 16, 192>());
-static_assert(constants<short_width, std::uint16_t, 8, 0>());
-static_assert(constants<short_width, std::uint16_t, 8, 64>());
-static_assert(constants<short_width, std::uint16_t, 8, 128>());
-static_assert(constants<short_width, std::uint16_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 8, 192>());
 static_assert(immediate_constants<short_width, std::uint16_t, 8, 0>());
 static_assert(immediate_constants<short_width, std::uint16_t, 8, 1>());
 static_assert(immediate_constants<short_width, std::uint16_t, 8, 15>());
@@ -277,10 +297,10 @@ static_assert(immediate_constants<short_width, std::uint16_t, 8, 63>());
 static_assert(immediate_constants<short_width, std::uint16_t, 8, 64>());
 static_assert(immediate_constants<short_width, std::uint16_t, 8, 127>());
 static_assert(immediate_constants<short_width, std::uint16_t, 8, 255>());
-static_assert(constants<short_width, std::uint32_t, 4, 0>());
-static_assert(constants<short_width, std::uint32_t, 4, 64>());
-static_assert(constants<short_width, std::uint32_t, 4, 128>());
-static_assert(constants<short_width, std::uint32_t, 4, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 4, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 4, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 4, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 4, 192>());
 static_assert(immediate_constants<short_width, std::uint32_t, 4, 0>());
 static_assert(immediate_constants<short_width, std::uint32_t, 4, 1>());
 static_assert(immediate_constants<short_width, std::uint32_t, 4, 15>());
@@ -291,10 +311,10 @@ static_assert(immediate_constants<short_width, std::uint32_t, 4, 63>());
 static_assert(immediate_constants<short_width, std::uint32_t, 4, 64>());
 static_assert(immediate_constants<short_width, std::uint32_t, 4, 127>());
 static_assert(immediate_constants<short_width, std::uint32_t, 4, 255>());
-static_assert(constants<short_width, std::uint64_t, 2, 0>());
-static_assert(constants<short_width, std::uint64_t, 2, 64>());
-static_assert(constants<short_width, std::uint64_t, 2, 128>());
-static_assert(constants<short_width, std::uint64_t, 2, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 2, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 2, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 2, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 2, 192>());
 static_assert(immediate_constants<short_width, std::uint64_t, 2, 0>());
 static_assert(immediate_constants<short_width, std::uint64_t, 2, 1>());
 static_assert(immediate_constants<short_width, std::uint64_t, 2, 15>());
@@ -306,14 +326,14 @@ static_assert(immediate_constants<short_width, std::uint64_t, 2, 64>());
 static_assert(immediate_constants<short_width, std::uint64_t, 2, 127>());
 static_assert(immediate_constants<short_width, std::uint64_t, 2, 255>());
 
-static_assert(constants<broad, std::uint8_t, 16, 0>());
-static_assert(constants<broad, std::uint8_t, 16, 64>());
-static_assert(constants<broad, std::uint8_t, 16, 128>());
-static_assert(constants<broad, std::uint8_t, 16, 192>());
-static_assert(constants<broad, std::uint16_t, 8, 0>());
-static_assert(constants<broad, std::uint16_t, 8, 64>());
-static_assert(constants<broad, std::uint16_t, 8, 128>());
-static_assert(constants<broad, std::uint16_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 8, 192>());
 static_assert(immediate_constants<broad, std::uint16_t, 8, 0>());
 static_assert(immediate_constants<broad, std::uint16_t, 8, 1>());
 static_assert(immediate_constants<broad, std::uint16_t, 8, 15>());
@@ -324,10 +344,10 @@ static_assert(immediate_constants<broad, std::uint16_t, 8, 63>());
 static_assert(immediate_constants<broad, std::uint16_t, 8, 64>());
 static_assert(immediate_constants<broad, std::uint16_t, 8, 127>());
 static_assert(immediate_constants<broad, std::uint16_t, 8, 255>());
-static_assert(constants<broad, std::uint32_t, 4, 0>());
-static_assert(constants<broad, std::uint32_t, 4, 64>());
-static_assert(constants<broad, std::uint32_t, 4, 128>());
-static_assert(constants<broad, std::uint32_t, 4, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 4, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 4, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 4, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 4, 192>());
 static_assert(immediate_constants<broad, std::uint32_t, 4, 0>());
 static_assert(immediate_constants<broad, std::uint32_t, 4, 1>());
 static_assert(immediate_constants<broad, std::uint32_t, 4, 15>());
@@ -338,10 +358,10 @@ static_assert(immediate_constants<broad, std::uint32_t, 4, 63>());
 static_assert(immediate_constants<broad, std::uint32_t, 4, 64>());
 static_assert(immediate_constants<broad, std::uint32_t, 4, 127>());
 static_assert(immediate_constants<broad, std::uint32_t, 4, 255>());
-static_assert(constants<broad, std::uint64_t, 2, 0>());
-static_assert(constants<broad, std::uint64_t, 2, 64>());
-static_assert(constants<broad, std::uint64_t, 2, 128>());
-static_assert(constants<broad, std::uint64_t, 2, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 2, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 2, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 2, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 2, 192>());
 static_assert(immediate_constants<broad, std::uint64_t, 2, 0>());
 static_assert(immediate_constants<broad, std::uint64_t, 2, 1>());
 static_assert(immediate_constants<broad, std::uint64_t, 2, 15>());
@@ -353,14 +373,14 @@ static_assert(immediate_constants<broad, std::uint64_t, 2, 64>());
 static_assert(immediate_constants<broad, std::uint64_t, 2, 127>());
 static_assert(immediate_constants<broad, std::uint64_t, 2, 255>());
 
-static_assert(constants<avx_storage, std::uint8_t, 32, 0>());
-static_assert(constants<avx_storage, std::uint8_t, 32, 64>());
-static_assert(constants<avx_storage, std::uint8_t, 32, 128>());
-static_assert(constants<avx_storage, std::uint8_t, 32, 192>());
-static_assert(constants<avx_storage, std::uint16_t, 16, 0>());
-static_assert(constants<avx_storage, std::uint16_t, 16, 64>());
-static_assert(constants<avx_storage, std::uint16_t, 16, 128>());
-static_assert(constants<avx_storage, std::uint16_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint8_t, 32, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint8_t, 32, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint8_t, 32, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint8_t, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint16_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint16_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint16_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint16_t, 16, 192>());
 static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 0>());
 static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 1>());
 static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 15>());
@@ -371,10 +391,10 @@ static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 63>());
 static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 64>());
 static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 127>());
 static_assert(immediate_constants<avx_storage, std::uint16_t, 16, 255>());
-static_assert(constants<avx_storage, std::uint32_t, 8, 0>());
-static_assert(constants<avx_storage, std::uint32_t, 8, 64>());
-static_assert(constants<avx_storage, std::uint32_t, 8, 128>());
-static_assert(constants<avx_storage, std::uint32_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint32_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint32_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint32_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint32_t, 8, 192>());
 static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 0>());
 static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 1>());
 static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 15>());
@@ -385,10 +405,10 @@ static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 63>());
 static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 64>());
 static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 127>());
 static_assert(immediate_constants<avx_storage, std::uint32_t, 8, 255>());
-static_assert(constants<avx_storage, std::uint64_t, 4, 0>());
-static_assert(constants<avx_storage, std::uint64_t, 4, 64>());
-static_assert(constants<avx_storage, std::uint64_t, 4, 128>());
-static_assert(constants<avx_storage, std::uint64_t, 4, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint64_t, 4, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint64_t, 4, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint64_t, 4, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint64_t, 4, 192>());
 static_assert(immediate_constants<avx_storage, std::uint64_t, 4, 0>());
 static_assert(immediate_constants<avx_storage, std::uint64_t, 4, 1>());
 static_assert(immediate_constants<avx_storage, std::uint64_t, 4, 15>());
@@ -400,14 +420,14 @@ static_assert(immediate_constants<avx_storage, std::uint64_t, 4, 64>());
 static_assert(immediate_constants<avx_storage, std::uint64_t, 4, 127>());
 static_assert(immediate_constants<avx_storage, std::uint64_t, 4, 255>());
 
-static_assert(constants<short_width, std::uint8_t, 32, 0>());
-static_assert(constants<short_width, std::uint8_t, 32, 64>());
-static_assert(constants<short_width, std::uint8_t, 32, 128>());
-static_assert(constants<short_width, std::uint8_t, 32, 192>());
-static_assert(constants<short_width, std::uint16_t, 16, 0>());
-static_assert(constants<short_width, std::uint16_t, 16, 64>());
-static_assert(constants<short_width, std::uint16_t, 16, 128>());
-static_assert(constants<short_width, std::uint16_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 32, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 32, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 32, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint8_t, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint16_t, 16, 192>());
 static_assert(immediate_constants<short_width, std::uint16_t, 16, 0>());
 static_assert(immediate_constants<short_width, std::uint16_t, 16, 1>());
 static_assert(immediate_constants<short_width, std::uint16_t, 16, 15>());
@@ -418,10 +438,10 @@ static_assert(immediate_constants<short_width, std::uint16_t, 16, 63>());
 static_assert(immediate_constants<short_width, std::uint16_t, 16, 64>());
 static_assert(immediate_constants<short_width, std::uint16_t, 16, 127>());
 static_assert(immediate_constants<short_width, std::uint16_t, 16, 255>());
-static_assert(constants<short_width, std::uint32_t, 8, 0>());
-static_assert(constants<short_width, std::uint32_t, 8, 64>());
-static_assert(constants<short_width, std::uint32_t, 8, 128>());
-static_assert(constants<short_width, std::uint32_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint32_t, 8, 192>());
 static_assert(immediate_constants<short_width, std::uint32_t, 8, 0>());
 static_assert(immediate_constants<short_width, std::uint32_t, 8, 1>());
 static_assert(immediate_constants<short_width, std::uint32_t, 8, 15>());
@@ -432,10 +452,10 @@ static_assert(immediate_constants<short_width, std::uint32_t, 8, 63>());
 static_assert(immediate_constants<short_width, std::uint32_t, 8, 64>());
 static_assert(immediate_constants<short_width, std::uint32_t, 8, 127>());
 static_assert(immediate_constants<short_width, std::uint32_t, 8, 255>());
-static_assert(constants<short_width, std::uint64_t, 4, 0>());
-static_assert(constants<short_width, std::uint64_t, 4, 64>());
-static_assert(constants<short_width, std::uint64_t, 4, 128>());
-static_assert(constants<short_width, std::uint64_t, 4, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 4, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 4, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 4, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, std::uint64_t, 4, 192>());
 static_assert(immediate_constants<short_width, std::uint64_t, 4, 0>());
 static_assert(immediate_constants<short_width, std::uint64_t, 4, 1>());
 static_assert(immediate_constants<short_width, std::uint64_t, 4, 15>());
@@ -447,14 +467,14 @@ static_assert(immediate_constants<short_width, std::uint64_t, 4, 64>());
 static_assert(immediate_constants<short_width, std::uint64_t, 4, 127>());
 static_assert(immediate_constants<short_width, std::uint64_t, 4, 255>());
 
-static_assert(constants<broad, std::uint8_t, 32, 0>());
-static_assert(constants<broad, std::uint8_t, 32, 64>());
-static_assert(constants<broad, std::uint8_t, 32, 128>());
-static_assert(constants<broad, std::uint8_t, 32, 192>());
-static_assert(constants<broad, std::uint16_t, 16, 0>());
-static_assert(constants<broad, std::uint16_t, 16, 64>());
-static_assert(constants<broad, std::uint16_t, 16, 128>());
-static_assert(constants<broad, std::uint16_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 32, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 32, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 32, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 16, 192>());
 static_assert(immediate_constants<broad, std::uint16_t, 16, 0>());
 static_assert(immediate_constants<broad, std::uint16_t, 16, 1>());
 static_assert(immediate_constants<broad, std::uint16_t, 16, 15>());
@@ -465,10 +485,10 @@ static_assert(immediate_constants<broad, std::uint16_t, 16, 63>());
 static_assert(immediate_constants<broad, std::uint16_t, 16, 64>());
 static_assert(immediate_constants<broad, std::uint16_t, 16, 127>());
 static_assert(immediate_constants<broad, std::uint16_t, 16, 255>());
-static_assert(constants<broad, std::uint32_t, 8, 0>());
-static_assert(constants<broad, std::uint32_t, 8, 64>());
-static_assert(constants<broad, std::uint32_t, 8, 128>());
-static_assert(constants<broad, std::uint32_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 8, 192>());
 static_assert(immediate_constants<broad, std::uint32_t, 8, 0>());
 static_assert(immediate_constants<broad, std::uint32_t, 8, 1>());
 static_assert(immediate_constants<broad, std::uint32_t, 8, 15>());
@@ -479,10 +499,10 @@ static_assert(immediate_constants<broad, std::uint32_t, 8, 63>());
 static_assert(immediate_constants<broad, std::uint32_t, 8, 64>());
 static_assert(immediate_constants<broad, std::uint32_t, 8, 127>());
 static_assert(immediate_constants<broad, std::uint32_t, 8, 255>());
-static_assert(constants<broad, std::uint64_t, 4, 0>());
-static_assert(constants<broad, std::uint64_t, 4, 64>());
-static_assert(constants<broad, std::uint64_t, 4, 128>());
-static_assert(constants<broad, std::uint64_t, 4, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 4, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 4, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 4, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 4, 192>());
 static_assert(immediate_constants<broad, std::uint64_t, 4, 0>());
 static_assert(immediate_constants<broad, std::uint64_t, 4, 1>());
 static_assert(immediate_constants<broad, std::uint64_t, 4, 15>());
@@ -494,14 +514,14 @@ static_assert(immediate_constants<broad, std::uint64_t, 4, 64>());
 static_assert(immediate_constants<broad, std::uint64_t, 4, 127>());
 static_assert(immediate_constants<broad, std::uint64_t, 4, 255>());
 
-static_assert(constants<avx512_storage, std::uint8_t, 64, 0>());
-static_assert(constants<avx512_storage, std::uint8_t, 64, 64>());
-static_assert(constants<avx512_storage, std::uint8_t, 64, 128>());
-static_assert(constants<avx512_storage, std::uint8_t, 64, 192>());
-static_assert(constants<avx512_storage, std::uint16_t, 32, 0>());
-static_assert(constants<avx512_storage, std::uint16_t, 32, 64>());
-static_assert(constants<avx512_storage, std::uint16_t, 32, 128>());
-static_assert(constants<avx512_storage, std::uint16_t, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint8_t, 64, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint8_t, 64, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint8_t, 64, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint8_t, 64, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint16_t, 32, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint16_t, 32, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint16_t, 32, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint16_t, 32, 192>());
 static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 0>());
 static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 1>());
 static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 15>());
@@ -512,10 +532,10 @@ static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 63>());
 static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 64>());
 static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 127>());
 static_assert(immediate_constants<avx512_storage, std::uint16_t, 32, 255>());
-static_assert(constants<avx512_storage, std::uint32_t, 16, 0>());
-static_assert(constants<avx512_storage, std::uint32_t, 16, 64>());
-static_assert(constants<avx512_storage, std::uint32_t, 16, 128>());
-static_assert(constants<avx512_storage, std::uint32_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint32_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint32_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint32_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint32_t, 16, 192>());
 static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 0>());
 static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 1>());
 static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 15>());
@@ -526,10 +546,10 @@ static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 63>());
 static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 64>());
 static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 127>());
 static_assert(immediate_constants<avx512_storage, std::uint32_t, 16, 255>());
-static_assert(constants<avx512_storage, std::uint64_t, 8, 0>());
-static_assert(constants<avx512_storage, std::uint64_t, 8, 64>());
-static_assert(constants<avx512_storage, std::uint64_t, 8, 128>());
-static_assert(constants<avx512_storage, std::uint64_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint64_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint64_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint64_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint64_t, 8, 192>());
 static_assert(immediate_constants<avx512_storage, std::uint64_t, 8, 0>());
 static_assert(immediate_constants<avx512_storage, std::uint64_t, 8, 1>());
 static_assert(immediate_constants<avx512_storage, std::uint64_t, 8, 15>());
@@ -541,14 +561,14 @@ static_assert(immediate_constants<avx512_storage, std::uint64_t, 8, 64>());
 static_assert(immediate_constants<avx512_storage, std::uint64_t, 8, 127>());
 static_assert(immediate_constants<avx512_storage, std::uint64_t, 8, 255>());
 
-static_assert(constants<full_width, std::uint8_t, 64, 0>());
-static_assert(constants<full_width, std::uint8_t, 64, 64>());
-static_assert(constants<full_width, std::uint8_t, 64, 128>());
-static_assert(constants<full_width, std::uint8_t, 64, 192>());
-static_assert(constants<full_width, std::uint16_t, 32, 0>());
-static_assert(constants<full_width, std::uint16_t, 32, 64>());
-static_assert(constants<full_width, std::uint16_t, 32, 128>());
-static_assert(constants<full_width, std::uint16_t, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint8_t, 64, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint8_t, 64, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint8_t, 64, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint8_t, 64, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint16_t, 32, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint16_t, 32, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint16_t, 32, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint16_t, 32, 192>());
 static_assert(immediate_constants<full_width, std::uint16_t, 32, 0>());
 static_assert(immediate_constants<full_width, std::uint16_t, 32, 1>());
 static_assert(immediate_constants<full_width, std::uint16_t, 32, 15>());
@@ -559,10 +579,10 @@ static_assert(immediate_constants<full_width, std::uint16_t, 32, 63>());
 static_assert(immediate_constants<full_width, std::uint16_t, 32, 64>());
 static_assert(immediate_constants<full_width, std::uint16_t, 32, 127>());
 static_assert(immediate_constants<full_width, std::uint16_t, 32, 255>());
-static_assert(constants<full_width, std::uint32_t, 16, 0>());
-static_assert(constants<full_width, std::uint32_t, 16, 64>());
-static_assert(constants<full_width, std::uint32_t, 16, 128>());
-static_assert(constants<full_width, std::uint32_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint32_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint32_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint32_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint32_t, 16, 192>());
 static_assert(immediate_constants<full_width, std::uint32_t, 16, 0>());
 static_assert(immediate_constants<full_width, std::uint32_t, 16, 1>());
 static_assert(immediate_constants<full_width, std::uint32_t, 16, 15>());
@@ -573,10 +593,10 @@ static_assert(immediate_constants<full_width, std::uint32_t, 16, 63>());
 static_assert(immediate_constants<full_width, std::uint32_t, 16, 64>());
 static_assert(immediate_constants<full_width, std::uint32_t, 16, 127>());
 static_assert(immediate_constants<full_width, std::uint32_t, 16, 255>());
-static_assert(constants<full_width, std::uint64_t, 8, 0>());
-static_assert(constants<full_width, std::uint64_t, 8, 64>());
-static_assert(constants<full_width, std::uint64_t, 8, 128>());
-static_assert(constants<full_width, std::uint64_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint64_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint64_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint64_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, std::uint64_t, 8, 192>());
 static_assert(immediate_constants<full_width, std::uint64_t, 8, 0>());
 static_assert(immediate_constants<full_width, std::uint64_t, 8, 1>());
 static_assert(immediate_constants<full_width, std::uint64_t, 8, 15>());
@@ -588,14 +608,14 @@ static_assert(immediate_constants<full_width, std::uint64_t, 8, 64>());
 static_assert(immediate_constants<full_width, std::uint64_t, 8, 127>());
 static_assert(immediate_constants<full_width, std::uint64_t, 8, 255>());
 
-static_assert(constants<broad, std::uint8_t, 64, 0>());
-static_assert(constants<broad, std::uint8_t, 64, 64>());
-static_assert(constants<broad, std::uint8_t, 64, 128>());
-static_assert(constants<broad, std::uint8_t, 64, 192>());
-static_assert(constants<broad, std::uint16_t, 32, 0>());
-static_assert(constants<broad, std::uint16_t, 32, 64>());
-static_assert(constants<broad, std::uint16_t, 32, 128>());
-static_assert(constants<broad, std::uint16_t, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 64, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 64, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 64, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint8_t, 64, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 32, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 32, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 32, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint16_t, 32, 192>());
 static_assert(immediate_constants<broad, std::uint16_t, 32, 0>());
 static_assert(immediate_constants<broad, std::uint16_t, 32, 1>());
 static_assert(immediate_constants<broad, std::uint16_t, 32, 15>());
@@ -606,10 +626,10 @@ static_assert(immediate_constants<broad, std::uint16_t, 32, 63>());
 static_assert(immediate_constants<broad, std::uint16_t, 32, 64>());
 static_assert(immediate_constants<broad, std::uint16_t, 32, 127>());
 static_assert(immediate_constants<broad, std::uint16_t, 32, 255>());
-static_assert(constants<broad, std::uint32_t, 16, 0>());
-static_assert(constants<broad, std::uint32_t, 16, 64>());
-static_assert(constants<broad, std::uint32_t, 16, 128>());
-static_assert(constants<broad, std::uint32_t, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 16, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 16, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 16, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint32_t, 16, 192>());
 static_assert(immediate_constants<broad, std::uint32_t, 16, 0>());
 static_assert(immediate_constants<broad, std::uint32_t, 16, 1>());
 static_assert(immediate_constants<broad, std::uint32_t, 16, 15>());
@@ -620,10 +640,10 @@ static_assert(immediate_constants<broad, std::uint32_t, 16, 63>());
 static_assert(immediate_constants<broad, std::uint32_t, 16, 64>());
 static_assert(immediate_constants<broad, std::uint32_t, 16, 127>());
 static_assert(immediate_constants<broad, std::uint32_t, 16, 255>());
-static_assert(constants<broad, std::uint64_t, 8, 0>());
-static_assert(constants<broad, std::uint64_t, 8, 64>());
-static_assert(constants<broad, std::uint64_t, 8, 128>());
-static_assert(constants<broad, std::uint64_t, 8, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 8, 0>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 8, 64>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 8, 128>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, std::uint64_t, 8, 192>());
 static_assert(immediate_constants<broad, std::uint64_t, 8, 0>());
 static_assert(immediate_constants<broad, std::uint64_t, 8, 1>());
 static_assert(immediate_constants<broad, std::uint64_t, 8, 15>());
@@ -672,24 +692,24 @@ consteval bool memory_constants() {
   }
   return true;
 }
-static_assert(memory_constants<sse2_storage, std::uint8_t, 16>());
-static_assert(memory_constants<sse2_storage, std::uint16_t, 8>());
-static_assert(memory_constants<short_width, std::uint8_t, 16>());
-static_assert(memory_constants<short_width, std::uint16_t, 8>());
-static_assert(memory_constants<broad, std::uint8_t, 16>());
-static_assert(memory_constants<broad, std::uint16_t, 8>());
-static_assert(memory_constants<avx_storage, std::uint8_t, 32>());
-static_assert(memory_constants<avx_storage, std::uint16_t, 16>());
-static_assert(memory_constants<short_width, std::uint8_t, 32>());
-static_assert(memory_constants<short_width, std::uint16_t, 16>());
-static_assert(memory_constants<broad, std::uint8_t, 32>());
-static_assert(memory_constants<broad, std::uint16_t, 16>());
-static_assert(memory_constants<avx512_storage, std::uint8_t, 64>());
-static_assert(memory_constants<avx512_storage, std::uint16_t, 32>());
-static_assert(memory_constants<full_width, std::uint8_t, 64>());
-static_assert(memory_constants<full_width, std::uint16_t, 32>());
-static_assert(memory_constants<broad, std::uint8_t, 64>());
-static_assert(memory_constants<broad, std::uint16_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<sse2_storage, std::uint8_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<sse2_storage, std::uint16_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<short_width, std::uint8_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<short_width, std::uint16_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<broad, std::uint8_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<broad, std::uint16_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<avx_storage, std::uint8_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<avx_storage, std::uint16_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<short_width, std::uint8_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<short_width, std::uint16_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<broad, std::uint8_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<broad, std::uint16_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<avx512_storage, std::uint8_t, 64>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<avx512_storage, std::uint16_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<full_width, std::uint8_t, 64>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<full_width, std::uint16_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<broad, std::uint8_t, 64>());
+NATIVE_FIXTURE_CONSTANTS(memory_constants<broad, std::uint16_t, 32>());
 
 constexpr auto anchor = [] {
   inputs<std::uint8_t, 64> input;
@@ -711,7 +731,7 @@ static_assert(shift_reference<std::uint16_t>(0x8001, 0x4003, 1, true) == 0xc000)
 
 // Literal runtime target boundaries remain visible to the baseline driver.
 template<unsigned Imm8, class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512vbmi2")
 void invoke_512(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, full_width>;
   auto a = vector_type::load(input.a.data());
@@ -783,7 +803,7 @@ void invoke_512(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_
 }
 
 template<class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512vbmi2")
 void memory_512(T * destination, T const * memory, std::array<T, N> & merged,
   std::array<T, N> & zeroed, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, full_width>;
@@ -804,7 +824,7 @@ void memory_512(T * destination, T const * memory, std::array<T, N> & merged,
 
 // Literal runtime target boundaries remain visible to the baseline driver.
 template<unsigned Imm8, class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512vbmi2,avx512vl")
 void invoke_vl(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, short_width>;
   auto a = vector_type::load(input.a.data());
@@ -876,7 +896,7 @@ void invoke_vl(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t
 }
 
 template<class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512bw,avx512vbmi2,avx512vl")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512vbmi2,avx512vl")
 void memory_vl(T * destination, T const * memory, std::array<T, N> & merged,
   std::array<T, N> & zeroed, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, short_width>;
@@ -897,7 +917,7 @@ void memory_vl(T * destination, T const * memory, std::array<T, N> & merged,
 
 // Literal runtime target boundaries remain visible to the baseline driver.
 template<unsigned Imm8, class T, std::size_t N>
-hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
+NATIVE_FIXTURE_RUNTIME("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
 void invoke_broad(outputs<T, N> & output, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, broad>;
   auto a = vector_type::load(input.a.data());
@@ -969,7 +989,7 @@ void invoke_broad(outputs<T, N> & output, inputs<T, N> const & input, std::uint6
 }
 
 template<class T, std::size_t N>
-hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
+NATIVE_FIXTURE_RUNTIME("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512vbmi2")
 void memory_broad(T * destination, T const * memory, std::array<T, N> & merged,
   std::array<T, N> & zeroed, inputs<T, N> const & input, std::uint64_t bits) noexcept {
   using vector_type = native::simd<T, N, broad>;
@@ -1132,7 +1152,32 @@ native_vbmi2_baseline_import(unsigned long long value) noexcept {
   return (value >> 3) ^ (value + 17);
 }
 
+#ifdef NATIVE_TEST_POLYFILL
+template<native::isa<native::x86> A>
+bool unaligned_compaction() {
+  using V=native::simd<std::uint16_t,32,A>;
+  std::array<std::uint16_t,32> input{};
+  for(unsigned lane=0;lane<32;++lane) input[lane]=std::uint16_t(257*lane+1);
+  std::array<std::byte,66> storage{};
+  storage.fill(std::byte{0x5a});
+  auto memory=reinterpret_cast<std::uint16_t *>(storage.data()+1);
+  auto mask=native::predicate<32,A>::from_bitset(0x80010081u);
+  native::mask_vpcompressw<A>(memory,mask,V::load(input.data()));
+  std::array<std::uint16_t,32> result{};
+  native::maskz_vpexpandw<A>(mask,memory).store(result.data());
+  for(unsigned lane=0;lane<32;++lane)
+    if(result[lane]!=(((mask.to_bitset()>>lane)&1) ? input[lane] : 0)) return false;
+  auto empty=native::predicate<32,A>::from_bitset(0);
+  native::mask_vpcompressw<A>(static_cast<std::uint16_t *>(nullptr),empty,V::load(input.data()));
+  native::maskz_vpexpandw<A>(empty,static_cast<std::uint16_t *>(nullptr)).store(result.data());
+  for(auto lane:result) if(lane) return false;
+  return storage.front()==std::byte{0x5a} && storage[9]==std::byte{0x5a};
+}
+#endif
 int main(int argc, char **) {
+#ifdef NATIVE_TEST_POLYFILL
+  if(!unaligned_compaction<full_width>() || !unaligned_compaction<short_width>()) return 3;
+#endif
   auto probe = static_cast<unsigned long long>(argc);
   if (native_vbmi2_baseline_import(probe) != ((probe >> 3) ^ (probe + 17))) {
     return 1;

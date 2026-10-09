@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 #include "native/isa_import.h"
 #include "native/x86/vpopcntdq.h"
 #include "native/x86/integer_constant.h"
@@ -15,7 +16,7 @@ export namespace native {
  * require AVX512VL. Admit CPU features and OS ZMM state before entering
  * a matching target scope. These operations do not access memory or flags.
  * Constant evaluation uses exact integer semantics. Tags without the instruction
- * features are accepted only at compile time and require complete SIMD storage.
+ * features accept constant evaluation; polyfill also permits runtime emulation and missing storage.
  * \{ */
 
   /// Count set bits in each of the 16 32-bit lanes; results are in [0, 32].
@@ -24,7 +25,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 16, Arch> vpopcntd(simd<std::uint32_t, 16, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, ~std::uint64_t{0}); }
     else {
-      return simd<std::uint32_t, 16, Arch>::from_native(detail::x86_vpopcntdq::vpopcntd<Arch>(value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 16, Arch>>(detail::x86_vpopcntdq::vpopcntd<Arch>(detail::x86_integer_register(value)));
     }
   }
 
@@ -34,7 +35,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 16, Arch> mask_vpopcntd(simd<std::uint32_t, 16, Arch> source, predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
-      return simd<std::uint32_t, 16, Arch>::from_native(detail::x86_vpopcntdq::mask_vpopcntd<Arch>(source.to_native(), mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 16, Arch>>(detail::x86_vpopcntdq::mask_vpopcntd<Arch>(detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -44,7 +45,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 16, Arch> maskz_vpopcntd(predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, mask.to_bitset()); }
     else {
-      return simd<std::uint32_t, 16, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntd<Arch>(mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 16, Arch>>(detail::x86_vpopcntdq::maskz_vpopcntd<Arch>(mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -54,7 +55,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 8, Arch> vpopcntq(simd<std::uint64_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, ~std::uint64_t{0}); }
     else {
-      return simd<std::uint64_t, 8, Arch>::from_native(detail::x86_vpopcntdq::vpopcntq<Arch>(value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(detail::x86_vpopcntdq::vpopcntq<Arch>(detail::x86_integer_register(value)));
     }
   }
 
@@ -64,7 +65,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 8, Arch> mask_vpopcntq(simd<std::uint64_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
-      return simd<std::uint64_t, 8, Arch>::from_native(detail::x86_vpopcntdq::mask_vpopcntq<Arch>(source.to_native(), mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(detail::x86_vpopcntdq::mask_vpopcntq<Arch>(detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -74,7 +75,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 8, Arch> maskz_vpopcntq(predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, mask.to_bitset()); }
     else {
-      return simd<std::uint64_t, 8, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -85,7 +86,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 4, Arch> vpopcntd(simd<std::uint32_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, ~std::uint64_t{0}); }
     else {
-      return simd<std::uint32_t, 4, Arch>::from_native(detail::x86_vpopcntdq::vpopcntd<Arch>(value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(detail::x86_vpopcntdq::vpopcntd<Arch>(detail::x86_integer_register(value)));
     }
   }
 
@@ -96,7 +97,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 4, Arch> mask_vpopcntd(simd<std::uint32_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
-      return simd<std::uint32_t, 4, Arch>::from_native(detail::x86_vpopcntdq::mask_vpopcntd<Arch>(source.to_native(), mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(detail::x86_vpopcntdq::mask_vpopcntd<Arch>(detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -107,7 +108,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 4, Arch> maskz_vpopcntd(predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, mask.to_bitset()); }
     else {
-      return simd<std::uint32_t, 4, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntd<Arch>(mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(detail::x86_vpopcntdq::maskz_vpopcntd<Arch>(mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -118,7 +119,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 2, Arch> vpopcntq(simd<std::uint64_t, 2, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, ~std::uint64_t{0}); }
     else {
-      return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_vpopcntdq::vpopcntq<Arch>(value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(detail::x86_vpopcntdq::vpopcntq<Arch>(detail::x86_integer_register(value)));
     }
   }
 
@@ -129,7 +130,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 2, Arch> mask_vpopcntq(simd<std::uint64_t, 2, Arch> source, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
-      return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_vpopcntdq::mask_vpopcntq<Arch>(source.to_native(), mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(detail::x86_vpopcntdq::mask_vpopcntq<Arch>(detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -140,7 +141,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 2, Arch> maskz_vpopcntq(predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, mask.to_bitset()); }
     else {
-      return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -151,7 +152,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 8, Arch> vpopcntd(simd<std::uint32_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, ~std::uint64_t{0}); }
     else {
-      return simd<std::uint32_t, 8, Arch>::from_native(detail::x86_vpopcntdq::vpopcntd<Arch>(value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 8, Arch>>(detail::x86_vpopcntdq::vpopcntd<Arch>(detail::x86_integer_register(value)));
     }
   }
 
@@ -162,7 +163,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 8, Arch> mask_vpopcntd(simd<std::uint32_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
-      return simd<std::uint32_t, 8, Arch>::from_native(detail::x86_vpopcntdq::mask_vpopcntd<Arch>(source.to_native(), mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 8, Arch>>(detail::x86_vpopcntdq::mask_vpopcntd<Arch>(detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -173,7 +174,7 @@ export namespace native {
   constexpr simd<std::uint32_t, 8, Arch> maskz_vpopcntd(predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, mask.to_bitset()); }
     else {
-      return simd<std::uint32_t, 8, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntd<Arch>(mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 8, Arch>>(detail::x86_vpopcntdq::maskz_vpopcntd<Arch>(mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -184,7 +185,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 4, Arch> vpopcntq(simd<std::uint64_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, ~std::uint64_t{0}); }
     else {
-      return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpopcntdq::vpopcntq<Arch>(value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(detail::x86_vpopcntdq::vpopcntq<Arch>(detail::x86_integer_register(value)));
     }
   }
 
@@ -195,7 +196,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 4, Arch> mask_vpopcntq(simd<std::uint64_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, source, mask.to_bitset()); }
     else {
-      return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpopcntdq::mask_vpopcntq<Arch>(source.to_native(), mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(detail::x86_vpopcntdq::mask_vpopcntq<Arch>(detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
 
@@ -206,144 +207,282 @@ export namespace native {
   constexpr simd<std::uint64_t, 4, Arch> maskz_vpopcntq(predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
     if consteval { return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, mask.to_bitset()); }
     else {
-      return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), value.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(detail::x86_vpopcntdq::maskz_vpopcntq<Arch>(mask.to_bitset(), detail::x86_integer_register(value)));
     }
   }
   /// Evaluate vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
-      requires { sizeof(simd<std::uint32_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> vpopcntd(simd<std::uint32_t, 16, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
+      requires { sizeof(simd<std::uint32_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 16, Arch> vpopcntd(simd<std::uint32_t, 16, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, ~std::uint64_t{0});
   }
 
   /// Evaluate mask_vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
-      requires { sizeof(simd<std::uint32_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> mask_vpopcntd(simd<std::uint32_t, 16, Arch> source, predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
+      requires { sizeof(simd<std::uint32_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 16, Arch> mask_vpopcntd(simd<std::uint32_t, 16, Arch> source, predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
   }
 
   /// Evaluate maskz_vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
-      requires { sizeof(simd<std::uint32_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 16, Arch> maskz_vpopcntd(predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
+      requires { sizeof(simd<std::uint32_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 16, Arch> maskz_vpopcntd(predicate<16, Arch> mask, simd<std::uint32_t, 16, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 16, Arch>{}, mask.to_bitset());
   }
 
   /// Evaluate vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> vpopcntq(simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> vpopcntq(simd<std::uint64_t, 8, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, ~std::uint64_t{0});
   }
 
   /// Evaluate mask_vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_vpopcntq(simd<std::uint64_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> mask_vpopcntq(simd<std::uint64_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
   }
 
   /// Evaluate maskz_vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_vpopcntq(predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq))) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> maskz_vpopcntq(predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 8, Arch>{}, mask.to_bitset());
   }
 
   /// Evaluate vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> vpopcntd(simd<std::uint32_t, 4, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> vpopcntd(simd<std::uint32_t, 4, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, ~std::uint64_t{0});
   }
 
   /// Evaluate mask_vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> mask_vpopcntd(simd<std::uint32_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> mask_vpopcntd(simd<std::uint32_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
   }
 
   /// Evaluate maskz_vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> maskz_vpopcntd(predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> maskz_vpopcntd(predicate<4, Arch> mask, simd<std::uint32_t, 4, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 4, Arch>{}, mask.to_bitset());
   }
 
   /// Evaluate vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> vpopcntq(simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> vpopcntq(simd<std::uint64_t, 2, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, ~std::uint64_t{0});
   }
 
   /// Evaluate mask_vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_vpopcntq(simd<std::uint64_t, 2, Arch> source, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> mask_vpopcntq(simd<std::uint64_t, 2, Arch> source, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
   }
 
   /// Evaluate maskz_vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_vpopcntq(predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> maskz_vpopcntq(predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 2, Arch>{}, mask.to_bitset());
   }
 
   /// Evaluate vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint32_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> vpopcntd(simd<std::uint32_t, 8, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 8, Arch> vpopcntd(simd<std::uint32_t, 8, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, ~std::uint64_t{0});
   }
 
   /// Evaluate mask_vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint32_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> mask_vpopcntd(simd<std::uint32_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 8, Arch> mask_vpopcntd(simd<std::uint32_t, 8, Arch> source, predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
   }
 
   /// Evaluate maskz_vpopcntd at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint32_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 8, Arch> maskz_vpopcntd(predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint32_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 8, Arch> maskz_vpopcntd(predicate<8, Arch> mask, simd<std::uint32_t, 8, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint32_t, 8, Arch>{}, mask.to_bitset());
   }
 
   /// Evaluate vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> vpopcntq(simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> vpopcntq(simd<std::uint64_t, 4, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, ~std::uint64_t{0});
   }
 
   /// Evaluate mask_vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_vpopcntq(simd<std::uint64_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> mask_vpopcntq(simd<std::uint64_t, 4, Arch> source, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, source, mask.to_bitset());
   }
 
   /// Evaluate maskz_vpopcntq at compile time when its register storage is available.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_vpopcntq(predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vpopcntdq) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> maskz_vpopcntq(predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> value) noexcept {
     return detail::x86_instruction_constant::population(value, simd<std::uint64_t, 4, Arch>{}, mask.to_bitset());
   }
 

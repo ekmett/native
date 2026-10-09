@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 
 #include "native/isa_import.h"
 #include "native/x86/sha.h"
@@ -16,7 +17,7 @@ export namespace native {
   /// independent hashes. SHA-1 state and SHA-256 state packs run high-to-low;
   /// SHA-256 message words run low-to-high. Runtime calls require SHA and the
   /// matching compiler target. Constant evaluation is exact modulo 32 bits.
-  /// Missing-feature forms are consteval-only and still require SSE2 storage.
+  /// Missing-feature forms accept constants; polyfill permits runtime emulation and missing storage.
   /// \{
 
   /// Four SHA-1 rounds; Selector in [0,3] selects the function and constant.
@@ -27,15 +28,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::rounds1<Selector>(a, b);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha1rnds4<Arch, Selector>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha1rnds4<Arch, Selector>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch, unsigned Selector> requires(!Arch.has(x86_feature::sha) && Selector < 4 &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1rnds4(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sha_constant::rounds1<Selector>(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Selector> requires(!Arch.has(x86_feature::sha) && Selector < 4 &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha1rnds4(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_sha_constant::rounds1<Selector>(a, b);
   }
@@ -52,15 +61,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::next_e(a, b);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha1nexte<Arch>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha1nexte<Arch>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1nexte(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sha_constant::next_e(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha1nexte(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_sha_constant::next_e(a, b);
   }
@@ -77,15 +94,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::message1_first(a, b);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha1msg1<Arch>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha1msg1<Arch>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1msg1(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sha_constant::message1_first(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha1msg1(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_sha_constant::message1_first(a, b);
   }
@@ -102,15 +127,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::message1_last(a, b);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha1msg2<Arch>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha1msg2<Arch>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1msg2(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sha_constant::message1_last(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha1msg2(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_sha_constant::message1_last(a, b);
   }
@@ -127,15 +160,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::rounds256(a, b, c);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha256rnds2<Arch>(a.to_native(), b.to_native(), c.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha256rnds2<Arch>(detail::x86_integer_register(a), detail::x86_integer_register(b), detail::x86_integer_register(c)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256rnds2(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::x86_sha_constant::rounds256(a, b, c);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha256rnds2(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     return detail::x86_sha_constant::rounds256(a, b, c);
   }
@@ -152,15 +193,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::message256_first(a, b);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha256msg1<Arch>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha256msg1<Arch>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256msg1(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sha_constant::message256_first(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha256msg1(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_sha_constant::message256_first(a, b);
   }
@@ -177,15 +226,23 @@ export namespace native {
     if consteval {
       return detail::x86_sha_constant::message256_last(a, b);
     } else {
-      return simd<std::uint32_t, 4, Arch>::from_native(
-        detail::x86_sha::sha256msg2<Arch>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint32_t, 4, Arch>>(
+        detail::x86_sha::sha256msg2<Arch>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate constant operands without SHA.
   template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
-      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256msg2(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::x86_sha_constant::message256_last(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!Arch.has(x86_feature::sha) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint32_t, 4, Arch> sha256msg2(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::x86_sha_constant::message256_last(a, b);
   }

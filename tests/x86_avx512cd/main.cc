@@ -7,6 +7,14 @@
 #include <initializer_list>
 #include <immintrin.h>
 #include <hint.h>
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_FIXTURE_RUNTIME(Target)
+#define NATIVE_FIXTURE_CONSTANTS(...)
+#else
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
+#define NATIVE_FIXTURE_CONSTANTS(...) static_assert(__VA_ARGS__)
+#endif
+
 #if NATIVE_TEST_INTERFACE == 1
 import native.x86.avx512cd;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -24,10 +32,22 @@ import native;
 #include <immintrin.h>
 #include <hint.h>
 
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto cd512 = native::isa<native::x86>(native::polyfill);
+#else
 inline constexpr auto cd512 = native::target_features<native::x86>("avx512f,avx512cd");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto cdvl = (native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill);
+#else
 inline constexpr auto cdvl = native::target_features<native::x86>("avx512f,avx512cd,avx512vl");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto cd_broad = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
 inline constexpr auto cd_broad = native::target_features<native::x86>(
   "avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd");
+#endif
 
 template<native::isa<native::x86> A, class T, std::size_t N>
 concept cd_shape = requires(native::simd<T, N, A> v, native::predicate<N, A> m) {
@@ -157,27 +177,27 @@ inline constexpr auto sse2_storage = native::target_features<native::x86>("sse2"
 inline constexpr auto avx_storage = native::target_features<native::x86>("avx");
 inline constexpr auto avx512_storage = native::target_features<native::x86>("avx512f");
 
-static_assert(constants<sse2_storage, std::uint32_t, 4>());
-static_assert(constants<sse2_storage, std::uint64_t, 2>());
-static_assert(constants<avx_storage, std::uint32_t, 8>());
-static_assert(constants<avx_storage, std::uint64_t, 4>());
-static_assert(constants<avx512_storage, std::uint32_t, 16>());
-static_assert(constants<avx512_storage, std::uint64_t, 8>());
-static_assert(constants<cdvl, std::uint32_t, 4>());
-static_assert(constants<cdvl, std::uint32_t, 8>());
-static_assert(constants<cdvl, std::uint32_t, 16>());
-static_assert(constants<cdvl, std::uint64_t, 2>());
-static_assert(constants<cdvl, std::uint64_t, 4>());
-static_assert(constants<cdvl, std::uint64_t, 8>());
-static_assert(constants<cd512, std::uint32_t, 16>());
-static_assert(constants<cd512, std::uint64_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint32_t, 4>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, std::uint64_t, 2>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint32_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, std::uint64_t, 4>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint32_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, std::uint64_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<cdvl, std::uint32_t, 4>());
+NATIVE_FIXTURE_CONSTANTS(constants<cdvl, std::uint32_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<cdvl, std::uint32_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(constants<cdvl, std::uint64_t, 2>());
+NATIVE_FIXTURE_CONSTANTS(constants<cdvl, std::uint64_t, 4>());
+NATIVE_FIXTURE_CONSTANTS(constants<cdvl, std::uint64_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd512, std::uint32_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd512, std::uint64_t, 8>());
 
-static_assert(constants<cd_broad, std::uint32_t, 4>());
-static_assert(constants<cd_broad, std::uint32_t, 8>());
-static_assert(constants<cd_broad, std::uint32_t, 16>());
-static_assert(constants<cd_broad, std::uint64_t, 2>());
-static_assert(constants<cd_broad, std::uint64_t, 4>());
-static_assert(constants<cd_broad, std::uint64_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd_broad, std::uint32_t, 4>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd_broad, std::uint32_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd_broad, std::uint32_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd_broad, std::uint64_t, 2>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd_broad, std::uint64_t, 4>());
+NATIVE_FIXTURE_CONSTANTS(constants<cd_broad, std::uint64_t, 8>());
 
 // Hand-written anchors keep lane numbering independent of the reference loop.
 constexpr std::array<std::uint32_t, 16> boundary_d{
@@ -191,7 +211,7 @@ static_assert(boundary_d_result[1][4] == 17 && boundary_q_result[1][2] == 17);
 
 // Each native entry keeps its literal target visible at the baseline call boundary.
 template<class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512cd")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512cd")
 void invoke_512(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, cd512>;
   auto value = vector_type::load(input);
@@ -215,7 +235,7 @@ void invoke_512(T * result, T const * input, T const * source, std::uint64_t mas
 }
 
 template<class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512cd,avx512vl")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512cd,avx512vl")
 void invoke_vl(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, cdvl>;
   auto value = vector_type::load(input);
@@ -239,7 +259,7 @@ void invoke_vl(T * result, T const * input, T const * source, std::uint64_t mask
 }
 
 template<class T, std::size_t N>
-hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd")
+NATIVE_FIXTURE_RUNTIME("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512cd")
 void invoke_broad(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, cd_broad>;
   auto value = vector_type::load(input);

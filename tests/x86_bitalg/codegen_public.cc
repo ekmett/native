@@ -3,12 +3,13 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.bitalg;
+#include "../polyfill_codegen.h"
 
 #if defined(__AVX__) || defined(__AVX512F__) || defined(__AVX512BITALG__)
 #error Optional instructions must come from function targets
 #endif
-constexpr auto full_width = native::target_features<native::x86>("avx512f,avx512bw,avx512bitalg");
-constexpr auto short_width = native::target_features<native::x86>("avx512f,avx512bw,avx512bitalg,avx512vl");
+constexpr auto full_width = native_test::codegen_arch(native::target_features<native::x86>("avx512f,avx512bw,avx512bitalg"));
+constexpr auto short_width = native_test::codegen_arch(native::target_features<native::x86>("avx512f,avx512bw,avx512bitalg,avx512vl"));
 
 extern "C" hint_noinline hint_target("avx512f,avx512bw,avx512bitalg,avx512vl")
 __m128i native_vpopcntb_128_plain(

@@ -18,7 +18,7 @@ namespace vnni_constant_test {
     out=std::bit_cast<std::array<std::uint32_t,N>>(typed);
   }
   template<native::isa<native::x86> A,unsigned Kind,unsigned Mode,std::size_t N>
-  consteval auto calculate(inputs<N> in,unsigned bits) {
+  constexpr auto calculate(inputs<N> in,unsigned bits) {
     outputs<N,Kind==0 ? 4 : 6> result{};
     auto mask=native::predicate<N/4,A>::from_bitset(bits);
     unsigned index=0;
@@ -161,7 +161,41 @@ namespace vnni_constant_test {
     return true;
   }
 }
+#ifdef NATIVE_TEST_POLYFILL
+namespace vnni_constant_test {
+  template<native::isa<native::x86> A, unsigned Kind, std::size_t N> bool polyfill_cases() {
+    auto settings=property_config(32); property_rng random{settings.seed};
+    for(std::size_t i=0;i<settings.cases;++i) {
+      auto in=make_case<N>(random); auto bits=unsigned(random.next());
+      auto expected=oracle(in,operations<Kind>);
+      if(!property_equal("VNNI polyfill",settings.seed,i,expected,calculate<A,Kind,0>(in,bits),in.a,in.b)) return false;
+      if constexpr(Kind==0) {
+        auto merged=expected,zeroed=expected;
+        for(auto& op:merged) for(std::size_t lane=0;lane<N/4;++lane)
+          if(!((bits>>lane)&1)) op[lane]=in.accumulator[lane];
+        for(auto& op:zeroed) for(std::size_t lane=0;lane<N/4;++lane)
+          if(!((bits>>lane)&1)) op[lane]=0;
+        if(!property_equal("VNNI polyfill merge",settings.seed,i,merged,calculate<A,Kind,1>(in,bits),bits) ||
+           !property_equal("VNNI polyfill zero",settings.seed,i,zeroed,calculate<A,Kind,2>(in,bits),bits)) return false;
+      }
+    }
+    return true;
+  }
+  template<native::isa<native::x86> A> bool polyfill_cases() {
+    return polyfill_cases<A,0,16>() && polyfill_cases<A,0,32>() && polyfill_cases<A,0,64>() &&
+      polyfill_cases<A,1,16>() && polyfill_cases<A,1,32>() &&
+      polyfill_cases<A,2,16>() && polyfill_cases<A,2,32>();
+  }
+}
+#endif
+
 int main() {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr native::isa<native::x86> scalar=native::polyfill;
+  constexpr auto split=native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill;
+  return !(vnni_constant_test::polyfill_cases<scalar>() &&
+    vnni_constant_test::polyfill_cases<split>());
+#else
   using namespace vnni_constant_test;
   auto cpu=native::observe_x86_capabilities(); unsigned executed=0;
   auto run=[&](char const* name,auto arch,auto body) {
@@ -176,4 +210,5 @@ int main() {
      !run("VNNI-INT8",int8,[]{return compare<1>(invoke_int8_128,false) && compare<1>(invoke_int8_256,false);}) ||
      !run("VNNI-INT16",int16,[]{return compare<2>(invoke_int16_128,false) && compare<2>(invoke_int16_256,false);})) return 1;
   return executed ? 0 : 77;
+#endif
 }

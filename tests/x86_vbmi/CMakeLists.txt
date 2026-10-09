@@ -232,3 +232,14 @@ foreach(width IN ITEMS 128 256 512)
     endforeach()
   endforeach()
 endforeach()
+
+# Reuse the independent native corpus on scalar and split permitted storage.
+add_executable(native_test_x86_vbmi_polyfill main.cc)
+target_link_libraries(native_test_x86_vbmi_polyfill PRIVATE native::native)
+target_compile_definitions(native_test_x86_vbmi_polyfill PRIVATE
+  NATIVE_TEST_INTERFACE=1 NATIVE_TEST_POLYFILL=1)
+add_test(NAME native.polyfill.x86.vbmi COMMAND native_test_x86_vbmi_polyfill)
+set_tests_properties(native.polyfill.x86.vbmi PROPERTIES LABELS "host;polyfill;x86;vbmi")
+
+target_compile_options(native_test_x86_vbmi_polyfill PRIVATE
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")

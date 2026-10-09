@@ -2,9 +2,10 @@
 #include "prelude.h"
 
 import native.x86.aes;
+#include "../polyfill_codegen.h"
 
 namespace {
-  constexpr auto requirements = native::target_features<native::x86>("aes");
+  constexpr auto requirements = native_test::codegen_arch(native::target_features<native::x86>("aes"));
   using bytes = native::simd<std::uint8_t, 16, requirements>;
 }
 

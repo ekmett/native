@@ -8,6 +8,12 @@
 #include <cstdio>
 #include <immintrin.h>
 #include <hint.h>
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_FIXTURE_RUNTIME(Target)
+#else
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
+#endif
+
 
 #if defined(__SHA__) || defined(__AES__) || defined(__VAES__) || defined(__AVX__)
 #error Crypto admission must run at the provider baseline
@@ -83,9 +89,17 @@ namespace sha_fixture {
 }
 
 namespace sha_fixture {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto strong = native::isa<native::x86>(native::polyfill);
+#else
   constexpr auto strong = native::target_features<native::x86>("sha");
+#endif
   constexpr auto weak = native::target_features<native::x86>("sse2");
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto broad = (native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill);
+#else
   constexpr auto broad = native::avx512 & native::x86_feature::sha;
+#endif
   template<native::isa<native::x86> A>
   using vector = native::simd<std::uint32_t, 4, A>;
 
@@ -238,7 +252,7 @@ namespace sha_fixture {
   }
   static_assert(digest256<strong>() && digest256<weak>());
 
-  hint_noinline hint_target("sha")
+  NATIVE_FIXTURE_RUNTIME("sha")
   void evaluate(words const & a, words const & b, words const & c, results & out) noexcept {
     auto x = vector<strong>::load(a.data());
     auto y = vector<strong>::load(b.data());

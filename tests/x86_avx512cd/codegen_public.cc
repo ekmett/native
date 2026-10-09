@@ -3,13 +3,14 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.avx512cd;
+#include "../polyfill_codegen.h"
 
 #if defined(__AVX__) || defined(__AVX512F__) || defined(__AVX512CD__) || defined(__AVX512VL__)
 #error Optional instructions must come from function targets
 #endif
 constexpr auto cd512 =
-    native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512cd);
-constexpr auto cdvl = cd512 & native::x86_feature::avx512vl;
+    native_test::codegen_arch(native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512cd));
+constexpr auto cdvl = native_test::codegen_arch(cd512 & native::x86_feature::avx512vl);
 
 extern "C" hint_noinline hint_target("avx512f,avx512cd,avx512vl")
 __m128i native_vpconflictd_128_plain(__m128i value) noexcept {

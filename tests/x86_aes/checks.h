@@ -148,7 +148,7 @@ namespace aes_fixture {
   }
 
   template<native::isa<native::x86> A, unsigned... I>
-  consteval outputs constant(bytes input, bytes key, std::integer_sequence<unsigned, I...>) {
+  constexpr outputs constant(bytes input, bytes key, std::integer_sequence<unsigned, I...>) {
     auto a = vector<A>::load(input.data());
     auto b = vector<A>::load(key.data());
     outputs result{};
@@ -283,6 +283,20 @@ namespace aes_fixture {
   }
 
   int run() {
+#ifdef NATIVE_TEST_POLYFILL
+    constexpr native::isa<native::x86> scalar=native::polyfill;
+    constexpr auto split=weak | native::polyfill;
+    static_assert(constant<scalar>(initial,first_key,immediates{}) == expected(initial,first_key));
+    auto settings=native_test::property_config(32); native_test::property_rng random{settings.seed};
+    for(std::size_t sample=0;sample<settings.cases;++sample) {
+      bytes a{},b{};
+      for(unsigned lane=0;lane<16;++lane) { a[lane]=std::uint8_t(random.next()); b[lane]=std::uint8_t(random.next()); }
+      auto wanted=expected(a,b);
+      if(!native_test::property_equal("AES scalar polyfill",settings.seed,sample,wanted,constant<scalar>(a,b,immediates{})) ||
+         !native_test::property_equal("AES native storage polyfill",settings.seed,sample,wanted,constant<split>(a,b,immediates{}))) return 1;
+    }
+    return 0;
+#else
     constexpr std::uint32_t sse2 = (1u << 23) | (1u << 25) | (1u << 26);
     if (native_aes_admission(1u << 25, sse2, 0)) {
       std::puts("AES admission accepted an unobserved CPUID leaf");
@@ -334,5 +348,6 @@ namespace aes_fixture {
     }
     std::puts("AES: FIPS-197 encrypt/decrypt, constexpr and 256 independent round cases passed");
     return 0;
+#endif
   }
 }

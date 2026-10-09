@@ -3,6 +3,7 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.vpopcntdq;
+#include "../polyfill_codegen.h"
 
 #if defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || \
     defined(__AVX512VL__) || defined(__AVX512DQ__) || defined(__AVX512BW__) || \
@@ -17,9 +18,9 @@ import native.x86.vpopcntdq;
 #else
 #define NATIVE_COUNT_EXTRA_TARGETS ""
 #endif
-constexpr auto count512 = native::target_features<native::x86>(
-  "avx512f,avx512vpopcntdq" NATIVE_COUNT_EXTRA_TARGETS);
-constexpr auto countvl = native::feature_closure(count512 & native::x86_feature::avx512vl);
+constexpr auto count512 = native_test::codegen_arch(native::target_features<native::x86>(
+  "avx512f,avx512vpopcntdq" NATIVE_COUNT_EXTRA_TARGETS));
+constexpr auto countvl = native_test::codegen_arch(native::feature_closure(count512 & native::x86_feature::avx512vl));
 
 #define NATIVE_COUNT_FIXTURES(width, reg, dmask, requirement, features) \
   extern "C" hint_noinline hint_target(features NATIVE_COUNT_EXTRA_TARGETS) \

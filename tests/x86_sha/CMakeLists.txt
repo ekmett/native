@@ -243,3 +243,14 @@ endforeach()
 
 get_directory_property(fixture_tests TESTS)
 set_tests_properties(${fixture_tests} PROPERTIES LABELS "host;modules;x86;sha")
+
+# Reuse the independent native corpus on scalar and split permitted storage.
+add_executable(native_test_x86_sha_polyfill main.cc)
+target_link_libraries(native_test_x86_sha_polyfill PRIVATE native::native)
+target_compile_definitions(native_test_x86_sha_polyfill PRIVATE
+  NATIVE_TEST_INTERFACE=1 NATIVE_TEST_POLYFILL=1)
+add_test(NAME native.polyfill.x86.sha COMMAND native_test_x86_sha_polyfill)
+set_tests_properties(native.polyfill.x86.sha PROPERTIES LABELS "host;polyfill;x86;sha")
+
+target_compile_options(native_test_x86_sha_polyfill PRIVATE
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")

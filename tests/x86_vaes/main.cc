@@ -8,6 +8,12 @@
 #include <cstdio>
 #include <immintrin.h>
 #include <hint.h>
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_FIXTURE_RUNTIME(Target)
+#else
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
+#endif
+
 
 #if defined(__SHA__) || defined(__AES__) || defined(__VAES__) || defined(__AVX__)
 #error Crypto admission must run at the provider baseline
@@ -104,13 +110,29 @@ namespace vaes_fixture {
 }
 
 namespace vaes_fixture {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto vex128 = native::isa<native::x86>(native::polyfill);
+#else
   constexpr auto vex128 = native::target_features<native::x86>("avx,aes");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto vex256 = (native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill);
+#else
   constexpr auto vex256 = native::target_features<native::x86>("avx,vaes");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto evex512 = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
   constexpr auto evex512 = native::target_features<native::x86>("avx512f,vaes");
+#endif
   constexpr auto weak128 = native::target_features<native::x86>("sse2");
   constexpr auto weak256 = native::target_features<native::x86>("avx");
   constexpr auto weak512 = native::target_features<native::x86>("avx512f");
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto broad = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
   constexpr auto broad = native::avx512 & native::x86_feature::aes & native::x86_feature::vaes;
+#endif
 
   template<unsigned N>
   using block = std::array<std::uint8_t, N>;
@@ -179,7 +201,7 @@ namespace vaes_fixture {
     0x6b, 0x5b, 0xea, 0x43, 0x02, 0x6a, 0x50, 0x49};
   static_assert(constant<vex128, 16>(initial, round_key)[0] == first);
 
-  hint_noinline hint_target("avx,aes")
+  NATIVE_FIXTURE_RUNTIME("avx,aes")
   void evaluate128(block<16> const & a, block<16> const & key, results<16> & out) noexcept {
     using vector = native::simd<std::uint8_t, 16, vex128>;
     auto x = vector::load(a.data());
@@ -190,7 +212,7 @@ namespace vaes_fixture {
     native::vaesdeclast<vex128>(x, y).store(out[3].data());
   }
 
-  hint_noinline hint_target("avx,vaes")
+  NATIVE_FIXTURE_RUNTIME("avx,vaes")
   void evaluate256(block<32> const & a, block<32> const & key, results<32> & out) noexcept {
     using vector = native::simd<std::uint8_t, 32, vex256>;
     auto x = vector::load(a.data());
@@ -201,7 +223,7 @@ namespace vaes_fixture {
     native::vaesdeclast<vex256>(x, y).store(out[3].data());
   }
 
-  hint_noinline hint_target("avx512f,vaes")
+  NATIVE_FIXTURE_RUNTIME("avx512f,vaes")
   void evaluate512(block<64> const & a, block<64> const & key, results<64> & out) noexcept {
     using vector = native::simd<std::uint8_t, 64, evex512>;
     auto x = vector::load(a.data());

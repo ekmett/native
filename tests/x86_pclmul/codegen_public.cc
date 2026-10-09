@@ -4,134 +4,135 @@
 #include <hint.h>
 import native.x86.pclmul;
 import native.x86.vpclmul;
+#include "../polyfill_codegen.h"
 using native::x86_feature;
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_0(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_1(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_16(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_17(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_238(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_239(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_254(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("pclmul")
 __m128i native_pclmul_legacy_255(__m128i a, __m128i b) {
-  return native::pclmulqdq<native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))>::from_native(b)).to_native();
+  return native::pclmulqdq<native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul))),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(native::isa<native::x86>(x86_feature::pclmul)))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_0(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_1(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_16(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_17(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_238(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_239(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_254(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,pclmul")
 __m128i native_pclmul_vex128_255(__m128i a, __m128i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::pclmul & x86_feature::avx),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::pclmul & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx)),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::pclmul & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_0(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_1(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_16(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_17(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_238(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_239(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_254(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx,vpclmulqdq")
 __m256i native_pclmul_vex256_255(__m256i a, __m256i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx)),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_0(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),0>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_1(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),1>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_16(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),16>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_17(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),17>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_238(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),238>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_239(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),239>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_254(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),254>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 extern "C" hint_noinline hint_target("avx512f,vpclmulqdq")
 __m512i native_pclmul_evex512_255(__m512i a, __m512i b) {
-  return native::vpclmulqdq<native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)>::from_native(b)).to_native();
+  return native::vpclmulqdq<native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f)),255>(native::simd<std::uint64_t, sizeof(a) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(a), native::simd<std::uint64_t, sizeof(b) / sizeof(std::uint64_t), native_test::codegen_arch(native::feature_closure(x86_feature::vpclmulqdq & x86_feature::avx512f))>::from_native(b)).to_native();
 }
 // A high source register prevents LLVM from compressing EVEX to VEX.
 extern "C" hint_noinline hint_target("avx512f,avx512vl,vpclmulqdq")

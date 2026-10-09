@@ -3,12 +3,13 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.sha;
+#include "../polyfill_codegen.h"
 
 #ifndef NATIVE_TEST_TARGET_0
 #define NATIVE_TEST_TARGET_0 "sha"
 #endif
 
-constexpr auto arch128 = native::target_features<native::x86>(NATIVE_TEST_TARGET_0);
+constexpr auto arch128 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_0));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_0)
 __m128i native_sha1rnds4_0_128(__m128i a, __m128i b) noexcept {

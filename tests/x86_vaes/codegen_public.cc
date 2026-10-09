@@ -16,7 +16,9 @@ import native.x86.vaes;
 #define NATIVE_TEST_TARGET_2 "avx512f,vaes"
 #endif
 
-constexpr auto arch128 = native::target_features<native::x86>(NATIVE_TEST_TARGET_0);
+#include "../polyfill_codegen.h"
+
+constexpr auto arch128 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_0));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_0)
 __m128i native_vaesenc_128(__m128i a, __m128i b) noexcept {
@@ -42,7 +44,7 @@ __m128i native_vaesdeclast_128(__m128i a, __m128i b) noexcept {
   return native::vaesdeclast<arch128>(vector::from_native(a), vector::from_native(b)).to_native();
 }
 
-constexpr auto arch256 = native::target_features<native::x86>(NATIVE_TEST_TARGET_1);
+constexpr auto arch256 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_1));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_1)
 __m256i native_vaesenc_256(__m256i a, __m256i b) noexcept {
@@ -68,7 +70,7 @@ __m256i native_vaesdeclast_256(__m256i a, __m256i b) noexcept {
   return native::vaesdeclast<arch256>(vector::from_native(a), vector::from_native(b)).to_native();
 }
 
-constexpr auto arch512 = native::target_features<native::x86>(NATIVE_TEST_TARGET_2);
+constexpr auto arch512 = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_TEST_TARGET_2));
 
 extern "C" hint_noinline hint_target(NATIVE_TEST_TARGET_2)
 __m512i native_vaesenc_512(__m512i a, __m512i b) noexcept {

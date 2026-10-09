@@ -3,14 +3,15 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.vbmi;
+#include "../polyfill_codegen.h"
 
 #if defined(__AVX__) || defined(__AVX512F__) || defined(__AVX512VBMI__)
 #error Optional instructions must come from function targets
 #endif
 // Keep the two tables separated by indices in the probe ABI. This prevents
 // Clang from concatenating adjacent stack arguments into one wider VPERMB.
-constexpr auto full_width = native::target_features<native::x86>("avx512f,avx512bw,avx512vbmi");
-constexpr auto short_width = native::target_features<native::x86>("avx512f,avx512bw,avx512vbmi,avx512vl");
+constexpr auto full_width = native_test::codegen_arch(native::target_features<native::x86>("avx512f,avx512bw,avx512vbmi"));
+constexpr auto short_width = native_test::codegen_arch(native::target_features<native::x86>("avx512f,avx512bw,avx512vbmi,avx512vl"));
 
 extern "C" hint_noinline hint_target("avx512f,avx512bw,avx512vbmi,avx512vl")
 __m128i native_vpermb_128_plain(

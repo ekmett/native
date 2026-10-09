@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+get_filename_component(polyfill_integer_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
+find_program(polyfill_integer_objdump NAMES llvm-objdump HINTS "${polyfill_integer_compiler_dir}" REQUIRED)
+foreach(family IN ITEMS aes vaes pclmul gfni sha ifma vnni avx512cd bitalg vpopcntdq vbmi vbmi2 extended_crypto instruction_storage)
+  set(source "${CMAKE_CURRENT_SOURCE_DIR}/../x86_${family}/codegen_public.cc")
+  if(family STREQUAL "extended_crypto")
+    set(source "${CMAKE_CURRENT_SOURCE_DIR}/../x86_${family}/codegen.cc")
+  endif()
+  if(family STREQUAL "instruction_storage")
+    set(source "${CMAKE_CURRENT_SOURCE_DIR}/instruction_storage.cc")
+  endif()
+  foreach(mode IN ITEMS native polyfill)
+    set(target native_polyfill_integer_codegen_${family}_${mode})
+    add_library(${target} OBJECT "${source}")
+    target_link_libraries(${target} PRIVATE native::native)
+    target_compile_options(${target} PRIVATE "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
+    if(mode STREQUAL "polyfill")
+      target_compile_definitions(${target} PRIVATE NATIVE_TEST_CODEGEN_POLYFILL=1)
+    endif()
+  endforeach()
+  set(operation_args)
+  if(family STREQUAL "instruction_storage")
+    set(operation_args --operation-pattern "^(aesenc|pclmulqdq|gf2p8mulb)\\b")
+  endif()
+  add_test(NAME native.polyfill.x86.codegen_${family} COMMAND "${Python3_EXECUTABLE}"
+    "${PROJECT_SOURCE_DIR}/tests/x86_codegen_pairs.py" --objdump "${polyfill_integer_objdump}"
+    --raw "$<TARGET_OBJECTS:native_polyfill_integer_codegen_${family}_native>"
+    --public "$<TARGET_OBJECTS:native_polyfill_integer_codegen_${family}_polyfill>"
+    --output "${CMAKE_CURRENT_BINARY_DIR}/${family}-native-first-$<CONFIG>.txt" ${operation_args})
+  set_tests_properties(native.polyfill.x86.codegen_${family} PROPERTIES LABELS "host;polyfill;x86;codegen;${family}")
+endforeach()

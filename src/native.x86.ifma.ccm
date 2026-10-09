@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 
 #include "native/isa_import.h"
 #include "native/x86/ifma.h"
@@ -16,7 +17,7 @@ export namespace native {
   /// to the full 64-bit accumulator, modulo 2^64. Short unmasked operations use
   /// AVX-IFMA when tagged; otherwise they require AVX512IFMA and AVX512VL.
   /// Masked forms require EVEX; inactive lanes retain the accumulator or zero.
-  /// Missing-feature overloads are consteval-only and require complete storage.
+  /// Missing-feature overloads accept constants; polyfill permits runtime emulation and missing storage.
   /// \{
 
   /// Accumulate low 52-bit products in 2 lanes; unmasked.
@@ -27,8 +28,8 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::madd52lo<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::madd52lo<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -42,16 +43,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::madd52lo<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::madd52lo<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> madd52lo(
+    simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> madd52lo(
     simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
   }
@@ -64,8 +74,8 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::madd52lo<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::madd52lo<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -79,16 +89,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::madd52lo<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::madd52lo<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> madd52lo(
+    simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> madd52lo(
     simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
   }
@@ -101,15 +120,23 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 8, Arch>::from_native(
-        detail::x86_ifma::madd52lo<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(
+        detail::x86_ifma::madd52lo<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> madd52lo(
+    simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> madd52lo(
     simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, ~std::uint64_t{0}, false);
   }
@@ -127,16 +154,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::mask_madd52lo<Arch>(accumulator.to_native(), static_cast<__mmask8>(mask.to_bitset()), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::mask_madd52lo<Arch>(detail::x86_integer_register(accumulator), static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_madd52lo(
+    simd<std::uint64_t, 2, Arch> accumulator, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> mask_madd52lo(
     simd<std::uint64_t, 2, Arch> accumulator, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
   }
@@ -150,16 +186,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::mask_madd52lo<Arch>(accumulator.to_native(), static_cast<__mmask8>(mask.to_bitset()), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::mask_madd52lo<Arch>(detail::x86_integer_register(accumulator), static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_madd52lo(
+    simd<std::uint64_t, 4, Arch> accumulator, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> mask_madd52lo(
     simd<std::uint64_t, 4, Arch> accumulator, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
   }
@@ -172,15 +217,23 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
     } else {
-      return simd<std::uint64_t, 8, Arch>::from_native(
-        detail::x86_ifma::mask_madd52lo<Arch>(accumulator.to_native(), static_cast<__mmask8>(mask.to_bitset()), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(
+        detail::x86_ifma::mask_madd52lo<Arch>(detail::x86_integer_register(accumulator), static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_madd52lo(
+    simd<std::uint64_t, 8, Arch> accumulator, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> mask_madd52lo(
     simd<std::uint64_t, 8, Arch> accumulator, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), false);
   }
@@ -198,16 +251,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::maskz_madd52lo<Arch>(static_cast<__mmask8>(mask.to_bitset()), accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::maskz_madd52lo<Arch>(static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_madd52lo(
+    predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> maskz_madd52lo(
     predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
   }
@@ -221,16 +283,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::maskz_madd52lo<Arch>(static_cast<__mmask8>(mask.to_bitset()), accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::maskz_madd52lo<Arch>(static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_madd52lo(
+    predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> maskz_madd52lo(
     predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
   }
@@ -243,15 +314,23 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
     } else {
-      return simd<std::uint64_t, 8, Arch>::from_native(
-        detail::x86_ifma::maskz_madd52lo<Arch>(static_cast<__mmask8>(mask.to_bitset()), accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(
+        detail::x86_ifma::maskz_madd52lo<Arch>(static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_madd52lo(
+    predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> maskz_madd52lo(
     predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<false>(accumulator, a, b, mask.to_bitset(), true);
   }
@@ -268,8 +347,8 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::madd52hi<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::madd52hi<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -283,16 +362,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::madd52hi<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::madd52hi<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> madd52hi(
+    simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> madd52hi(
     simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
   }
@@ -305,8 +393,8 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::madd52hi<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::madd52hi<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -320,16 +408,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::madd52hi<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::madd52hi<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl))) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> madd52hi(
+    simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!((Arch.has(x86_feature::avxifma) && Arch.has(x86_feature::avx)) || (Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl))) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> madd52hi(
     simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
   }
@@ -342,15 +439,23 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
     } else {
-      return simd<std::uint64_t, 8, Arch>::from_native(
-        detail::x86_ifma::madd52hi<Arch>(accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(
+        detail::x86_ifma::madd52hi<Arch>(detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> madd52hi(
+    simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> madd52hi(
     simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, ~std::uint64_t{0}, false);
   }
@@ -368,16 +473,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::mask_madd52hi<Arch>(accumulator.to_native(), static_cast<__mmask8>(mask.to_bitset()), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::mask_madd52hi<Arch>(detail::x86_integer_register(accumulator), static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> mask_madd52hi(
+    simd<std::uint64_t, 2, Arch> accumulator, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> mask_madd52hi(
     simd<std::uint64_t, 2, Arch> accumulator, predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
   }
@@ -391,16 +505,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::mask_madd52hi<Arch>(accumulator.to_native(), static_cast<__mmask8>(mask.to_bitset()), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::mask_madd52hi<Arch>(detail::x86_integer_register(accumulator), static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> mask_madd52hi(
+    simd<std::uint64_t, 4, Arch> accumulator, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> mask_madd52hi(
     simd<std::uint64_t, 4, Arch> accumulator, predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
   }
@@ -413,15 +536,23 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
     } else {
-      return simd<std::uint64_t, 8, Arch>::from_native(
-        detail::x86_ifma::mask_madd52hi<Arch>(accumulator.to_native(), static_cast<__mmask8>(mask.to_bitset()), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(
+        detail::x86_ifma::mask_madd52hi<Arch>(detail::x86_integer_register(accumulator), static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> mask_madd52hi(
+    simd<std::uint64_t, 8, Arch> accumulator, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> mask_madd52hi(
     simd<std::uint64_t, 8, Arch> accumulator, predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), false);
   }
@@ -439,16 +570,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
     } else {
-      return simd<std::uint64_t, 2, Arch>::from_native(
-        detail::x86_ifma::maskz_madd52hi<Arch>(static_cast<__mmask8>(mask.to_bitset()), accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(
+        detail::x86_ifma::maskz_madd52hi<Arch>(static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> maskz_madd52hi(
+    predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> maskz_madd52hi(
     predicate<2, Arch> mask, simd<std::uint64_t, 2, Arch> accumulator, simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
   }
@@ -462,16 +602,25 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
     } else {
-      return simd<std::uint64_t, 4, Arch>::from_native(
-        detail::x86_ifma::maskz_madd52hi<Arch>(static_cast<__mmask8>(mask.to_bitset()), accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(
+        detail::x86_ifma::maskz_madd52hi<Arch>(static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> maskz_madd52hi(
+    predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> maskz_madd52hi(
     predicate<4, Arch> mask, simd<std::uint64_t, 4, Arch> accumulator, simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
   }
@@ -484,15 +633,23 @@ export namespace native {
     if consteval {
       return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
     } else {
-      return simd<std::uint64_t, 8, Arch>::from_native(
-        detail::x86_ifma::maskz_madd52hi<Arch>(static_cast<__mmask8>(mask.to_bitset()), accumulator.to_native(), a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(
+        detail::x86_ifma::maskz_madd52hi<Arch>(static_cast<__mmask8>(mask.to_bitset()), detail::x86_integer_register(accumulator), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Constant evaluation without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> maskz_madd52hi(
+    predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512ifma)) &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> maskz_madd52hi(
     predicate<8, Arch> mask, simd<std::uint64_t, 8, Arch> accumulator, simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_ifma_constant::accumulate<true>(accumulator, a, b, mask.to_bitset(), true);
   }

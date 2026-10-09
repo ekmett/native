@@ -91,3 +91,12 @@ foreach(option IN ITEMS -msha512 -msm3 -msm4 -mavxneconvert)
   target_compile_options(native_test_x86_extended_crypto_minimum PRIVATE
     "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>${option}")
 endforeach()
+
+add_executable(native_test_x86_extended_crypto_polyfill runtime.cc)
+target_link_libraries(native_test_x86_extended_crypto_polyfill PRIVATE native::native)
+target_compile_definitions(native_test_x86_extended_crypto_polyfill PRIVATE NATIVE_TEST_POLYFILL=1)
+crypto_options(native_test_x86_extended_crypto_polyfill)
+foreach(family IN ITEMS sha512 sm3 sm4)
+  add_test(NAME native.polyfill.x86.${family} COMMAND native_test_x86_extended_crypto_polyfill ${family})
+  set_tests_properties(native.polyfill.x86.${family} PROPERTIES LABELS "host;polyfill;x86;${family}")
+endforeach()

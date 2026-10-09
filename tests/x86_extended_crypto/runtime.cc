@@ -12,17 +12,29 @@ int main(int argc,char **argv) {
   if(argc!=2) return 1;
   auto cpu=observe_x86_capabilities();
   if(!std::strcmp(argv[1],"sha512")) {
+    #ifdef NATIVE_TEST_POLYFILL
+    constexpr isa<x86> arch=polyfill;
+#else
     constexpr auto arch=target_features<x86>("sha512");
+#endif
     if(!classify_isa(cpu,arch).admitted()) return 77;
     return !checks::sha512_abc<arch>();
   }
   if(!std::strcmp(argv[1],"sm3")) {
+    #ifdef NATIVE_TEST_POLYFILL
+    constexpr isa<x86> arch=polyfill;
+#else
     constexpr auto arch=target_features<x86>("sm3");
+#endif
     if(!classify_isa(cpu,arch).admitted()) return 77;
     return !checks::sm3_abc<arch>();
   }
   if(!std::strcmp(argv[1],"sm4")) {
+    #ifdef NATIVE_TEST_POLYFILL
+    constexpr isa<x86> arch=polyfill;
+#else
     constexpr auto arch=target_features<x86>("sm4");
+#endif
     if(!classify_isa(cpu,arch).admitted()) return 77;
     return !(checks::sm4_example<arch,4>() && checks::sm4_example<arch,8>());
   }

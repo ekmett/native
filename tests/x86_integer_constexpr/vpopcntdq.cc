@@ -18,7 +18,7 @@ namespace vpopcnt_constant_test {
     result.mask=random.next(); return result;
   }
   template<native::isa<native::x86> A,class T,std::size_t N>
-  consteval auto calculate(input<T,N> in) {
+  constexpr auto calculate(input<T,N> in) {
     using V=native::simd<T,N,A>;
     auto value=V::load(in.value.data()),source=V::load(in.source.data());
     auto mask=native::predicate<N,A>::from_bitset(in.mask);
@@ -96,7 +96,31 @@ namespace vpopcnt_constant_test {
     return true;
   }
 }
+#ifdef NATIVE_TEST_POLYFILL
+namespace vpopcnt_constant_test {
+  template<native::isa<native::x86> A, class T, std::size_t N> bool polyfill_cases() {
+    auto settings=property_config(32); property_rng random{settings.seed};
+    for(std::size_t i=0;i<settings.cases;++i) {
+      auto in=make_case<T,N>(random);
+      if(!property_equal("VPOPCNT polyfill",settings.seed,i,oracle(in),calculate<A>(in),in.value,in.mask)) return false;
+    }
+    return true;
+  }
+  template<native::isa<native::x86> A> bool polyfill_cases() {
+    return polyfill_cases<A,std::uint32_t,4>() && polyfill_cases<A,std::uint32_t,8>() &&
+      polyfill_cases<A,std::uint32_t,16>() && polyfill_cases<A,std::uint64_t,2>() &&
+      polyfill_cases<A,std::uint64_t,4>() && polyfill_cases<A,std::uint64_t,8>();
+  }
+}
+#endif
+
 int main() {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr native::isa<native::x86> scalar=native::polyfill;
+  constexpr auto split=native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill;
+  return !(vpopcnt_constant_test::polyfill_cases<scalar>() &&
+    vpopcnt_constant_test::polyfill_cases<split>());
+#else
   using namespace vpopcnt_constant_test;
   auto cpu=native::observe_x86_capabilities();
   auto base=native::classify_isa(cpu,requirements_512);
@@ -107,4 +131,5 @@ int main() {
       (!compare<std::uint32_t,4>() || !compare<std::uint32_t,8>() ||
        !compare<std::uint64_t,2>() || !compare<std::uint64_t,4>())) return 1;
   return 0;
+#endif
 }

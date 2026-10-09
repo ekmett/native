@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 #include "native/isa_import.h"
 #include "native/x86/vbmi.h"
 export module native.x86.vbmi;
@@ -17,7 +18,7 @@ export namespace native {
    * VPERMI2B merges inactive index lanes; VPERMT2B merges inactive first-table
    * lanes. Multishift selects eight wrapping bits from the corresponding qword.
    * Constant evaluation uses exact integer semantics. Weaker tags are accepted
-   * only at compile time and still require complete SIMD storage.
+   * at compile time; polyfill permits runtime emulation and missing storage.
    * \{ */
 
   /// Permute bytes across the whole vector using the low index bits.
@@ -34,9 +35,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::vpermb<Arch>(
-          indices.to_native(), value.to_native()));
+          detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -56,9 +57,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 16, Arch>{}, source, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::mask_vpermb<Arch>(
-          source.to_native(), mask.to_bitset(), indices.to_native(), value.to_native()));
+          detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -77,9 +78,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::maskz_vpermb<Arch>(
-          mask.to_bitset(), indices.to_native(), value.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -98,9 +99,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::vpermt2b<Arch>(
-          a.to_native(), indices.to_native(), b.to_native()));
+          detail::x86_integer_register(a), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -120,9 +121,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, a, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::mask_vpermt2b<Arch>(
-          a.to_native(), mask.to_bitset(), indices.to_native(), b.to_native()));
+          detail::x86_integer_register(a), mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -142,9 +143,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::maskz_vpermt2b<Arch>(
-          mask.to_bitset(), a.to_native(), indices.to_native(), b.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(a), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -163,9 +164,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::vpermi2b<Arch>(
-          indices.to_native(), a.to_native(), b.to_native()));
+          detail::x86_integer_register(indices), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -185,9 +186,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, indices, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::mask_vpermi2b<Arch>(
-          indices.to_native(), mask.to_bitset(), a.to_native(), b.to_native()));
+          detail::x86_integer_register(indices), mask.to_bitset(), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -207,9 +208,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::maskz_vpermi2b<Arch>(
-          mask.to_bitset(), indices.to_native(), a.to_native(), b.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -227,9 +228,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::vpmultishiftqb<Arch>(
-          control.to_native(), value.to_native()));
+          detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -249,9 +250,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, source, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::mask_vpmultishiftqb<Arch>(
-          source.to_native(), mask.to_bitset(), control.to_native(), value.to_native()));
+          detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -270,9 +271,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
         detail::x86_vbmi::maskz_vpmultishiftqb<Arch>(
-          mask.to_bitset(), control.to_native(), value.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -290,9 +291,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::vpermb<Arch>(
-          indices.to_native(), value.to_native()));
+          detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -312,9 +313,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 32, Arch>{}, source, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::mask_vpermb<Arch>(
-          source.to_native(), mask.to_bitset(), indices.to_native(), value.to_native()));
+          detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -333,9 +334,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::maskz_vpermb<Arch>(
-          mask.to_bitset(), indices.to_native(), value.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -354,9 +355,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::vpermt2b<Arch>(
-          a.to_native(), indices.to_native(), b.to_native()));
+          detail::x86_integer_register(a), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -376,9 +377,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, a, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::mask_vpermt2b<Arch>(
-          a.to_native(), mask.to_bitset(), indices.to_native(), b.to_native()));
+          detail::x86_integer_register(a), mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -398,9 +399,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::maskz_vpermt2b<Arch>(
-          mask.to_bitset(), a.to_native(), indices.to_native(), b.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(a), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -419,9 +420,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::vpermi2b<Arch>(
-          indices.to_native(), a.to_native(), b.to_native()));
+          detail::x86_integer_register(indices), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -441,9 +442,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, indices, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::mask_vpermi2b<Arch>(
-          indices.to_native(), mask.to_bitset(), a.to_native(), b.to_native()));
+          detail::x86_integer_register(indices), mask.to_bitset(), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -463,9 +464,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::maskz_vpermi2b<Arch>(
-          mask.to_bitset(), indices.to_native(), a.to_native(), b.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -483,9 +484,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::vpmultishiftqb<Arch>(
-          control.to_native(), value.to_native()));
+          detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -505,9 +506,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, source, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::mask_vpmultishiftqb<Arch>(
-          source.to_native(), mask.to_bitset(), control.to_native(), value.to_native()));
+          detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -526,9 +527,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
         detail::x86_vbmi::maskz_vpmultishiftqb<Arch>(
-          mask.to_bitset(), control.to_native(), value.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -545,9 +546,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::vpermb<Arch>(
-          indices.to_native(), value.to_native()));
+          detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -566,9 +567,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 64, Arch>{}, source, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::mask_vpermb<Arch>(
-          source.to_native(), mask.to_bitset(), indices.to_native(), value.to_native()));
+          detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -586,9 +587,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<false>(
         indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::maskz_vpermb<Arch>(
-          mask.to_bitset(), indices.to_native(), value.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(value)));
     }
   }
 
@@ -606,9 +607,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::vpermt2b<Arch>(
-          a.to_native(), indices.to_native(), b.to_native()));
+          detail::x86_integer_register(a), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -627,9 +628,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, a, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::mask_vpermt2b<Arch>(
-          a.to_native(), mask.to_bitset(), indices.to_native(), b.to_native()));
+          detail::x86_integer_register(a), mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -648,9 +649,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::maskz_vpermt2b<Arch>(
-          mask.to_bitset(), a.to_native(), indices.to_native(), b.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(a), detail::x86_integer_register(indices), detail::x86_integer_register(b)));
     }
   }
 
@@ -668,9 +669,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::vpermi2b<Arch>(
-          indices.to_native(), a.to_native(), b.to_native()));
+          detail::x86_integer_register(indices), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -689,9 +690,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, indices, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::mask_vpermi2b<Arch>(
-          indices.to_native(), mask.to_bitset(), a.to_native(), b.to_native()));
+          detail::x86_integer_register(indices), mask.to_bitset(), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -710,9 +711,9 @@ export namespace native {
       return detail::x86_vbmi_constant::permute<true>(
         indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::maskz_vpermi2b<Arch>(
-          mask.to_bitset(), indices.to_native(), a.to_native(), b.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(indices), detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -729,9 +730,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::vpmultishiftqb<Arch>(
-          control.to_native(), value.to_native()));
+          detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -750,9 +751,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, source, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::mask_vpmultishiftqb<Arch>(
-          source.to_native(), mask.to_bitset(), control.to_native(), value.to_native()));
+          detail::x86_integer_register(source), mask.to_bitset(), detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -770,9 +771,9 @@ export namespace native {
       return detail::x86_vbmi_constant::multishift(
         control, value, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
         detail::x86_vbmi::maskz_vpmultishiftqb<Arch>(
-          mask.to_bitset(), control.to_native(), value.to_native()));
+          mask.to_bitset(), detail::x86_integer_register(control), detail::x86_integer_register(value)));
     }
   }
 
@@ -782,8 +783,22 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vpermb(
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vpermb(
     simd<std::uint8_t, 16, Arch> indices,
     simd<std::uint8_t, 16, Arch> value) noexcept {
     return detail::x86_vbmi_constant::permute<false>(
@@ -796,8 +811,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpermb(
+    simd<std::uint8_t, 16, Arch> source,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 16, Arch>{}, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> mask_vpermb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> indices,
@@ -812,8 +843,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpermb(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 16, Arch>{}, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> maskz_vpermb(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> indices,
     simd<std::uint8_t, 16, Arch> value) noexcept {
@@ -827,8 +873,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vpermt2b(
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vpermt2b(
     simd<std::uint8_t, 16, Arch> a,
     simd<std::uint8_t, 16, Arch> indices,
     simd<std::uint8_t, 16, Arch> b) noexcept {
@@ -842,8 +903,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 16, Arch> a,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, a, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> mask_vpermt2b(
     simd<std::uint8_t, 16, Arch> a,
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> indices,
@@ -858,8 +935,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpermt2b(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> maskz_vpermt2b(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> a,
     simd<std::uint8_t, 16, Arch> indices,
@@ -874,8 +967,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vpermi2b(
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vpermi2b(
     simd<std::uint8_t, 16, Arch> indices,
     simd<std::uint8_t, 16, Arch> a,
     simd<std::uint8_t, 16, Arch> b) noexcept {
@@ -889,8 +997,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 16, Arch> indices,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, indices, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> mask_vpermi2b(
     simd<std::uint8_t, 16, Arch> indices,
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> a,
@@ -905,8 +1029,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpermi2b(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> indices,
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> maskz_vpermi2b(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> indices,
     simd<std::uint8_t, 16, Arch> a,
@@ -921,8 +1061,22 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 16, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vpmultishiftqb(
     simd<std::uint8_t, 16, Arch> control,
     simd<std::uint64_t, 2, Arch> value) noexcept {
     return detail::x86_vbmi_constant::multishift(
@@ -935,8 +1089,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 16, Arch> source,
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> mask_vpmultishiftqb(
     simd<std::uint8_t, 16, Arch> source,
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> control,
@@ -951,8 +1121,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> maskz_vpmultishiftqb(
+    predicate<16, Arch> mask,
+    simd<std::uint8_t, 16, Arch> control,
+    simd<std::uint64_t, 2, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 16, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> maskz_vpmultishiftqb(
     predicate<16, Arch> mask,
     simd<std::uint8_t, 16, Arch> control,
     simd<std::uint64_t, 2, Arch> value) noexcept {
@@ -966,8 +1151,22 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vpermb(
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vpermb(
     simd<std::uint8_t, 32, Arch> indices,
     simd<std::uint8_t, 32, Arch> value) noexcept {
     return detail::x86_vbmi_constant::permute<false>(
@@ -980,8 +1179,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpermb(
+    simd<std::uint8_t, 32, Arch> source,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 32, Arch>{}, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> mask_vpermb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> indices,
@@ -996,8 +1211,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpermb(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 32, Arch>{}, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> maskz_vpermb(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> indices,
     simd<std::uint8_t, 32, Arch> value) noexcept {
@@ -1011,8 +1241,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vpermt2b(
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vpermt2b(
     simd<std::uint8_t, 32, Arch> a,
     simd<std::uint8_t, 32, Arch> indices,
     simd<std::uint8_t, 32, Arch> b) noexcept {
@@ -1026,8 +1271,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 32, Arch> a,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, a, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> mask_vpermt2b(
     simd<std::uint8_t, 32, Arch> a,
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> indices,
@@ -1042,8 +1303,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpermt2b(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> maskz_vpermt2b(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> a,
     simd<std::uint8_t, 32, Arch> indices,
@@ -1058,8 +1335,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vpermi2b(
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vpermi2b(
     simd<std::uint8_t, 32, Arch> indices,
     simd<std::uint8_t, 32, Arch> a,
     simd<std::uint8_t, 32, Arch> b) noexcept {
@@ -1073,8 +1365,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 32, Arch> indices,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, indices, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> mask_vpermi2b(
     simd<std::uint8_t, 32, Arch> indices,
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> a,
@@ -1089,8 +1397,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpermi2b(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> indices,
+    simd<std::uint8_t, 32, Arch> a,
+    simd<std::uint8_t, 32, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> maskz_vpermi2b(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> indices,
     simd<std::uint8_t, 32, Arch> a,
@@ -1105,8 +1429,22 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 32, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vpmultishiftqb(
     simd<std::uint8_t, 32, Arch> control,
     simd<std::uint64_t, 4, Arch> value) noexcept {
     return detail::x86_vbmi_constant::multishift(
@@ -1119,8 +1457,24 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 32, Arch> source,
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> mask_vpmultishiftqb(
     simd<std::uint8_t, 32, Arch> source,
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> control,
@@ -1135,8 +1489,23 @@ export namespace native {
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi) &&
       Arch.has(x86_feature::avx512vl)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> maskz_vpmultishiftqb(
+    predicate<32, Arch> mask,
+    simd<std::uint8_t, 32, Arch> control,
+    simd<std::uint64_t, 4, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 32, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi) &&
+      Arch.has(x86_feature::avx512vl)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> maskz_vpmultishiftqb(
     predicate<32, Arch> mask,
     simd<std::uint8_t, 32, Arch> control,
     simd<std::uint64_t, 4, Arch> value) noexcept {
@@ -1149,8 +1518,21 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vpermb(
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vpermb(
     simd<std::uint8_t, 64, Arch> indices,
     simd<std::uint8_t, 64, Arch> value) noexcept {
     return detail::x86_vbmi_constant::permute<false>(
@@ -1162,8 +1544,23 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpermb(
+    simd<std::uint8_t, 64, Arch> source,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 64, Arch>{}, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> mask_vpermb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> indices,
@@ -1177,8 +1574,22 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpermb(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::permute<false>(
+      indices, value, simd<std::uint8_t, 64, Arch>{}, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> maskz_vpermb(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> indices,
     simd<std::uint8_t, 64, Arch> value) noexcept {
@@ -1191,8 +1602,22 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vpermt2b(
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vpermt2b(
     simd<std::uint8_t, 64, Arch> a,
     simd<std::uint8_t, 64, Arch> indices,
     simd<std::uint8_t, 64, Arch> b) noexcept {
@@ -1205,8 +1630,23 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpermt2b(
+    simd<std::uint8_t, 64, Arch> a,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, a, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> mask_vpermt2b(
     simd<std::uint8_t, 64, Arch> a,
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> indices,
@@ -1220,8 +1660,23 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpermt2b(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> maskz_vpermt2b(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> a,
     simd<std::uint8_t, 64, Arch> indices,
@@ -1235,8 +1690,22 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vpermi2b(
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vpermi2b(
     simd<std::uint8_t, 64, Arch> indices,
     simd<std::uint8_t, 64, Arch> a,
     simd<std::uint8_t, 64, Arch> b) noexcept {
@@ -1249,8 +1718,23 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpermi2b(
+    simd<std::uint8_t, 64, Arch> indices,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, indices, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> mask_vpermi2b(
     simd<std::uint8_t, 64, Arch> indices,
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> a,
@@ -1264,8 +1748,23 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpermi2b(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> indices,
+    simd<std::uint8_t, 64, Arch> a,
+    simd<std::uint8_t, 64, Arch> b) noexcept {
+    return detail::x86_vbmi_constant::permute<true>(
+      indices, a, b, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> maskz_vpermi2b(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> indices,
     simd<std::uint8_t, 64, Arch> a,
@@ -1279,8 +1778,21 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vpmultishiftqb(
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 64, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vpmultishiftqb(
     simd<std::uint8_t, 64, Arch> control,
     simd<std::uint64_t, 8, Arch> value) noexcept {
     return detail::x86_vbmi_constant::multishift(
@@ -1292,8 +1804,23 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> mask_vpmultishiftqb(
+    simd<std::uint8_t, 64, Arch> source,
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, source, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> mask_vpmultishiftqb(
     simd<std::uint8_t, 64, Arch> source,
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> control,
@@ -1307,8 +1834,22 @@ export namespace native {
     requires(!(Arch.has(x86_feature::avx512f) &&
       Arch.has(x86_feature::avx512bw) &&
       Arch.has(x86_feature::avx512vbmi)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> maskz_vpmultishiftqb(
+    predicate<64, Arch> mask,
+    simd<std::uint8_t, 64, Arch> control,
+    simd<std::uint64_t, 8, Arch> value) noexcept {
+    return detail::x86_vbmi_constant::multishift(
+      control, value, simd<std::uint8_t, 64, Arch>{}, mask.to_bitset());
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::avx512f) &&
+      Arch.has(x86_feature::avx512bw) &&
+      Arch.has(x86_feature::avx512vbmi)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> maskz_vpmultishiftqb(
     predicate<64, Arch> mask,
     simd<std::uint8_t, 64, Arch> control,
     simd<std::uint64_t, 8, Arch> value) noexcept {

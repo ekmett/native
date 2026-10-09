@@ -12,6 +12,7 @@ parser.add_argument('--raw', required=True)
 parser.add_argument('--public', required=True)
 parser.add_argument('--output', type=Path, required=True)
 parser.add_argument('--expected', type=int, help='require this many public/reference function pairs')
+parser.add_argument('--operation-pattern', help='compare native operation mnemonics when storage layouts allow different loads')
 args = parser.parse_args()
 
 
@@ -53,7 +54,15 @@ missing = raw.keys() - public.keys()
 extra = public.keys() - raw.keys()
 failures = []
 for name in sorted(raw.keys() & public.keys()):
-    if raw[name] != public[name]:
+    left, right = raw[name], public[name]
+    if args.operation_pattern:
+        if any(re.match(r'call\w*\b', op) for op in left + right):
+            failures.append(f'{name}: unexpected helper call')
+        left = [op.split()[0] for op in left if re.match(args.operation_pattern, op)]
+        right = [op.split()[0] for op in right if re.match(args.operation_pattern, op)]
+        if not left or not right:
+            failures.append(f'{name}: no native operation')
+    if left != right:
         failures.append(f'{name}\n  raw: {raw[name]}\n  public: {public[name]}')
 report = f'Compared {len(raw.keys() & public.keys())} function pairs.\n'
 if missing or extra:
@@ -64,4 +73,4 @@ if args.expected is not None and (len(raw) != args.expected or len(public) != ar
     raise SystemExit(f'Expected {args.expected} pairs; found {len(raw)} reference and {len(public)} public functions')
 if not raw or missing or extra or failures:
     raise SystemExit(report)
-print(report + 'Public bindings add no instructions in these caller contexts.')
+print(report + ('Public bindings retain native operations across storage layouts.' if args.operation_pattern else 'Public bindings add no instructions in these caller contexts.'))

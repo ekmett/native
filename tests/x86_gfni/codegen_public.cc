@@ -3,16 +3,17 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.gfni;
+#include "../polyfill_codegen.h"
 
 #if defined(__GFNI__) || defined(__AVX__) || defined(__AVX2__) || defined(__AVX512F__) || defined(__AVX512BW__) || defined(__AVX512VL__)
 #error GFNI codegen probes require a baseline translation unit
 #endif
 
-constexpr auto gfni128 = native::feature_closure(native::isa<native::x86>{native::x86_feature::gfni});
-constexpr auto gfni256 = native::feature_closure(gfni128 & native::x86_feature::avx);
-constexpr auto gfni512 = native::feature_closure(gfni128 & native::x86_feature::avx512f);
-constexpr auto gfni_mask512 = native::feature_closure(gfni512 & native::x86_feature::avx512bw);
-constexpr auto gfni_maskvl = native::feature_closure(gfni_mask512 & native::x86_feature::avx512vl);
+constexpr auto gfni128 = native_test::codegen_arch(native::feature_closure(native::isa<native::x86>{native::x86_feature::gfni}));
+constexpr auto gfni256 = native_test::codegen_arch(native::feature_closure(gfni128 & native::x86_feature::avx));
+constexpr auto gfni512 = native_test::codegen_arch(native::feature_closure(gfni128 & native::x86_feature::avx512f));
+constexpr auto gfni_mask512 = native_test::codegen_arch(native::feature_closure(gfni512 & native::x86_feature::avx512bw));
+constexpr auto gfni_maskvl = native_test::codegen_arch(native::feature_closure(gfni_mask512 & native::x86_feature::avx512vl));
 static_assert(!gfni256.has(native::x86_feature::avx2));
 
 // Keep arguments unknown so each instruction, immediate and byte predicate is

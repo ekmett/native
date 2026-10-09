@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 
 #include "native/isa_import.h"
 #include "native/x86/vaes.h"
@@ -17,7 +18,7 @@ export namespace native {
   /// forms require VAES and AVX512F. There are no instruction writemasks.
   /// Arch records requirements; callers separately enable and admit the target.
   /// Constant evaluation computes exact AES results. Missing-feature forms are
-  /// consteval-only and require complete SIMD storage for the selected width.
+  /// constant-evaluation-only unless polyfill permits runtime emulation and missing storage.
   /// \{
 
   /// One AES encryption round.
@@ -28,15 +29,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<false, false>(state, key);
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
-        detail::x86_vaes::vaesenc<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
+        detail::x86_vaes::vaesenc<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vaesenc(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, false>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vaesenc(
     simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<false, false>(state, key);
   }
@@ -49,15 +58,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<false, false>(state, key);
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
-        detail::x86_vaes::vaesenc<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
+        detail::x86_vaes::vaesenc<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vaesenc(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, false>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vaesenc(
     simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<false, false>(state, key);
   }
@@ -70,15 +87,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<false, false>(state, key);
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
-        detail::x86_vaes::vaesenc<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
+        detail::x86_vaes::vaesenc<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vaesenc(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, false>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vaesenc(
     simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<false, false>(state, key);
   }
@@ -95,15 +120,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<false, true>(state, key);
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
-        detail::x86_vaes::vaesenclast<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
+        detail::x86_vaes::vaesenclast<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vaesenclast(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, true>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vaesenclast(
     simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<false, true>(state, key);
   }
@@ -116,15 +149,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<false, true>(state, key);
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
-        detail::x86_vaes::vaesenclast<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
+        detail::x86_vaes::vaesenclast<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vaesenclast(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, true>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vaesenclast(
     simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<false, true>(state, key);
   }
@@ -137,15 +178,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<false, true>(state, key);
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
-        detail::x86_vaes::vaesenclast<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
+        detail::x86_vaes::vaesenclast<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vaesenclast(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<false, true>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vaesenclast(
     simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<false, true>(state, key);
   }
@@ -162,15 +211,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<true, false>(state, key);
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
-        detail::x86_vaes::vaesdec<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
+        detail::x86_vaes::vaesdec<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vaesdec(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, false>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vaesdec(
     simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<true, false>(state, key);
   }
@@ -183,15 +240,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<true, false>(state, key);
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
-        detail::x86_vaes::vaesdec<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
+        detail::x86_vaes::vaesdec<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vaesdec(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, false>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vaesdec(
     simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<true, false>(state, key);
   }
@@ -204,15 +269,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<true, false>(state, key);
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
-        detail::x86_vaes::vaesdec<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
+        detail::x86_vaes::vaesdec<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vaesdec(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, false>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vaesdec(
     simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<true, false>(state, key);
   }
@@ -229,15 +302,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<true, true>(state, key);
     } else {
-      return simd<std::uint8_t, 16, Arch>::from_native(
-        detail::x86_vaes::vaesdeclast<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 16, Arch>>(
+        detail::x86_vaes::vaesdeclast<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> vaesdeclast(
+    simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, true>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::aes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 16, Arch> vaesdeclast(
     simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<true, true>(state, key);
   }
@@ -250,15 +331,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<true, true>(state, key);
     } else {
-      return simd<std::uint8_t, 32, Arch>::from_native(
-        detail::x86_vaes::vaesdeclast<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 32, Arch>>(
+        detail::x86_vaes::vaesdeclast<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint8_t, 32, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 32, Arch> vaesdeclast(
+    simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, true>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint8_t, 32, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 32, Arch> vaesdeclast(
     simd<std::uint8_t, 32, Arch> state, simd<std::uint8_t, 32, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<true, true>(state, key);
   }
@@ -271,15 +360,23 @@ export namespace native {
     if consteval {
       return detail::x86_vaes_constant::round<true, true>(state, key);
     } else {
-      return simd<std::uint8_t, 64, Arch>::from_native(
-        detail::x86_vaes::vaesdeclast<Arch>(state.to_native(), key.to_native()));
+      return detail::x86_instruction_result<simd<std::uint8_t, 64, Arch>>(
+        detail::x86_vaes::vaesdeclast<Arch>(detail::x86_integer_register(state), detail::x86_integer_register(key)));
     }
   }
 
   /// Evaluate constant operands without the instruction features.
   template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
-      requires { sizeof(simd<std::uint8_t, 64, Arch>); })
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint8_t, 64, Arch> vaesdeclast(
+    simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
+    return detail::x86_vaes_constant::round<true, true>(state, key);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch> requires(!(Arch.has(x86_feature::vaes) && Arch.has(x86_feature::avx512f)) &&
+      requires { sizeof(simd<std::uint8_t, 64, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint8_t, 64, Arch> vaesdeclast(
     simd<std::uint8_t, 64, Arch> state, simd<std::uint8_t, 64, Arch> key) noexcept {
     return detail::x86_vaes_constant::round<true, true>(state, key);
   }

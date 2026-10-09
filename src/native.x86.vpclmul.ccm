@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 #include "native/isa_import.h"
 #include "native/x86/vpclmul.h"
 #include "native/x86/integer_constant.h"
@@ -21,7 +22,7 @@ export namespace native {
  * Arch records requirements; callers separately enable and admit the target.
  * All forms are pure integer computations with no floating-point effects.
  * Constant evaluation uses exact integer semantics. Tags without the instruction
- * features are accepted only at compile time and require complete SIMD storage.
+ * features accept constant evaluation; polyfill also permits runtime emulation and missing storage.
  * \{ */
 
   /// Multiply selected halves of one 128-bit lane using PCLMUL and AVX.
@@ -31,7 +32,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 2, Arch> vpclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
     else {
-      return simd<std::uint64_t, 2, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 2, Arch>>(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -42,7 +43,7 @@ export namespace native {
   constexpr simd<std::uint64_t, 4, Arch> vpclmulqdq(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
     else {
-      return simd<std::uint64_t, 4, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
@@ -53,31 +54,55 @@ export namespace native {
   constexpr simd<std::uint64_t, 8, Arch> vpclmulqdq(simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     if consteval { return detail::x86_instruction_constant::carryless<Imm8>(a, b); }
     else {
-      return simd<std::uint64_t, 8, Arch>::from_native(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(a.to_native(), b.to_native()));
+      return detail::x86_instruction_result<simd<std::uint64_t, 8, Arch>>(detail::x86_vpclmul::vpclmulqdq<Arch, Imm8>(detail::x86_integer_register(a), detail::x86_integer_register(b)));
     }
   }
 
   /// Evaluate vpclmulqdq at compile time when its register storage is available.
   template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::pclmul) &&
       Arch.has(x86_feature::avx))) && Imm8 <= 255 &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> vpclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::pclmul) &&
+      Arch.has(x86_feature::avx))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 2, Arch> vpclmulqdq(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_instruction_constant::carryless<Imm8>(a, b);
   }
 
   /// Evaluate vpclmulqdq at compile time when its register storage is available.
   template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx))) && Imm8 <= 255 &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> vpclmulqdq(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::vpclmulqdq) &&
+      Arch.has(x86_feature::avx))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> vpclmulqdq(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_instruction_constant::carryless<Imm8>(a, b);
   }
 
   /// Evaluate vpclmulqdq at compile time when its register storage is available.
   template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::vpclmulqdq) &&
       Arch.has(x86_feature::avx512f))) && Imm8 <= 255 &&
-      requires { sizeof(simd<std::uint64_t, 8, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 8, Arch> vpclmulqdq(simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
+    return detail::x86_instruction_constant::carryless<Imm8>(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Imm8> requires(!((Arch.has(x86_feature::vpclmulqdq) &&
+      Arch.has(x86_feature::avx512f))) && Imm8 <= 255 &&
+      requires { sizeof(simd<std::uint64_t, 8, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 8, Arch> vpclmulqdq(simd<std::uint64_t, 8, Arch> a, simd<std::uint64_t, 8, Arch> b) noexcept {
     return detail::x86_instruction_constant::carryless<Imm8>(a, b);
   }
 

@@ -3,13 +3,14 @@
 #include <immintrin.h>
 #include <hint.h>
 import native.x86.vnni;
+#include "../polyfill_codegen.h"
 
-constexpr auto vex = native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnni});
-constexpr auto evex = native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vnni);
-constexpr auto evexvl = native::feature_closure(evex & native::x86_feature::avx512vl);
-constexpr auto both = native::feature_closure(vex & evexvl);
-constexpr auto int8 = native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnniint8});
-constexpr auto int16 = native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnniint16});
+constexpr auto vex = native_test::codegen_arch(native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnni}));
+constexpr auto evex = native_test::codegen_arch(native::feature_closure(native::x86_feature::avx512f & native::x86_feature::avx512vnni));
+constexpr auto evexvl = native_test::codegen_arch(native::feature_closure(evex & native::x86_feature::avx512vl));
+constexpr auto both = native_test::codegen_arch(native::feature_closure(vex & evexvl));
+constexpr auto int8 = native_test::codegen_arch(native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnniint8}));
+constexpr auto int16 = native_test::codegen_arch(native::feature_closure(native::isa<native::x86>{native::x86_feature::avxvnniint16}));
 
 
 extern "C" hint_noinline hint_target("avxvnni,no-avx512f")

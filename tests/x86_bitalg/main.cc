@@ -6,6 +6,14 @@
 #include <cstdio>
 #include <initializer_list>
 #include <hint.h>
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_FIXTURE_RUNTIME(Target)
+#define NATIVE_FIXTURE_CONSTANTS(...)
+#else
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
+#define NATIVE_FIXTURE_CONSTANTS(...) static_assert(__VA_ARGS__)
+#endif
+
 #if NATIVE_TEST_INTERFACE == 1
 import native.x86.bitalg;
 #elif NATIVE_TEST_INTERFACE == 2
@@ -21,10 +29,22 @@ import native;
 #include <initializer_list>
 #include <hint.h>
 
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto full_width = native::isa<native::x86>(native::polyfill);
+#else
 inline constexpr auto full_width = native::target_features<native::x86>("avx512bitalg");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto short_width = (native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill);
+#else
 inline constexpr auto short_width = native::target_features<native::x86>("avx512bitalg,avx512vl");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+inline constexpr auto broad = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
 inline constexpr auto broad = native::target_features<native::x86>(
   "avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg");
+#endif
 inline constexpr auto sse2_storage = native::target_features<native::x86>("sse2");
 inline constexpr auto avx_storage = native::target_features<native::x86>("avx");
 inline constexpr auto avx512_storage = native::target_features<native::x86>("avx512f");
@@ -173,38 +193,38 @@ consteval bool shuffle_constants() {
   return true;
 }
 
-static_assert(population_constants<sse2_storage, std::uint8_t, 16>());
-static_assert(population_constants<sse2_storage, std::uint16_t, 8>());
-static_assert(shuffle_constants<sse2_storage, 2>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<sse2_storage, std::uint8_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<sse2_storage, std::uint16_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<sse2_storage, 2>());
 
-static_assert(population_constants<avx_storage, std::uint8_t, 32>());
-static_assert(population_constants<avx_storage, std::uint16_t, 16>());
-static_assert(shuffle_constants<avx_storage, 4>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<avx_storage, std::uint8_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<avx_storage, std::uint16_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<avx_storage, 4>());
 
-static_assert(population_constants<avx512_storage, std::uint8_t, 64>());
-static_assert(population_constants<avx512_storage, std::uint16_t, 32>());
-static_assert(shuffle_constants<avx512_storage, 8>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<avx512_storage, std::uint8_t, 64>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<avx512_storage, std::uint16_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<avx512_storage, 8>());
 
-static_assert(population_constants<short_width, std::uint8_t, 16>());
-static_assert(population_constants<short_width, std::uint16_t, 8>());
-static_assert(shuffle_constants<short_width, 2>());
-static_assert(population_constants<short_width, std::uint8_t, 32>());
-static_assert(population_constants<short_width, std::uint16_t, 16>());
-static_assert(shuffle_constants<short_width, 4>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<short_width, std::uint8_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<short_width, std::uint16_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<short_width, 2>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<short_width, std::uint8_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<short_width, std::uint16_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<short_width, 4>());
 
-static_assert(population_constants<full_width, std::uint8_t, 64>());
-static_assert(population_constants<full_width, std::uint16_t, 32>());
-static_assert(shuffle_constants<full_width, 8>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<full_width, std::uint8_t, 64>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<full_width, std::uint16_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<full_width, 8>());
 
-static_assert(population_constants<broad, std::uint8_t, 16>());
-static_assert(population_constants<broad, std::uint16_t, 8>());
-static_assert(shuffle_constants<broad, 2>());
-static_assert(population_constants<broad, std::uint8_t, 32>());
-static_assert(population_constants<broad, std::uint16_t, 16>());
-static_assert(shuffle_constants<broad, 4>());
-static_assert(population_constants<broad, std::uint8_t, 64>());
-static_assert(population_constants<broad, std::uint16_t, 32>());
-static_assert(shuffle_constants<broad, 8>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<broad, std::uint8_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<broad, std::uint16_t, 8>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<broad, 2>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<broad, std::uint8_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<broad, std::uint16_t, 16>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<broad, 4>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<broad, std::uint8_t, 64>());
+NATIVE_FIXTURE_CONSTANTS(population_constants<broad, std::uint16_t, 32>());
+NATIVE_FIXTURE_CONSTANTS(shuffle_constants<broad, 8>());
 
 // Literal anchors verify qword routing, low/high source bits and ignored control bits.
 constexpr std::array<std::uint64_t, 2> anchor_words{1, 0x8000000000000000ull};
@@ -213,9 +233,14 @@ constexpr std::array<std::uint8_t, 16> anchor_controls{
 static_assert(shuffle_constant<sse2_storage>(anchor_words, anchor_controls, 0x8105) ==
   std::array<std::uint64_t, 2>{0x0f0f, 0x0105});
 
+#ifdef NATIVE_TEST_POLYFILL
+static_assert(shuffle_constant<full_width>(anchor_words, anchor_controls, 0x8105) ==
+  std::array<std::uint64_t, 2>{0x0f0f, 0x0105});
+#endif
+
 // The literal target stays visible at each runtime entry from baseline code.
 template<class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512bw,avx512bitalg")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512bitalg")
 void population_512(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, full_width>;
   auto value = vector_type::load(input);
@@ -233,7 +258,7 @@ void population_512(T * result, T const * input, T const * source, std::uint64_t
 }
 
 template<std::size_t Q>
-hint_noinline hint_target("avx512f,avx512bw,avx512bitalg")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512bitalg")
 void shuffle_512(std::uint64_t * result, std::uint64_t const * input,
   std::uint8_t const * control, std::uint64_t mask) noexcept {
   auto value = native::simd<std::uint64_t, Q, full_width>::load(input);
@@ -245,7 +270,7 @@ void shuffle_512(std::uint64_t * result, std::uint64_t const * input,
 
 // The literal target stays visible at each runtime entry from baseline code.
 template<class T, std::size_t N>
-hint_noinline hint_target("avx512f,avx512bw,avx512bitalg,avx512vl")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512bitalg,avx512vl")
 void population_vl(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, short_width>;
   auto value = vector_type::load(input);
@@ -263,7 +288,7 @@ void population_vl(T * result, T const * input, T const * source, std::uint64_t 
 }
 
 template<std::size_t Q>
-hint_noinline hint_target("avx512f,avx512bw,avx512bitalg,avx512vl")
+NATIVE_FIXTURE_RUNTIME("avx512f,avx512bw,avx512bitalg,avx512vl")
 void shuffle_vl(std::uint64_t * result, std::uint64_t const * input,
   std::uint8_t const * control, std::uint64_t mask) noexcept {
   auto value = native::simd<std::uint64_t, Q, short_width>::load(input);
@@ -275,7 +300,7 @@ void shuffle_vl(std::uint64_t * result, std::uint64_t const * input,
 
 // The literal target stays visible at each runtime entry from baseline code.
 template<class T, std::size_t N>
-hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
+NATIVE_FIXTURE_RUNTIME("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
 void population_broad(T * result, T const * input, T const * source, std::uint64_t mask) noexcept {
   using vector_type = native::simd<T, N, broad>;
   auto value = vector_type::load(input);
@@ -293,7 +318,7 @@ void population_broad(T * result, T const * input, T const * source, std::uint64
 }
 
 template<std::size_t Q>
-hint_noinline hint_target("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
+NATIVE_FIXTURE_RUNTIME("avx2,avx512f,avx512dq,avx512bw,avx512vl,avx512bitalg")
 void shuffle_broad(std::uint64_t * result, std::uint64_t const * input,
   std::uint8_t const * control, std::uint64_t mask) noexcept {
   auto value = native::simd<std::uint64_t, Q, broad>::load(input);

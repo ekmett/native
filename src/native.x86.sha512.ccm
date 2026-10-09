@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
+#include "native/x86/instruction_storage.h"
 #include "native/isa_import.h"
 #include "native/config.h"
 #include <hint.h>
@@ -53,9 +54,9 @@ namespace native::detail::x86_sha512_constant {
 namespace native {
   /// \defgroup x86_sha512 SHA512
   /// \ingroup cpu_x86
-  /// Runtime calls require AVX and SHA512, matching compiler targets and OS vector state.
+  /// Native runtime calls require AVX and SHA512, matching compiler targets and OS vector state.
   /// Constant evaluation preserves the instruction lane packing and modulo-word arithmetic.
-  /// Missing-feature overloads are constant-evaluation-only.
+  /// Missing-feature overloads accept constants; polyfill permits runtime emulation.
   /// \{
 
   /// First SHA-512 schedule step; only the low lane of b is used.
@@ -64,14 +65,22 @@ namespace native {
   [[nodiscard]] hint_inline hint_const hint_target("sha512")
   constexpr simd<std::uint64_t, 4, Arch> sha512msg1(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     if consteval { return detail::x86_sha512_constant::sha512msg1(a, b); }
-    else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512msg1_epi64(a.to_native(), b.to_native())); }
+    else { return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(_mm256_sha512msg1_epi64(detail::x86_integer_register(a), detail::x86_integer_register(b))); }
   }
 
   /// Evaluate constant operands without SHA512.
   template<isa<x86> Arch>
     requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> sha512msg1(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::x86_sha512_constant::sha512msg1(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> sha512msg1(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::x86_sha512_constant::sha512msg1(a, b);
   }
 
@@ -81,14 +90,22 @@ namespace native {
   [[nodiscard]] hint_inline hint_const hint_target("sha512")
   constexpr simd<std::uint64_t, 4, Arch> sha512msg2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     if consteval { return detail::x86_sha512_constant::sha512msg2(a, b); }
-    else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512msg2_epi64(a.to_native(), b.to_native())); }
+    else { return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(_mm256_sha512msg2_epi64(detail::x86_integer_register(a), detail::x86_integer_register(b))); }
   }
 
   /// Evaluate constant operands without SHA512.
   template<isa<x86> Arch>
     requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> sha512msg2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
+    return detail::x86_sha512_constant::sha512msg2(a, b);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> sha512msg2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b) noexcept {
     return detail::x86_sha512_constant::sha512msg2(a, b);
   }
 
@@ -98,14 +115,22 @@ namespace native {
   [[nodiscard]] hint_inline hint_const hint_target("sha512")
   constexpr simd<std::uint64_t, 4, Arch> sha512rnds2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
     if consteval { return detail::x86_sha512_constant::sha512rnds2(a, b, c); }
-    else { return simd<std::uint64_t, 4, Arch>::from_native(_mm256_sha512rnds2_epi64(a.to_native(), b.to_native(), c.to_native())); }
+    else { return detail::x86_instruction_result<simd<std::uint64_t, 4, Arch>>(_mm256_sha512rnds2_epi64(detail::x86_integer_register(a), detail::x86_integer_register(b), detail::x86_integer_register(c))); }
   }
 
   /// Evaluate constant operands without SHA512.
   template<isa<x86> Arch>
     requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
-      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); })
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<std::uint64_t, 4, Arch> sha512rnds2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
+    return detail::x86_sha512_constant::sha512rnds2(a, b, c);
+  }
+
+  /// Emulate the operation when Arch explicitly permits polyfills.
+  template<isa<x86> Arch>
+    requires(!(Arch.has(x86_feature::sha512) && Arch.has(x86_feature::avx)) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); sizeof(simd<std::uint64_t, 4, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<std::uint64_t, 4, Arch> sha512rnds2(simd<std::uint64_t, 4, Arch> a, simd<std::uint64_t, 4, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
     return detail::x86_sha512_constant::sha512rnds2(a, b, c);
   }
 

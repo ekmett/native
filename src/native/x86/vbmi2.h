@@ -1962,7 +1962,13 @@ namespace native::detail::x86_vbmi2_constant {
     std::size_t packed = 0;
     for (std::size_t lane = 0; lane < V::lanes; ++lane) {
       if ((mask >> lane) & 1) {
-        destination[packed++] = input[lane];
+        if consteval {
+          destination[packed] = input[lane];
+        } else {
+          __builtin_memcpy(reinterpret_cast<std::byte *>(destination) + packed * sizeof(T),
+            &input[lane], sizeof(T));
+        }
+        ++packed;
       }
     }
   }
@@ -1974,7 +1980,13 @@ namespace native::detail::x86_vbmi2_constant {
     std::size_t packed = 0;
     for (std::size_t lane = 0; lane < V::lanes; ++lane) {
       if ((mask >> lane) & 1) {
-        result[lane] = memory[packed++];
+        if consteval {
+          result[lane] = memory[packed];
+        } else {
+          __builtin_memcpy(&result[lane], reinterpret_cast<std::byte const *>(memory) + packed * sizeof(T),
+            sizeof(T));
+        }
+        ++packed;
       }
     }
     return V::load(result.data());

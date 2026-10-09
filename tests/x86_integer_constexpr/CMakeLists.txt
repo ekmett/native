@@ -44,3 +44,13 @@ add_test(NAME native.x86.integer_constexpr.reject_runtime
     --log "${CMAKE_CURRENT_BINARY_DIR}/rejections-$<CONFIG>.log")
 set_tests_properties(native.x86.integer_constexpr.reject_runtime PROPERTIES
   RUN_SERIAL TRUE LABELS "host;modules;constexpr;negative;x86" TIMEOUT 180)
+
+foreach(family IN ITEMS pclmul gfni vpopcntdq vnni)
+  add_executable(native_test_x86_integer_polyfill_${family} ${family}.cc)
+  target_link_libraries(native_test_x86_integer_polyfill_${family} PRIVATE native::native)
+  target_compile_definitions(native_test_x86_integer_polyfill_${family} PRIVATE NATIVE_TEST_POLYFILL=1)
+  target_compile_options(native_test_x86_integer_polyfill_${family} PRIVATE
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")
+  add_test(NAME native.polyfill.x86.${family} COMMAND native_test_x86_integer_polyfill_${family})
+  set_tests_properties(native.polyfill.x86.${family} PROPERTIES LABELS "host;polyfill;x86;${family}")
+endforeach()

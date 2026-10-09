@@ -18,7 +18,7 @@ namespace gfni_constant_test {
   template<std::size_t N> constexpr auto cases=property_cases<4>(property_seed,make_case<N>);
 
   template<native::isa<native::x86> A, unsigned Mode, std::size_t N>
-  consteval auto calculate(inputs<N> input,std::uint64_t bits) {
+  constexpr auto calculate(inputs<N> input,std::uint64_t bits) {
     using V=native::simd<byte,N,A>;
     using M=native::simd<std::uint64_t,N/8,A>;
     auto a=V::load(input.a.data()), b=V::load(input.b.data()), src=V::load(input.source.data());
@@ -155,7 +155,36 @@ namespace gfni_constant_test {
     return true;
   }
 }
+#ifdef NATIVE_TEST_POLYFILL
+namespace gfni_constant_test {
+  template<native::isa<native::x86> A, std::size_t N> bool polyfill_cases() {
+    auto settings=property_config(32); property_rng random{settings.seed};
+    for(std::size_t i=0;i<settings.cases;++i) {
+      auto in=make_case<N>(random); auto bits=random.next(); auto expected=oracle(in);
+      if(!property_equal("GFNI polyfill",settings.seed,i,expected,calculate<A,0>(in,bits))) return false;
+      auto merged=expected,zeroed=expected;
+      for(auto& op:merged) for(std::size_t lane=0;lane<N;++lane)
+        if(!((bits>>lane)&1)) op[lane]=in.source[lane];
+      for(auto& op:zeroed) for(std::size_t lane=0;lane<N;++lane)
+        if(!((bits>>lane)&1)) op[lane]=0;
+      if(!property_equal("GFNI polyfill merge",settings.seed,i,merged,calculate<A,1>(in,bits),bits) ||
+         !property_equal("GFNI polyfill zero",settings.seed,i,zeroed,calculate<A,2>(in,bits),bits)) return false;
+    }
+    return true;
+  }
+  template<native::isa<native::x86> A> bool polyfill_cases() {
+    return polyfill_cases<A,16>() && polyfill_cases<A,32>() && polyfill_cases<A,64>();
+  }
+}
+#endif
+
 int main() {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr native::isa<native::x86> scalar=native::polyfill;
+  constexpr auto split=native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill;
+  return !(gfni_constant_test::polyfill_cases<scalar>() &&
+    gfni_constant_test::polyfill_cases<split>());
+#else
   using namespace gfni_constant_test;
   auto cpu=native::observe_x86_capabilities(); unsigned executed=0;
   auto run=[&](char const* name,auto arch,auto body) {
@@ -171,4 +200,5 @@ int main() {
      !run("GFNI mask256",mask_narrow,[]{return compare<32>(nullptr,evaluate_mask256);}) ||
      !run("GFNI mask512",mask512,[]{return compare<64>(nullptr,evaluate_mask512);})) return 1;
   return executed ? 0 : 77;
+#endif
 }

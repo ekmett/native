@@ -4,6 +4,11 @@
 #include <bit>
 #include <cstdint>
 
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_CRYPTO_RUNTIME(Target)
+#else
+#define NATIVE_CRYPTO_RUNTIME(Target) [[gnu::target(Target)]]
+#endif
 namespace checks {
   using namespace native;
   template<class V> constexpr auto words(V x) {
@@ -33,7 +38,7 @@ namespace checks {
     0x28db77f523047d84,0x32caab7b40c72493,0x3c9ebe0a15c9bebc,0x431d67c49c100d4c,
     0x4cc5d4becb3e42b6,0x597f299cfc657e2a,0x5fcb6fab3ad6faec,0x6c44198c4a475817};
 
-  template<isa<x86> Arch> [[gnu::target("sha512")]] constexpr bool sha512_block(std::array<std::uint64_t,16> const & block,
+  template<isa<x86> Arch> NATIVE_CRYPTO_RUNTIME("sha512") constexpr bool sha512_block(std::array<std::uint64_t,16> const & block,
       std::array<std::uint64_t,8> const & expected) {
     using V = simd<std::uint64_t, 4, Arch>;
     using W = simd<std::uint64_t, 2, Arch>;
@@ -60,7 +65,7 @@ namespace checks {
     for (unsigned i = 0; i < 8; ++i) result[i] += initial[i];
     return result == expected;
   }
-  template<isa<x86> Arch> [[gnu::target("sha512")]] constexpr bool sha512_abc() {
+  template<isa<x86> Arch> NATIVE_CRYPTO_RUNTIME("sha512") constexpr bool sha512_abc() {
     std::array<std::uint64_t,16> block{};
     block[0]=0x6162638000000000; block[15]=24;
     return sha512_block<Arch>(block, std::array<std::uint64_t,8>{
@@ -69,7 +74,7 @@ namespace checks {
   }
 
   template<unsigned Round, isa<x86> Arch>
-  [[gnu::target("sm3")]] constexpr auto sm3_rounds(
+  NATIVE_CRYPTO_RUNTIME("sm3") constexpr auto sm3_rounds(
       simd<std::uint32_t,4,Arch> a, simd<std::uint32_t,4,Arch> b,
       std::array<std::uint32_t,68> const & w) {
     using V = simd<std::uint32_t,4,Arch>;
@@ -83,7 +88,7 @@ namespace checks {
         y[1],y[0],std::rotl(x[1],19),std::rotl(x[0],19)};
     }
   }
-  template<isa<x86> Arch> [[gnu::target("sm3")]] constexpr bool sm3_block(std::array<std::uint32_t,16> const & block,
+  template<isa<x86> Arch> NATIVE_CRYPTO_RUNTIME("sm3") constexpr bool sm3_block(std::array<std::uint32_t,16> const & block,
       std::array<std::uint32_t,8> const & expected) {
     using V = simd<std::uint32_t,4,Arch>;
     constexpr std::array<std::uint32_t,8> initial{
@@ -101,14 +106,14 @@ namespace checks {
     for (unsigned i = 0; i < 8; ++i) result[i] ^= initial[i];
     return result == expected;
   }
-  template<isa<x86> Arch> [[gnu::target("sm3")]] constexpr bool sm3_abc() {
+  template<isa<x86> Arch> NATIVE_CRYPTO_RUNTIME("sm3") constexpr bool sm3_abc() {
     std::array<std::uint32_t,16> block{};
     block[0]=0x61626380; block[15]=24;
     return sm3_block<Arch>(block, std::array<std::uint32_t,8>{0x66c7f0f4,0x62eeedd9,0xd1f2d46b,0xdc10e4e2,
       0x4167c487,0x5cf2f7a2,0x297da02b,0x8f4ba8e0});
   }
 
-  template<isa<x86> Arch, unsigned N> [[gnu::target("sm4")]] constexpr bool sm4_example() {
+  template<isa<x86> Arch, unsigned N> NATIVE_CRYPTO_RUNTIME("sm4") constexpr bool sm4_example() {
     using V = simd<std::uint32_t,N,Arch>;
     constexpr std::array<std::uint32_t,4> input{0x01234567,0x89abcdef,0xfedcba98,0x76543210};
     constexpr std::array<std::uint32_t,4> fk{0xa3b1bac6,0x56aa3350,0x677d9197,0xb27022dc};

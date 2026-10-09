@@ -8,6 +8,12 @@
 #include <cstdio>
 #include <immintrin.h>
 #include <hint.h>
+#ifdef NATIVE_TEST_POLYFILL
+#define NATIVE_FIXTURE_RUNTIME(Target)
+#else
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
+#endif
+
 
 #if defined(__ADX__) || defined(__AVXIFMA__) || defined(__AVX512IFMA__) || defined(__AVX__)
 #error IFMA/ADX admission must run at the provider baseline
@@ -63,13 +69,29 @@ namespace ifma_fixture {
 }
 
 namespace ifma_fixture {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto vex = native::isa<native::x86>(native::polyfill);
+#else
   constexpr auto vex = native::target_features<native::x86>("avxifma");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto evex = (native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill);
+#else
   constexpr auto evex = native::target_features<native::x86>("avx512ifma");
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto evex_vl = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
   constexpr auto evex_vl = native::target_features<native::x86>("avx512ifma,avx512vl");
+#endif
   constexpr auto weak128 = native::target_features<native::x86>("sse2");
   constexpr auto weak256 = native::target_features<native::x86>("avx");
   constexpr auto weak512 = native::target_features<native::x86>("avx512f");
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto broad = (native::isa<native::x86>{native::x86_feature::sse2} & native::x86_feature::sse3 | native::polyfill);
+#else
   constexpr auto broad = native::avx512 & native::x86_feature::avx512ifma;
+#endif
 
   template<native::isa<native::x86> A, unsigned N, bool Masked>
   consteval results<N> constant(words<N> const & accumulator, words<N> const & a,
@@ -133,7 +155,7 @@ namespace ifma_fixture {
   }
   static_assert(boundary_cases());
 
-  hint_noinline hint_target("avxifma")
+  NATIVE_FIXTURE_RUNTIME("avxifma")
   void evaluate_vex128(words<2> const & accumulator, words<2> const & a, words<2> const & b,
     std::uint64_t bits, results<2> & out) noexcept {
     using vector = native::simd<std::uint64_t, 2, vex>;
@@ -144,7 +166,7 @@ namespace ifma_fixture {
     native::madd52hi<vex>(sum, x, y).store(out[3].data());
   }
 
-  hint_noinline hint_target("avxifma")
+  NATIVE_FIXTURE_RUNTIME("avxifma")
   void evaluate_vex256(words<4> const & accumulator, words<4> const & a, words<4> const & b,
     std::uint64_t bits, results<4> & out) noexcept {
     using vector = native::simd<std::uint64_t, 4, vex>;
@@ -155,7 +177,7 @@ namespace ifma_fixture {
     native::madd52hi<vex>(sum, x, y).store(out[3].data());
   }
 
-  hint_noinline hint_target("avx512ifma,avx512vl")
+  NATIVE_FIXTURE_RUNTIME("avx512ifma,avx512vl")
   void evaluate_evex128(words<2> const & accumulator, words<2> const & a, words<2> const & b,
     std::uint64_t bits, results<2> & out) noexcept {
     using vector = native::simd<std::uint64_t, 2, evex_vl>;
@@ -171,7 +193,7 @@ namespace ifma_fixture {
     native::maskz_madd52hi<evex_vl>(mask, sum, x, y).store(out[5].data());
   }
 
-  hint_noinline hint_target("avx512ifma,avx512vl")
+  NATIVE_FIXTURE_RUNTIME("avx512ifma,avx512vl")
   void evaluate_evex256(words<4> const & accumulator, words<4> const & a, words<4> const & b,
     std::uint64_t bits, results<4> & out) noexcept {
     using vector = native::simd<std::uint64_t, 4, evex_vl>;
@@ -187,7 +209,7 @@ namespace ifma_fixture {
     native::maskz_madd52hi<evex_vl>(mask, sum, x, y).store(out[5].data());
   }
 
-  hint_noinline hint_target("avx512ifma")
+  NATIVE_FIXTURE_RUNTIME("avx512ifma")
   void evaluate_evex512(words<8> const & accumulator, words<8> const & a, words<8> const & b,
     std::uint64_t bits, results<8> & out) noexcept {
     using vector = native::simd<std::uint64_t, 8, evex>;

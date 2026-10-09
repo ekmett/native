@@ -147,3 +147,9 @@ native_aes_rejection(immediate_overflow 10 5
   "invalid explicitly-specified argument|cannot be narrowed")
 native_aes_rejection(immediate_runtime 11 5
   "invalid explicitly-specified argument|non-type template argument is not a constant expression")
+
+add_executable(native_test_x86_aes_polyfill main.cc baseline.cc)
+target_link_libraries(native_test_x86_aes_polyfill PRIVATE native::native)
+target_compile_definitions(native_test_x86_aes_polyfill PRIVATE NATIVE_TEST_POLYFILL=1)
+add_test(NAME native.polyfill.x86.aes COMMAND native_test_x86_aes_polyfill)
+set_tests_properties(native.polyfill.x86.aes PROPERTIES LABELS "host;polyfill;x86;aes")
