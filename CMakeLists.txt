@@ -15,6 +15,7 @@ option(NATIVE_ENABLE_PCH "Compatibility setting (module providers do not use PCH
 option(NATIVE_ENABLE_EXCEPTIONS "Enable C++ exceptions in the library and its consumers" ON)
 option(NATIVE_ENABLE_IPO "Enable supported host interprocedural optimization" OFF)
 option(NATIVE_ENABLE_ASAN "Instrument host targets with AddressSanitizer" OFF)
+option(NATIVE_ENABLE_COVERAGE "Collect runtime test coverage with Clang and grcov" OFF)
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")
   set(native_default_isa WASM_SIMD128)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
@@ -87,6 +88,9 @@ if(NATIVE_BUILD_HOST)
     # Boundary tests inspect provider commands as well as test executables.
     # Enable the database before creating the module targets.
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  endif()
+  if(NATIVE_ENABLE_COVERAGE)
+    include(etc/cmake/Coverage.cmake)
   endif()
   add_subdirectory(src)
 endif()

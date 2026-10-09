@@ -31,19 +31,27 @@ on:
   schedule:
     - cron: '23 7 * * *'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      coverage:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: native-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: native-${{ inputs.coverage && github.run_id || github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ !inputs.coverage }}
 
 jobs:
   build:
+    permissions:
+      contents: read
+      id-token: write
     name: ${{ matrix.platform.name }} / exceptions=${{ matrix.exceptions }}
     runs-on: ${{ matrix.platform.runner }}
-    timeout-minutes: ${{ github.event_name == 'workflow_dispatch' && 90 || github.event_name == 'schedule' && 45 || 20 }}
+    timeout-minutes: ${{ (inputs.coverage || github.event_name == 'workflow_dispatch') && 90 || github.event_name == 'schedule' && 45 || 20 }}
     env:
       SCCACHE_GHA_ENABLED: "true"
     defaults:
@@ -54,9 +62,10 @@ jobs:
       matrix:
         # Main: one smoke runner. PRs add Windows ARM; nightly adds x86.
         # Manual dispatch retains all platforms and both exception modes.
-        exceptions: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
+        # The coverage caller uses all platforms with exceptions enabled.
+        exceptions: ${{ !inputs.coverage && github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
         platform: >-
-          ${{ fromJSON(github.event_name == 'workflow_dispatch' &&
+          ${{ fromJSON((inputs.coverage || github.event_name == 'workflow_dispatch') &&
           '[{"name":"Linux LLVM 23 / AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
             {"name":"Windows x64 LLVM 23 / AVX2","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
             {"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
@@ -190,6 +199,14 @@ jobs:
         run: |
           python -B .github/scripts/test_sccache_modules.py --compiler clang-cl \
             --output build/sccache-modules --cmake-arg=-DCMAKE_LINKER_TYPE=LLD
+      - name: Install grcov
+        if: inputs.coverage
+        run: |
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            python .github/scripts/install_grcov.py
+          else
+            python3 .github/scripts/install_grcov.py
+          fi
       - name: Configure modules
         shell: bash
         run: |
@@ -205,16 +222,21 @@ jobs:
           if [[ "${RUNNER_OS}" == Linux ]]; then
             extra+=(-DCMAKE_LINKER_TYPE=LLD)
           fi
+          if [[ '${{ inputs.coverage }}' == true ]]; then
+            extra+=(-DNATIVE_ENABLE_COVERAGE=ON)
+          fi
           cmake -S . -B build/core -G Ninja \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER="$launcher" \
-            -DNATIVE_BUILD_TESTS=ON -DNATIVE_TEST_EXTENDED=${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ON' || 'OFF' }} \
+            -DNATIVE_BUILD_TESTS=ON -DNATIVE_TEST_EXTENDED=${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ON' || 'OFF' }} \
             -DNATIVE_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} -DNATIVE_ENABLE_PCH=ON -DNATIVE_ENABLE_IPO=ON \
             -DNATIVE_TEST_ISA="${{ matrix.platform.profile }}" \
             '-DNATIVE_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
       - name: Build
+        id: build
         run: cmake --build build/core --parallel
       - name: Test
+        id: test
         shell: bash
         run: |
           ctest --test-dir build/core --show-only=json-v1 > build/tests.json
@@ -230,6 +252,10 @@ jobs:
           extra=()
           if [[ "$RUNNER_OS" == Windows ]]; then compiler=clang-cl; fi
           if [[ "$RUNNER_OS" != macOS ]]; then extra+=(-DCMAKE_LINKER_TYPE=LLD); fi
+          # The installed archives from this test build contain profile counters.
+          if [[ "$RUNNER_OS" != Windows && '${{ inputs.coverage }}' == true ]]; then
+            extra+=(-DCMAKE_EXE_LINKER_FLAGS=-fprofile-instr-generate)
+          fi
           cmake -S tests/package -B build/package -G Ninja \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/native" \
@@ -238,6 +264,38 @@ jobs:
           cmake --build build/package --parallel
           ctest --test-dir build/package --parallel --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/package-tests.xml"
+      - name: Generate coverage report
+        id: coverage
+        if: always() && inputs.coverage && steps.build.outcome == 'success'
+        run: |
+          cmake --build build/core --target native_coverage
+          jq -n --arg commit "$GITHUB_SHA" --arg runner '${{ matrix.platform.runner }}' \
+            --arg arch "$RUNNER_ARCH" --arg isa '${{ matrix.platform.profile }}' \
+            --arg profiles '${{ matrix.platform.profiles }}' \
+            --arg suite '${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'extended' || 'smoke' }}' \
+            --arg result '${{ steps.test.outcome }}' --arg compiler "$(clang++ --version)" \
+            '{commit: $commit, runner: $runner, architecture: $arch, test_isa: $isa,
+              profiles: $profiles, suite: $suite, result: $result, compiler: $compiler}' \
+            > build/core/coverage/report/configuration.json
+          cp build/environment.log build/core/coverage/report/environment.log
+      - name: Retain coverage report
+        if: always() && inputs.coverage && steps.coverage.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-${{ matrix.platform.runner }}-${{ matrix.platform.profile }}
+          retention-days: 7
+          if-no-files-found: error
+          path: build/core/coverage/report/
+      - name: Upload coverage to Codecov
+        if: always() && steps.coverage.outcome == 'success'
+        uses: codecov/codecov-action@f9fe539f5290016afa014f8ef31597d3a61c2dea # v7
+        with:
+          use_oidc: true
+          files: build/core/coverage/report/coverage.info
+          disable_search: true
+          flags: ${{ runner.os }}_${{ runner.arch }}_${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'extended' || 'smoke' }}
+          name: ${{ matrix.platform.runner }}-${{ matrix.platform.profile }}
+          fail_ci_if_error: true
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
         shell: bash

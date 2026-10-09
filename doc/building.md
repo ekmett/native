@@ -28,6 +28,48 @@ host-memory checks. ISA properties and named swizzles require Clang's property
 extension; exported targets supply `-fms-extensions` for `clang++`, and `clang-cl`
 accepts it directly.
 
+## Runtime coverage
+
+Install [grcov](https://github.com/mozilla/grcov/releases) and the `llvm-cov`
+and `llvm-profdata` tools matching your Clang compiler. Enable coverage in a
+separate build directory:
+
+```sh
+cmake -S . -B build/coverage -G Ninja -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DNATIVE_ENABLE_COVERAGE=ON
+cmake --build build/coverage --parallel
+ctest --test-dir build/coverage --parallel --output-on-failure
+cmake --build build/coverage --target native_coverage
+```
+
+Open `build/coverage/coverage/report/html/index.html`. The same directory contains
+LLVM LCOV and grcov JSON reports. Coverage is collected during the tests; generating the
+report does not run them again. Codecov uses LLVM’s LCOV export, including branch
+counts; the grcov HTML report shows line coverage. Delete `build/coverage/coverage/raw` before
+rerunning the suite to measure just that run. LLVM recreates the profile directory.
+
+The report includes library sources, excluding tests and dependencies. It measures
+runtime execution of the instantiated code on this architecture, not every
+possible template or ISA configuration. Use `NATIVE_TEST_EXTENDED=ON` to measure
+the extended suite. Keep coverage builds separate from performance measurements.
+
+The dedicated coverage workflow runs the extended suite on every push to main,
+using Linux x86-64/ARM64, Windows x64/ARM64 and macOS ARM64. It reuses the normal
+build/test workflow with instrumentation enabled and exceptions on. Ordinary CI
+remains uninstrumented. Assembly probes disable counters while sharing the same
+module build; their instruction checks still run.
+
+Each job retains HTML and LCOV reports with its commit, compiler, configuration
+and runner hardware. Codecov receives the LCOV report through GitHub OIDC, without
+an upload token. Flags distinguish OS, architecture and suite. Missing platforms
+are not carried forward from older commits, and coverage percentages are
+informational rather than merge gates. Compare reports by platform: a shared
+line covered on x86 does not establish that its ARM implementation ran.
+
+Coverage supports native `clang++` and Windows `clang-cl` builds; cross builds
+are not supported. Instrumented archives need the Clang profile
+runtime when linked, so use an ordinary build for installation and distribution.
+
 ## Docker
 
 `ghcr.io/ekmett/native:latest` supplies Clang 23, clangd, clang-tidy,

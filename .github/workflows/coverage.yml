@@ -1,0 +1,16 @@
+name: coverage
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  coverage:
+    uses: ./.github/workflows/build.yml
+    with:
+      coverage: true
