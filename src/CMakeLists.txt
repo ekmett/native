@@ -8,6 +8,14 @@ function(native_module_target target export_name)
   add_library(${target} STATIC)
   add_library(native::${export_name} ALIAS ${target})
   native_host_settings(${target})
+  # Clang 23's reduced BMIs miscompile downstream AVX2 operations. Keep source
+  # providers consistent with the full BMIs produced by installed --precompile
+  # consumers; this is an implementation setting, not a consumer requirement.
+  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    target_compile_options(${target} PRIVATE /clang:-fno-modules-reduced-bmi)
+  else()
+    target_compile_options(${target} PRIVATE -fno-modules-reduced-bmi)
+  endif()
   set_target_properties(${target} PROPERTIES EXPORT_NAME ${export_name}
     POSITION_INDEPENDENT_CODE ON CXX_SCAN_FOR_MODULES ON)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^wasm(32|64)$")
