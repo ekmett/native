@@ -13,9 +13,11 @@ on:
     branches: [main]
     types: [requested, in_progress, completed]
   workflow_dispatch:
+  schedule:
+    # Refresh again after Shields' upstream cache expires following a run event.
+    - cron: '17,47 * * * *'
 
 permissions:
-  actions: read
   contents: write
 
 concurrency:
@@ -29,9 +31,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - name: Read current main workflow results
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Read existing Shields workflow colors
         run: python3 .github/scripts/ci_badges.py --output build/badges
       - name: Publish endpoint JSON
         # The data-only badges branch is seeded before this workflow's first run.
