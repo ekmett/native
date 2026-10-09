@@ -4,6 +4,9 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
 [![native](https://github.com/ekmett/native/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
+[![docs: doxygen](https://img.shields.io/badge/docs-doxygen-blue?style=flat)](https://ekmett.github.io/native/)
+[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat)](https://github.com/ekmett/native/activity)
+[![GitHub issues](https://img.shields.io/github/issues/ekmett/native?style=flat)](https://github.com/ekmett/native/issues)
 ![C++](https://img.shields.io/badge/C%2B%2B-00599C?style=flat&logo=c%2B%2B&logoColor=white)
 
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
