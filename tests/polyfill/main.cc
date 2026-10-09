@@ -196,6 +196,27 @@ namespace polyfill_test {
     for(std::size_t i=0;i<V::lanes;++i) if(output[i]!=std::popcount(input[i])) return false;
     return memory<V>(seed);
   }
+  template<class T,std::size_t N,isa<> A> constexpr bool reductions(unsigned seed=0) {
+    using V=simd<T,N,A>;
+    std::array<T,N> input{};
+    std::uint64_t expected=0;
+    for(std::size_t i=0;i<N;++i) {
+      input[i]=T(std::numeric_limits<T>::max()-T(i+seed));
+      expected+=input[i];
+    }
+    if(reduce_add_widened(V::load(input.data()))!=expected) return false;
+    // Broadcast fills physical padding too; reduction includes logical lanes only.
+    return reduce_add_widened(V(std::numeric_limits<T>::max()))==
+      std::uint64_t(N)*std::numeric_limits<T>::max();
+  }
+  template<isa<> A> constexpr bool integer_reductions(unsigned seed=0) {
+    return reductions<std::uint8_t,17,A>(seed) && reductions<std::uint16_t,17,A>(seed) &&
+      reductions<std::uint32_t,17,A>(seed) && reductions<std::uint32_t,64,A>(seed);
+  }
+  template<class V> concept exact_reducible=requires(V value) { reduce_add_widened(value); };
+  static_assert(!exact_reducible<simd<std::int32_t,17,polyfill>> &&
+    !exact_reducible<simd<std::uint64_t,17,polyfill>>);
+
   template<isa<> A> constexpr bool packing() {
     using V=simd<std::uint32_t,16,A>;
     std::array<std::uint32_t,V::lanes> input{};
@@ -265,6 +286,7 @@ namespace polyfill_test {
   static_assert(memory<simd<float,17,permitted>>() && memory<scalar_emulated>());
   static_assert(representations<decomposed>() && representations<scalar_emulated>());
   static_assert(integers<permitted>() && integers<isa<>(polyfill)>());
+  static_assert(integer_reductions<permitted>() && integer_reductions<isa<>(polyfill)>());
   static_assert(packing<permitted>() && packing<isa<>(polyfill)>());
   static_assert(masks<permitted>() && masks<isa<>(polyfill)>());
 }
@@ -276,7 +298,7 @@ int main(int argc,char **) {
   bool scalar_ok=custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
     floating<scalar_emulated>(float(seed)) && memory<scalar_emulated>(seed) &&
     unaligned_memory<scalar_emulated>(seed) && unaligned_memory<integer_emulated>(seed) &&
-    representations<scalar_emulated>() && integers<isa<>(polyfill)>(seed) &&
+    representations<scalar_emulated>() && integers<isa<>(polyfill)>(seed) && integer_reductions<isa<>(polyfill)>(seed) &&
     packing<isa<>(polyfill)>() && masks<isa<>(polyfill)>();
 #if NATIVE_POLYFILL_SCALAR_ONLY
   return !scalar_ok;
@@ -284,7 +306,7 @@ int main(int argc,char **) {
   bool native_ok=custom<permitted>() && batching<decomposed>() &&
     floating<decomposed>(float(seed)) && memory<simd<float,17,permitted>>(seed) &&
     unaligned_memory<simd<float,17,permitted>>(seed) && unaligned_memory<simd<std::uint32_t,17,permitted>>(seed) &&
-    representations<decomposed>() && integers<permitted>(seed) &&
+    representations<decomposed>() && integers<permitted>(seed) && integer_reductions<permitted>(seed) &&
     packing<permitted>() && masks<permitted>();
   return !(scalar_ok && native_ok);
 #endif
