@@ -26,7 +26,7 @@ WORKDIR /src/native
 COPY . .
 RUN cmake -S . -B /tmp/native-build -G Ninja \
       -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/opt/native \
-      -DNATIVE_BUILD_TESTS=OFF \
+      -DNATIVE_BUILD_TESTS=OFF -DNATIVE_ENABLE_EXCEPTIONS=ON \
  && cmake --build /tmp/native-build --parallel \
  && cmake --install /tmp/native-build
 

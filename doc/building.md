@@ -44,7 +44,8 @@ docker run --rm -v "$PWD:/workspace" ghcr.io/ekmett/native:latest \
 A downstream Dockerfile can start with `FROM ghcr.io/ekmett/native:latest` and
 use `find_package(native CONFIG REQUIRED COMPONENTS native)`. Use a separate
 build directory from host builds: module artifacts belong to their compiler
-and standard library. The image uses Native's default exception-disabled mode.
+and standard library. The development image enables C++ exceptions so downstream libraries can throw.
+Consumers inherit that mode from the installed CMake targets.
 
 The [Docker workflow](https://github.com/ekmett/native/actions/workflows/docker.yml)
 builds separately from normal CI. It runs the API examples against the installed
