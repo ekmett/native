@@ -8,7 +8,8 @@
 #endif
 #if !NATIVE_NE_RAW
 import native.x86.avxneconvert;
-constexpr auto arch = native::target_features<native::x86>(NATIVE_NE_TARGET);
+#include "../polyfill_codegen.h"
+constexpr auto arch = native_test::codegen_arch(native::target_features<native::x86>(NATIVE_NE_TARGET));
 #endif
 extern "C" __attribute__((target(NATIVE_NE_TARGET), noinline)) void native_bcstnebf16_ps_4(
 #if NATIVE_NE_RAW

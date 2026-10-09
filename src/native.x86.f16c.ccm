@@ -2,6 +2,8 @@
 module;
 #include "native/isa_import.h"
 #include "native/x86/f16c.h"
+#include "native/x86/f16c_control.h"
+#include "native/x86/instruction_storage.h"
 #include "native/detail/constexpr_float.h"
 #include "native/targets.h"
 export module native.x86.f16c;
@@ -17,17 +19,31 @@ namespace native::detail {
     else if constexpr((Imm8&3)==3) return r::toward_zero;
     else return r::nearest_even;
   }
+  template<unsigned Imm8> constexpr auto f16c_control() noexcept {
+    x86_f16c::control result{f16c_rounding<Imm8>(), {}};
+    if !consteval {
+      result = x86_f16c::current_control();
+      if constexpr (!(Imm8 & 4)) result.mode = f16c_rounding<Imm8>();
+    }
+    return result;
+  }
+  template<unsigned Imm8> constexpr std::uint16_t f16c_narrow_bits(std::uint32_t bits) noexcept {
+    auto control = f16c_control<Imm8>();
+    return constexpr_float::convert_bits<constexpr_float::binary16,constexpr_float::binary32>(
+      bits, control.mode, control.environment);
+  }
   template<isa<x86> Arch,unsigned Imm8,std::size_t N>
-  consteval simd<fp16,N,Arch> f16c_narrow(simd<float,N,Arch> input) noexcept {
+  constexpr simd<fp16,N,Arch> f16c_narrow(simd<float,N,Arch> input) noexcept {
     std::array<float,N> values{};input.store(values.data());
     auto source=std::bit_cast<std::array<std::uint32_t,N>>(values);
     std::array<std::uint16_t,N> result{};
+    auto control = f16c_control<Imm8>();
     for(std::size_t i=0;i<N;++i) result[i]=constexpr_float::convert_bits<
-      constexpr_float::binary16,constexpr_float::binary32>(source[i],f16c_rounding<Imm8>());
+      constexpr_float::binary16,constexpr_float::binary32>(source[i],control.mode,control.environment);
     return simd<fp16,N,Arch>::load_bits(result.data());
   }
   template<isa<x86> Arch,std::size_t N>
-  consteval simd<float,N,Arch> f16c_widen(simd<fp16,N,Arch> input) noexcept {
+  constexpr simd<float,N,Arch> f16c_widen(simd<fp16,N,Arch> input) noexcept {
     std::array<std::uint16_t,N> source{};
     std::array<std::uint32_t,N> result{};
     input.store_bits(source.data());
@@ -41,7 +57,7 @@ export namespace native {
 /** \defgroup x86_f16c F16C
  * \ingroup cpu_x86
  * Binary32 / IEEE binary16 conversions using VEX VCVTPS2PH and VCVTPH2PS.
- * Arch must contain f16c; its compiler prerequisite is AVX. Callers must enable
+ * Native forms require f16c; its compiler prerequisite is AVX. Callers must enable
  * a matching target and admit CPU support and XMM/YMM OS state separately.
  * No AVX2 or AVX512FP16 instructions are required.
  *
@@ -57,12 +73,14 @@ export namespace native {
  * Signs of zero and infinity are preserved. NaNs retain their sign and high
  * payload bits and are quieted; signaling NaNs raise invalid.
  *
- * These operations retain architectural MXCSR status updates and unmasked
+ * Native operations retain architectural MXCSR status updates and unmasked
  * exceptions even if their result is discarded. They do not modify control
  * bits or masks. Runtime calls are neither const nor pure.
  * Constant evaluation uses masked exceptions, gradual inputs/results, and
  * nearest-even for the current-rounding immediate; no status effects occur.
- * An ISA without F16C admits only the consteval forms.
+ * Without F16C, polyfill permits runtime value emulation using MXCSR rounding
+ * and DAZ controls. Fallback exception flags are unspecified and traps must be
+ * masked; FTZ remains ignored. Without permission only consteval forms exist.
  * \{ */
 
   /// Convert 4 binary32 lanes to 4 binary16 lanes.
@@ -72,15 +90,23 @@ export namespace native {
   simd<fp16, 4, Arch> cvtps_ph(simd<float, 4, Arch> a) noexcept {
     if consteval { return detail::f16c_narrow<Arch,Imm8>(a); } else {
       // VCVTPS2PH zeroes the unused high half of its destination.
-      return simd<fp16, 4, Arch>::from_native(
-        detail::x86_f16c::cvtps_ph<Arch, Imm8>(a.to_native()));
+      return detail::x86_half_result<simd<fp16, 4, Arch>>(
+        detail::x86_f16c::cvtps_ph<Arch, Imm8>(detail::x86_float_register(a)));
     }
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
   template<isa<x86> Arch, unsigned Imm8>
-    requires(requires { sizeof(simd<float,4,Arch>); sizeof(simd<fp16,4,Arch>); } && !Arch.has(x86_feature::f16c) && Imm8 <= 255)
+    requires(requires { sizeof(simd<float,4,Arch>); sizeof(simd<fp16,4,Arch>); } && !Arch.has(x86_feature::f16c) && Imm8 <= 255 && !Arch.has(polyfill))
   [[nodiscard]] consteval
+  simd<fp16, 4, Arch> cvtps_ph(simd<float, 4, Arch> a) noexcept {
+    return detail::f16c_narrow<Arch,Imm8>(a);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Imm8>
+    requires(requires { sizeof(simd<float,4,Arch>); sizeof(simd<fp16,4,Arch>); } && !Arch.has(x86_feature::f16c) && Imm8 <= 255 && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
   simd<fp16, 4, Arch> cvtps_ph(simd<float, 4, Arch> a) noexcept {
     return detail::f16c_narrow<Arch,Imm8>(a);
   }
@@ -91,15 +117,23 @@ export namespace native {
   [[nodiscard]] hint_inline hint_target("f16c") constexpr
   simd<fp16, 8, Arch> cvtps_ph(simd<float, 8, Arch> a) noexcept {
     if consteval { return detail::f16c_narrow<Arch,Imm8>(a); } else {
-      return simd<fp16, 8, Arch>::from_native(
-        detail::x86_f16c::cvtps_ph<Arch, Imm8>(a.to_native()));
+      return detail::x86_half_result<simd<fp16, 8, Arch>>(
+        detail::x86_f16c::cvtps_ph<Arch, Imm8>(detail::x86_float_register(a)));
     }
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
   template<isa<x86> Arch, unsigned Imm8>
-    requires(requires { sizeof(simd<float,8,Arch>); sizeof(simd<fp16,8,Arch>); } && !Arch.has(x86_feature::f16c) && Imm8 <= 255)
+    requires(requires { sizeof(simd<float,8,Arch>); sizeof(simd<fp16,8,Arch>); } && !Arch.has(x86_feature::f16c) && Imm8 <= 255 && !Arch.has(polyfill))
   [[nodiscard]] consteval
+  simd<fp16, 8, Arch> cvtps_ph(simd<float, 8, Arch> a) noexcept {
+    return detail::f16c_narrow<Arch,Imm8>(a);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Imm8>
+    requires(requires { sizeof(simd<float,8,Arch>); sizeof(simd<fp16,8,Arch>); } && !Arch.has(x86_feature::f16c) && Imm8 <= 255 && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
   simd<fp16, 8, Arch> cvtps_ph(simd<float, 8, Arch> a) noexcept {
     return detail::f16c_narrow<Arch,Imm8>(a);
   }
@@ -110,15 +144,23 @@ export namespace native {
   [[nodiscard]] hint_inline hint_target("f16c") constexpr
   simd<float, 4, Arch> cvtph_ps(simd<fp16, 4, Arch> a) noexcept {
     if consteval { return detail::f16c_widen<Arch>(a); } else {
-      return simd<float, 4, Arch>::from_native(
-        detail::x86_f16c::cvtph_ps<Arch, 4>(a.to_native()));
+      return detail::x86_instruction_result<simd<float, 4, Arch>>(
+        detail::x86_f16c::cvtph_ps<Arch, 4>(detail::x86_half_register(a)));
     }
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
   template<isa<x86> Arch, unsigned Lanes>
-    requires(requires { sizeof(simd<float,4,Arch>); sizeof(simd<fp16,4,Arch>); } && !Arch.has(x86_feature::f16c) && Lanes == 4)
+    requires(requires { sizeof(simd<float,4,Arch>); sizeof(simd<fp16,4,Arch>); } && !Arch.has(x86_feature::f16c) && Lanes == 4 && !Arch.has(polyfill))
   [[nodiscard]] consteval
+  simd<float, 4, Arch> cvtph_ps(simd<fp16, 4, Arch> a) noexcept {
+    return detail::f16c_widen<Arch>(a);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Lanes>
+    requires(requires { sizeof(simd<float,4,Arch>); sizeof(simd<fp16,4,Arch>); } && !Arch.has(x86_feature::f16c) && Lanes == 4 && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
   simd<float, 4, Arch> cvtph_ps(simd<fp16, 4, Arch> a) noexcept {
     return detail::f16c_widen<Arch>(a);
   }
@@ -129,15 +171,23 @@ export namespace native {
   [[nodiscard]] hint_inline hint_target("f16c") constexpr
   simd<float, 8, Arch> cvtph_ps(simd<fp16, 8, Arch> a) noexcept {
     if consteval { return detail::f16c_widen<Arch>(a); } else {
-      return simd<float, 8, Arch>::from_native(
-        detail::x86_f16c::cvtph_ps<Arch, 8>(a.to_native()));
+      return detail::x86_instruction_result<simd<float, 8, Arch>>(
+        detail::x86_f16c::cvtph_ps<Arch, 8>(detail::x86_half_register(a)));
     }
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
   template<isa<x86> Arch, unsigned Lanes>
-    requires(requires { sizeof(simd<float,8,Arch>); sizeof(simd<fp16,8,Arch>); } && !Arch.has(x86_feature::f16c) && Lanes == 8)
+    requires(requires { sizeof(simd<float,8,Arch>); sizeof(simd<fp16,8,Arch>); } && !Arch.has(x86_feature::f16c) && Lanes == 8 && !Arch.has(polyfill))
   [[nodiscard]] consteval
+  simd<float, 8, Arch> cvtph_ps(simd<fp16, 8, Arch> a) noexcept {
+    return detail::f16c_widen<Arch>(a);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Lanes>
+    requires(requires { sizeof(simd<float,8,Arch>); sizeof(simd<fp16,8,Arch>); } && !Arch.has(x86_feature::f16c) && Lanes == 8 && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
   simd<float, 8, Arch> cvtph_ps(simd<fp16, 8, Arch> a) noexcept {
     return detail::f16c_widen<Arch>(a);
   }
@@ -147,19 +197,25 @@ export namespace native {
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   [[nodiscard]] hint_inline hint_target("f16c") constexpr
   std::uint16_t cvtss_sh(float a) noexcept {
-    if consteval { return detail::constexpr_float::convert_bits<detail::constexpr_float::binary16,
-      detail::constexpr_float::binary32>(std::bit_cast<std::uint32_t>(a),detail::f16c_rounding<Imm8>()); } else {
+    if consteval { return detail::f16c_narrow_bits<Imm8>(std::bit_cast<std::uint32_t>(a)); } else {
       return detail::x86_f16c::cvtss_sh<Arch, Imm8>(a);
     }
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
   template<isa<x86> Arch, unsigned Imm8>
-    requires(!Arch.has(x86_feature::f16c) && Imm8 <= 255)
+    requires(!Arch.has(x86_feature::f16c) && Imm8 <= 255 && !Arch.has(polyfill))
   [[nodiscard]] consteval
   std::uint16_t cvtss_sh(float a) noexcept {
-    return detail::constexpr_float::convert_bits<detail::constexpr_float::binary16,
-      detail::constexpr_float::binary32>(std::bit_cast<std::uint32_t>(a),detail::f16c_rounding<Imm8>());
+    return detail::f16c_narrow_bits<Imm8>(std::bit_cast<std::uint32_t>(a));
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, unsigned Imm8>
+    requires(!Arch.has(x86_feature::f16c) && Imm8 <= 255 && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
+  std::uint16_t cvtss_sh(float a) noexcept {
+    return detail::f16c_narrow_bits<Imm8>(std::bit_cast<std::uint32_t>(a));
   }
 
   /// Convert one binary32 value using the module baseline or an explicit ISA.
@@ -168,19 +224,25 @@ export namespace native {
     requires(Arch.has(x86_feature::f16c) && Imm8 <= 255)
   [[nodiscard]] hint_inline hint_target("f16c") constexpr
   std::uint16_t cvtss_sh(float a) noexcept {
-    if consteval { return detail::constexpr_float::convert_bits<detail::constexpr_float::binary16,
-      detail::constexpr_float::binary32>(std::bit_cast<std::uint32_t>(a),detail::f16c_rounding<Imm8>()); } else {
+    if consteval { return detail::f16c_narrow_bits<Imm8>(std::bit_cast<std::uint32_t>(a)); } else {
       return cvtss_sh<Arch, Imm8>(a);
     }
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
   template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
-    requires(!Arch.has(x86_feature::f16c) && Imm8 <= 255)
+    requires(!Arch.has(x86_feature::f16c) && Imm8 <= 255 && !Arch.has(polyfill))
   [[nodiscard]] consteval
   std::uint16_t cvtss_sh(float a) noexcept {
-    return detail::constexpr_float::convert_bits<detail::constexpr_float::binary16,
-      detail::constexpr_float::binary32>(std::bit_cast<std::uint32_t>(a),detail::f16c_rounding<Imm8>());
+    return detail::f16c_narrow_bits<Imm8>(std::bit_cast<std::uint32_t>(a));
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<unsigned Imm8, isa<x86> Arch = NATIVE_BASELINE>
+    requires(!Arch.has(x86_feature::f16c) && Imm8 <= 255 && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
+  std::uint16_t cvtss_sh(float a) noexcept {
+    return detail::f16c_narrow_bits<Imm8>(std::bit_cast<std::uint32_t>(a));
   }
 
   /// Widen one binary16 representation to binary32.
@@ -194,8 +256,16 @@ export namespace native {
   }
 
   /// Constant-evaluation-only form for an ISA without F16C.
-  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::f16c))
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::f16c) && !Arch.has(polyfill))
   [[nodiscard]] consteval
+  float cvtsh_ss(std::uint16_t a) noexcept {
+    return std::bit_cast<float>(detail::constexpr_float::convert_bits<
+      detail::constexpr_float::binary32,detail::constexpr_float::binary16>(a));
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch = NATIVE_BASELINE> requires(!Arch.has(x86_feature::f16c) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr
   float cvtsh_ss(std::uint16_t a) noexcept {
     return std::bit_cast<float>(detail::constexpr_float::convert_bits<
       detail::constexpr_float::binary32,detail::constexpr_float::binary16>(a));

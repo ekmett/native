@@ -7,8 +7,10 @@
 import native.x86.avxneconvert;
 #include "checks.h"
 
-template<std::size_t N>
+template<native::isa<native::x86> A, std::size_t N>
+#ifndef NATIVE_TEST_POLYFILL
 [[gnu::target("avxneconvert"), gnu::noinline]]
+#endif
 bool run_case(unsigned index, std::uint32_t & state, bool exhaustive) {
   checks::packet<N> p;
   // Exactly 2-byte aligned operands, with the full 2*N memory footprint.
@@ -39,7 +41,7 @@ bool run_case(unsigned index, std::uint32_t & state, bool exhaustive) {
       p.widened[i][j] = std::bit_cast<std::uint32_t>(x[j + 1]);
     return true;
   };
-  constexpr auto a = checks::strong;
+  constexpr auto a = A;
   bool valid = save(0, native::bcstnebf16_ps<a, N>(b.data() + 1)) &&
                save(1, native::bcstnesh_ps<a, N>(h.data() + 1)) &&
                save(2, native::cvtneebf16_ps<a, N>(b.data() + 1)) &&
@@ -54,7 +56,7 @@ bool run_case(unsigned index, std::uint32_t & state, bool exhaustive) {
   for (unsigned i = 0; i < N; ++i)
     p.narrowed[i] = output[i + 1];
   valid &= output.front() == 0xdead && output.back() == 0xbeef;
-  if constexpr (N == 4) {
+  if constexpr (N == 4 && sizeof(typename decltype(r)::native_type) == 16) {
     auto register_bits = std::bit_cast<std::array<std::uint16_t, 8>>(r.to_native());
     for (unsigned i = 4; i < 8; ++i)
       valid &= register_bits[i] == 0;
@@ -62,10 +64,18 @@ bool run_case(unsigned index, std::uint32_t & state, bool exhaustive) {
   return valid && checks::verify(p);
 }
 int main() {
+#ifdef NATIVE_TEST_POLYFILL
+  constexpr auto scalar = native::isa<native::x86>(native::polyfill);
+  constexpr auto split = native::isa<native::x86>{native::x86_feature::sse2} | native::polyfill;
+  static_assert(checks::verify(checks::constants<scalar, 4, 0>()));
+  static_assert(checks::verify(checks::constants<split, 8, 1>()));
+#else
+  constexpr auto scalar = checks::strong, split = checks::strong;
   if (!native::classify_isa(native::observe_x86_capabilities(), checks::strong).admitted()) {
     std::puts("AVX-NE-CONVERT runtime skipped: CPU/OS requirements are unavailable.");
     return 77;
   }
+#endif
   auto saved = _mm_getcsr();
   std::uint32_t state = 0x5739812u;
   bool valid = true;
@@ -75,12 +85,12 @@ int main() {
                ((controls & 8u) << 12);
     _mm_setcsr(csr);
     for (unsigned i = 0; i < 2064 && valid; ++i)
-      valid = run_case<4>(i, state, false) && run_case<8>(i, state, false);
+      valid = run_case<scalar, 4>(i, state, false) && run_case<split, 8>(i, state, false);
     valid &= _mm_getcsr() == csr;
   }
   _mm_setcsr(0x1f80);
   for (unsigned i = 0; i < 65536 && valid; ++i)
-    valid = run_case<4>(i, state, true) && run_case<8>(i, state, true);
+    valid = run_case<split, 4>(i, state, true) && run_case<scalar, 8>(i, state, true);
   valid &= _mm_getcsr() == 0x1f80;
   _mm_setcsr(saved);
   if (!valid)

@@ -2,6 +2,8 @@
 module;
 #include "native/isa_import.h"
 #include "native/config.h"
+#include "native/detail/constexpr_float.h"
+#include "native/x86/instruction_storage.h"
 #include <hint.h>
 #include <array>
 #include <bit>
@@ -14,14 +16,16 @@ namespace native::detail::x86_neconvert {
     if constexpr (std::same_as<T, bf16>)
       return std::uint32_t(value.to_bits()) << 16;
     else
-      return std::bit_cast<std::uint32_t>(static_cast<float>(value));
+      return constexpr_float::convert_bits<constexpr_float::binary32,constexpr_float::binary16>(value.to_bits());
   }
   template<isa<x86> A, std::size_t N, unsigned Stride, unsigned Offset, class T>
-  consteval simd<float, N, A> widen_memory(T const * source) noexcept {
+  constexpr simd<float, N, A> widen_memory(T const * source) noexcept {
     // Validate the complete instruction memory operand during constant evaluation.
-    if constexpr (Stride == 2) {
-      auto last = source[2 * N - 1].to_bits();
-      (void)last;
+    if consteval {
+      if constexpr (Stride == 2) {
+        auto last = source[2 * N - 1].to_bits();
+        (void)last;
+      }
     }
     std::array<float, N> result{};
     for (std::size_t i = 0; i < N; ++i)
@@ -29,7 +33,7 @@ namespace native::detail::x86_neconvert {
     return simd<float, N, A>::load(result.data());
   }
   template<isa<x86> A, std::size_t N>
-  consteval simd<bf16, N, A> narrow(simd<float, N, A> input) noexcept {
+  constexpr simd<bf16, N, A> narrow(simd<float, N, A> input) noexcept {
     std::array<float, N> values{};
     input.store(values.data());
     std::array<std::uint16_t, N> result{};
@@ -51,8 +55,8 @@ namespace native {
   /// \defgroup x86_avxneconvert AVX-NE-CONVERT
   /// \ingroup cpu_x86
   /// Binary16/BF16 memory widening and binary32-to-BF16 narrowing, with no FP exceptions.
-  /// Runtime calls require AVX-NE-CONVERT, AVX, matching compiler targets and OS vector state.
-  /// Constant-only overloads are available for weaker ISA tags with the required storage.
+  /// Native calls require AVX-NE-CONVERT, AVX, matching compiler targets and OS vector state.
+  /// Weaker ISA tags admit constant evaluation; polyfill also permits runtime emulation.
   /// BF16 widening preserves every representation, including subnormals and signaling NaNs.
   /// FP16 widening is exact for finite inputs and quiets NaNs; narrowing uses RNE, DAZ and FTZ.
   /// MXCSR is neither consulted nor updated by these instructions.
@@ -69,17 +73,25 @@ namespace native {
       return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
     } else {
       if constexpr (N == 4)
-        return simd<float, N, Arch>::from_native(_mm_bcstnebf16_ps(source));
+        return detail::x86_instruction_result<simd<float, N, Arch>>(_mm_bcstnebf16_ps(source));
       else
-        return simd<float, N, Arch>::from_native(_mm256_bcstnebf16_ps(source));
+        return detail::x86_instruction_result<simd<float, N, Arch>>(_mm256_bcstnebf16_ps(source));
     }
   }
 
   /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
-             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<float, N, Arch> bcstnebf16_ps(bf16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
   }
 
@@ -94,17 +106,25 @@ namespace native {
       return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
     } else {
       if constexpr (N == 4)
-        return simd<float, N, Arch>::from_native(_mm_bcstnesh_ps(source));
+        return detail::x86_instruction_result<simd<float, N, Arch>>(_mm_bcstnesh_ps(source));
       else
-        return simd<float, N, Arch>::from_native(_mm256_bcstnesh_ps(source));
+        return detail::x86_instruction_result<simd<float, N, Arch>>(_mm256_bcstnesh_ps(source));
     }
   }
 
   /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
-             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<float, N, Arch> bcstnesh_ps(fp16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 0, 0>(source);
   }
 
@@ -119,10 +139,10 @@ namespace native {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
     } else {
       if constexpr (N == 4)
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm_cvtneebf16_ps(reinterpret_cast<__m128bh const *>(source)));
       else
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm256_cvtneebf16_ps(reinterpret_cast<__m256bh const *>(source)));
     }
   }
@@ -130,8 +150,16 @@ namespace native {
   /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
-             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<float, N, Arch> cvtneebf16_ps(bf16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
   }
 
@@ -146,10 +174,10 @@ namespace native {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
     } else {
       if constexpr (N == 4)
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm_cvtneeph_ps(reinterpret_cast<__m128h const *>(source)));
       else
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm256_cvtneeph_ps(reinterpret_cast<__m256h const *>(source)));
     }
   }
@@ -157,8 +185,16 @@ namespace native {
   /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
-             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<float, N, Arch> cvtneeph_ps(fp16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 0>(source);
   }
 
@@ -173,10 +209,10 @@ namespace native {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
     } else {
       if constexpr (N == 4)
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm_cvtneobf16_ps(reinterpret_cast<__m128bh const *>(source)));
       else
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm256_cvtneobf16_ps(reinterpret_cast<__m256bh const *>(source)));
     }
   }
@@ -184,8 +220,16 @@ namespace native {
   /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
-             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<float, N, Arch> cvtneobf16_ps(bf16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
   }
 
@@ -200,10 +244,10 @@ namespace native {
       return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
     } else {
       if constexpr (N == 4)
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm_cvtneoph_ps(reinterpret_cast<__m128h const *>(source)));
       else
-        return simd<float, N, Arch>::from_native(
+        return detail::x86_instruction_result<simd<float, N, Arch>>(
             _mm256_cvtneoph_ps(reinterpret_cast<__m256h const *>(source)));
     }
   }
@@ -211,8 +255,16 @@ namespace native {
   /// Constant-only widening when AVX-NE-CONVERT or AVX is absent.
   template<isa<x86> Arch, std::size_t N>
     requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
-             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); })
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
+    return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) && requires { sizeof(simd<float, N, Arch>); } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<float, N, Arch> cvtneoph_ps(fp16 const * source) noexcept {
     return detail::x86_neconvert::widen_memory<Arch, N, 2, 1>(source);
   }
 
@@ -231,9 +283,9 @@ namespace native {
       // Copy the complete register representation. An existing AVX512_BF16
       // storage specialization may attach stronger targets to its named bridge.
       if constexpr (N == 4)
-        return std::bit_cast<R>(_mm_cvtneps_avx_pbh(input.to_native()));
+        return detail::x86_half_result<R>(_mm_cvtneps_avx_pbh(detail::x86_float_register(input)));
       else
-        return std::bit_cast<R>(_mm256_cvtneps_avx_pbh(input.to_native()));
+        return detail::x86_half_result<R>(_mm256_cvtneps_avx_pbh(detail::x86_float_register(input)));
     }
   }
 
@@ -244,8 +296,20 @@ namespace native {
              requires {
                sizeof(simd<float, N, Arch>);
                sizeof(simd<bf16, N, Arch>);
-             })
+             } && !Arch.has(polyfill))
   [[nodiscard]] consteval simd<bf16, N, Arch> cvtneps_bf16(simd<float, N, Arch> input) noexcept {
+    return detail::x86_neconvert::narrow(input);
+  }
+
+  /// Emulate values when Arch explicitly permits polyfills.
+  template<isa<x86> Arch, std::size_t N>
+    requires(!(Arch.has(x86_feature::avxneconvert) && Arch.has(x86_feature::avx)) &&
+             (N == 4 || N == 8) &&
+             requires {
+               sizeof(simd<float, N, Arch>);
+               sizeof(simd<bf16, N, Arch>);
+             } && Arch.has(polyfill))
+  [[nodiscard]] hint_inline constexpr simd<bf16, N, Arch> cvtneps_bf16(simd<float, N, Arch> input) noexcept {
     return detail::x86_neconvert::narrow(input);
   }
   /// \}
