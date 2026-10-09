@@ -325,3 +325,6 @@ namespace native::detail::neon_fp16_backend {
 }
 #pragma clang attribute pop
 #endif
+
+// Emulated shapes are parsed after all native register specializations.
+#include "native/simd/polyfill.h"

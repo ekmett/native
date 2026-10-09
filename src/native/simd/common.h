@@ -156,7 +156,9 @@ namespace native {
   /** \ingroup vectors
    * \brief A value with `N` logical lanes of `T` for `Arch`.
    * `N` describes lanes, not a count of registers. Unsupported shapes remain
-   * incomplete; use wide for several registers. Two- and three-lane native
+   * incomplete unless `Arch` carries `polyfill`, which permits decomposition
+   * into native registers or scalar lanes. Use wide for explicit register packs.
+   * Two- and three-lane native
    * vectors have four-lane physical storage but touch only their logical lanes
    * in memory. Scalar float and full-register integer storage initialize to zero. Default
    * initialization of full native float and short vectors leaves storage unspecified. Use braces,
