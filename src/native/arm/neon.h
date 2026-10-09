@@ -2,6 +2,7 @@
 #pragma once
 #include "native/config.h"
 #include <hint.h>
+#include <array>
 #include <cstdint>
 #include <utility>
 #if NATIVE_HOST_NEON
@@ -49,7 +50,13 @@ namespace native::detail::arm_neon {
   template<class R, class V> hint_inline hint_target("neon") R to_register(V value) noexcept {
     if constexpr (sizeof(R) == sizeof(typename V::native_type))
       return __builtin_bit_cast(R, value.to_native());
-    else {
+    else if constexpr (sizeof(R) > sizeof(typename V::native_type)) {
+      // Feature-only permission tags can have logical scalar storage rather
+      // than a padded NEON carrier. Initialize every physical padding lane.
+      std::array<typename V::value_type, sizeof(R) / sizeof(typename V::value_type)> lanes{};
+      value.store(lanes.data());
+      return __builtin_bit_cast(R, lanes);
+    } else {
       auto bytes = __builtin_bit_cast(uint8x16_t, value.to_native());
       return __builtin_bit_cast(R, __builtin_shufflevector(bytes, bytes, 0, 1, 2, 3, 4, 5, 6, 7));
     }
@@ -59,7 +66,11 @@ namespace native::detail::arm_neon {
   hint_inline hint_target("neon") V from_register(R value) noexcept {
     if constexpr (sizeof(R) == sizeof(typename V::native_type))
       return V::from_native(__builtin_bit_cast(typename V::native_type, value));
-    else {
+    else if constexpr (sizeof(R) > sizeof(typename V::native_type)) {
+      auto lanes = __builtin_bit_cast(
+        std::array<typename V::value_type, sizeof(R) / sizeof(typename V::value_type)>, value);
+      return V::load(lanes.data());
+    } else {
       auto bytes = __builtin_bit_cast(uint8x8_t, value);
       return V::from_native(__builtin_bit_cast(
         typename V::native_type, __builtin_shufflevector(bytes, uint8x8_t{}, 0, 1, 2, 3, 4, 5, 6,

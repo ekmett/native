@@ -43,3 +43,11 @@ if(TARGET native_test_polyfill_dot2 AND NOT NATIVE_ENABLE_ASAN)
     set_tests_properties(native.polyfill.dot2_codegen PROPERTIES LABELS "host;polyfill;bf16;codegen")
   endif()
 endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
+  add_executable(native_test_polyfill_arm_feature_carriers arm_feature_carriers.cc)
+  target_link_libraries(native_test_polyfill_arm_feature_carriers PRIVATE native::native)
+  add_test(NAME native.polyfill.arm_feature_carriers COMMAND native_test_polyfill_arm_feature_carriers)
+  set_tests_properties(native.polyfill.arm_feature_carriers PROPERTIES
+    SKIP_RETURN_CODE 77 LABELS "host;polyfill;arm;baseline" TIMEOUT 30)
+endif()

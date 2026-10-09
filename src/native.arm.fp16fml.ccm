@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/arm/neon.h"
 #include "native/arm/fp16fml.h"
 #include "native/detail/constexpr_float.h"
 #include "native/arm/float_control.h"
@@ -54,10 +55,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,false,-1>(acc,a,b); } else {
       auto result = detail::fmlal<Arch>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -90,10 +91,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlal_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -126,10 +127,10 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlal_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -162,7 +163,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,false,-1>(acc,a,b); } else {
       auto result = detail::fmlal<Arch>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -198,7 +199,7 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlal_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -234,7 +235,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlal_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -270,10 +271,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,true,-1>(acc,a,b); } else {
       auto result = detail::fmlal2<Arch>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -306,10 +307,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlal2_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -342,10 +343,10 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlal2_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -378,7 +379,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,true,-1>(acc,a,b); } else {
       auto result = detail::fmlal2<Arch>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -414,7 +415,7 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlal2_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -450,7 +451,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlal2_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -486,10 +487,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,false,-1>(acc,a,b); } else {
       auto result = detail::fmlsl<Arch>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -522,10 +523,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -558,10 +559,10 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -594,7 +595,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,false,-1>(acc,a,b); } else {
       auto result = detail::fmlsl<Arch>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -630,7 +631,7 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -666,7 +667,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -702,10 +703,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,true,-1>(acc,a,b); } else {
       auto result = detail::fmlsl2<Arch>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -738,10 +739,10 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl2_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -774,10 +775,10 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl2_lane<Arch, Lane>(
-        vget_low_f32(acc.to_native()),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
         __builtin_bit_cast(float16x4_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -810,7 +811,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,true,-1>(acc,a,b); } else {
       auto result = detail::fmlsl2<Arch>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -846,7 +847,7 @@ namespace native {
       simd<fp16, 4, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl2_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x4_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
@@ -882,7 +883,7 @@ namespace native {
       simd<fp16, 8, Arch> b) noexcept {
     if consteval { return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b); } else {
       auto result = detail::fmlsl2_lane<Arch, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
+        detail::arm_neon::to_register<float32x4_t>(acc),
         __builtin_bit_cast(float16x8_t, a.to_native()),
         __builtin_bit_cast(float16x8_t, b.to_native()));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));

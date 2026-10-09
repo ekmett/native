@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/arm/neon.h"
 #include "native/arm/fcma.h"
 #include "native/detail/constexpr_float.h"
 #include "native/arm/float_control.h"
@@ -82,9 +83,9 @@ namespace native {
   constexpr simd<float, 2, Arch> fcadd(simd<float, 2, Arch> a, simd<float, 2, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
-        vget_low_f32(a.to_native()),
-        vget_low_f32(b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(a)),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(b)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -114,10 +115,10 @@ namespace native {
       simd<float, 2, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
       auto result = detail::fcmla<Arch, Rotation>(
-        vget_low_f32(acc.to_native()),
-        vget_low_f32(a.to_native()),
-        vget_low_f32(b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(a)),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(b)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -155,10 +156,10 @@ namespace native {
       simd<float, 2, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
       auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-        vget_low_f32(acc.to_native()),
-        vget_low_f32(a.to_native()),
-        vget_low_f32(b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(a)),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(b)));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -200,10 +201,10 @@ namespace native {
       simd<float, 4, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
       auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-        vget_low_f32(acc.to_native()),
-        vget_low_f32(a.to_native()),
-        __builtin_bit_cast(float32x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f)));
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(a)),
+        detail::arm_neon::to_register<float32x4_t>(b));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -240,8 +241,8 @@ namespace native {
   constexpr simd<float, 4, Arch> fcadd(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
-        __builtin_bit_cast(float32x4_t, a.to_native()),
-        __builtin_bit_cast(float32x4_t, b.to_native()));
+        detail::arm_neon::to_register<float32x4_t>(a),
+        detail::arm_neon::to_register<float32x4_t>(b));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
     }
   }
@@ -272,9 +273,9 @@ namespace native {
       simd<float, 4, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
       auto result = detail::fcmla<Arch, Rotation>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
-        __builtin_bit_cast(float32x4_t, a.to_native()),
-        __builtin_bit_cast(float32x4_t, b.to_native()));
+        detail::arm_neon::to_register<float32x4_t>(acc),
+        detail::arm_neon::to_register<float32x4_t>(a),
+        detail::arm_neon::to_register<float32x4_t>(b));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
     }
   }
@@ -313,9 +314,9 @@ namespace native {
       simd<float, 2, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
       auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
-        __builtin_bit_cast(float32x4_t, a.to_native()),
-        vget_low_f32(b.to_native()));
+        detail::arm_neon::to_register<float32x4_t>(acc),
+        detail::arm_neon::to_register<float32x4_t>(a),
+        vget_low_f32(detail::arm_neon::to_register<float32x4_t>(b)));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
     }
   }
@@ -358,9 +359,9 @@ namespace native {
       simd<float, 4, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,Lane>(acc,a,b); } else {
       auto result = detail::fcmla_lane<Arch, Rotation, Lane>(
-        __builtin_bit_cast(float32x4_t, acc.to_native()),
-        __builtin_bit_cast(float32x4_t, a.to_native()),
-        __builtin_bit_cast(float32x4_t, b.to_native()));
+        detail::arm_neon::to_register<float32x4_t>(acc),
+        detail::arm_neon::to_register<float32x4_t>(a),
+        detail::arm_neon::to_register<float32x4_t>(b));
       return simd<float, 4, Arch>::from_native(__builtin_bit_cast(typename simd<float, 4, Arch>::native_type, result));
     }
   }
@@ -398,8 +399,8 @@ namespace native {
   constexpr simd<double, 2, Arch> fcadd(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
     if consteval { return detail::fcadd_value<Rotation>(a,b); } else {
       auto result = detail::fcadd<Arch, Rotation>(
-        __builtin_bit_cast(float64x2_t, a.to_native()),
-        __builtin_bit_cast(float64x2_t, b.to_native()));
+        detail::arm_neon::to_register<float64x2_t>(a),
+        detail::arm_neon::to_register<float64x2_t>(b));
       return simd<double, 2, Arch>::from_native(__builtin_bit_cast(typename simd<double, 2, Arch>::native_type, result));
     }
   }
@@ -430,9 +431,9 @@ namespace native {
       simd<double, 2, Arch> b) noexcept {
     if consteval { return detail::fcmla_value<Rotation,-1>(acc,a,b); } else {
       auto result = detail::fcmla<Arch, Rotation>(
-        __builtin_bit_cast(float64x2_t, acc.to_native()),
-        __builtin_bit_cast(float64x2_t, a.to_native()),
-        __builtin_bit_cast(float64x2_t, b.to_native()));
+        detail::arm_neon::to_register<float64x2_t>(acc),
+        detail::arm_neon::to_register<float64x2_t>(a),
+        detail::arm_neon::to_register<float64x2_t>(b));
       return simd<double, 2, Arch>::from_native(__builtin_bit_cast(typename simd<double, 2, Arch>::native_type, result));
     }
   }

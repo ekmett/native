@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/arm/neon.h"
 #include "native/arm/bf16.h"
 #include "native/arm/bf16_constexpr.h"
 #include "native/arm/float_control.h"
@@ -77,9 +78,9 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 2, Arch> bfdot(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     if consteval { return detail::bfdot_value<-1>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfdot<Arch>(vget_low_f32(acc.to_storage().to_native()), __builtin_bit_cast(bfloat16x4_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_storage(
-        simd<float, 4, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f))));
+      auto result = detail::arm_bf16::bfdot<Arch>(vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)), __builtin_bit_cast(bfloat16x4_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(
+        vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -105,9 +106,9 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     if consteval { return detail::bfdot_value<Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(vget_low_f32(acc.to_storage().to_native()), __builtin_bit_cast(bfloat16x4_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
-      return simd<float, 2, Arch>::from_storage(
-        simd<float, 4, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f))));
+      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)), __builtin_bit_cast(bfloat16x4_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(
+        vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -133,9 +134,9 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfdot_value<Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(vget_low_f32(acc.to_storage().to_native()), __builtin_bit_cast(bfloat16x4_t, a.to_native()), b.to_native());
-      return simd<float, 2, Arch>::from_storage(
-        simd<float, 4, Arch>::from_native(vcombine_f32(result, vdup_n_f32(0.f))));
+      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(vget_low_f32(detail::arm_neon::to_register<float32x4_t>(acc)), __builtin_bit_cast(bfloat16x4_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 2, Arch>>(
+        vcombine_f32(result, vdup_n_f32(0.f)));
     }
   }
 
@@ -161,8 +162,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfdot(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfdot_value<-1>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfdot<Arch>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfdot<Arch>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -188,8 +189,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     if consteval { return detail::bfdot_value<Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(acc.to_native(), a.to_native(), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -215,8 +216,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfdot_value<Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfdot_lane<Arch, Lane>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -242,8 +243,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmmla(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfmmla_value(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmmla<Arch>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmmla<Arch>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -269,8 +270,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmlalb(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfmlal_value<false,-1>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmlalb<Arch>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmlalb<Arch>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -296,8 +297,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     if consteval { return detail::bfmlal_value<false,Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmlalb_lane<Arch, Lane>(acc.to_native(), a.to_native(), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmlalb_lane<Arch, Lane>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -323,8 +324,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfmlal_value<false,Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmlalb_lane<Arch, Lane>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmlalb_lane<Arch, Lane>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -350,8 +351,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmlalt(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfmlal_value<true,-1>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmlalt<Arch>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmlalt<Arch>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -377,8 +378,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     if consteval { return detail::bfmlal_value<true,Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmlalt_lane<Arch, Lane>(acc.to_native(), a.to_native(), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmlalt_lane<Arch, Lane>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x4_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 
@@ -404,8 +405,8 @@ namespace native {
   [[nodiscard]] hint_inline hint_target("bf16")
   constexpr simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     if consteval { return detail::bfmlal_value<true,Lane>(acc,a,b); } else {
-      auto result = detail::arm_bf16::bfmlalt_lane<Arch, Lane>(acc.to_native(), a.to_native(), b.to_native());
-      return simd<float, 4, Arch>::from_native(result);
+      auto result = detail::arm_bf16::bfmlalt_lane<Arch, Lane>(detail::arm_neon::to_register<float32x4_t>(acc), __builtin_bit_cast(bfloat16x8_t, a.to_native()), __builtin_bit_cast(bfloat16x8_t, b.to_native()));
+      return detail::arm_neon::from_register<simd<float, 4, Arch>>(result);
     }
   }
 

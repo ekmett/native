@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 module;
 #include "native/isa_import.h"
+#include "native/arm/neon.h"
 #include "native/arm/detail/integer_constant.h"
 #include "native/arm/i8mm.h"
 import native.simd;
@@ -28,9 +29,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<true, -1>(acc, a, b); }
     else {
       auto result = detail::smmla<Arch>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(int8x16_t, a.to_native()),
-        __builtin_bit_cast(int8x16_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<int8x16_t>(a),
+        detail::arm_neon::to_register<int8x16_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
@@ -63,9 +64,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<true, -1>(acc, a, b); }
     else {
       auto result = detail::ummla<Arch>(
-        __builtin_bit_cast(uint32x4_t, acc.to_native()),
-        __builtin_bit_cast(uint8x16_t, a.to_native()),
-        __builtin_bit_cast(uint8x16_t, b.to_native()));
+        detail::arm_neon::to_register<uint32x4_t>(acc),
+        detail::arm_neon::to_register<uint8x16_t>(a),
+        detail::arm_neon::to_register<uint8x16_t>(b));
       return simd<std::uint32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::uint32_t, 4, Arch>::native_type, result));
     }
   }
@@ -98,9 +99,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<true, -1>(acc, a, b); }
     else {
       auto result = detail::usmmla<Arch>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(uint8x16_t, a.to_native()),
-        __builtin_bit_cast(int8x16_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<uint8x16_t>(a),
+        detail::arm_neon::to_register<int8x16_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
@@ -133,10 +134,10 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, -1>(acc, a, b); }
     else {
       auto result = detail::usdot<Arch>(
-        vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
-        __builtin_bit_cast(uint8x8_t, a.to_native()),
-        __builtin_bit_cast(int8x8_t, b.to_native()));
-      return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+        vget_low_s32(detail::arm_neon::to_register<int32x4_t>(acc)),
+        detail::arm_neon::to_register<uint8x8_t>(a),
+        detail::arm_neon::to_register<int8x8_t>(b));
+      return detail::arm_neon::from_register<simd<std::int32_t, 2, Arch>>(vcombine_s32(result, vdup_n_s32(0)));
     }
   }
 
@@ -168,10 +169,10 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::usdot_lane<Arch, Lane>(
-        vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
-        __builtin_bit_cast(uint8x8_t, a.to_native()),
-        __builtin_bit_cast(int8x8_t, b.to_native()));
-      return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+        vget_low_s32(detail::arm_neon::to_register<int32x4_t>(acc)),
+        detail::arm_neon::to_register<uint8x8_t>(a),
+        detail::arm_neon::to_register<int8x8_t>(b));
+      return detail::arm_neon::from_register<simd<std::int32_t, 2, Arch>>(vcombine_s32(result, vdup_n_s32(0)));
     }
   }
 
@@ -203,10 +204,10 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::sudot_lane<Arch, Lane>(
-        vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
-        __builtin_bit_cast(int8x8_t, a.to_native()),
-        __builtin_bit_cast(uint8x8_t, b.to_native()));
-      return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+        vget_low_s32(detail::arm_neon::to_register<int32x4_t>(acc)),
+        detail::arm_neon::to_register<int8x8_t>(a),
+        detail::arm_neon::to_register<uint8x8_t>(b));
+      return detail::arm_neon::from_register<simd<std::int32_t, 2, Arch>>(vcombine_s32(result, vdup_n_s32(0)));
     }
   }
 
@@ -238,10 +239,10 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::usdot_lane<Arch, Lane>(
-        vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
-        __builtin_bit_cast(uint8x8_t, a.to_native()),
-        __builtin_bit_cast(int8x16_t, b.to_native()));
-      return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+        vget_low_s32(detail::arm_neon::to_register<int32x4_t>(acc)),
+        detail::arm_neon::to_register<uint8x8_t>(a),
+        detail::arm_neon::to_register<int8x16_t>(b));
+      return detail::arm_neon::from_register<simd<std::int32_t, 2, Arch>>(vcombine_s32(result, vdup_n_s32(0)));
     }
   }
 
@@ -273,10 +274,10 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::sudot_lane<Arch, Lane>(
-        vget_low_s32(__builtin_bit_cast(int32x4_t, acc.to_native())),
-        __builtin_bit_cast(int8x8_t, a.to_native()),
-        __builtin_bit_cast(uint8x16_t, b.to_native()));
-      return simd<std::int32_t, 2, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 2, Arch>::native_type, vcombine_s32(result, vdup_n_s32(0))));
+        vget_low_s32(detail::arm_neon::to_register<int32x4_t>(acc)),
+        detail::arm_neon::to_register<int8x8_t>(a),
+        detail::arm_neon::to_register<uint8x16_t>(b));
+      return detail::arm_neon::from_register<simd<std::int32_t, 2, Arch>>(vcombine_s32(result, vdup_n_s32(0)));
     }
   }
 
@@ -308,9 +309,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, -1>(acc, a, b); }
     else {
       auto result = detail::usdot<Arch>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(uint8x16_t, a.to_native()),
-        __builtin_bit_cast(int8x16_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<uint8x16_t>(a),
+        detail::arm_neon::to_register<int8x16_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
@@ -343,9 +344,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::usdot_lane<Arch, Lane>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(uint8x16_t, a.to_native()),
-        __builtin_bit_cast(int8x8_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<uint8x16_t>(a),
+        detail::arm_neon::to_register<int8x8_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
@@ -378,9 +379,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::sudot_lane<Arch, Lane>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(int8x16_t, a.to_native()),
-        __builtin_bit_cast(uint8x8_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<int8x16_t>(a),
+        detail::arm_neon::to_register<uint8x8_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
@@ -413,9 +414,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::usdot_lane<Arch, Lane>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(uint8x16_t, a.to_native()),
-        __builtin_bit_cast(int8x16_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<uint8x16_t>(a),
+        detail::arm_neon::to_register<int8x16_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
@@ -448,9 +449,9 @@ namespace native {
     if consteval { return detail::arm_constant::dot<false, Lane>(acc, a, b); }
     else {
       auto result = detail::sudot_lane<Arch, Lane>(
-        __builtin_bit_cast(int32x4_t, acc.to_native()),
-        __builtin_bit_cast(int8x16_t, a.to_native()),
-        __builtin_bit_cast(uint8x16_t, b.to_native()));
+        detail::arm_neon::to_register<int32x4_t>(acc),
+        detail::arm_neon::to_register<int8x16_t>(a),
+        detail::arm_neon::to_register<uint8x16_t>(b));
       return simd<std::int32_t, 4, Arch>::from_native(__builtin_bit_cast(typename simd<std::int32_t, 4, Arch>::native_type, result));
     }
   }
