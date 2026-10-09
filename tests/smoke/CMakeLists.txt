@@ -14,3 +14,8 @@ add_executable(native_instruction_smoke main.cc ${instructions})
 target_link_libraries(native_instruction_smoke PRIVATE native::native)
 add_test(NAME native.instructions.smoke COMMAND native_instruction_smoke)
 set_tests_properties(native.instructions.smoke PROPERTIES TIMEOUT 30 LABELS "smoke;instructions")
+
+add_executable(native_half_smoke half.cc)
+target_link_libraries(native_half_smoke PRIVATE native::native)
+add_test(NAME native.half.smoke COMMAND native_half_smoke)
+set_tests_properties(native.half.smoke PROPERTIES TIMEOUT 30 LABELS "smoke;numerics")
