@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 #pragma once
+// The module supplies these dependencies in its global fragment.
+#ifndef NATIVE_WIDE_MODULE
 #include <hint.h>
 #include "native/isa.h"
 #include "native/value_traits.h"
@@ -14,6 +16,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#endif
 
 namespace native {
   template<class T, std::size_t N> struct wide;

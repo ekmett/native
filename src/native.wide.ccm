@@ -31,5 +31,7 @@ export namespace wide {
 }
 
 export {
+#define NATIVE_WIDE_MODULE
 #include "native/wide.h"
+#undef NATIVE_WIDE_MODULE
 }
