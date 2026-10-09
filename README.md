@@ -5,10 +5,10 @@
 
 <!-- badges:start -->
 [![build](https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat&label=build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
+[![docs](https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat&label=docs&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)
 [![coverage](https://img.shields.io/github/actions/workflow/status/ekmett/native/coverage.yml?branch=main&style=flat&label=coverage&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/coverage.yml?query=branch%3Amain)
-[![Docker build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docker.yml?branch=main&style=flat&label=docker+build&logo=docker&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)
-[![Nix build](https://img.shields.io/github/actions/workflow/status/ekmett/native/nix.yml?branch=main&style=flat&label=nix+build&logo=nixos&logoColor=white)](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)
-[![docs build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat&label=docs+build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)
+[![docker](https://img.shields.io/github/actions/workflow/status/ekmett/native/docker.yml?branch=main&style=flat&label=docker&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)
+[![nix](https://img.shields.io/github/actions/workflow/status/ekmett/native/nix.yml?branch=main&style=flat&label=nix&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)
 [![issues](https://img.shields.io/github/issues/ekmett/native?style=flat&label=issues&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/issues)
 [![commits](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat&label=commits&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/activity)
 
@@ -22,7 +22,7 @@
 [![license: BSD-2-Clause OR Apache-2.0](assets/badges/license.svg)](LICENSE.md)
 [![Contributor Covenant: 2.0](https://img.shields.io/static/v1?label=Contributor+Covenant&message=2.0&color=007ec6&style=flat&logo=contributorcovenant&logoColor=white)](CODE_OF_CONDUCT.md)
 
-[![docs: read](https://img.shields.io/static/v1?label=docs&message=read&color=007ec6&style=flat)](https://ekmett.github.io/native/)
+[![docs: read](https://img.shields.io/static/v1?label=docs&message=read&color=007ec6&style=flat&logo=pandoc&logoColor=white)](https://ekmett.github.io/native/)
 [![coverage: report](https://img.shields.io/static/v1?label=coverage&message=report&color=F01F7A&style=flat&logo=codecov&logoColor=white)](https://app.codecov.io/github/ekmett/native)
 [![Docker: ghcr.io](https://img.shields.io/static/v1?label=Docker&message=ghcr.io&color=2496ED&style=flat&logo=docker&logoColor=white)](https://github.com/ekmett/native/pkgs/container/native)
 [![Nix: flake](https://img.shields.io/static/v1?label=Nix&message=flake&color=5277C3&style=flat&logo=nixos&logoColor=white)](https://github.com/ekmett/native/blob/main/flake.nix)

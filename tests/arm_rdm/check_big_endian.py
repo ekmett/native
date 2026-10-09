@@ -19,6 +19,7 @@ import re
 import subprocess
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--compiler', required=True)
+parser.add_argument('--hint', required=True)
 parser.add_argument('--header', required=True, type=Path)
 parser.add_argument('--source', required=True, type=Path)
 parser.add_argument('--output-dir', required=True, type=Path)
@@ -26,9 +27,9 @@ args = parser.parse_args()
 out = args.output_dir
 out.mkdir(parents=True, exist_ok=True)
 header = args.header.read_text()
-for line in ('#pragma once', '#include "native/config.h"', '#include <hint.h>', '#include "native/isa.h"'):
+for line in ('#pragma once', '#include "native/config.h"', '#include "native/isa.h"'):
     header = header.replace(line, '')
-prefix = '#define NATIVE_HOST_NEON 1\n#define hint_inline inline __attribute__((always_inline))\nnamespace native { enum class architecture { arm }; inline constexpr auto arm=architecture::arm; enum class arm_feature { rdm }; template<architecture Family=arm> struct isa { constexpr bool has(arm_feature) const { return true; } }; }\n'
+prefix = '#define NATIVE_HOST_NEON 1\nnamespace native { enum class architecture { arm }; inline constexpr auto arm=architecture::arm; enum class arm_feature { rdm }; template<architecture Family=arm> struct isa { constexpr bool has(arm_feature) const { return true; } }; }\n'
 fixture = args.source.read_text()
 fixture = fixture[fixture.index('extern "C"'):]
 fixture = fixture.replace('requirements', 'native::isa<native::arm>{}').replace('rdm_api::', 'native::detail::')
@@ -57,6 +58,7 @@ source = prefix + header + '\n' + '\n'.join(wrappers + refs) + '\n'
 (out / 'rdm-be-comparison.cc').write_text(source)
 compiler = args.compiler
 command = [compiler, '--driver-mode=g++', '-std=c++26', '-target', 'aarch64_be-none-elf', '-ffreestanding', '-mcpu=generic', '-march=armv8-a', '-O2', '-S', str(out / 'rdm-be-comparison.cc'), '-o', str(out / 'rdm-be-comparison.s')]
+command.extend(arg for path in args.hint.split(";") for arg in ("-I", path))
 result = subprocess.run(command, capture_output=True, text=True)
 (out / 'be-compile.json').write_text(json.dumps({'command': command, 'header_sha256': hashlib.sha256(args.header.read_bytes()).hexdigest(), 'exit_code': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr, 'records': records}, indent=2) + '\n')
 if result.returncode:
