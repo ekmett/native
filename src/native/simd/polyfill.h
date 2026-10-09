@@ -3,6 +3,16 @@
 #pragma once
 
 namespace native::detail {
+  enum class polyfill_element_kind { ordinary, binary16, bfloat16, binary64 };
+  // Half storage types specialize this after native.numerics is imported. Their
+  // ownership stays with that module; the semantic implementation remains GMF.
+  template<class T> struct polyfill_element_traits {
+    static constexpr bool supported=ordinary_simd_element<T> || std::same_as<T,double>;
+    static constexpr bool arithmetic=std::same_as<T,float> || std::same_as<T,double>;
+    static constexpr auto kind=std::same_as<T,double>?polyfill_element_kind::binary64:polyfill_element_kind::ordinary;
+    using format=std::conditional_t<sizeof(T)==8,constexpr_float::binary64,
+      std::conditional_t<sizeof(T)==2,constexpr_float::binary16,constexpr_float::binary32>>;
+  };
   // Hardware-only lookup must never recursively select the emulated shape.
   template<isa<> A> inline constexpr isa<> hardware_isa=[] {
     auto result=A;
@@ -14,20 +24,30 @@ namespace native::detail {
   // textual or module consumer has seen those later class definitions.
   template<class T,std::size_t N,isa<> A>
   inline constexpr bool instruction_only_shape=[] {
-    if constexpr(!(simd_integer_element<T> || std::same_as<T,float>) || N<2 || N>64/sizeof(T)) return false;
+    if constexpr(!polyfill_element_traits<T>::supported || N<2 || N>64/sizeof(T)) return false;
     else {
       constexpr auto bytes=sizeof(T)*N;
 #if NATIVE_HOST_NEON
-      return neon<=A && simd_integer_element<T> && sizeof(T)<4 && bytes==8;
+      if constexpr(!(neon<=A)) return false;
+      if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::binary16)
+        return N==4 || (N==8 && !(neon_fp16<=A));
+      if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::bfloat16)
+        return N==4 || (N==8 && !(neon_bf16<=A));
+      if constexpr(std::same_as<T,double>) return N==2;
+      return simd_integer_element<T> && sizeof(T)<4 && bytes==8;
 #elif NATIVE_HOST_X86
       if constexpr(!A.has(x86_feature::sse2)) return false;
+      if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::binary16) return N==4 || N==8;
+      if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::bfloat16)
+        return N==4 || (N==8 && !(avx512_bf16<=A));
       if constexpr(bytes==8) return simd_integer_element<T> && sizeof(T)<4;
       if constexpr(bytes==16 || bytes==32) {
         if constexpr(bytes==32 && !A.has(x86_feature::avx)) return false;
-        return !(avx2<=A);
+        return std::same_as<T,double> || (!(avx2<=A) && (simd_integer_element<T> || std::same_as<T,float>));
       }
       if constexpr(bytes==64 && A.has(x86_feature::avx512f))
-        return !(kernel_base<=A) || (sizeof(T)<4 && !A.has(x86_feature::avx512bw));
+        return std::same_as<T,double> || ((simd_integer_element<T> || std::same_as<T,float>) &&
+          (!(kernel_base<=A) || (sizeof(T)<4 && !A.has(x86_feature::avx512bw))));
       return false;
 #else
       return false;
@@ -35,7 +55,7 @@ namespace native::detail {
     }
   }();
   template<class T,std::size_t N,isa<> A>
-  concept polyfill_shape=ordinary_simd_element<T> && A.has(polyfill) && N>0 && N<=64 &&
+  concept polyfill_shape=polyfill_element_traits<T>::supported && A.has(polyfill) && N>0 && N<=64 &&
     !instruction_only_shape<T,N,A> && !requires { sizeof(simd<T,N,hardware_isa<A>>); };
 
   template<class T,isa<> A,std::size_t M=64/sizeof(T)>
@@ -130,3 +150,5 @@ namespace native {
     constexpr predicate() noexcept=default;
   };
 }
+
+#include "native/simd/polyfill_scalar.h"

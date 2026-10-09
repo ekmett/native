@@ -279,6 +279,73 @@ namespace polyfill_test {
     native::wide<V,0> empty{};
     return (empty+empty).registers.empty();
   }
+  template<class T,isa<> A> constexpr bool extra_storage() {
+    using V=simd<T,17,A>;
+    using W=typename V::word_type;
+    std::array<W,17> input{},output{};
+    for(std::size_t i=0;i<17;++i) input[i]=W(~W{}-W(i));
+    auto value=V::load_bits(input.data()); value.store_bits(output.data());
+    if(input!=output) return false;
+    V::from_native(value.to_native()).store_bits(output.data());
+    return input==output;
+  }
+  template<class T,isa<> A> constexpr bool extra_arithmetic() {
+    using V=simd<T,17,A>;
+    std::array<T,17> output{};
+    auto result=fma(V(T(2.f)),V(T(3.f)),V(T(1.f)));
+    result.store(output.data());
+    for(auto x:output) if(float(x)!=7.f) return false;
+    sqrt(V(T(4.f))).store(output.data());
+    for(auto x:output) if(float(x)!=2.f) return false;
+    return (V(T(1.f))<V(T(2.f))).to_bitset()==0x1ffff;
+  }
+  static_assert(extra_storage<double,isa<>(polyfill)>() && extra_arithmetic<double,isa<>(polyfill)>());
+#if !NATIVE_POLYFILL_HEADERS
+  static_assert(extra_storage<fp16,isa<>(polyfill)>() && extra_storage<bf16,isa<>(polyfill)>());
+  static_assert(extra_storage<fp16,permitted>() && extra_storage<bf16,permitted>());
+  static_assert(extra_arithmetic<fp16,isa<>(polyfill)>() && extra_arithmetic<fp16,permitted>());
+  template<class V> concept elementwise_add=requires(V a) { a+a; };
+  static_assert(!elementwise_add<simd<bf16,17,polyfill>>);
+  bool half_environment() {
+#if NATIVE_HOST_NEON
+    std::uint64_t saved;
+    __asm__ volatile("mrs %0, fpcr":"=r"(saved));
+    auto write=[](std::uint64_t control) { __asm__ volatile("msr fpcr, %0"::"r"(control):"memory"); };
+    constexpr std::uint64_t mode_mask=3ull<<22;
+#elif NATIVE_HOST_X86
+    std::uint32_t saved;
+    __asm__ volatile("stmxcsr %0":"=m"(saved));
+    auto write=[](std::uint32_t control) { __asm__ volatile("ldmxcsr %0"::"m"(control):"memory"); };
+    constexpr std::uint32_t mode_mask=3u<<13;
+#else
+    return true;
+#endif
+#if NATIVE_HOST_NEON || NATIVE_HOST_X86
+    using V=simd<fp16,17,polyfill>;
+    std::array<std::uint16_t,17> one{},small{},output{}; one.fill(0x3c00); small.fill(0x1000);
+    bool valid=true;
+    for(unsigned mode=0;mode<4;++mode) {
+#if NATIVE_HOST_NEON
+      write((saved&~mode_mask)|(std::uint64_t(mode)<<22));
+      auto expected=mode==1?0x3c01:0x3c00;
+#else
+      write((saved&~mode_mask)|(mode<<13));
+      auto expected=mode==2?0x3c01:0x3c00;
+#endif
+      (V::load_bits(one.data())+V::load_bits(small.data())).store_bits(output.data());
+      for(auto x:output) if(x!=expected) valid=false;
+    }
+#if NATIVE_HOST_NEON
+    one.fill(1); small.fill(0);
+    write(saved|(1ull<<19));
+    (V::load_bits(one.data())+V::load_bits(small.data())).store_bits(output.data());
+    for(auto x:output) if(x!=0) valid=false;
+#endif
+    write(saved);
+    return valid;
+#endif
+  }
+#endif
   static_assert(custom<permitted>() && custom<isa<>(polyfill)>());
   static_assert(batching<decomposed>() && batching<scalar_emulated>());
   static_assert(normalized());
@@ -295,7 +362,12 @@ int main(int argc,char **) {
   using namespace polyfill_test;
   // Runtime input prevents this check from collapsing to its constexpr result.
   auto seed=unsigned(argc-1);
-  bool scalar_ok=custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
+  bool extra_ok=extra_storage<double,isa<>(polyfill)>() && extra_arithmetic<double,isa<>(polyfill)>();
+#if !NATIVE_POLYFILL_HEADERS
+  extra_ok=extra_ok && extra_storage<fp16,isa<>(polyfill)>() && extra_storage<bf16,isa<>(polyfill)>() &&
+    extra_arithmetic<fp16,isa<>(polyfill)>() && half_environment();
+#endif
+  bool scalar_ok=extra_ok && custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
     floating<scalar_emulated>(float(seed)) && memory<scalar_emulated>(seed) &&
     unaligned_memory<scalar_emulated>(seed) && unaligned_memory<integer_emulated>(seed) &&
     representations<scalar_emulated>() && integers<isa<>(polyfill)>(seed) && integer_reductions<isa<>(polyfill)>(seed) &&

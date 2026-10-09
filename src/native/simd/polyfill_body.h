@@ -19,7 +19,7 @@ namespace native {
     /// Number of underlying registers, including a possible partial tail.
     static constexpr std::size_t register_count=(N+register_lanes-1)/register_lanes;
     using register_type=simd;
-    using chunk_type=simd<T,register_lanes,detail::hardware_isa<A>>;
+    using chunk_type=typename detail::polyfill_chunk<T,register_lanes,detail::hardware_isa<A>>::type;
     /// Native register representations in logical lane order.
     using native_type=std::array<typename chunk_type::native_type,register_count>;
     using mask=detail::polyfill_predicate<N,A>;
@@ -307,10 +307,10 @@ namespace native {
     }
     /// Compute a*b+c with each register's fused lane semantics.
     friend constexpr simd fma(simd a,simd b,simd c) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x,auto y,auto z) { return fma(x,y,z); },a,b,c); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x,auto y,auto z) { return fma(x,y,z); },a,b,c); }
     /// Compute square roots with each register's floating-point semantics.
     friend constexpr simd sqrt(simd value) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x) { return sqrt(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return sqrt(x); },value); }
     /// Count the set bits of each unsigned lane using the native chunk operation.
     friend constexpr simd popcount(simd value) noexcept
       requires(simd_integer_element<T> && std::is_unsigned_v<T>) {
@@ -318,25 +318,25 @@ namespace native {
     }
     /// Clear the sign bit of each floating-point lane.
     friend constexpr simd abs(simd value) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x) { return abs(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return abs(x); },value); }
     /// Round floating-point lanes toward negative infinity.
     friend constexpr simd floor(simd value) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x) { return floor(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return floor(x); },value); }
     /// Round floating-point lanes toward positive infinity.
     friend constexpr simd ceil(simd value) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x) { return ceil(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return ceil(x); },value); }
     /// Round floating-point lanes toward zero.
     friend constexpr simd trunc(simd value) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x) { return trunc(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return trunc(x); },value); }
     /// Select the smaller lane using the underlying floating-point comparison.
     friend constexpr simd min(simd a,simd b) noexcept
-      requires(std::same_as<T,float>) { return select(a<b,a,b); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return select(a<b,a,b); }
     /// Select the larger lane using the underlying floating-point comparison.
     friend constexpr simd max(simd a,simd b) noexcept
-      requires(std::same_as<T,float>) { return select(a>b,a,b); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return select(a>b,a,b); }
     /// Round to nearest integral values, choosing even at ties.
     friend constexpr simd round_even(simd value) noexcept
-      requires(std::same_as<T,float>) { return map([](auto x) { return round_even(x); },value); }
+      requires(detail::polyfill_element_traits<T>::arithmetic) { return map([](auto x) { return round_even(x); },value); }
   };
 }
 

@@ -21,6 +21,20 @@ extern "C++" namespace native {
 // Keep the GMF partial specializations reachable to module consumers.
 export namespace native { using ::native::mask_traits; }
 #include "native/simd/exports.h"
+export namespace native::detail {
+  template<> struct polyfill_element_traits<fp16> {
+    static constexpr bool supported=true;
+    static constexpr bool arithmetic=true;
+    static constexpr auto kind=polyfill_element_kind::binary16;
+    using format=constexpr_float::binary16;
+  };
+  template<> struct polyfill_element_traits<bf16> {
+    static constexpr bool supported=true;
+    static constexpr bool arithmetic=false;
+    static constexpr auto kind=polyfill_element_kind::bfloat16;
+    using format=constexpr_float::binary_format<8,7>;
+  };
+}
 #if NATIVE_HOST_X86
 #define NATIVE_ARCH_REQUIRES(A) (::native::avx512_bf16 <= A)
 #pragma clang attribute push(__attribute__((target("avx2,fma,avx512f,avx512dq,avx512bw,avx512vl,avx512bf16"))), apply_to=function)
@@ -820,34 +834,7 @@ export namespace native {
     inline constexpr bool instruction_storage_shape = [] {
       if constexpr(!instruction_element<T> || N<2) return false;
       else if constexpr(N>64/sizeof(T)) return false;
-      else if constexpr(ordinary_simd_element<T>) return instruction_only_shape<T,N,A>;
-      else {
-        constexpr auto bytes=sizeof(T)*N;
-#if NATIVE_HOST_NEON
-        if constexpr(!(neon<=A)) return false;
-        if constexpr(std::same_as<T,fp16>) return N==4 || (N==8 && !(neon_fp16<=A));
-        if constexpr(std::same_as<T,bf16>) return N==4 || (N==8 && !(neon_bf16<=A));
-        if constexpr(std::same_as<T,double>) return N==2;
-        // Existing two-lane 32-bit vectors have intentional four-lane storage.
-        return simd_integer_element<T> && sizeof(T)<4 && bytes==8;
-#elif NATIVE_HOST_X86
-        if constexpr(!A.has(x86_feature::sse2)) return false;
-        if constexpr(std::same_as<T,fp16>) return N==4 || N==8;
-        if constexpr(std::same_as<T,bf16>) return N==4 || (N==8 && !(avx512_bf16<=A));
-        if constexpr(bytes==8) return simd_integer_element<T> && sizeof(T)<4;
-        if constexpr(bytes==16 || bytes==32) {
-          if constexpr(bytes==32 && !A.has(x86_feature::avx)) return false;
-          return std::same_as<T,double> || !(avx2<=A);
-        }
-        if constexpr(bytes==64 && A.has(x86_feature::avx512f)) {
-          if constexpr(std::same_as<T,double>) return true;
-          return !(kernel_base<=A) || (sizeof(T)<4 && !A.has(x86_feature::avx512bw));
-        }
-        return false;
-#else
-        return false;
-#endif
-      }
+      else return instruction_only_shape<T,N,A>;
     }();
 
     template<std::size_t N,isa<> A> inline constexpr bool instruction_predicate_shape =
