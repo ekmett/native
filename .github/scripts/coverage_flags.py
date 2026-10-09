@@ -23,6 +23,10 @@ def main():
             profiles[name.removeprefix("omnibus.")] = status
     prefix = f'{os.environ["RUNNER_OS"]}_{os.environ["RUNNER_ARCH"]}'
     flags = [f"{prefix}_extended"]
+    host = json.loads(Path("build/core/coverage/report/host.json").read_text())
+    for name, feature in host["features"].items():
+        if feature["admitted"]:
+            flags.append(f"{prefix}_host_has_{name}")
     avx512 = profiles.get("avx512") == "passed"
     if avx512:
         flags.append(f"{prefix}_avx512_extended")
