@@ -70,7 +70,8 @@ namespace native::detail::arm_sm3 {
 export module native.arm.sm3;
 export import native.arm.features;
 export import native.simd;
-namespace native::detail::arm_sm3_constant {
+// Export the semantic implementations so they can also be checked at runtime.
+export namespace native::detail::arm_sm3_constant {
   constexpr std::uint32_t p1(std::uint32_t value) noexcept {
     return value ^ std::rotl(value, 15) ^ std::rotl(value, 23);
   }
