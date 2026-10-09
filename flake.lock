@@ -1,0 +1,37 @@
+{
+  "nodes": {
+    "hint": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791433425,
+        "narHash": "sha256-mb8yMk38RDEhlrrY06rCCeh0lMF0/yDd4alFVD1toCA=",
+        "type": "tarball",
+        "url": "https://codeload.github.com/ekmett/hint/tar.gz/9685ad404b57075a8e91fa3deef9c3fd759b7237"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://codeload.github.com/ekmett/hint/tar.gz/9685ad404b57075a8e91fa3deef9c3fd759b7237"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1791456040,
+        "narHash": "sha256-H83yz/do+hjOO0uujHyH8RgtIQP2v7Mw+cLwcZK/xKc=",
+        "type": "tarball",
+        "url": "https://codeload.github.com/NixOS/nixpkgs/tar.gz/e7439b6b14ad3cc35d05608ebca9bce01a25f5f8"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://codeload.github.com/NixOS/nixpkgs/tar.gz/e7439b6b14ad3cc35d05608ebca9bce01a25f5f8"
+      }
+    },
+    "root": {
+      "inputs": {
+        "hint": "hint",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

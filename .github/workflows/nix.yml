@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+name: Nix
+
+on:
+  push:
+    branches: [main]
+    paths: &nix_paths
+      - 'flake.nix'
+      - 'flake.lock'
+      - '.github/workflows/nix.yml'
+      - 'CMakeLists.txt'
+      - 'LICENSE.md'
+      - 'etc/cmake/**'
+      - 'src/**'
+      - '!src/**/*.md'
+      - 'tests/api/**'
+      - '!tests/api/**/*.md'
+  pull_request:
+    paths: *nix_paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nix-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
+      - name: Build and test installed package
+        run: nix flake check --print-build-logs

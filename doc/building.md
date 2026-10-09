@@ -56,6 +56,34 @@ CI when you need a fixed toolchain; the first two tags track subsequent builds.
 Build locally with `docker build -t native .`. To build only the toolchain,
 use `docker build --target toolchain -t native-toolchain .`.
 
+## NixOS and Nix
+
+The flake provides `packages.<system>.native` (also the default package) and a
+matching development shell for `x86_64-linux` and `aarch64-linux`. `flake.lock`
+pins nixpkgs and Hint; the package uses nixpkgs' LLVM 23 and CMake 4.4. Enable
+Nix's `nix-command` and `flakes` experimental features, then run:
+
+```sh
+nix build
+nix flake check
+nix develop
+```
+
+`nix build` installs Native under `result` and tests an importing application
+against that installation. `nix flake check` builds the same checked derivation;
+it does not run the extended instruction suite. Hint is a propagated build
+dependency, fetched by Nix before the build rather than by CMake during it.
+
+Inside `nix develop`, use the usual CMake commands with `-B build/nix` to keep
+Nix module artifacts separate from other toolchains. A downstream Nix package
+can put this flake's `packages.<system>.native` in `buildInputs` and use
+`find_package(native CONFIG REQUIRED COMPONENTS native)` with LLVM 23.
+
+The [Nix workflow](https://github.com/ekmett/native/actions/workflows/nix.yml)
+checks both Linux architectures on native runners, separately from normal CI
+and Docker. It uses the pinned Nix dependencies on Ubuntu runners; it does not
+boot a NixOS virtual machine.
+
 ## Editor setup
 
 The checked-in `.clangd` and VS Code test settings use `build/core`, matching the

@@ -6,6 +6,7 @@
 <!-- badges:start -->
 [![build](https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat&label=build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
 [![Docker build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docker.yml?branch=main&style=flat&label=docker+build&logo=docker&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)
+[![Nix build](https://img.shields.io/github/actions/workflow/status/ekmett/native/nix.yml?branch=main&style=flat&label=nix+build&logo=nixos&logoColor=white)](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)
 [![docs build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat&label=docs+build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)
 [![issues](https://img.shields.io/github/issues/ekmett/native?style=flat&label=issues&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/issues)
 [![commits](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat&label=commits&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/activity)
@@ -22,6 +23,7 @@
 
 [![docs: read](https://img.shields.io/static/v1?label=docs&message=read&color=007ec6&style=flat)](https://ekmett.github.io/native/)
 [![Docker: ghcr.io](https://img.shields.io/static/v1?label=Docker&message=ghcr.io&color=2496ED&style=flat&logo=docker&logoColor=white)](https://github.com/ekmett/native/pkgs/container/native)
+[![Nix: flake](https://img.shields.io/static/v1?label=Nix&message=flake&color=5277C3&style=flat&logo=nixos&logoColor=white)](flake.nix)
 <!-- badges:end -->
 
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
@@ -118,7 +120,8 @@ satisfy that minimum before runtime selection can help. Importing stronger
 operations does not strengthen an ordinary caller's compiler target.
 [Build details](doc/building.md) cover installation, compiler settings and PCH/LTO.
 The [Docker image](doc/building.md#docker) includes Native and the toolchain for
-downstream Linux builds.
+downstream Linux builds. A [Nix flake](doc/building.md#nixos-and-nix) provides
+the package and a development shell for Linux x86-64 and AArch64.
 
 ## Working with values and instructions
 
