@@ -69,7 +69,8 @@ target_compile_options(native_headers INTERFACE
 target_sources(native_headers INTERFACE
   FILE_SET headers TYPE HEADERS BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src"
   FILES src/native/config.h src/native/attributes.h src/native/isa.h src/native/targets.h
-    src/native/mask_traits.h src/native/wasm/features.h)
+    src/native/mask_traits.h src/native/wasm/features.h
+    src/native/detail/constexpr_float.h)
 target_include_directories(native_headers INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")

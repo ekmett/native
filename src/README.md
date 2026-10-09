@@ -22,6 +22,10 @@ as `<simd/simd.h>`. The public class template is `native::simd`.
 Source files use `.h` for textual inputs, `.cc` for ordinary translation units,
 and `.ccm` for module interfaces.
 
+`native/detail/constexpr_float.h` is shared with FTZ for constant evaluation.
+Install it once in the header tree so textual consumers and module global
+fragments use the same definitions. Its `detail` namespace remains internal.
+
 ## Modules and targets
 
 `native::minimal` owns the shared ISA provider, capability modules, scalar
