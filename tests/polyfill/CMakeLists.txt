@@ -28,6 +28,8 @@ set_tests_properties(native.polyfill.relay PROPERTIES LABELS "host;polyfill;modu
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64|AMD64|amd64|x86_64|X86_64)$")
   add_library(native_test_polyfill_dot2_objects OBJECT dot2.cc)
+  # The opcode check needs machine code even when the surrounding build uses IPO.
+  set_target_properties(native_test_polyfill_dot2_objects PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
   target_link_libraries(native_test_polyfill_dot2_objects PUBLIC native::native)
   add_executable(native_test_polyfill_dot2)
   target_link_libraries(native_test_polyfill_dot2 PRIVATE native_test_polyfill_dot2_objects)
