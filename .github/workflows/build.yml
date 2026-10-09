@@ -49,7 +49,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    name: ${{ matrix.platform.name }} / exceptions=${{ matrix.exceptions }}
+    name: ${{ matrix.platform.name }}${{ matrix.exceptions == 'OFF' && ' (no exceptions)' || '' }}
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: ${{ (inputs.coverage || github.event_name == 'workflow_dispatch') && 90 || github.event_name == 'schedule' && 45 || 20 }}
     env:
@@ -66,16 +66,16 @@ jobs:
         exceptions: ${{ !inputs.coverage && github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
         platform: >-
           ${{ fromJSON((inputs.coverage || github.event_name == 'workflow_dispatch') &&
-          '[{"name":"Linux LLVM 23 / AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Windows x64 LLVM 23 / AVX2","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"macOS LLVM 23 / NEON","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'schedule' &&
-          '[{"name":"Linux LLVM 23 / AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'pull_request' &&
-          '[{"name":"Windows ARM64 LLVM 23 / NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
-          '[{"name":"Linux ARM64 LLVM 23 / NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
+          '[{"name":"Linux x64 · AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Windows x64 · AVX2","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Windows ARM64 · NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"macOS ARM64 · NEON","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'schedule' &&
+          '[{"name":"Linux x64 · AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'pull_request' &&
+          '[{"name":"Windows ARM64 · NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
+          '[{"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
