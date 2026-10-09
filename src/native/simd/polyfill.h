@@ -26,7 +26,7 @@ namespace native::detail {
   inline constexpr bool instruction_only_shape=[] {
     if constexpr(!polyfill_element_traits<T>::supported || N<2 || N>64/sizeof(T)) return false;
     else {
-      constexpr auto bytes=sizeof(T)*N;
+      [[maybe_unused]] constexpr auto bytes=sizeof(T)*N;
 #if NATIVE_HOST_NEON
       if constexpr(!(neon<=A)) return false;
       if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::binary16)
@@ -61,6 +61,26 @@ namespace native::detail {
   template<class T,std::size_t N,isa<> A>
   concept polyfill_operation_shape=A.has(polyfill) && polyfill_element_traits<T>::supported &&
     (polyfill_shape<T,N,A> || instruction_only_shape<T,N,A>);
+
+#if NATIVE_HOST_WASM
+  template<class T> concept polyfill_wasm_number=simd_integer_element<T> || std::same_as<T,float> || std::same_as<T,double>;
+  template<class T,std::size_t N,isa<> A> concept polyfill_wasm_shape=polyfill_wasm_number<T> && A.has(polyfill) &&
+    (!A.has(wasm_feature::simd128) || sizeof(T)*N!=16) && requires { sizeof(simd<T,N,A>); };
+  template<bool Maximum,std::floating_point T> constexpr T polyfill_wasm_minmax(T x,T y) noexcept {
+    using F=typename polyfill_element_traits<T>::format; using U=typename F::bits_type;
+    auto a=std::bit_cast<U>(x),b=std::bit_cast<U>(y);
+    if(constexpr_float::is_nan<F>(a) || constexpr_float::is_nan<F>(b)) return std::bit_cast<T>(constexpr_float::default_nan<F>({}));
+    if(x==T{} && y==T{}) return std::bit_cast<T>(Maximum?U(a&b):U(a|b));
+    return Maximum?(x>y?x:y):(x<y?x:y);
+  }
+#endif
+
+  // Shared helpers exist independently of the maintained native Wasm opcode surface.
+  template<class T,std::size_t N,isa<> A> concept polyfill_helper_shape=polyfill_operation_shape<T,N,A>
+#if NATIVE_HOST_WASM
+    || (A.has(polyfill) && A.has(wasm_feature::simd128) && sizeof(T)*N==16)
+#endif
+    ;
 
   template<class To,class From> concept polyfill_chunk_compatible=requires {
     typename To::chunk_type; typename From::chunk_type;

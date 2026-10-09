@@ -36,12 +36,16 @@ permitted.
 For example, `simd<float,16,avx2|polyfill>` stores two 256-bit registers,
 `simd<float,16,avx512>` stores one 512-bit register, and `simd<float,16,avx2>`
 remains incomplete. `simd<float,16,polyfill>` uses scalar storage in the host
-family. The current raw decomposition covers float, fixed-width integer,
-Boolean and mask elements with 1 through 64 lanes. Custom element storage uses
+family. Raw decomposition covers binary32, binary64, fixed-width integer,
+Boolean and mask elements with 1 through 64 lanes. Module-owned `fp16` and
+`bf16` elements use the same storage decomposition; BF16 remains a storage and
+dot-product type rather than gaining elementwise arithmetic. Custom element storage uses
 the same mechanism through `simd_traits`; `simd_customization` retains all
 value semantics and memory normalization.
 
-Native shapes keep their native representation and operations. Decomposed
+Native shapes keep their native representation and existing operations.
+Permission also supplies defined lane operations that a storage-only shape
+lacks. Decomposed
 shapes expose `register_lanes`, `register_count`, `chunk_type` and an array of
 native register representations as `native_type`; tail padding is excluded
 from memory and comparison results. Their comparison masks are compact logical

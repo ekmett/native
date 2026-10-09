@@ -3,6 +3,17 @@
 // Repeated for each disjoint backend under its native register target scope.
 // Pattern: [target-scoped includes](../../README.md#target-scoped-includes).
 namespace native {
+#if NATIVE_HOST_WASM
+  /// Compact logical predicate when the hardware backend provides no compact representation.
+  template<std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && !(A<=scalar) &&
+    N>0 && N<=64 && !::NATIVE_BACKEND_NAMESPACE::predicate_shape<N>)
+  struct predicate<N,A> : detail::polyfill_mask<predicate<N,A>,N,A> {
+    using base=detail::polyfill_mask<predicate,N,A>;
+    using base::base;
+    constexpr predicate() noexcept=default;
+  };
+#endif
+
   /// \ingroup vectors
   /// An explicitly permitted shape decomposed into the largest native registers.
   /// Native shapes retain their existing specializations. The final register's
@@ -34,11 +45,24 @@ namespace native {
     template<class U> using rebind=simd<U,N,A>;
   private:
     alignas(typename chunk_type::native_type) native_type value_{};
+#if NATIVE_HOST_WASM
+    static constexpr bool permitted_native_byte=A.has(wasm_feature::simd128) && sizeof(T)==1 && register_lanes==16;
+#else
+    static constexpr bool permitted_native_byte=false;
+#endif
     template<class F,class... V>
     static constexpr simd map(F operation,V const &... values) noexcept {
       simd result;
       for(std::size_t i=0;i<register_count;++i)
         result.value_[i]=operation(chunk_type::from_native(values.value_[i])...).to_native();
+      return result;
+    }
+    template<class F,class... V>
+    static constexpr simd map_permitted_native(F operation,V const &... values) noexcept {
+      using C=simd<T,register_lanes,A>;
+      simd result;
+      for(std::size_t i=0;i<register_count;++i)
+        result.value_[i]=operation(C::from_native(values.value_[i])...).to_native();
       return result;
     }
     using scalar_chunk_type=typename detail::polyfill_chunk<T,1,detail::hardware_isa<A>>::type;
@@ -233,6 +257,8 @@ namespace native {
         requires(scalar_chunk_type x) { { x OP x } -> std::same_as<scalar_chunk_type>; }) { \
       if constexpr(requires(chunk_type x) { { x OP x } -> std::same_as<chunk_type>; }) \
         return map([](auto x,auto y) { return x OP y; },a,b); \
+      else if constexpr(permitted_native_byte) \
+        return map_permitted_native([](auto x,auto y) { return x OP y; },a,b); \
       else return map_scalar([](auto x,auto y) { return x OP y; },a,b); \
     } \
     /** Apply the corresponding operation in place. */ \
@@ -312,13 +338,14 @@ namespace native {
     constexpr simd replace(T value) const noexcept { return this->template set<I>(value); }
     /// Encode normal powers of two for integral exponents in [-126,127].
     friend constexpr simd normal_pow2(simd n) noexcept requires(std::same_as<T,float>) {
-      return map([](auto x) { return normal_pow2(x); },n);
+      if constexpr(requires(chunk_type x) { normal_pow2(x); }) return map([](auto x) { return normal_pow2(x); },n);
+      else return map_scalar([](auto x) { return normal_pow2(x); },n);
     }
     /// Shift logical lanes left by the valid immediate count.
-    template<std::size_t K> requires(simd_integer_element<T> && K<sizeof(T)*8)
+    template<std::size_t K> requires(simd_integer_element<T> && ((NATIVE_HOST_WASM!=0) || K<sizeof(T)*8))
     friend constexpr simd operator<<(simd value,imm_t<K>) noexcept { return value.template left<K>(); }
     /// Shift logical lanes right by the valid immediate count, extending signed lanes.
-    template<std::size_t K> requires(simd_integer_element<T> && K<sizeof(T)*8)
+    template<std::size_t K> requires(simd_integer_element<T> && ((NATIVE_HOST_WASM!=0) || K<sizeof(T)*8))
     friend constexpr simd operator>>(simd value,imm_t<K>) noexcept { return value.template right<K>(); }
     /// Shift each unsigned 32-bit lane by its corresponding count; counts >=32 yield zero.
     friend constexpr simd operator<<(simd value,simd counts) noexcept requires(std::same_as<T,std::uint32_t>) {
@@ -335,24 +362,52 @@ namespace native {
     }
     /// Shift every integral lane right by the immediate count.
     template<std::size_t K>
-    constexpr simd right() const noexcept requires requires(chunk_type x) { x.template right<K>(); } {
-      return map([](auto x) { return x.template right<K>(); },*this);
+    constexpr simd right() const noexcept requires(simd_integer_element<T> &&
+      ((NATIVE_HOST_WASM!=0) || requires(chunk_type x) { x.template right<K>(); })) {
+      if constexpr(requires(chunk_type x) { x.template right<K>(); }) return map([](auto x) { return x.template right<K>(); },*this);
+      else {
+        std::array<T,N> lanes{}; store(lanes.data());
+        for(auto & lane:lanes) lane=T(lane>>(K%(sizeof(T)*8)));
+        return load(lanes.data());
+      }
     }
     /// Shift every integral lane left by the immediate count.
     template<std::size_t K>
-    constexpr simd left() const noexcept requires requires(chunk_type x) { x.template left<K>(); } {
-      return map([](auto x) { return x.template left<K>(); },*this);
+    constexpr simd left() const noexcept requires(simd_integer_element<T> &&
+      ((NATIVE_HOST_WASM!=0) || requires(chunk_type x) { x.template left<K>(); })) {
+      if constexpr(requires(chunk_type x) { x.template left<K>(); }) return map([](auto x) { return x.template left<K>(); },*this);
+      else {
+        std::array<T,N> lanes{}; store(lanes.data()); using U=std::make_unsigned_t<T>;
+        for(auto & lane:lanes) lane=std::bit_cast<T>(U(std::uint64_t(U(lane))<<(K%(sizeof(T)*8))));
+        return load(lanes.data());
+      }
     }
     /// Shift every integral lane right by a runtime count.
     friend constexpr simd operator>>(simd value,int count) noexcept
-      requires requires(chunk_type x) { { x>>count } -> std::same_as<chunk_type>; } {
-      return map([=](auto x) { return x>>count; },value);
+      requires(simd_integer_element<T> && ((NATIVE_HOST_WASM!=0) || requires(chunk_type x) { { x>>count } -> std::same_as<chunk_type>; })) {
+      if constexpr(requires(chunk_type x) { { x>>count } -> std::same_as<chunk_type>; }) return map([=](auto x) { return x>>count; },value);
+      else {
+        std::array<T,N> lanes{}; value.store(lanes.data());
+        for(auto & lane:lanes) lane=T(lane>>(unsigned(count)%(sizeof(T)*8)));
+        return load(lanes.data());
+      }
     }
     /// Shift every integral lane left by a runtime count.
     friend constexpr simd operator<<(simd value,int count) noexcept
-      requires requires(chunk_type x) { { x<<count } -> std::same_as<chunk_type>; } {
-      return map([=](auto x) { return x<<count; },value);
+      requires(simd_integer_element<T> && ((NATIVE_HOST_WASM!=0) || requires(chunk_type x) { { x<<count } -> std::same_as<chunk_type>; })) {
+      if constexpr(requires(chunk_type x) { { x<<count } -> std::same_as<chunk_type>; }) return map([=](auto x) { return x<<count; },value);
+      else {
+        std::array<T,N> lanes{}; value.store(lanes.data()); using U=std::make_unsigned_t<T>;
+        for(auto & lane:lanes) lane=std::bit_cast<T>(U(std::uint64_t(U(lane))<<(unsigned(count)%(sizeof(T)*8))));
+        return load(lanes.data());
+      }
     }
+    /// Apply the corresponding supported shift in place.
+    template<class C> requires requires(simd value,C count) { { value<<count } -> std::same_as<simd>; }
+    constexpr simd & operator<<=(C count) noexcept { return *this=*this<<count; }
+    /// Apply the corresponding supported shift in place.
+    template<class C> requires requires(simd value,C count) { { value>>count } -> std::same_as<simd>; }
+    constexpr simd & operator>>=(C count) noexcept { return *this=*this>>count; }
     /// Compute a*b+c with each register's fused lane semantics.
     friend constexpr simd fma(simd a,simd b,simd c) noexcept
       requires(detail::polyfill_element_traits<T>::arithmetic) {
@@ -395,11 +450,11 @@ namespace native {
       else return map_scalar([](auto x) { return trunc(x); },value);
     }
     /// Select the smaller lane using the underlying floating-point comparison.
-    friend constexpr simd min(simd a,simd b) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return select(a<b,a,b); }
+    friend constexpr simd min(simd a,simd b) noexcept requires(detail::polyfill_element_traits<T>::arithmetic &&
+      !((NATIVE_HOST_WASM!=0) && std::floating_point<T>)) { return select(a<b,a,b); }
     /// Select the larger lane using the underlying floating-point comparison.
-    friend constexpr simd max(simd a,simd b) noexcept
-      requires(detail::polyfill_element_traits<T>::arithmetic) { return select(a>b,a,b); }
+    friend constexpr simd max(simd a,simd b) noexcept requires(detail::polyfill_element_traits<T>::arithmetic &&
+      !((NATIVE_HOST_WASM!=0) && std::floating_point<T>)) { return select(a>b,a,b); }
     /// Round to nearest integral values, choosing even at ties.
     friend constexpr simd round_even(simd value) noexcept
       requires(detail::polyfill_element_traits<T>::arithmetic) {

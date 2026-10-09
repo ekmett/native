@@ -3412,11 +3412,11 @@ namespace native {
   // a builtin scalar shift. The immediate tag retains its public size conversion.
   /// Reject this unsupported operand combination instead of converting implicitly to a native register.
   template<simd_integer_element T, std::size_t N, std::size_t K, ::native::isa<> Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8)
+    requires NATIVE_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8) && (!NATIVE_HOST_WASM || !Arch.has(polyfill))
   void operator<<(simd<T, N,Arch>, imm_t<K>) = delete;
   /// Reject this unsupported operand combination instead of converting implicitly to a native register.
   template<simd_integer_element T, std::size_t N, std::size_t K, ::native::isa<> Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8)
+    requires NATIVE_ARCH_REQUIRES(Arch) && (K >= sizeof(T) * 8) && (!NATIVE_HOST_WASM || !Arch.has(polyfill))
   void operator>>(simd<T, N,Arch>, imm_t<K>) = delete;
 }
 
@@ -5699,6 +5699,7 @@ namespace native {
     using word_type = detail::wasm_word<T>;
     using mask_type = simd<mask_lane<word_type>, N, A>;
     using mask = mask_type;
+    using vector_mask_type = mask_type;
     using bits_type = simd<word_type, N, A>;
     using register_type = simd;
     template<class U>
@@ -5837,8 +5838,11 @@ namespace native {
                                                      T fill = {}) noexcept {
       std::array<T, N> a{};
       a.fill(fill);
-      for (std::size_t i = 0; i < n; ++i) {
-        a[i] = p[i];
+      if consteval { for(std::size_t i=0;i<n;++i) a[i]=p[i]; }
+      else {
+        if constexpr(A.has(polyfill)) {
+          if(n) std::memcpy(a.data(),reinterpret_cast<unsigned char const *>(p),n*sizeof(T));
+        } else for(std::size_t i=0;i<n;++i) a[i]=p[i];
       }
       return load(a.data());
     }
@@ -5846,8 +5850,11 @@ namespace native {
     /// Write only the first n lanes; require n <= N. Null is valid when n is zero.
     hint_inline constexpr void store_partial(T * p, std::size_t n) const noexcept {
       auto a = detail::wasm_lanes(*this);
-      for (std::size_t i = 0; i < n; ++i) {
-        p[i] = a[i];
+      if consteval { for(std::size_t i=0;i<n;++i) p[i]=a[i]; }
+      else {
+        if constexpr(A.has(polyfill)) {
+          if(n) std::memcpy(reinterpret_cast<unsigned char *>(p),a.data(),n*sizeof(T));
+        } else for(std::size_t i=0;i<n;++i) p[i]=a[i];
       }
     }
 
@@ -6027,7 +6034,7 @@ namespace native {
 
     /// Multiply lanes; integer results wrap and floating results round to nearest-even.
     [[nodiscard]] friend hint_inline constexpr simd operator*(simd a, simd b) noexcept
-    requires(sizeof(T) > 1)
+    requires(sizeof(T) > 1 || A.has(polyfill))
     {
       if consteval {
         return detail::wasm_map(
@@ -6043,7 +6050,11 @@ namespace native {
           },
           a, b);
       } else {
-        if constexpr (std::same_as<T, float>) {
+        if constexpr (sizeof(T)==1) {
+          auto low=wasm_i16x8_mul(wasm_u16x8_extend_low_u8x16(a.value_),wasm_u16x8_extend_low_u8x16(b.value_));
+          auto high=wasm_i16x8_mul(wasm_u16x8_extend_high_u8x16(a.value_),wasm_u16x8_extend_high_u8x16(b.value_));
+          return from_native(wasm_i8x16_shuffle(low,high,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30));
+        } else if constexpr (std::same_as<T, float>) {
           return from_native(wasm_f32x4_mul(a.value_, b.value_));
         } else if constexpr (std::same_as<T, double>) {
           return from_native(wasm_f64x2_mul(a.value_, b.value_));
@@ -6065,7 +6076,7 @@ namespace native {
 
     /// Apply the corresponding lane operation and update this value.
     hint_inline constexpr simd & operator*=(simd b) noexcept
-    requires(sizeof(T) > 1)
+    requires(sizeof(T) > 1 || A.has(polyfill))
     {
       return *this = *this * b;
     }
@@ -7190,21 +7201,39 @@ namespace native {
            (V::architecture.has(wasm_feature::simd128)) &&
            (V::lanes * sizeof(typename V::value_type) == 16)
   [[nodiscard]] hint_inline constexpr V load_splat(typename V::value_type const * p) noexcept {
-    return V(*p);
+    if constexpr(!V::architecture.has(polyfill)) return V(*p);
+    else {
+      if consteval { return V(*p); }
+      else {
+        typename V::value_type value;
+        std::memcpy(&value,reinterpret_cast<unsigned char const *>(p),sizeof(value)); return V(value);
+      }
+    }
   }
 
   /// Read one scalar into lane I, preserving the other lanes.
   template<std::size_t I, detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && I < N)
   [[nodiscard]] hint_inline constexpr simd<T, N, A> load_lane(T const * p, simd<T, N, A> a) noexcept {
-    return a.template replace<I>(*p);
+    if constexpr(!A.has(polyfill)) return a.template replace<I>(*p);
+    else {
+      if consteval { return a.template replace<I>(*p); }
+      else {
+        T value; std::memcpy(&value,reinterpret_cast<unsigned char const *>(p),sizeof(T)); return a.template replace<I>(value);
+      }
+    }
   }
 
   /// Write only lane I to one scalar object.
   template<std::size_t I, detail::wasm_number T, std::size_t N, isa<> A>
   requires(A.has(wasm_feature::simd128)) && (sizeof(T) * N == 16 && I < N)
   hint_inline constexpr void store_lane(T * p, simd<T, N, A> a) noexcept {
-    *p = a.template get<I>();
+    auto value=a.template get<I>();
+    if constexpr(!A.has(polyfill)) *p=value;
+    else {
+      if consteval { *p=value; }
+      else { std::memcpy(reinterpret_cast<unsigned char *>(p),&value,sizeof(T)); }
+    }
   }
 
   /// Read one 32- or 64-bit lane and zero the other lanes.

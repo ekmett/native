@@ -340,3 +340,9 @@ namespace native::detail::neon_fp16_backend {
 #define NATIVE_BACKEND_BODY "native/simd/polyfill_helpers_body.h"
 #include "native/simd/for_each_backend.h"
 #undef NATIVE_BACKEND_BODY
+
+#if NATIVE_HOST_WASM
+#define NATIVE_BACKEND_BODY "native/simd/polyfill_wasm_body.h"
+#include "native/simd/for_each_backend.h"
+#undef NATIVE_BACKEND_BODY
+#endif

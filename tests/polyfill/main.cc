@@ -195,7 +195,7 @@ namespace polyfill_test {
     auto result=((a+V(19u))*V(3u)).template right<2>(); result.store(output.data());
     for(std::size_t i=0;i<V::lanes;++i)
       if(output[i]!=std::uint32_t(std::uint32_t(input[i]+19u)*3u)>>2) return false;
-    auto population=popcount(a); population.store(output.data());
+    auto population=native::popcount(a); population.store(output.data());
     for(std::size_t i=0;i<V::lanes;++i) if(output[i]!=std::popcount(input[i])) return false;
     return memory<V>(seed);
   }
@@ -321,6 +321,11 @@ namespace polyfill_test {
     if(value.template get<16>()!=input[16] || value.template set<8>(-7.f).template get<8>()!=-7.f) return false;
     broadcast(value,imm<9>).store(output.data());
     for(auto lane:output) if(lane!=input[9]) return false;
+    auto rounded=native::floor(std::array{value,F(-1.25f)});
+    if(rounded[0].template get<16>()!=float(16+seed) || rounded[1].template get<16>()!=-2.f) return false;
+    if(ceil(std::array{F(-1.25f)})[0].template get<16>()!=-1.f || trunc(std::array{F(1.25f)})[0].template get<16>()!=1.f) return false;
+    if(!floor(std::array<F,0>{}).empty()) return false;
+    if(native::floor(value).template get<16>()!=float(16+seed) || native::sqrt(F(4.f)).template get<16>()!=2.f || native::fma(F(1.f),F(2.f),F(3.f)).template get<16>()!=5.f) return false;
     normal_pow2(F(3.f)).store(output.data());
     for(auto lane:output) if(lane!=8.f) return false;
     masked_scaleb(compact,F(-9.f),value,F(2.75f)).store(output.data());

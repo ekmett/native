@@ -105,3 +105,29 @@ kernels. Constant evaluation follows the same Wasm evaluation order.
 The API provides no general-purpose SIMD128 FMA or exponent-scaling instruction.
 
 See [building for WebAssembly](../doc/building.md#webassembly) for the toolchain.
+
+## Explicit emulation permission
+
+`polyfill` alone supplies scalar storage and the deterministic SIMD128 semantic
+API without requiring engine SIMD admission. `simd128 | polyfill` retains
+native SIMD128 shapes and decomposes other logical shapes into those registers,
+with an explicit partial tail. Existing native overloads keep priority.
+Saturation, integer absolute value, averages, minimum/maximum, widening,
+permutations, conversions and bounded memory helpers accept permitted storage.
+Logical widening selects the global lower or upper half; narrowing concatenates
+the entire first input before the second. Fixed SIMD128 floating-width
+conversions retain their native result shape and zero-fill rules.
+
+Native SIMD128 byte multiplication with permission widens into halfword products and retains
+the low byte of each product. Explicitly permitted fused floating arithmetic
+uses the scalar fused operation; polynomial math graphs retain their existing
+noncontracting SIMD128 evaluation. Floating minimum and maximum propagate NaNs
+and preserve WebAssembly's signed-zero rules; pseudo minimum/maximum retain the
+first operand on equality or unordered comparison. Shift counts retain
+WebAssembly's reduction modulo the lane width, including decomposed storage.
+These rules do not alter calls that omit permission.
+
+The polyfill tests run scalar header and module consumers with engine SIMD
+support disabled, and mixed consumers with base SIMD enabled and relaxed SIMD
+disabled. The shared core corpus covers logical tails, custom storage, masks,
+unaligned memory, packing, arrays and staged math in both storage modes.

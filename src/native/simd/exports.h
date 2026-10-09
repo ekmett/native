@@ -140,17 +140,16 @@ export namespace native {
   using ::native::floor;
   using ::native::ceil;
   using ::native::trunc;
+  using ::native::round_even;
 
-#if (NATIVE_HOST_X86 || NATIVE_HOST_NEON || NATIVE_HOST_WASM) && (!defined(NATIVE_PROFILE) || NATIVE_PROFILE != 0)
   using ::native::narrow_concat;
-#endif
 }
 
-#if NATIVE_HOST_WASM && (!defined(NATIVE_PROFILE) || NATIVE_PROFILE != 0)
+#if NATIVE_HOST_WASM
 export namespace native {
+  using ::native::normal_pow2;
   using ::native::shuffle;
   using ::native::swizzle;
-  using ::native::round_even;
   using ::native::add_sat;
   using ::native::sub_sat;
   using ::native::average_round;

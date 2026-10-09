@@ -225,6 +225,11 @@ namespace native {
     }
   }
 
+  /// Make permitted logical popcounts available through qualified namespace lookup.
+  template<simd_integer_element T,std::size_t N,isa<> Arch>
+    requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && detail::polyfill_operation_shape<T,N,Arch>)
+  constexpr simd<T,N,Arch> popcount(simd<T,N,Arch> value) noexcept { return popcount(value); }
+
   /// Sum logical unsigned 8-, 16-, or 32-bit lanes exactly into a 64-bit scalar.
   /// Use native register reductions and exclude the final register's padding.
   template<simd_integer_element T,std::size_t N,isa<> Arch>

@@ -102,6 +102,12 @@ namespace wide::detail {
     // Internal normal power-of-two reconstruction for expm1. Special inputs
     // have defined integer conversions; the caller selects range endpoints.
     static inline constexpr V exp_power(V n) noexcept {
+#if NATIVE_HOST_WASM
+      if constexpr(::native::detail::polyfill_operation_shape<typename V::value_type,V::lanes,V::architecture>) {
+        return ::native::detail::polyfill_transform_chunks<V>(n,[](auto chunk) { return native_ops<decltype(chunk)>::exp_power(chunk); });
+      } else
+#endif
+      {
 #if NATIVE_HAS_AVX512F
       if constexpr (V::lanes == 1 || V::lanes == 16 || (NATIVE_HAS_AVX512VL && V::lanes > 1))
         return scaleb(V(1.f),n);
@@ -129,6 +135,7 @@ namespace wide::detail {
 #endif
         }
 #endif
+      }
       }
     }
     template<class M>

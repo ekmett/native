@@ -2,6 +2,23 @@
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 // Repeated under the matching backend target; intrinsic wrappers stay in GMF.
 namespace native {
+#define NATIVE_POLYFILL_QUALIFIED_UNARY(NAME) \
+  /** Make the permitted lane operation available through qualified namespace lookup. */ \
+  template<class T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> && \
+    detail::polyfill_element_traits<T>::arithmetic \
+  constexpr simd<T,N,A> NAME(simd<T,N,A> value) noexcept { return NAME(value); }
+  NATIVE_POLYFILL_QUALIFIED_UNARY(abs)
+  NATIVE_POLYFILL_QUALIFIED_UNARY(sqrt)
+  NATIVE_POLYFILL_QUALIFIED_UNARY(floor)
+  NATIVE_POLYFILL_QUALIFIED_UNARY(ceil)
+  NATIVE_POLYFILL_QUALIFIED_UNARY(trunc)
+  NATIVE_POLYFILL_QUALIFIED_UNARY(round_even)
+#undef NATIVE_POLYFILL_QUALIFIED_UNARY
+  /// Make explicitly permitted fused arithmetic available through qualified lookup.
+  template<class T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> &&
+    detail::polyfill_element_traits<T>::arithmetic
+  constexpr simd<T,N,A> fma(simd<T,N,A> a,simd<T,N,A> b,simd<T,N,A> c) noexcept { return fma(a,b,c); }
+
   /// Expand a logical compact mask into canonical full-vector lanes.
   template<simd_mask_element T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill))
   constexpr simd<T,N,A> to_vector_mask(detail::polyfill_predicate<N,A> mask) noexcept {
@@ -49,10 +66,23 @@ namespace native {
     return mask_bits<T>(detail::polyfill_predicate<N,A>::from_bitset(mask.to_bitset()));
   }
 
+#if NATIVE_HOST_WASM
+  /// Expand a matching compact predicate before native full-register selection.
+  template<class T,std::size_t N,isa<> A,class M> requires NATIVE_ARCH_REQUIRES(A) &&
+    (A.has(polyfill) && !detail::polyfill_operation_shape<T,N,A>) &&
+    (std::same_as<M,predicate<N,A>> || std::same_as<M,detail::polyfill_predicate<N,A>>) &&
+    (!std::same_as<M,typename simd<T,N,A>::mask_type>) && detail::ordinary_simd_element<T> &&
+    requires { typename simd<T,N,A>::word_type; }
+  constexpr simd<T,N,A> select(M mask,simd<T,N,A> a,simd<T,N,A> b) noexcept {
+    using U=typename simd<T,N,A>::word_type;
+    return select(simd<mask_lane<U>,N,A>::from_bitset(mask.to_bitset()),a,b);
+  }
+
+#endif
 #define NATIVE_POLYFILL_MASKED(NAME,OP) \
   /** Apply lane arithmetic where the matching mask is true, retaining prior elsewhere. */ \
   template<class T,std::size_t N,isa<> A,class M> \
-    requires NATIVE_ARCH_REQUIRES(A) && (detail::polyfill_operation_shape<T,N,A> || \
+    requires NATIVE_ARCH_REQUIRES(A) && (detail::polyfill_helper_shape<T,N,A> || \
       (A.has(polyfill) && !detail::ordinary_simd_element<T> && detail::polyfill_element_traits<T>::arithmetic)) && \
       (std::same_as<M,typename simd<T,N,A>::mask_type> || std::same_as<M,typename simd<T,N,A>::vector_mask_type> || \
        std::same_as<M,predicate<N,A>>) && requires(simd<T,N,A> x) { x OP x; } \
@@ -130,8 +160,23 @@ namespace native {
   template<std::size_t I,class T,std::size_t N,isa<> A>
     requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> && (I<N)
   constexpr simd<T,N,A> broadcast(simd<T,N,A> value,imm_t<I>) noexcept { return simd<T,N,A>(value.template get<I>()); }
+#define NATIVE_POLYFILL_ARRAY_ROUND(NAME) \
+  /** Round each explicitly permitted register; empty arrays do no work. */ \
+  template<class T,std::size_t N,std::size_t M,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill)) && \
+    (!(std::same_as<T,float> && ::NATIVE_BACKEND_NAMESPACE::float_shape<N> && !detail::polyfill_operation_shape<T,N,A>)) && \
+    requires(simd<T,N,A> value) { NAME(value); } \
+  constexpr std::array<simd<T,N,A>,M> NAME(std::array<simd<T,N,A>,M> const & input) noexcept { \
+    std::array<simd<T,N,A>,M> output{}; \
+    for(std::size_t i=0;i<M;++i) output[i]=NAME(input[i]); \
+    return output; \
+  }
+  NATIVE_POLYFILL_ARRAY_ROUND(floor)
+  NATIVE_POLYFILL_ARRAY_ROUND(ceil)
+  NATIVE_POLYFILL_ARRAY_ROUND(trunc)
+#undef NATIVE_POLYFILL_ARRAY_ROUND
+
   /// Sum binary32 logical lanes in increasing order, rounding after each addition.
-  template<std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,N,A>
+  template<std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_helper_shape<float,N,A>
   constexpr float reduce_add(simd<float,N,A> value) noexcept {
     std::array<float,N> lanes{}; value.store(lanes.data()); float result=0;
     for(auto lane:lanes) {
@@ -202,7 +247,7 @@ namespace native {
     requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && detail::polyfill_element_traits<To>::supported &&
       detail::polyfill_element_traits<From>::supported && !std::same_as<To,bool> && !std::same_as<From,bool> &&
       !simd_mask_element<To> && !simd_mask_element<From> &&
-      (detail::polyfill_operation_shape<From,N,A> || detail::polyfill_operation_shape<To,N,A> ||
+      (detail::polyfill_helper_shape<From,N,A> || detail::polyfill_helper_shape<To,N,A> ||
        !detail::ordinary_simd_element<To> || !detail::ordinary_simd_element<From>) &&
       requires { sizeof(simd<To,N,A>); }
 #if NATIVE_HOST_WASM
@@ -272,7 +317,7 @@ namespace native {
 
   /// Pack selected logical lanes in increasing order, filling the suffix.
   template<class T,std::size_t N,isa<> A>
-    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> &&
+    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_helper_shape<T,N,A> &&
       (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>)
   constexpr compaction_result<simd<T,N,A>> compress(typename simd<T,N,A>::mask mask,simd<T,N,A> value,T fill={}) noexcept {
     std::array<T,N> input{},output{}; value.store(input.data()); output.fill(fill);
@@ -282,7 +327,7 @@ namespace native {
   }
   /// Expand a globally packed prefix into selected logical lanes, retaining prior elsewhere.
   template<class T,std::size_t N,isa<> A>
-    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> &&
+    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_helper_shape<T,N,A> &&
       (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>)
   constexpr simd<T,N,A> expand(typename simd<T,N,A>::mask mask,simd<T,N,A> packed,simd<T,N,A> prior) noexcept {
     std::array<T,N> input{},output{}; packed.store(input.data()); prior.store(output.data());
@@ -292,7 +337,7 @@ namespace native {
   }
   /// Write only the selected prefix that fits capacity; zero writes permit null.
   template<class T,std::size_t N,isa<> A>
-    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<T,N,A> &&
+    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_helper_shape<T,N,A> &&
       (std::same_as<T,float> || std::same_as<T,std::int32_t> || std::same_as<T,std::uint32_t>)
   constexpr std::size_t compress_store(T * p,std::size_t capacity,typename simd<T,N,A>::mask mask,simd<T,N,A> value) noexcept {
     auto packed=compress(mask,value);
