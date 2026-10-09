@@ -23,7 +23,7 @@
 
 [![docs: read](https://img.shields.io/static/v1?label=docs&message=read&color=007ec6&style=flat)](https://ekmett.github.io/native/)
 [![Docker: ghcr.io](https://img.shields.io/static/v1?label=Docker&message=ghcr.io&color=2496ED&style=flat&logo=docker&logoColor=white)](https://github.com/ekmett/native/pkgs/container/native)
-[![Nix: flake](https://img.shields.io/static/v1?label=Nix&message=flake&color=5277C3&style=flat&logo=nixos&logoColor=white)](flake.nix)
+[![Nix: flake](https://img.shields.io/static/v1?label=Nix&message=flake&color=5277C3&style=flat&logo=nixos&logoColor=white)](https://github.com/ekmett/native/blob/main/flake.nix)
 <!-- badges:end -->
 
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
