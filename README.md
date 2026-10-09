@@ -4,7 +4,7 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
 <!-- badges:start -->
-[![](assets/badges/left.svg)![build][ci-build]](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)[![docs][ci-docs]](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)[![coverage][ci-coverage]](https://github.com/ekmett/native/actions/workflows/coverage.yml?query=branch%3Amain)[![docker][ci-docker]](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)[![nix][ci-nix]](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)![](assets/badges/right.svg)
+[![](assets/badges/left.svg)&#8288;![build][ci-build]](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)&#8288;[![docs][ci-docs]](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)&#8288;[![coverage][ci-coverage]](https://github.com/ekmett/native/actions/workflows/coverage.yml?query=branch%3Amain)&#8288;[![docker][ci-docker]](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)&#8288;[![nix][ci-nix]](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)&#8288;![](assets/badges/right.svg)
 
 [![issues](https://img.shields.io/github/issues/ekmett/native?style=flat&label=issues&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/issues)
 [![commits](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat&label=commits&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/activity)
