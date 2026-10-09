@@ -546,6 +546,9 @@ namespace native {
     requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From)==2*sizeof(To) &&
       (detail::polyfill_operation_shape<From,N,A> || detail::polyfill_operation_shape<To,2*N,A>) &&
+      // F/DQ already narrows dwords into storage-only word registers without BW.
+      !(NATIVE_HAS_AVX512F != 0 && N*sizeof(From)==64 && sizeof(From)>=4 &&
+        !detail::polyfill_shape<From,N,A> && !detail::polyfill_shape<To,2*N,A>) &&
       requires { sizeof(simd<To,2*N,A>); })
   constexpr simd<To,2*N,A> narrow_concat(simd<From,N,A> a,simd<From,N,A> b) noexcept {
     std::array<From,N> first{},second{}; a.store(first.data()); b.store(second.data());

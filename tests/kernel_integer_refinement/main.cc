@@ -85,6 +85,7 @@ static_assert(integer_test::can_pack<std::uint32_t,std::uint64_t,8,NATIVE_TARGET
 static_assert(integer_test::has_shape<std::uint8_t,64,NATIVE_TARGET_ISA(fdq)>);
 static_assert(integer_test::has_shape<std::uint16_t,32,NATIVE_TARGET_ISA(fdq)>);
 static_assert(integer_test::can_pack<std::uint16_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)>);
+static_assert(integer_test::can_pack<std::uint16_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)|native::polyfill>);
 static_assert(integer_test::can_reinterpret<std::uint8_t,std::uint32_t,16,NATIVE_TARGET_ISA(fdq)>);
 static_assert(integer_test::can_reinterpret<std::uint16_t,std::uint64_t,8,NATIVE_TARGET_ISA(fdq_vl)>);
 #else

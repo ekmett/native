@@ -9,7 +9,8 @@ namespace native {
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (!detail::polyfill_shape<From,N,Arch> &&
       !detail::polyfill_shape<To,2*N,Arch> && !detail::instruction_only_shape<From,N,Arch> &&
-      !detail::instruction_only_shape<To,2*N,Arch>) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
+      (!detail::instruction_only_shape<To,2*N,Arch> ||
+        (NATIVE_HAS_AVX512F != 0 && N*sizeof(From)==64 && sizeof(From)>=4))) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From) == 2 * sizeof(To) &&
       // The selected backend must implement this width. Complete storage alone
       // does not establish the arithmetic instructions used by this operation.
