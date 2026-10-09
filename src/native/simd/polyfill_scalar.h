@@ -39,30 +39,34 @@ namespace native::detail {
   /// storage/conversion-only, matching its established element contract.
   template<class T,isa<> A> struct polyfill_scalar {
     using value_type=T;
-    using native_type=T;
     using format=typename polyfill_element_traits<T>::format;
     using word=typename format::bits_type;
+    // Scalar half storage crosses aggregate ABI boundaries as integer bits.
+    // A typed __bf16 field can be widened and narrowed by the compiler even
+    // for a representation-only copy, changing NaNs, zeros or FP status.
+    using native_type=std::conditional_t<sizeof(T)==2,word,T>;
     static constexpr auto constant_policy=[] {
       if constexpr(polyfill_element_traits<T>::kind==polyfill_element_kind::binary16)
         return half_constant::arithmetic_policy<!NATIVE_HOST_X86>();
       else return constexpr_float::policy{};
     }();
     using mask=polyfill_predicate<1,A>;
-    T value{};
+    native_type value{};
     constexpr polyfill_scalar() noexcept=default;
-    constexpr polyfill_scalar(T x) noexcept : value(x) {}
-    static constexpr auto bits(T x) noexcept { return std::bit_cast<word>(x); }
-    static constexpr T element(word x) noexcept { return std::bit_cast<T>(x); }
-    static constexpr polyfill_scalar from_native(T x) noexcept { return x; }
-    constexpr T to_native() const noexcept { return value; }
+    constexpr polyfill_scalar(T x) noexcept : value(std::bit_cast<native_type>(x)) {}
+    constexpr polyfill_scalar(native_type x) noexcept requires(!std::same_as<T,native_type>) : value(x) {}
+    static constexpr word bits(native_type x) noexcept { return std::bit_cast<word>(x); }
+    static constexpr native_type element(word x) noexcept { return std::bit_cast<native_type>(x); }
+    static constexpr polyfill_scalar from_native(native_type x) noexcept { return x; }
+    constexpr native_type to_native() const noexcept { return value; }
     template<std::size_t Alignment=1>
     static constexpr polyfill_scalar load_memory(T const * p) noexcept {
-      if consteval { return *p; } else { T x; std::memcpy(&x,p,sizeof(T)); return x; }
+      if consteval { return *p; } else { native_type x; std::memcpy(&x,reinterpret_cast<unsigned char const *>(p),sizeof(T)); return from_native(x); }
     }
     static constexpr polyfill_scalar load(T const * p) noexcept { return load_memory(p); }
     template<std::size_t Alignment=1>
     constexpr void store_memory(T * p) const noexcept {
-      if consteval { *p=value; } else { std::memcpy(p,&value,sizeof(T)); }
+      if consteval { *p=std::bit_cast<T>(value); } else { std::memcpy(reinterpret_cast<unsigned char *>(p),&value,sizeof(T)); }
     }
     constexpr void store(T * p) const noexcept { store_memory(p); }
 #define NATIVE_POLYFILL_SCALAR_BINARY(OP,FN) \

@@ -57,6 +57,13 @@ namespace {
   template<class H,class V> concept accepts_dot2=requires(H h,V v) { dot2(h,h,v); };
   static_assert(!accepts_dot2<simd<bf16,17,polyfill>,simd<float,8,polyfill>>);
 
+  // A small aggregate return must keep all BF16 bits, independently of the
+  // compiler's native BF16 scalar ABI and the active floating environment.
+  __attribute__((noinline)) simd<bf16,4,polyfill> polyfill_bf16_transport(std::uint16_t const * words) noexcept {
+    auto result=simd<bf16,4,polyfill>::load_bits(words);
+    asm volatile("" : "+m"(result) : : "memory");
+    return result;
+  }
   extern "C" __attribute__((noinline)) void polyfill_dot2_scalar(std::uint16_t const * a,std::uint16_t const * b,
       std::uint32_t const * c,std::uint32_t * out) noexcept {
     using H=simd<bf16,18,polyfill>; using V=simd<float,9,polyfill>;
@@ -146,7 +153,12 @@ int main(int argc,char **) {
   bool hardware=native::classify_isa(cpu,native::avx512_bf16).admitted();
   bool enhanced=false;
 #endif
-  for(unsigned word=0;word<65536;++word) if(!raw_storage<native::isa<>(native::polyfill)>(std::uint16_t(word))) return 4;
+  for(unsigned word=0;word<65536;++word) {
+    if(!raw_storage<native::isa<>(native::polyfill)>(std::uint16_t(word))) return 4;
+    std::array<std::uint16_t,4> input{std::uint16_t(word),0x8000,0x8001,0x7f81},output{};
+    polyfill_bf16_transport(input.data()).store_bits(output.data());
+    if(input!=output) return 5;
+  }
   if(!simple<2,native::isa<>(native::polyfill)>(unsigned(argc-1)) ||
      !simple<18,native::isa<>(native::polyfill)>(unsigned(argc-1)) ||
      !simple<64,native::isa<>(native::polyfill)>(unsigned(argc-1))) return 1;
