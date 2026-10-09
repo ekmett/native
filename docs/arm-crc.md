@@ -45,7 +45,7 @@ complement the result. The bytes of `123456789` give CRC32 `0xcbf43926` and
 CRC32C `0xe3069283` with that convention. Word loads remain your responsibility,
 including bounds and byte order.
 
-Runtime calls require an ARM `Arch` containing `arm_feature::crc` and a
+Native runtime calls require an ARM `Arch` containing `arm_feature::crc` and a
 `"crc"` caller target. Before entering the target function, check
 `NATIVE_TARGET_ISA(checksum)` and `NATIVE_TARGET_MINIMUM` with
 `observe_arm_capabilities()` and `classify_isa`. CRC needs no Advanced SIMD
@@ -57,7 +57,10 @@ does not change it. Use an explicit ISA for an optional target function.
 Standalone `native/arm/crc.h` calls require an explicit ISA.
 
 All widths support constant evaluation. A CRC-capable tag provides `constexpr`
-calls; a tag without CRC provides only `consteval` calls and no runtime
-fallback. Exact unsigned operand types are required in either case.
+calls; a tag without CRC provides only `consteval` calls unless it contains
+`polyfill`. `crc32<polyfill>(accumulator, value)` and
+`crc32c<polyfill>(accumulator, value)` permit the same integer update at runtime
+with ordinary scalar types. Permission adds no CRC hardware bit; a tag with CRC
+still uses the native instruction. Exact unsigned operand types remain required.
 
 See the [Arm C Language Extensions](https://arm-software.github.io/acle/main/acle.html#crc32-intrinsics).

@@ -64,7 +64,7 @@ Callers supply message padding, byte-order conversion, round constants,
 complete key schedules and cipher modes. No wrapper performs byte swapping
 or SM4's final state reversal. There are no scalar or 64-bit-vector forms.
 
-Runtime calls require `arm_feature::sm3` or `arm_feature::sm4`, respectively,
+Native runtime calls require `arm_feature::sm3` or `arm_feature::sm4`, respectively,
 and a `"sm4"` caller target. Hardware observations are independent, but that
 compiler target enables both: `target_features<arm>("sm4")` requires NEON,
 SM3 and SM4. There is no standalone `"sm3"` target string. Admit the whole
@@ -76,10 +76,15 @@ unknown. A CPU model or another crypto feature cannot establish admission.
 Importing a module does not enable the caller's target or perform dispatch.
 
 All nine operations support constant evaluation. A tag without the instruction
-feature permits only `consteval` calls and still requires NEON vector storage.
-There is no runtime fallback. These integer instructions do not read or modify
-FPCR, FPSR or NZCV. Constant-evaluation substitution tables make no runtime
-cipher or timing guarantee.
+feature permits only `consteval` calls unless it contains `polyfill`. Explicit
+permission, such as `neon | polyfill`, enables the same complete four-word
+semantics at runtime with the available storage. `polyfill` alone uses scalar
+storage. It does not add SM3 or SM4 hardware feature bits. When the instruction
+feature is present, the native instruction remains the selected runtime path.
+
+These integer instructions do not read or modify FPCR, FPSR or NZCV. Semantic
+SM4 substitution-table polyfills preserve values but make no constant-time
+cipher guarantee.
 
 See the [Arm A64 instruction specification](https://documentation-service.arm.com/static/67e40f3398aa3c3b6eea6a85)
 and [ACLE intrinsic mapping](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html).

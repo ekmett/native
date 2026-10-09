@@ -148,10 +148,11 @@ export namespace native {
   /// \defgroup arm_sm3 SM3
   /// \ingroup cpu_arm
   /// Individual Advanced SIMD operations on four native-order uint32_t words.
-  /// Runtime calls require the named instruction feature; the compiler's "sm4"
+  /// Native runtime calls require the named instruction feature; the compiler's "sm4"
   /// target enables both SM3 and SM4. Admit target_features<arm>("sm4") before
   /// entering its compiled leaf. These operations do not modify FPCR, FPSR or NZCV.
-  /// Feature-absent overloads are immediate-only and require NEON vector storage.
+  /// Feature-absent overloads are immediate-only unless Arch.has(polyfill).
+  /// Polyfills retain complete logical lane semantics and require valid SIMD storage.
   /// \{
 
   /// Rotate and add the lane-three inputs; return SS1 in lane three and zero elsewhere.
@@ -174,8 +175,19 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch>
-    requires(!Arch.has(arm_feature::sm3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3ss1(simd<std::uint32_t, 4, Arch> a,
+    simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::arm_sm3_constant::sm3ss1(a, b, c);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3ss1(simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     return detail::arm_sm3_constant::sm3ss1(a, b, c);
   }
@@ -202,9 +214,20 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch, int Lane>
-    requires(!Arch.has(arm_feature::sm3) && Lane >= 0 && Lane < 4 &&
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3tt1a(
+    simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
+    simd<std::uint32_t, 4, Arch> words) noexcept {
+    return detail::arm_sm3_constant::sm3tt1a<Lane>(state, ss1, words);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch, int Lane>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3tt1a(
     simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
     simd<std::uint32_t, 4, Arch> words) noexcept {
     return detail::arm_sm3_constant::sm3tt1a<Lane>(state, ss1, words);
@@ -232,9 +255,20 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch, int Lane>
-    requires(!Arch.has(arm_feature::sm3) && Lane >= 0 && Lane < 4 &&
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3tt1b(
+    simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
+    simd<std::uint32_t, 4, Arch> words) noexcept {
+    return detail::arm_sm3_constant::sm3tt1b<Lane>(state, ss1, words);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch, int Lane>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3tt1b(
     simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
     simd<std::uint32_t, 4, Arch> words) noexcept {
     return detail::arm_sm3_constant::sm3tt1b<Lane>(state, ss1, words);
@@ -262,9 +296,20 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch, int Lane>
-    requires(!Arch.has(arm_feature::sm3) && Lane >= 0 && Lane < 4 &&
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3tt2a(
+    simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
+    simd<std::uint32_t, 4, Arch> words) noexcept {
+    return detail::arm_sm3_constant::sm3tt2a<Lane>(state, ss1, words);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch, int Lane>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3tt2a(
     simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
     simd<std::uint32_t, 4, Arch> words) noexcept {
     return detail::arm_sm3_constant::sm3tt2a<Lane>(state, ss1, words);
@@ -292,9 +337,20 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch, int Lane>
-    requires(!Arch.has(arm_feature::sm3) && Lane >= 0 && Lane < 4 &&
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3tt2b(
+    simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
+    simd<std::uint32_t, 4, Arch> words) noexcept {
+    return detail::arm_sm3_constant::sm3tt2b<Lane>(state, ss1, words);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch, int Lane>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) && Lane >= 0 && Lane < 4 &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3tt2b(
     simd<std::uint32_t, 4, Arch> state, simd<std::uint32_t, 4, Arch> ss1,
     simd<std::uint32_t, 4, Arch> words) noexcept {
     return detail::arm_sm3_constant::sm3tt2b<Lane>(state, ss1, words);
@@ -320,8 +376,19 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch>
-    requires(!Arch.has(arm_feature::sm3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3partw1(simd<std::uint32_t, 4, Arch> a,
+    simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::arm_sm3_constant::sm3partw1(a, b, c);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3partw1(simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     return detail::arm_sm3_constant::sm3partw1(a, b, c);
   }
@@ -346,8 +413,19 @@ export namespace native {
 
   /// Evaluate constant operands without the SM3 instruction feature.
   template<isa<arm> Arch>
-    requires(!Arch.has(arm_feature::sm3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+    requires(!Arch.has(arm_feature::sm3) && !Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm3partw2(simd<std::uint32_t, 4, Arch> a,
+    simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::arm_sm3_constant::sm3partw2(a, b, c);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch>
+    requires(!Arch.has(arm_feature::sm3) && Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm3partw2(simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     return detail::arm_sm3_constant::sm3partw2(a, b, c);
   }

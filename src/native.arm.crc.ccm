@@ -13,26 +13,38 @@ extern "C++" namespace native {
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE, class A, class B>
   void crc32(A, B);
@@ -40,26 +52,38 @@ extern "C++" namespace native {
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(arm_feature::crc))
   constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept;
 
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept;
+
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept;
 
   template<isa<arm> Arch=NATIVE_BASELINE, class A, class B>
   void crc32c(A, B);

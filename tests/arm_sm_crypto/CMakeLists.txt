@@ -5,10 +5,19 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   find_package(native CONFIG REQUIRED COMPONENTS native)
   enable_testing()
 endif()
-foreach(suite IN ITEMS main metadata participation constexpr)
+foreach(suite IN ITEMS main metadata participation constexpr polyfill scalar_polyfill)
   if(suite STREQUAL "constexpr")
     add_executable(native_test_arm_sm_crypto_${suite} main.cc)
     target_compile_definitions(native_test_arm_sm_crypto_${suite} PRIVATE NATIVE_SM_CONSTANT_TEST=1)
+  elseif(suite MATCHES "polyfill")
+    add_executable(native_test_arm_sm_crypto_${suite} main.cc)
+    target_compile_definitions(native_test_arm_sm_crypto_${suite} PRIVATE NATIVE_SM_POLYFILL_TEST=1)
+    if(suite STREQUAL "scalar_polyfill")
+      target_compile_definitions(native_test_arm_sm_crypto_${suite} PRIVATE NATIVE_SM_SCALAR_POLYFILL_TEST=1)
+    endif()
+    target_compile_options(native_test_arm_sm_crypto_${suite} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
   else()
     add_executable(native_test_arm_sm_crypto_${suite} ${suite}.cc)
   endif()
@@ -35,6 +44,21 @@ add_test(NAME native.arm.sm_crypto.codegen COMMAND "${Python3_EXECUTABLE}"
   --objdump "${sm_objdump}" --output "${CMAKE_CURRENT_BINARY_DIR}/paired-$<CONFIG>.json"
   $<TARGET_OBJECTS:native_test_arm_sm_crypto_codegen> COMMAND_EXPAND_LISTS)
 set_tests_properties(native.arm.sm_crypto.codegen PROPERTIES LABELS "arm;sm3;sm4;codegen")
+
+# Permission cannot replace the instruction when all its features are available.
+add_library(native_test_arm_sm_crypto_polyfill_codegen OBJECT codegen.cc)
+target_link_libraries(native_test_arm_sm_crypto_polyfill_codegen PRIVATE native::native)
+target_compile_definitions(native_test_arm_sm_crypto_polyfill_codegen PRIVATE NATIVE_SM_CODEGEN_POLYFILL=1)
+target_compile_options(native_test_arm_sm_crypto_polyfill_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
+set_target_properties(native_test_arm_sm_crypto_polyfill_codegen PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
+add_test(NAME native.arm.sm_crypto.polyfill_codegen COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../arm_dotprod/check_equivalence.py"
+  --objdump "${sm_objdump}" --output "${CMAKE_CURRENT_BINARY_DIR}/polyfill-paired-$<CONFIG>.json"
+  $<TARGET_OBJECTS:native_test_arm_sm_crypto_polyfill_codegen> COMMAND_EXPAND_LISTS)
+set_tests_properties(native.arm.sm_crypto.polyfill_codegen PROPERTIES LABELS "arm;sm3;sm4;polyfill;codegen")
 
 # Test every weak overload and every runtime instruction boundary separately.
 foreach(op RANGE 0 8)

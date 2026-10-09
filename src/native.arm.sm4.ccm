@@ -59,10 +59,11 @@ export namespace native {
   /// \defgroup arm_sm4 SM4
   /// \ingroup cpu_arm
   /// Individual Advanced SIMD operations on four native-order uint32_t words.
-  /// Runtime calls require the named instruction feature; the compiler's "sm4"
+  /// Native runtime calls require the named instruction feature; the compiler's "sm4"
   /// target enables both SM3 and SM4. Admit target_features<arm>("sm4") before
   /// entering its compiled leaf. These operations do not modify FPCR, FPSR or NZCV.
-  /// Feature-absent overloads are immediate-only and require NEON vector storage.
+  /// Feature-absent overloads are immediate-only unless Arch.has(polyfill).
+  /// Polyfills retain complete logical lane semantics and require valid SIMD storage.
   /// \{
 
   /// Perform four SM4 data rounds with state words and successive round keys in ascending lanes.
@@ -83,8 +84,19 @@ export namespace native {
 
   /// Evaluate constant operands without the SM4 instruction feature.
   template<isa<arm> Arch>
-    requires(!Arch.has(arm_feature::sm4) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+    requires(!Arch.has(arm_feature::sm4) && !Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm4e(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::arm_sm4_constant::sm4e(a, b);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch>
+    requires(!Arch.has(arm_feature::sm4) && Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm4e(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::arm_sm4_constant::sm4e(a, b);
   }
@@ -108,8 +120,19 @@ export namespace native {
 
   /// Evaluate constant operands without the SM4 instruction feature.
   template<isa<arm> Arch>
-    requires(!Arch.has(arm_feature::sm4) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+    requires(!Arch.has(arm_feature::sm4) && !Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sm4ekey(
+    simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
+    return detail::arm_sm4_constant::sm4ekey(a, b);
+  }
+
+  /// Evaluate the same lane semantics at runtime with explicit polyfill permission.
+  template<isa<arm> Arch>
+    requires(!Arch.has(arm_feature::sm4) && Arch.has(polyfill) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] hint_inline hint_const
+  constexpr simd<std::uint32_t, 4, Arch> sm4ekey(
     simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b) noexcept {
     return detail::arm_sm4_constant::sm4ekey(a, b);
   }

@@ -1,15 +1,19 @@
 # SM3/SM4 qualification
 
 Build the targets `native_test_arm_sm_crypto_main`, `_constexpr`, `_metadata`,
-`_participation`, `_codegen`, `_minimum_0` and `_minimum_1` in an AArch64 provider
-configured with `NATIVE_BUILD_TESTS=ON`. Run
+`_participation`, `_polyfill`, `_scalar_polyfill`, `_codegen`, `_polyfill_codegen`, `_minimum_0` and `_minimum_1` in an AArch64 provider
+configured with `NATIVE_BUILD_TESTS=ON` and `NATIVE_TEST_EXTENDED=ON`. Run
 `ctest --test-dir <build> -R '^native.arm.sm_crypto' --output-on-failure`.
 
-The suite contains 42 tests. The runtime test admits Clang's complete `sm4`
+The native runtime test admits Clang's complete `sm4`
 target through the OS observer before executing any optional instruction. It
 returns 77 when admission is unavailable. The remaining checks do not require
 SM3/SM4 hardware. The constant-only executable establishes the compile-time
-corpus independently of the runtime test's skip status.
+corpus independently of the runtime test's skip status. The two polyfill
+executables run the same corpus and known answers with `neon | polyfill` and
+`polyfill` alone, compiled without SM3/SM4 target attributes. The second codegen
+check adds permission to the complete native feature tag and requires identical
+intrinsic instruction sequences, proving that permission keeps native priority.
 
 The corpus covers nine operations and all four immediate lanes of each TT
 operation, for 21 forms. Each form has 96 input triples: 32 walking-bit patterns,

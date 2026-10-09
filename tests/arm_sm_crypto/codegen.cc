@@ -3,7 +3,11 @@
 #include <cstdint>
 import native.arm.sm3;
 import native.arm.sm4;
+#if defined(NATIVE_SM_CODEGEN_POLYFILL)
+constexpr auto architecture = native::target_features<native::arm>("sm4") | native::polyfill;
+#else
 constexpr auto architecture = native::target_features<native::arm>("sm4");
+#endif
 using V = native::simd<std::uint32_t, 4, architecture>;
 
 extern "C" __attribute__((noinline, used, target("sm4"))) uint32x4_t raw_sm3ss1(uint32x4_t a,

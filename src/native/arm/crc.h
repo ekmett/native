@@ -17,8 +17,9 @@ namespace native {
  * Raw CRC32 and CRC32C updates, consuming operand bits from least to most
  * significant. CRC32 uses reflected polynomial 0xedb88320; CRC32C uses
  * 0x82f63b78. Neither applies an initial or final complement. Runtime calls
- * require arm_feature::crc and an enabled, admitted crc target. Constant
- * evaluation also accepts ISA tags without CRC; it supplies no runtime fallback.
+ * using instructions require arm_feature::crc and an admitted crc target. Constant
+ * evaluation also accepts ISA tags without CRC. Arch.has(polyfill) permits the
+ * same integer update at runtime when CRC instructions are absent.
  * The accumulator and result are always 32 bits, including 64-bit operands.
  * These integer operations do not change floating-point state.
  * \{ */
@@ -31,8 +32,15 @@ namespace native {
   }
 
   /// Evaluate the 8-bit CRC32 update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept {
+    return detail::crc_update(accumulator,value,8,0xedb88320u);
+  }
+
+  /// Polyfill the 8-bit CRC32 update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint8_t value) noexcept {
     return detail::crc_update(accumulator,value,8,0xedb88320u);
   }
 
@@ -45,8 +53,15 @@ namespace native {
   }
 
   /// Evaluate the 16-bit CRC32 update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept {
+    return detail::crc_update(accumulator,value,16,0xedb88320u);
+  }
+
+  /// Polyfill the 16-bit CRC32 update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint16_t value) noexcept {
     return detail::crc_update(accumulator,value,16,0xedb88320u);
   }
 
@@ -59,8 +74,15 @@ namespace native {
   }
 
   /// Evaluate the 32-bit CRC32 update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept {
+    return detail::crc_update(accumulator,value,32,0xedb88320u);
+  }
+
+  /// Polyfill the 32-bit CRC32 update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint32_t value) noexcept {
     return detail::crc_update(accumulator,value,32,0xedb88320u);
   }
 
@@ -73,8 +95,15 @@ namespace native {
   }
 
   /// Evaluate the 64-bit CRC32 update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept {
+    return detail::crc_update(accumulator,value,64,0xedb88320u);
+  }
+
+  /// Polyfill the 64-bit CRC32 update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32(std::uint32_t accumulator, std::uint64_t value) noexcept {
     return detail::crc_update(accumulator,value,64,0xedb88320u);
   }
 
@@ -91,8 +120,15 @@ namespace native {
   }
 
   /// Evaluate the 8-bit CRC32C update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
+    return detail::crc_update(accumulator,value,8,0x82f63b78u);
+  }
+
+  /// Polyfill the 8-bit CRC32C update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint8_t value) noexcept {
     return detail::crc_update(accumulator,value,8,0x82f63b78u);
   }
 
@@ -105,8 +141,15 @@ namespace native {
   }
 
   /// Evaluate the 16-bit CRC32C update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
+    return detail::crc_update(accumulator,value,16,0x82f63b78u);
+  }
+
+  /// Polyfill the 16-bit CRC32C update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint16_t value) noexcept {
     return detail::crc_update(accumulator,value,16,0x82f63b78u);
   }
 
@@ -119,8 +162,15 @@ namespace native {
   }
 
   /// Evaluate the 32-bit CRC32C update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
+    return detail::crc_update(accumulator,value,32,0x82f63b78u);
+  }
+
+  /// Polyfill the 32-bit CRC32C update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint32_t value) noexcept {
     return detail::crc_update(accumulator,value,32,0x82f63b78u);
   }
 
@@ -133,8 +183,15 @@ namespace native {
   }
 
   /// Evaluate the 64-bit CRC32C update at compile time without requiring CRC instructions.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc))
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && !Arch.has(polyfill))
   [[nodiscard]] consteval std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
+    return detail::crc_update(accumulator,value,64,0x82f63b78u);
+  }
+
+  /// Polyfill the 64-bit CRC32C update with explicit runtime permission.
+  template<isa<arm> Arch> requires(!Arch.has(arm_feature::crc) && Arch.has(polyfill))
+  [[nodiscard]] hint_inline hint_const
+  constexpr std::uint32_t crc32c(std::uint32_t accumulator, std::uint64_t value) noexcept {
     return detail::crc_update(accumulator,value,64,0x82f63b78u);
   }
 

@@ -114,7 +114,22 @@ import native.arm.sm4;
 namespace fixture {
   using reference::input;
   using reference::words;
+#if defined(NATIVE_SM_POLYFILL_TEST)
+#if defined(NATIVE_SM_SCALAR_POLYFILL_TEST)
+  constexpr native::isa<native::arm> architecture = native::polyfill;
+#else
+  constexpr auto architecture = native::neon | native::polyfill;
+#endif
+  static_assert(architecture.has(native::polyfill));
+  static_assert(!architecture.has(native::arm_feature::sm3));
+  static_assert(!architecture.has(native::arm_feature::sm4));
+#define NATIVE_SM_TEST_TARGET
+#define NATIVE_SM_TEST_RUNTIME
+#else
   constexpr auto architecture = native::target_features<native::arm>("sm4");
+#define NATIVE_SM_TEST_TARGET __attribute__((target("sm4")))
+#define NATIVE_SM_TEST_RUNTIME __attribute__((noinline, target("sm4")))
+#endif
   template <native::isa<native::arm> A> using vector = native::simd<std::uint32_t, 4, A>;
 
   template <native::isa<native::arm> A> constexpr vector<A> pack(words x) {
@@ -133,11 +148,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3ss1(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -150,11 +165,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1a<A, 0>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -167,11 +182,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1a<A, 1>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -184,11 +199,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1a<A, 2>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -201,11 +216,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1a<A, 3>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -218,11 +233,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1b<A, 0>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -235,11 +250,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1b<A, 1>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -252,11 +267,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1b<A, 2>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -269,11 +284,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt1b<A, 3>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -286,11 +301,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2a<A, 0>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -303,11 +318,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2a<A, 1>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -320,11 +335,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2a<A, 2>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -337,11 +352,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2a<A, 3>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -354,11 +369,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2b<A, 0>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -371,11 +386,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2b<A, 1>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -388,11 +403,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2b<A, 2>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -405,11 +420,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3tt2b<A, 3>(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -422,11 +437,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3partw1(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -439,11 +454,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm3partw2(pack<A>(in[0]), pack<A>(in[1]), pack<A>(in[2])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -456,11 +471,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm4e(pack<A>(in[0]), pack<A>(in[1])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -473,11 +488,11 @@ namespace fixture {
     }
 
     template <native::isa<native::arm> A>
-    __attribute__((target("sm4"))) static constexpr words evaluate(input const &in) {
+    NATIVE_SM_TEST_TARGET static constexpr words evaluate(input const &in) {
       return unpack(native::sm4ekey(pack<A>(in[0]), pack<A>(in[1])));
     }
 
-    __attribute__((noinline, target("sm4"))) static words runtime(input const &in) {
+    NATIVE_SM_TEST_RUNTIME static words runtime(input const &in) {
       return evaluate<architecture>(in);
     }
   };
@@ -526,6 +541,20 @@ namespace fixture {
                                        entry.operands))
         return false;
     }
+#if defined(NATIVE_SM_POLYFILL_TEST)
+    // Runtime-seeded operands keep this check meaningful after normal inlining.
+    auto settings = native_test::property_config(16);
+    native_test::property_rng random{settings.seed};
+    for (std::size_t sample = 0; sample < settings.cases; ++sample) {
+      input in{};
+      for (auto &operand : in)
+        for (auto &lane : operand)
+          lane = std::uint32_t(random.next());
+      if (!native_test::property_equal(Case::name, settings.seed, sample,
+          Case::expected(in), Case::runtime(in), in))
+        return false;
+    }
+#endif
     return true;
   }
 
@@ -556,7 +585,7 @@ namespace fixture {
   // SM3("abc"), with complete schedule and compression built from public ops.
   // State vectors are D,C,B,A and H,G,F,E; message words remain ascending.
   template <native::isa<native::arm> A>
-  __attribute__((target("sm4"))) constexpr bool sm3_known_answer() {
+  NATIVE_SM_TEST_TARGET constexpr bool sm3_known_answer() {
     std::array<std::uint32_t, 68> w{};
     w[0] = 0x61626380;
     w[15] = 24;
@@ -596,7 +625,7 @@ namespace fixture {
 
   // GB/T 32907-2016 example: same 128-bit key and plaintext.
   template <native::isa<native::arm> A>
-  __attribute__((target("sm4"))) constexpr bool sm4_known_answer() {
+  NATIVE_SM_TEST_TARGET constexpr bool sm4_known_answer() {
     constexpr words original{0x01234567, 0x89abcdef, 0xfedcba98, 0x76543210};
     auto key = pack<A>({original[0] ^ 0xa3b1bac6, original[1] ^ 0x56aa3350,
                         original[2] ^ 0x677d9197, original[3] ^ 0xb27022dc});
@@ -645,7 +674,7 @@ namespace fixture {
   static_assert(sm4_known_answer<native::neon>());
   static_assert(sm4_known_answer<architecture>());
 
-  __attribute__((noinline, target("sm4"))) inline bool known_answers_runtime() {
+  NATIVE_SM_TEST_RUNTIME inline bool known_answers_runtime() {
     return sm3_known_answer<architecture>() && sm4_known_answer<architecture>();
   }
 } // namespace fixture
@@ -654,12 +683,14 @@ namespace fixture {
 int main() {}
 #else
 int main() {
+#if !defined(NATIVE_SM_POLYFILL_TEST)
   auto cpu = native::observe_arm_capabilities();
   auto admission = native::classify_isa(cpu, fixture::architecture);
   if (!admission.admitted()) {
     std::printf("SKIP SM3/SM4 runtime: %s\n", admission.reason());
     return 77;
   }
+#endif
   return fixture::known_answers_runtime() && fixture::runtime_check<fixture::sm3ss1>() &&
                  fixture::runtime_check<fixture::sm3tt1a0>() &&
                  fixture::runtime_check<fixture::sm3tt1a1>() &&

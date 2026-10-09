@@ -9,14 +9,20 @@ template <class V>
 concept sm3_shape = requires(V x) { native::sm3ss1(x, x, x); };
 template <class V>
 concept sm4_shape = requires(V x) { native::sm4e(x, x); };
-template <int Lane>
-concept tt_lane = requires(vector<> x) {
-  native::sm3tt1a<required, Lane>(x, x, x);
-  native::sm3tt1b<required, Lane>(x, x, x);
-  native::sm3tt2a<required, Lane>(x, x, x);
-  native::sm3tt2b<required, Lane>(x, x, x);
+template <int Lane, native::isa<native::arm> A = required>
+concept tt_lane = requires(vector<A> x) {
+  native::sm3tt1a<A, Lane>(x, x, x);
+  native::sm3tt1b<A, Lane>(x, x, x);
+  native::sm3tt2a<A, Lane>(x, x, x);
+  native::sm3tt2b<A, Lane>(x, x, x);
 };
 static_assert(tt_lane<0> && tt_lane<3> && !tt_lane<-1> && !tt_lane<4>);
+constexpr auto emulated = native::neon | native::polyfill;
+static_assert(tt_lane<0, emulated> && tt_lane<3, emulated> &&
+  !tt_lane<-1, emulated> && !tt_lane<4, emulated>);
+static_assert(sm3_shape<vector<emulated>> && sm4_shape<vector<emulated>>);
+static_assert(!sm3_shape<native::simd<std::int32_t, 4, emulated>>);
+static_assert(!sm4_shape<native::simd<std::uint32_t, 2, emulated>>);
 static_assert(sm3_shape<vector<>> && sm4_shape<vector<>>);
 static_assert(!sm3_shape<native::simd<std::int32_t, 4, required>>);
 static_assert(!sm3_shape<native::simd<std::uint32_t, 2, required>>);
