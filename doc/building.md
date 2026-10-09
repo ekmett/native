@@ -27,6 +27,35 @@ host-memory checks. ISA properties and named swizzles require Clang's property
 extension; exported targets supply `-fms-extensions` for `clang++`, and `clang-cl`
 accepts it directly.
 
+## Docker
+
+`ghcr.io/ekmett/native:llvm23` supplies Clang 23, clangd, clang-tidy,
+clang-format, the module dependency scanner, LLD, CMake 4.4 and Ninja, with Native
+and Hint installed under `/opt/native`. `CC`, `CXX` and `CMAKE_PREFIX_PATH` are
+already set. The published image runs on Linux x86-64.
+
+```sh
+docker run --rm -v "$PWD:/workspace" ghcr.io/ekmett/native:llvm23 \
+  bash -c 'cmake -S . -B build/docker -G Ninja -DCMAKE_BUILD_TYPE=Release &&
+           cmake --build build/docker --parallel &&
+           ctest --test-dir build/docker --output-on-failure'
+```
+
+A downstream Dockerfile can start with `FROM ghcr.io/ekmett/native:llvm23` and
+use `find_package(native CONFIG REQUIRED COMPONENTS native)`. Use a separate
+build directory from host builds: module artifacts belong to their compiler
+and standard library. The image uses Native's default exception-disabled mode.
+
+The [Docker workflow](https://github.com/ekmett/native/actions/workflows/docker.yml)
+builds separately from normal CI. It runs the API examples against the installed
+package before publishing to GitHub Container Registry. Pull requests build and
+test without publishing. Changes to the image or library on `main` publish
+`latest`, `llvm23` and `sha-<full commit>` tags. Pin an image digest in downstream
+CI when you need a fixed toolchain; the first two tags track subsequent builds.
+
+Build locally with `docker build -t native .`. To build only the toolchain,
+use `docker build --target toolchain -t native-toolchain .`.
+
 ## Editor setup
 
 The checked-in `.clangd` and VS Code test settings use `build/core`, matching the

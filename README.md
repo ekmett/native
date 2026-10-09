@@ -5,6 +5,7 @@
 
 <!-- badges:start -->
 [![build](https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat&label=build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
+[![Docker build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docker.yml?branch=main&style=flat&label=docker+build&logo=docker&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)
 [![docs build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat&label=docs+build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)
 [![issues](https://img.shields.io/github/issues/ekmett/native?style=flat&label=issues&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/issues)
 [![commits](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat&label=commits&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/activity)
@@ -20,6 +21,7 @@
 [![Contributor Covenant: 2.0](https://img.shields.io/static/v1?label=Contributor+Covenant&message=2.0&color=007ec6&style=flat&logo=contributorcovenant&logoColor=white)](CODE_OF_CONDUCT.md)
 
 [![docs: read](https://img.shields.io/static/v1?label=docs&message=read&color=007ec6&style=flat)](https://ekmett.github.io/native/)
+[![Docker: ghcr.io](https://img.shields.io/static/v1?label=Docker&message=ghcr.io&color=2496ED&style=flat&logo=docker&logoColor=white)](https://github.com/ekmett/native/pkgs/container/native)
 <!-- badges:end -->
 
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
@@ -115,6 +117,8 @@ The package uses the toolchain's default baseline unless
 satisfy that minimum before runtime selection can help. Importing stronger
 operations does not strengthen an ordinary caller's compiler target.
 [Build details](doc/building.md) cover installation, compiler settings and PCH/LTO.
+The [Docker image](doc/building.md#docker) includes Native and the toolchain for
+downstream Linux builds.
 
 ## Working with values and instructions
 
