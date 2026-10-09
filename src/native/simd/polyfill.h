@@ -58,6 +58,10 @@ namespace native::detail {
   concept polyfill_shape=polyfill_element_traits<T>::supported && A.has(polyfill) && N>0 && N<=64 &&
     !instruction_only_shape<T,N,A> && !requires { sizeof(simd<T,N,hardware_isa<A>>); };
 
+  template<class T,std::size_t N,isa<> A>
+  concept polyfill_operation_shape=A.has(polyfill) && polyfill_element_traits<T>::supported &&
+    (polyfill_shape<T,N,A> || instruction_only_shape<T,N,A>);
+
   template<class T,isa<> A,std::size_t M=64/sizeof(T)>
   consteval std::size_t polyfill_register_lanes() noexcept {
     if constexpr(!instruction_only_shape<T,M,A> &&

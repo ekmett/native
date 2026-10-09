@@ -941,12 +941,14 @@ export namespace native {
   /// This shape provides storage and transfer operations; arithmetic is supplied
   /// by the instruction modules supported by its architecture tag.
   template<class T, std::size_t N, isa<> A> requires detail::instruction_storage_shape<T,N,A>
-  struct alignas(typename detail::instruction_register<T,N>::type) simd<T,N,A> {
+  struct alignas(typename detail::instruction_register<T,N>::type) simd<T,N,A>
+    : detail::polyfill_storage_operations<T,N,A,simd<T,N,A>> {
     using value_type=T;
     using register_type=simd;
     using native_type=typename detail::instruction_register<T,N>::type;
     static constexpr isa<> architecture=A;
     static constexpr std::size_t lanes=N;
+    using word_type=std::conditional_t<sizeof(T)==1,std::uint8_t,std::conditional_t<sizeof(T)==2,std::uint16_t,std::conditional_t<sizeof(T)==4,std::uint32_t,std::uint64_t>>>;
     using mask=predicate<N,A>;
     using mask_type=mask;
     using predicate_type=mask;
@@ -962,13 +964,13 @@ export namespace native {
 #define NATIVE_INSTRUCTION_HALF_REJECT_BINARY(OP) \
     /** Reject elementwise arithmetic on half instruction storage. */ \
     friend void operator OP(simd,simd) \
-      requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete; \
+      requires((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) = delete; \
     /** Reject mixed operands instead of selecting vector builtins. */ \
-    template<class U> requires((std::same_as<T,fp16> || std::same_as<T,bf16>) && \
+    template<class U> requires(((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) && \
       !std::same_as<std::remove_cvref_t<U>,simd>) \
     friend void operator OP(simd,U) = delete; \
     /** Reject mixed operands instead of selecting vector builtins. */ \
-    template<class U> requires((std::same_as<T,fp16> || std::same_as<T,bf16>) && \
+    template<class U> requires(((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) && \
       !std::same_as<std::remove_cvref_t<U>,simd>) \
     friend void operator OP(U,simd) = delete;
     NATIVE_INSTRUCTION_HALF_REJECT_BINARY(+)
@@ -990,7 +992,7 @@ export namespace native {
 #undef NATIVE_INSTRUCTION_HALF_REJECT_BINARY
 #define NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(OP) \
     /** Reject compound arithmetic on half instruction storage. */ \
-    template<class U> requires(std::same_as<T,fp16> || std::same_as<T,bf16>) \
+    template<class U> requires((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) \
     void operator OP(U) = delete;
     NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(+=)
     NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(-=)
@@ -1003,14 +1005,27 @@ export namespace native {
     NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(<<=)
     NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN(>>=)
 #undef NATIVE_INSTRUCTION_HALF_REJECT_ASSIGN
+#define NATIVE_INSTRUCTION_POLYFILL_ASSIGN(OP) \
+    /** Apply a compatible permitted operation in place. */ \
+    template<class U> requires(A.has(polyfill) && requires(simd x,U y) { { x OP y } -> std::same_as<simd>; }) \
+    constexpr simd & operator OP##=(U value) noexcept { return *this=*this OP value; }
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(+)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(-)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(*)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(/)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(%)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(&)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(|)
+    NATIVE_INSTRUCTION_POLYFILL_ASSIGN(^)
+#undef NATIVE_INSTRUCTION_POLYFILL_ASSIGN
     /// Reject unary arithmetic on half instruction storage.
-    friend void operator+(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    friend void operator+(simd) requires((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) = delete;
     /// Reject unary arithmetic on half instruction storage.
-    friend void operator-(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    friend void operator-(simd) requires((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) = delete;
     /// Use bits() for explicit bitwise operations on half representations.
-    friend void operator~(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    friend void operator~(simd) requires((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) = delete;
     /// Half storage does not define a predicate conversion.
-    friend void operator!(simd) requires(std::same_as<T,fp16> || std::same_as<T,bf16>) = delete;
+    friend void operator!(simd) requires((std::same_as<T,fp16> && !A.has(polyfill)) || std::same_as<T,bf16>) = delete;
     /// Default initialization leaves storage unspecified; braces zero it.
     constexpr simd() noexcept=default;
     /// Copy each lane's representation; unused physical bytes are zero.
@@ -1122,25 +1137,25 @@ export namespace native {
         }
       } else { if(n) std::memcpy(p,&value_,n*sizeof(T)); }
     }
-    /// Return each half lane as its unchanged unsigned representation.
-    [[nodiscard]] hint_inline constexpr bits_type bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+    /// Return each lane as its unchanged unsigned representation.
+    [[nodiscard]] hint_inline constexpr bits_type bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
       return bits_type::from_native(std::bit_cast<typename bits_type::native_type>(value_));
     }
     /// Synonym for bits; no floating-point conversion occurs.
-    [[nodiscard]] hint_inline constexpr bits_type to_bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) { return bits(); }
-    /// Interpret unsigned words as half representations without conversion.
-    [[nodiscard]] static hint_inline constexpr simd from_bits(bits_type words) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+    [[nodiscard]] hint_inline constexpr bits_type to_bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) { return bits(); }
+    /// Interpret unsigned words as lane representations without conversion.
+    [[nodiscard]] static hint_inline constexpr simd from_bits(bits_type words) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
       return from_native(std::bit_cast<native_type>(words.to_native()));
     }
-    /// Read N unsigned half representations without numerical conversion.
-    [[nodiscard]] static hint_inline constexpr simd load_bits(std::uint16_t const * p) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+    /// Read N unsigned lane representations without numerical conversion.
+    [[nodiscard]] static hint_inline constexpr simd load_bits(word_type const * p) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
       if consteval { return from_bits(bits_type::load(p)); }
-      else { simd result{}; std::memcpy(&result.value_,p,2*N); return result; }
+      else { simd result{}; std::memcpy(&result.value_,p,sizeof(T)*N); return result; }
     }
-    /// Write N unsigned half representations without numerical conversion.
-    hint_inline constexpr void store_bits(std::uint16_t * p) const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16>) {
+    /// Write N unsigned lane representations without numerical conversion.
+    hint_inline constexpr void store_bits(word_type * p) const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
       if consteval { bits().store(p); }
-      else { std::memcpy(p,&value_,2*N); }
+      else { std::memcpy(p,&value_,sizeof(T)*N); }
     }
   };
 }

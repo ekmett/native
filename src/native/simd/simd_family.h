@@ -1054,13 +1054,19 @@ namespace native {
   /// Expand lane truth into canonical zero/all-one full-vector mask lanes.
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && requires { typename simd<bool,N,Arch>::native_type; }
   [[nodiscard]] hint_inline constexpr hint_const simd<mask8,N,Arch> to_vector_mask(simd<bool,N,Arch> value) noexcept {
-    return simd<mask8,N,Arch>::from_native(value.to_native());
+    if constexpr(Arch.has(polyfill) && (requires { typename simd<bool,N,Arch>::chunk_type; } || requires { typename simd<mask8,N,Arch>::chunk_type; }))
+      return simd<mask8,N,Arch>::from_bitset(value.to_bitset());
+    else return simd<mask8,N,Arch>::from_native(value.to_native());
   }
   /// Convert lane truth into Boolean data lanes represented as zero or one, preserving the lane count.
   template<class T,std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && simd_mask_element<T> && requires { typename simd<bool,N,Arch>::native_type; typename simd<T,N,Arch>::native_type; }
   [[nodiscard]] hint_inline constexpr hint_const simd<bool,N,Arch> to_bool(simd<T,N,Arch> value) noexcept {
-    auto byte_mask=mask_cast<mask8>(value);
-    return simd<bool,N,Arch>::unsafe_from_native(simd<bool,N,Arch>::ops::bit_and(byte_mask.to_native(),::NATIVE_BACKEND_NAMESPACE::bool_ones<N>()));
+    if constexpr(Arch.has(polyfill) && (requires { typename simd<T,N,Arch>::chunk_type; } || requires { typename simd<bool,N,Arch>::chunk_type; }))
+      return simd<bool,N,Arch>::from_bitset(value.to_bitset());
+    else {
+      auto byte_mask=mask_cast<mask8>(value);
+      return simd<bool,N,Arch>::unsafe_from_native(simd<bool,N,Arch>::ops::bit_and(byte_mask.to_native(),::NATIVE_BACKEND_NAMESPACE::bool_ones<N>()));
+    }
   }
   /// Convert lane truth into Boolean data lanes represented as zero or one, preserving the lane count.
   template<std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::predicate_shape<N> && requires { typename simd<bool,N,Arch>::native_type; }
@@ -3317,7 +3323,12 @@ namespace native {
   template <simd_mask_element M, std::size_t N, ::native::isa<> Arch> requires NATIVE_ARCH_REQUIRES(Arch)
   [[nodiscard]] hint_inline constexpr hint_const auto mask_bits(simd<M, N,Arch> m) noexcept {
     using U = typename M::storage_type;
-    return simd<U, N,Arch>::from_native(m.to_native());
+    if constexpr(Arch.has(polyfill) && (requires { typename simd<M,N,Arch>::chunk_type; } ||
+      !std::same_as<typename simd<U,N,Arch>::native_type,decltype(m.to_native())>)) {
+      std::array<U,N> words{}; auto bits=m.to_bitset();
+      for(std::size_t i=0;i<N;++i) words[i]=((bits>>i)&1)?~U{}:U{};
+      return simd<U,N,Arch>::load(words.data());
+    } else return simd<U, N,Arch>::from_native(m.to_native());
   }
   /// \ingroup masks
   /// Expand lane truth into unsigned integer zero/all-one words; preserve the lane count.

@@ -76,6 +76,8 @@ namespace native {
       } else result.value_=value;
       return result;
     }
+    /// Adopt canonical representations; callers supply canonical mask/Boolean lanes.
+    static constexpr simd unsafe_from_native(native_type value) noexcept { return from_native(value); }
     /// Adopt the underlying register array without numerical conversion.
     constexpr simd(native_type value) noexcept
       requires(!std::same_as<native_type,std::array<T,N>>) : simd(from_native(value)) {}
@@ -278,12 +280,38 @@ namespace native {
       else return value.to_bitset()==(std::uint64_t{1}<<N)-1;
     }
     /// Choose each logical lane from a or b without reading padding as a result.
-    template<class M> requires(std::same_as<M,mask_type> || std::same_as<M,vector_mask_type>)
+    template<class M> requires(std::same_as<M,mask_type> || std::same_as<M,predicate<N,A>> || std::same_as<M,vector_mask_type>)
     friend constexpr simd select(M mask,simd a,simd b) noexcept {
       std::array<T,N> first{},second{}; a.store(first.data()); b.store(second.data());
       auto bits=mask.to_bitset();
       for(std::size_t i=0;i<N;++i) if(!((bits>>i)&1)) first[i]=second[i];
       return load(first.data());
+    }
+    /// Read one logical lane selected at compile time.
+    template<std::size_t I> requires(I<N)
+    constexpr T get() const noexcept { std::array<T,N> lanes{}; store(lanes.data()); return lanes[I]; }
+    /// Replace one logical lane, retaining every other lane's representation.
+    template<std::size_t I> requires(I<N)
+    constexpr simd set(T value) const noexcept { std::array<T,N> lanes{}; store(lanes.data()); lanes[I]=value; return load(lanes.data()); }
+    /// Encode normal powers of two for integral exponents in [-126,127].
+    friend constexpr simd normal_pow2(simd n) noexcept requires(std::same_as<T,float>) {
+      return map([](auto x) { return normal_pow2(x); },n);
+    }
+    /// Shift logical lanes left by the valid immediate count.
+    template<std::size_t K> requires(simd_integer_element<T> && K<sizeof(T)*8)
+    friend constexpr simd operator<<(simd value,imm_t<K>) noexcept { return value.template left<K>(); }
+    /// Shift logical lanes right by the valid immediate count, extending signed lanes.
+    template<std::size_t K> requires(simd_integer_element<T> && K<sizeof(T)*8)
+    friend constexpr simd operator>>(simd value,imm_t<K>) noexcept { return value.template right<K>(); }
+    /// Shift each unsigned 32-bit lane by its corresponding count; counts >=32 yield zero.
+    friend constexpr simd operator<<(simd value,simd counts) noexcept requires(std::same_as<T,std::uint32_t>) {
+      if constexpr(requires(chunk_type x) { { x<<x } -> std::same_as<chunk_type>; })
+        return map([](auto x,auto n) { return x<<n; },value,counts);
+      else {
+        std::array<T,N> lanes{},shifts{}; value.store(lanes.data()); counts.store(shifts.data());
+        for(std::size_t i=0;i<N;++i) lanes[i]=shifts[i]<32?lanes[i]<<shifts[i]:0;
+        return load(lanes.data());
+      }
     }
     /// Shift every integral lane right by the immediate count.
     template<std::size_t K>
@@ -356,7 +384,7 @@ namespace native {
 
   /// Sum each adjacent pair into an unsigned lane twice as wide, without overflow.
   template<simd_integer_element T,std::size_t N,isa<> A>
-    requires NATIVE_ARCH_REQUIRES(A) && (detail::polyfill_shape<T,N,A> && std::is_unsigned_v<T> && sizeof(T)<=4 && N%2==0)
+    requires NATIVE_ARCH_REQUIRES(A) && (detail::polyfill_operation_shape<T,N,A> && std::is_unsigned_v<T> && sizeof(T)<=4 && N%2==0)
   constexpr auto pairwise_add_widened(simd<T,N,A> value) noexcept {
     using U=std::conditional_t<sizeof(T)==1,std::uint16_t,
       std::conditional_t<sizeof(T)==2,std::uint32_t,std::uint64_t>>;
@@ -370,7 +398,7 @@ namespace native {
   template<simd_integer_element To,simd_integer_element From,std::size_t N,isa<> A>
     requires NATIVE_ARCH_REQUIRES(A) && (A.has(polyfill) && std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From)==2*sizeof(To) &&
-      (detail::polyfill_shape<From,N,A> || detail::polyfill_shape<To,2*N,A>) &&
+      (detail::polyfill_operation_shape<From,N,A> || detail::polyfill_operation_shape<To,2*N,A>) &&
       requires { sizeof(simd<To,2*N,A>); })
   constexpr simd<To,2*N,A> narrow_concat(simd<From,N,A> a,simd<From,N,A> b) noexcept {
     std::array<From,N> first{},second{}; a.store(first.data()); b.store(second.data());

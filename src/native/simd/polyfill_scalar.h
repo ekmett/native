@@ -8,7 +8,7 @@ namespace native::detail {
   };
   // These are baseline control-register reads, never permission to execute a
   // half instruction. Keep them in the GMF with every other platform definition.
-  inline polyfill_half_control polyfill_half_environment() noexcept {
+  template<class F> inline polyfill_half_control polyfill_float_environment() noexcept {
     polyfill_half_control result;
 #if NATIVE_HOST_NEON
     std::uint64_t control;
@@ -16,7 +16,7 @@ namespace native::detail {
     constexpr constexpr_float::rounding modes[]{constexpr_float::rounding::nearest_even,
       constexpr_float::rounding::upward,constexpr_float::rounding::downward,constexpr_float::rounding::toward_zero};
     result.mode=modes[(control>>22)&3];
-    result.policy.flush_inputs=result.policy.flush_outputs=(control&(std::uint64_t{1}<<19))!=0;
+    result.policy.flush_inputs=result.policy.flush_outputs=(control&(std::uint64_t{1}<<(std::same_as<F,constexpr_float::binary16>?19:24)))!=0;
     if(control&(std::uint64_t{1}<<25)) result.policy.nan=constexpr_float::nan_propagation::default_nan;
 #elif NATIVE_HOST_X86
     std::uint32_t control;
@@ -25,8 +25,16 @@ namespace native::detail {
       constexpr_float::rounding::downward,constexpr_float::rounding::upward,constexpr_float::rounding::toward_zero};
     result.mode=modes[(control>>13)&3];
     // Native x86 half arithmetic ignores MXCSR DAZ/FTZ.
+    if constexpr(!std::same_as<F,constexpr_float::binary16>) {
+      result.policy.flush_inputs=(control&(1u<<6))!=0;
+      result.policy.flush_outputs=(control&(1u<<15))!=0;
+    }
 #endif
     return result;
+  }
+
+  inline polyfill_half_control polyfill_half_environment() noexcept {
+    return polyfill_float_environment<constexpr_float::binary16>();
   }
 
   /// One representation-preserving scalar chunk for a maintained floating type.

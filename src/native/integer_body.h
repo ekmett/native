@@ -229,21 +229,27 @@ namespace native {
   /// Use native register reductions and exclude the final register's padding.
   template<simd_integer_element T,std::size_t N,isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (std::is_unsigned_v<T> && sizeof(T)<=4 &&
-      detail::polyfill_shape<T,N,Arch>)
+      detail::polyfill_operation_shape<T,N,Arch>)
   [[nodiscard]] hint_inline constexpr hint_const std::uint64_t reduce_add_widened(simd<T,N,Arch> value) noexcept {
     using V=simd<T,N,Arch>;
-    using C=typename V::chunk_type;
-    constexpr auto width=V::register_lanes;
-    auto registers=value.to_native();
-    std::uint64_t sum=0;
-    for(std::size_t i=0;i<N/width;++i)
-      sum+=reduce_add_widened(C::from_native(registers[i]));
-    if constexpr(N%width) {
-      std::array<T,width> tail{};
-      C::from_native(registers.back()).store(tail.data());
-      for(std::size_t i=N%width;i<width;++i) tail[i]=0;
-      sum+=reduce_add_widened(C::load(tail.data()));
+    if constexpr(detail::instruction_only_shape<T,N,Arch>) {
+      std::array<T,N> lanes{}; value.store(lanes.data());
+      std::uint64_t sum=0; for(auto lane:lanes) sum+=lane;
+      return sum;
+    } else {
+      using C=typename V::chunk_type;
+      constexpr auto width=V::register_lanes;
+      auto registers=value.to_native();
+      std::uint64_t sum=0;
+      for(std::size_t i=0;i<N/width;++i)
+        sum+=reduce_add_widened(C::from_native(registers[i]));
+      if constexpr(N%width) {
+        std::array<T,width> tail{};
+        C::from_native(registers.back()).store(tail.data());
+        for(std::size_t i=N%width;i<width;++i) tail[i]=0;
+        sum+=reduce_add_widened(C::load(tail.data()));
+      }
+      return sum;
     }
-    return sum;
   }
 }

@@ -62,9 +62,11 @@ namespace native::detail::float_constant {
   constexpr std::uint32_t power_of_two(std::uint32_t a) noexcept {return std::uint32_t(int(std::bit_cast<float>(a))+127)<<23;}
   constexpr bool less(std::uint32_t a,std::uint32_t b) noexcept {return cf::less_bits<f32>(a,b);}
   constexpr bool equal(std::uint32_t a,std::uint32_t b) noexcept {return cf::equal_bits<f32>(a,b);}
-  constexpr std::uint32_t scale(std::uint32_t x,std::uint32_t exponent) noexcept {
+  constexpr std::uint32_t scale(std::uint32_t x,std::uint32_t exponent,
+      cf::rounding mode=cf::rounding::nearest_even,cf::policy p={}) noexcept {
+    x=cf::flush_input<f32>(x,p); exponent=cf::flush_input<f32>(exponent,p);
     if(cf::is_signaling_nan<f32>(x)) return cf::quiet_nan<f32>(x);
-    if(cf::is_nan<f32>(exponent)) return cf::select_nan<f32>(std::array{x,exponent},{});
+    if(cf::is_nan<f32>(exponent)) return cf::select_nan<f32>(std::array{x,exponent},p);
     if(cf::is_infinite<f32>(exponent)) {
       bool down=(exponent&f32::sign_mask)!=0;
       if(cf::is_nan<f32>(x)) return down?0u:f32::exponent_mask;
@@ -77,7 +79,7 @@ namespace native::detail::float_constant {
     float n=std::bit_cast<float>(floor(exponent));
     int shift=n < -512.f?-512:n > 512.f?512:static_cast<int>(n);
     auto a=cf::unpack<f32>(x);
-    return cf::round_pack<f32>(a.sign,cf::magnitude<1>{{a.significand}},a.exponent+shift,cf::rounding::nearest_even,{});
+    return cf::round_pack<f32>(a.sign,cf::magnitude<1>{{a.significand}},a.exponent+shift,mode,p);
   }
   template<class V> constexpr auto words(V value) noexcept {
     std::array<std::uint32_t,V::lanes> words{};
@@ -329,5 +331,11 @@ namespace native::detail::neon_fp16_backend {
 // Emulated shapes are parsed after all native register specializations.
 #include "native/simd/polyfill.h"
 #define NATIVE_BACKEND_BODY "native/simd/polyfill_body.h"
+#include "native/simd/for_each_backend.h"
+#undef NATIVE_BACKEND_BODY
+
+#include "native/simd/polyfill_storage.h"
+
+#define NATIVE_BACKEND_BODY "native/simd/polyfill_helpers_body.h"
 #include "native/simd/for_each_backend.h"
 #undef NATIVE_BACKEND_BODY

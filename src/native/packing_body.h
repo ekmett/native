@@ -8,7 +8,8 @@ namespace native {
   /// This preserves lane order and low bits; it does not saturate.
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && (!detail::polyfill_shape<From,N,Arch> &&
-      !detail::polyfill_shape<To,2*N,Arch>) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
+      !detail::polyfill_shape<To,2*N,Arch> && !detail::instruction_only_shape<From,N,Arch> &&
+      !detail::instruction_only_shape<To,2*N,Arch>) && (std::is_unsigned_v<To> && std::is_unsigned_v<From> &&
       sizeof(From) == 2 * sizeof(To) &&
       // The selected backend must implement this width. Complete storage alone
       // does not establish the arithmetic instructions used by this operation.

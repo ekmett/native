@@ -112,6 +112,7 @@ export namespace native {
   using ::native::popcount;
   using ::native::pairwise_add_widened;
   using ::native::reduce_add_widened;
+  using ::native::reduce_add;
   using ::native::mask_bits;
   using ::native::mask_cast;
   using ::native::to_bool;

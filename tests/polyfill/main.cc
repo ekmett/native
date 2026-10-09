@@ -243,6 +243,63 @@ namespace polyfill_test {
     if(!all(B::from_bitset(0x1ffff))) return false;
     return B::from_bitset(0xffffffffffffffffull).to_bitset()==0x1ffff;
   }
+  template<isa<> A> constexpr bool helper_graph(unsigned seed=0) {
+    using F=simd<float,17,A>; using U=simd<std::uint32_t,17,A>;
+    using M=simd<mask32,17,A>;
+    constexpr std::uint64_t bits=0x15555;
+    auto mask=M::from_bitset(bits);
+    auto compact=to_predicate(mask);
+    if(to_bool(compact).to_bitset()!=bits || to_vector_mask<mask32>(compact).to_bitset()!=bits ||
+       mask_cast<mask16>(mask).to_bitset()!=bits) return false;
+    std::array<std::uint32_t,17> words{}; mask_bits<std::uint32_t>(compact).store(words.data());
+    for(std::size_t i=0;i<17;++i) if(words[i]!=(((bits>>i)&1)?~0u:0u)) return false;
+    mask_bits(mask).store(words.data());
+    for(std::size_t i=0;i<17;++i) if(words[i]!=(((bits>>i)&1)?~0u:0u)) return false;
+    std::array<float,17> input{},output{};
+    for(std::size_t i=0;i<17;++i) input[i]=float(i+seed)+.75f;
+    auto value=F::load(input.data());
+    masked_add(compact,F(-9.f),value,F(2.f)).store(output.data());
+    for(std::size_t i=0;i<17;++i) if(output[i]!=(((bits>>i)&1)?input[i]+2:-9.f)) return false;
+    masked_mul_zero(mask,value,F(2.f)).store(output.data());
+    for(std::size_t i=0;i<17;++i) if(output[i]!=(((bits>>i)&1)?input[i]*2:0.f)) return false;
+    convert<std::uint32_t>(value).store(words.data());
+    for(std::size_t i=0;i<17;++i) if(words[i]!=i+seed) return false;
+    convert<float>(U::load(words.data())).store(output.data());
+    for(std::size_t i=0;i<17;++i) if(output[i]!=float(i+seed)) return false;
+    if(value.template get<16>()!=input[16] || value.template set<8>(-7.f).template get<8>()!=-7.f) return false;
+    broadcast(value,imm<9>).store(output.data());
+    for(auto lane:output) if(lane!=input[9]) return false;
+    normal_pow2(F(3.f)).store(output.data());
+    for(auto lane:output) if(lane!=8.f) return false;
+    masked_scaleb(compact,F(-9.f),value,F(2.75f)).store(output.data());
+    for(std::size_t i=0;i<17;++i) if(output[i]!=(((bits>>i)&1)?input[i]*4:-9.f)) return false;
+    scaleb(value,F(-1.f)).store(output.data());
+    for(std::size_t i=0;i<17;++i) if(output[i]!=input[i]*.5f) return false;
+    float sum=0; for(auto lane:input) sum+=lane;
+    if(reduce_add(value)!=sum) return false;
+    auto shifts=U(1u)<<imm<31>; shifts.store(words.data());
+    for(auto word:words) if(word!=0x80000000u) return false;
+    (shifts>>imm<31>).store(words.data());
+    for(auto word:words) if(word!=1) return false;
+    std::array<std::uint32_t,17> counts{};
+    for(std::size_t i=0;i<17;++i) counts[i]=std::uint32_t(i+23);
+    (U(1u)<<U::load(counts.data())).store(words.data());
+    for(std::size_t i=0;i<17;++i) if(words[i]!=(counts[i]<32?1u<<counts[i]:0)) return false;
+    auto packed=compress(F::mask_type::from_bitset(bits),value,-99.f);
+    if(packed.count!=9) return false;
+    packed.value.store(output.data());
+    for(std::size_t i=0;i<9;++i) if(output[i]!=input[2*i]) return false;
+    for(std::size_t i=9;i<17;++i) if(output[i]!=-99.f) return false;
+    expand(F::mask_type::from_bitset(bits),packed.value,F(-9.f)).store(output.data());
+    for(std::size_t i=0;i<17;++i) if(output[i]!=(((bits>>i)&1)?input[i]:-9.f)) return false;
+    output.fill(-7.f);
+    if(compress_store(output.data(),3,F::mask_type::from_bitset(bits),value)!=3 ||
+       compress_store(static_cast<float *>(nullptr),0,F::mask_type::from_bitset(bits),value)!=0) return false;
+    for(std::size_t i=0;i<17;++i) if(output[i]!=(i<3?input[2*i]:-7.f)) return false;
+    auto selected=bit_select(U(0x80000000u),F(-0.f),F(1.f)); selected.store_bits(words.data());
+    for(auto word:words) if(word!=0xbf800000u) return false;
+    return true;
+  }
   constexpr bool normalized() {
     using B=simd<bool,17,polyfill>;
     B::native_type bytes{}; bytes.fill(255);
@@ -306,6 +363,48 @@ namespace polyfill_test {
   static_assert(extra_arithmetic<fp16,isa<>(polyfill)>() && extra_arithmetic<fp16,permitted>());
   template<class V> concept elementwise_add=requires(V a) { a+a; };
   static_assert(!elementwise_add<simd<bf16,17,polyfill>>);
+  constexpr bool storage_only_operations() {
+#if NATIVE_HOST_NEON
+    constexpr auto A=neon|polyfill;
+#elif NATIVE_HOST_X86
+    constexpr auto A=feature_closure(x86_feature::sse2)|polyfill;
+#else
+    return true;
+#endif
+#if NATIVE_HOST_NEON || NATIVE_HOST_X86
+    using D=simd<double,2,A>;
+    using I=simd<std::uint16_t,4,A>;
+    using H=simd<fp16,4,A>;
+    static_assert(std::same_as<D::native_type,simd<double,2,detail::hardware_isa<A>>::native_type>);
+    static_assert(sizeof(D)==sizeof(simd<double,2,detail::hardware_isa<A>>));
+    static_assert(!elementwise_add<simd<double,2,detail::hardware_isa<A>>>);
+    static_assert(scalar_operand<I,std::int64_t> && !scalar_operand<I,float>);
+    std::array<double,2> doubles{};
+    auto incremented=D(2.); incremented+=3.;
+    incremented.store(doubles.data());
+    for(auto value:doubles) if(value!=5.) return false;
+    std::array<std::uint64_t,2> double_bits{0x7ff8123456789abcull,0x8000000000000000ull},restored_bits{};
+    D::load_bits(double_bits.data()).store_bits(restored_bits.data());
+    if(double_bits!=restored_bits) return false;
+    (D(2.)+D(3.)).store(doubles.data());
+    for(auto value:doubles) if(value!=5.) return false;
+    if((D(1.)<D(2.)).to_bitset()!=3) return false;
+    std::array<std::uint16_t,4> integers{};
+    (I(std::uint16_t{65530})+I(std::uint16_t{9})).store(integers.data());
+    for(auto value:integers) if(value!=3) return false;
+    auto wrap=I(std::uint16_t{65530}); wrap+=9;
+    wrap.store(integers.data()); for(auto value:integers) if(value!=3) return false;
+    std::array<fp16,4> halves{};
+    sqrt(H(fp16(4.f))).store(halves.data());
+    for(auto value:halves) if(float(value)!=2.f) return false;
+    using B=simd<bf16,17,polyfill>; using W=simd<std::uint64_t,17,polyfill>;
+    std::array<std::uint16_t,17> bfloat_bits{};
+    convert<bf16>(W(0x8080000000000001ull)).store_bits(bfloat_bits.data());
+    for(auto bits:bfloat_bits) if(bits!=0x5f01) return false;
+    return true;
+#endif
+  }
+  static_assert(storage_only_operations());
   bool half_environment() {
 #if NATIVE_HOST_NEON
     std::uint64_t saved;
@@ -349,6 +448,7 @@ namespace polyfill_test {
   static_assert(custom<permitted>() && custom<isa<>(polyfill)>());
   static_assert(batching<decomposed>() && batching<scalar_emulated>());
   static_assert(normalized());
+  static_assert(helper_graph<permitted>() && helper_graph<isa<>(polyfill)>());
   static_assert(floating<decomposed>() && floating<scalar_emulated>());
   static_assert(memory<simd<float,17,permitted>>() && memory<scalar_emulated>());
   static_assert(representations<decomposed>() && representations<scalar_emulated>());
@@ -365,9 +465,9 @@ int main(int argc,char **) {
   bool extra_ok=extra_storage<double,isa<>(polyfill)>() && extra_arithmetic<double,isa<>(polyfill)>();
 #if !NATIVE_POLYFILL_HEADERS
   extra_ok=extra_ok && extra_storage<fp16,isa<>(polyfill)>() && extra_storage<bf16,isa<>(polyfill)>() &&
-    extra_arithmetic<fp16,isa<>(polyfill)>() && half_environment();
+    extra_arithmetic<fp16,isa<>(polyfill)>() && storage_only_operations() && half_environment();
 #endif
-  bool scalar_ok=extra_ok && custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
+  bool scalar_ok=extra_ok && helper_graph<isa<>(polyfill)>(seed) && custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
     floating<scalar_emulated>(float(seed)) && memory<scalar_emulated>(seed) &&
     unaligned_memory<scalar_emulated>(seed) && unaligned_memory<integer_emulated>(seed) &&
     representations<scalar_emulated>() && integers<isa<>(polyfill)>(seed) && integer_reductions<isa<>(polyfill)>(seed) &&
@@ -375,7 +475,7 @@ int main(int argc,char **) {
 #if NATIVE_POLYFILL_SCALAR_ONLY
   return !scalar_ok;
 #else
-  bool native_ok=custom<permitted>() && batching<decomposed>() &&
+  bool native_ok=helper_graph<permitted>(seed) && custom<permitted>() && batching<decomposed>() &&
     floating<decomposed>(float(seed)) && memory<simd<float,17,permitted>>(seed) &&
     unaligned_memory<simd<float,17,permitted>>(seed) && unaligned_memory<simd<std::uint32_t,17,permitted>>(seed) &&
     representations<decomposed>() && integers<permitted>(seed) && integer_reductions<permitted>(seed) &&
