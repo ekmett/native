@@ -99,6 +99,7 @@ endforeach()
 add_test(NAME native.arm.rdm.big_endian_codegen
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_LIST_DIR}/check_big_endian.py"
     --compiler "${CMAKE_CXX_COMPILER}"
+    --hint "$<TARGET_PROPERTY:hint::hint,INTERFACE_INCLUDE_DIRECTORIES>"
     --header "${PROJECT_SOURCE_DIR}/src/native/arm/rdm.h"
     --source "${CMAKE_CURRENT_LIST_DIR}/codegen.cc"
     --output-dir "${CMAKE_CURRENT_BINARY_DIR}/big-endian")

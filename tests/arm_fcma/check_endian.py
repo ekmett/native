@@ -16,12 +16,14 @@ parser.add_argument("--compiler", required=True)
 parser.add_argument("--source", required=True, type=pathlib.Path)
 parser.add_argument("--include", required=True)
 parser.add_argument("--support", required=True)
+parser.add_argument("--hint", required=True)
 parser.add_argument("--output", required=True, type=pathlib.Path)
 args = parser.parse_args()
 command = [args.compiler, "--driver-mode=g++", "--target=aarch64_be-none-elf", "-ffreestanding", "-std=c++26",
            "-fms-extensions", "-O2", "-march=armv8-a", "-Wno-nonportable-vector-initialization",
            "-I", args.support, "-I", args.include,
            "-S", str(args.source), "-o", str(args.output)]
+command.extend(arg for path in args.hint.split(";") for arg in ("-I", path))
 result = subprocess.run(command, text=True, capture_output=True)
 args.output.with_suffix(".log").write_text(result.stdout + result.stderr, encoding="utf-8")
 if result.returncode:

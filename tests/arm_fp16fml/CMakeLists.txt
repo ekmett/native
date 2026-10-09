@@ -72,6 +72,7 @@ endforeach()
 add_test(NAME native.arm.fp16fml.endian COMMAND "${Python3_EXECUTABLE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../arm_fcma/check_endian.py"
   --compiler "${CMAKE_CXX_COMPILER}" --source "${CMAKE_CURRENT_SOURCE_DIR}/endian.cc"
+  --hint "$<TARGET_PROPERTY:hint::hint,INTERFACE_INCLUDE_DIRECTORIES>"
   --include "${PROJECT_SOURCE_DIR}/src"
   --support "${CMAKE_CURRENT_SOURCE_DIR}/../arm_fcma/endian_support"
   --output "${CMAKE_CURRENT_BINARY_DIR}/endian-$<CONFIG>.s")
