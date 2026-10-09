@@ -11,6 +11,15 @@ template<native::x86_feature Feature> constexpr auto instruction_arch=[] {
   return native::feature_closure(native::isa<native::x86>{Feature});
 #endif
 }();
+#ifdef NATIVE_TEST_CODEGEN_POLYFILL
+constexpr auto byte512_arch = (native::isa<native::x86>{native::x86_feature::avx512f} &
+  native::x86_feature::gfni) | native::polyfill;
+static_assert(!byte512_arch.has(native::x86_feature::avx512bw));
+static_assert(!byte512_arch.has(native::x86_feature::avx));
+#else
+constexpr auto byte512_arch = native::feature_closure(native::isa<native::x86>{
+  native::x86_feature::avx512f} & native::x86_feature::avx512bw & native::x86_feature::gfni);
+#endif
 extern "C" {
   [[gnu::target("aes")]] void native_aes_storage(
     std::uint8_t const * a,std::uint8_t const * b,std::uint8_t * out) {
@@ -29,5 +38,13 @@ extern "C" {
     constexpr auto arch=instruction_arch<native::x86_feature::gfni>;
     using V=native::simd<std::uint8_t,16,arch>;
     native::gf2p8mulb<arch>(V::load(a),V::load(b)).store(out);
+  }
+  // Storage is AVX512F-sized even though byte arithmetic and lower carrier flags
+  // are absent from the permitted tag. Available GFNI must remain native.
+  [[gnu::target("avx512f,avx512bw,gfni")]] void native_gfni_storage_512(
+    std::uint8_t const * a, std::uint8_t const * b, std::uint8_t * out) {
+    using V = native::simd<std::uint8_t, 64, byte512_arch>;
+    static_assert(sizeof(typename V::native_type) == 64);
+    native::gf2p8mulb<byte512_arch>(V::load(a), V::load(b)).store(out);
   }
 }

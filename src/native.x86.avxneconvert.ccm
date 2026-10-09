@@ -12,11 +12,14 @@ module;
 import native.simd;
 
 namespace native::detail::x86_neconvert {
-  template<class T> constexpr std::uint32_t widen(T value) noexcept {
+  template<class T> constexpr std::uint32_t widen(T const & value) noexcept {
+    // Read the representation directly; a BF16 value copy can lower through a
+    // numerical compiler helper and alter signaling NaNs or the FP environment.
+    auto bits = std::bit_cast<std::uint16_t>(value);
     if constexpr (std::same_as<T, bf16>)
-      return std::uint32_t(value.to_bits()) << 16;
+      return std::uint32_t(bits) << 16;
     else
-      return constexpr_float::convert_bits<constexpr_float::binary32,constexpr_float::binary16>(value.to_bits());
+      return constexpr_float::convert_bits<constexpr_float::binary32,constexpr_float::binary16>(bits);
   }
   template<isa<x86> A, std::size_t N, unsigned Stride, unsigned Offset, class T>
   constexpr simd<float, N, A> widen_memory(T const * source) noexcept {

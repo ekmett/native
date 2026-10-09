@@ -61,7 +61,25 @@ bool run_case(unsigned index, std::uint32_t & state, bool exhaustive) {
     for (unsigned i = 4; i < 8; ++i)
       valid &= register_bits[i] == 0;
   }
-  return valid && checks::verify(p);
+  if (!valid || !checks::verify(p)) {
+    std::printf("AVX-NE-CONVERT case failed: lanes=%zu index=%u exhaustive=%d guards=%d MXCSR=%08x\n",
+      N, index, exhaustive, valid, _mm_getcsr());
+    for (unsigned i = 0; i < N; ++i) {
+      std::array<std::uint32_t, 6> expected{std::uint32_t(p.source[0]) << 16,
+        reference::half(p.source[0]), std::uint32_t(p.source[2 * i]) << 16,
+        reference::half(p.source[2 * i]), std::uint32_t(p.source[2 * i + 1]) << 16,
+        reference::half(p.source[2 * i + 1])};
+      for (unsigned operation = 0; operation < 6; ++operation)
+        if (p.widened[operation][i] != expected[operation])
+          std::printf("  widen operation=%u lane=%u expected=%08x actual=%08x\n",
+            operation, i, expected[operation], p.widened[operation][i]);
+      if (p.narrowed[i] != reference::narrow(p.input[i]))
+        std::printf("  narrow lane=%u input=%08x expected=%04x actual=%04x\n", i,
+          p.input[i], reference::narrow(p.input[i]), p.narrowed[i]);
+    }
+    return false;
+  }
+  return true;
 }
 int main() {
 #ifdef NATIVE_TEST_POLYFILL
@@ -86,7 +104,10 @@ int main() {
     _mm_setcsr(csr);
     for (unsigned i = 0; i < 2064 && valid; ++i)
       valid = run_case<scalar, 4>(i, state, false) && run_case<split, 8>(i, state, false);
-    valid &= _mm_getcsr() == csr;
+    if (_mm_getcsr() != csr) {
+      std::printf("AVX-NE-CONVERT status/control mismatch: expected=%08x actual=%08x\n", csr, _mm_getcsr());
+      valid = false;
+    }
   }
   _mm_setcsr(0x1f80);
   for (unsigned i = 0; i < 65536 && valid; ++i)

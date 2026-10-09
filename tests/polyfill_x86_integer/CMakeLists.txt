@@ -21,7 +21,7 @@ foreach(family IN ITEMS aes vaes pclmul gfni sha ifma vnni avx512cd bitalg vpopc
   endforeach()
   set(operation_args)
   if(family STREQUAL "instruction_storage")
-    set(operation_args --operation-pattern "^(aesenc|pclmulqdq|gf2p8mulb)\\b")
+    set(operation_args --operation-pattern "^(aesenc|pclmulqdq|v?gf2p8mulb)\\b")
   endif()
   add_test(NAME native.polyfill.x86.codegen_${family} COMMAND "${Python3_EXECUTABLE}"
     "${PROJECT_SOURCE_DIR}/tests/x86_codegen_pairs.py" --objdump "${polyfill_integer_objdump}"
