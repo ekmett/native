@@ -2,6 +2,9 @@
 #include "common.h"
 import native.arm.fcma;
 namespace {
+#if defined(NATIVE_FLOAT_POLYFILL)
+  bool hardware_admitted=false;
+#endif
   constexpr auto strong=native::feature_closure(native::arm_feature::complxnum)&native::neon_fp16;
   constexpr auto weak=native::neon;
   template<class T> using word=std::conditional_t<std::same_as<T,native::fp16>,std::uint16_t,
@@ -49,10 +52,37 @@ namespace {
       return entry{x,expected,expected==apply<weak,T,R,N,M,L,Add>(x)};
     });
     static_assert([]{for(auto const & x:cases) if(!x.equivalent) return false;return true;}());
+#if defined(NATIVE_FLOAT_POLYFILL)
+    native_test::property_rng random{native_test::property_config(16).seed^seed};
+#endif
     for(std::size_t i=0;i<cases.size();++i) {
       auto const & c=cases[i];
+#if defined(NATIVE_FLOAT_POLYFILL)
+      if(apply<weak|native::polyfill,T,R,N,M,L,Add>(c.x)!=c.expected || apply<native::isa<native::arm>(native::polyfill),T,R,N,M,L,Add>(c.x)!=c.expected) return false;
+      if(!hardware_admitted) continue;
+      auto runtime_input=generate<T>(random);
+      for(unsigned state=0;state<128;++state) {
+        std::uint64_t requested=(std::uint64_t(state&3)<<22)|
+          (std::uint64_t((state>>2)&1)<<24)|(std::uint64_t((state>>3)&1)<<25)|
+          (std::uint64_t((state>>4)&1)<<19)|(std::uint64_t((state>>5)&1)<<1)|
+          std::uint64_t((state>>6)&1);
+        asm volatile("msr fpcr, %0" :: "r"(requested) : "memory");
+        std::uint64_t observed;asm volatile("mrs %0, fpcr" : "=r"(observed) :: "memory");
+        if(observed!=requested) continue;
+        auto expected=hardware<T,R,N,M,L,Add>(runtime_input);
+        auto permitted=apply<weak|native::polyfill,T,R,N,M,L,Add>(runtime_input);
+        auto scalar=apply<native::isa<native::arm>(native::polyfill),T,R,N,M,L,Add>(runtime_input);
+        if(expected!=permitted || expected!=scalar) {
+          native_test::property_equal("FCMA permitted",seed,i,expected,permitted,runtime_input.acc,runtime_input.a,runtime_input.b,state,R,N,M,L,Add,sizeof(T));
+          native_test::property_equal("FCMA scalar",seed,i,expected,scalar,runtime_input.acc,runtime_input.a,runtime_input.b,state,R,N,M,L,Add,sizeof(T));
+          return false;
+        }
+      }
+      asm volatile("msr fpcr, xzr" ::: "memory");
+#else
       if(!native_test::property_equal("FCMA consteval/native",seed,i,c.expected,
         hardware<T,R,N,M,L,Add>(c.x),c.x.acc,c.x.a,c.x.b,R,N,M,L,Add)) return false;
+#endif
     }
     return true;
   }
@@ -75,7 +105,11 @@ namespace {
 int main() {
   auto cpu=native::observe_arm_capabilities();
   if(!cpu.present.valid() || !cpu.observed.valid()) return 1;
+#if defined(NATIVE_FLOAT_POLYFILL)
+  hardware_admitted=native::classify_isa(cpu,strong).admitted();
+#else
   if(!native::classify_isa(cpu,strong).admitted()) return 77;
+#endif
   floating_fixture::environment env;
   return shape<float,2>() && shape<float,4>() && shape<double,2>() &&
     shape<native::fp16,4>() && shape<native::fp16,8>()?0:1;

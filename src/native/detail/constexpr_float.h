@@ -43,6 +43,8 @@ namespace native::detail::constexpr_float {
     bool flush_inputs=false;
     // Flush before rounding, including tiny values that would round to normal.
     bool flush_outputs=false;
+    // Alternate Arm handling flushes only results still tiny after rounding.
+    bool flush_outputs_after_rounding=false;
     // Legacy BFloat16 dot arithmetic overflows to infinity even with round-odd.
     bool odd_overflow_infinity=false;
     bool default_nan_negative=false;
@@ -177,18 +179,30 @@ namespace native::detail::constexpr_float {
     auto highest=exponent+int(width)-1;
     if(p.flush_outputs && highest<F::min_normal_exponent)
       return typename F::bits_type(sign_bits);
+    auto rounded_mantissa=[&](int quantum) constexpr noexcept {
+      auto shift=quantum-exponent;
+      auto mantissa=shift>=0?value.extract(unsigned(shift)):value.words[0]<<unsigned(-shift);
+      bool guard=shift>0 && (value.extract(unsigned(shift-1))&1);
+      bool sticky=shift>1 && value.below(unsigned(shift-1));
+      bool inexact=guard || sticky;
+      bool increment=(mode==rounding::nearest_even && guard && (sticky || (mantissa&1))) ||
+        (mode==rounding::downward && sign && inexact) ||
+        (mode==rounding::upward && !sign && inexact);
+      if(mode==rounding::to_odd && inexact) mantissa|=1;
+      else if(increment) ++mantissa;
+      return mantissa;
+    };
     auto quantum=highest-int(F::fraction_bits);
+    // After-rounding tininess uses full precision with an unbounded exponent,
+    // before the separate rounding needed for a subnormal representation.
+    if(p.flush_outputs_after_rounding && highest<F::min_normal_exponent) {
+      auto rounded=rounded_mantissa(quantum);
+      auto rounded_highest=highest+(rounded>=(std::uint64_t{1}<<(F::fraction_bits+1)));
+      if(rounded_highest<F::min_normal_exponent)
+        return typename F::bits_type(sign_bits);
+    }
     if(quantum<F::min_subnormal_exponent) quantum=F::min_subnormal_exponent;
-    auto shift=quantum-exponent;
-    auto mantissa=shift>=0?value.extract(unsigned(shift)):value.words[0]<<unsigned(-shift);
-    bool guard=shift>0 && (value.extract(unsigned(shift-1))&1);
-    bool sticky=shift>1 && value.below(unsigned(shift-1));
-    bool inexact=guard || sticky;
-    bool increment=(mode==rounding::nearest_even && guard && (sticky || (mantissa&1))) ||
-      (mode==rounding::downward && sign && inexact) ||
-      (mode==rounding::upward && !sign && inexact);
-    if(mode==rounding::to_odd && inexact) mantissa|=1;
-    else if(increment) ++mantissa;
+    auto mantissa=rounded_mantissa(quantum);
     if(mantissa>=(std::uint64_t{1}<<(F::fraction_bits+1))) {mantissa>>=1;++quantum;}
     auto encoded_exponent=mantissa>=(std::uint64_t{1}<<F::fraction_bits)
       ?quantum+int(F::fraction_bits)+F::bias:0;
@@ -303,6 +317,36 @@ namespace native::detail::constexpr_float {
     pv.insert(product.high,unsigned(exponent_product-exponent)+64);
     cv.insert(c.significand,unsigned(c.exponent-exponent));
     return sum_magnitudes<F>(pv,sign,cv,c.sign,exponent,mode,p);
+  }
+
+  // Round two exact products and their sum once. Neither product is rounded,
+  // so cancellation remains exact even if either product exceeds F's range.
+  template<class F>
+  constexpr typename F::bits_type dot2_bits(typename F::bits_type a0,
+      typename F::bits_type a1,typename F::bits_type b0,typename F::bits_type b1,
+      rounding mode=rounding::nearest_even,policy p={}) noexcept {
+    a0=flush_input<F>(a0,p);a1=flush_input<F>(a1,p);
+    b0=flush_input<F>(b0,p);b1=flush_input<F>(b1,p);
+    if(is_nan<F>(a0) || is_nan<F>(a1) || is_nan<F>(b0) || is_nan<F>(b1))
+      return select_nan<F>(std::array{a0,a1,b0,b1},p);
+    bool inf0=is_infinite<F>(a0) || is_infinite<F>(b0);
+    bool inf1=is_infinite<F>(a1) || is_infinite<F>(b1);
+    bool sign0=((a0^b0)&F::sign_mask)!=0,sign1=((a1^b1)&F::sign_mask)!=0;
+    if((is_infinite<F>(a0) && is_zero<F>(b0)) ||
+        (is_infinite<F>(b0) && is_zero<F>(a0)) ||
+        (is_infinite<F>(a1) && is_zero<F>(b1)) ||
+        (is_infinite<F>(b1) && is_zero<F>(a1)) ||
+        (inf0 && inf1 && sign0!=sign1)) return default_nan<F>(p);
+    if(inf0 || inf1) return typename F::bits_type(F::exponent_mask|
+      ((inf0?sign0:sign1)?F::sign_mask:0));
+    auto a=unpack<F>(a0),b=unpack<F>(b0),c=unpack<F>(a1),d=unpack<F>(b1);
+    auto e0=a.exponent+b.exponent,e1=c.exponent+d.exponent;
+    auto exponent=e0<e1?e0:e1;
+    auto x=multiply(a.significand,b.significand),y=multiply(c.significand,d.significand);
+    magnitude<arithmetic_words<F>> xv{},yv{};
+    xv.insert(x.low,unsigned(e0-exponent));xv.insert(x.high,unsigned(e0-exponent)+64);
+    yv.insert(y.low,unsigned(e1-exponent));yv.insert(y.high,unsigned(e1-exponent)+64);
+    return sum_magnitudes<F>(xv,sign0,yv,sign1,exponent,mode,p);
   }
 
   template<class F>

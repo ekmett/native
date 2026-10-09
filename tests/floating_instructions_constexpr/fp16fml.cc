@@ -2,6 +2,9 @@
 #include "common.h"
 import native.arm.fp16fml;
 namespace {
+#if defined(NATIVE_FLOAT_POLYFILL)
+  bool hardware_admitted=false;
+#endif
   constexpr auto strong=native::feature_closure(native::arm_feature::fp16fml);
   constexpr auto weak=native::neon;
   struct input {
@@ -48,10 +51,35 @@ namespace {
       return entry{x,expected,expected==apply<weak,Op,N,M,Lane>(x)};
     });
     static_assert([]{for(auto const & x:cases) if(!x.equivalent) return false;return true;}());
+#if defined(NATIVE_FLOAT_POLYFILL)
+    native_test::property_rng random{native_test::property_config(16).seed^seed};
+#endif
     for(std::size_t i=0;i<cases.size();++i) {
       auto const & c=cases[i];
+#if defined(NATIVE_FLOAT_POLYFILL)
+      if(apply<weak|native::polyfill,Op,N,M,Lane>(c.x)!=c.expected || apply<native::isa<native::arm>(native::polyfill),Op,N,M,Lane>(c.x)!=c.expected) return false;
+      if(!hardware_admitted) continue;
+      auto runtime_input=generate(random);
+      for(unsigned state=0;state<128;++state) {
+        std::uint64_t requested=(std::uint64_t(state&3)<<22)|
+          (std::uint64_t((state>>2)&1)<<24)|(std::uint64_t((state>>3)&1)<<25)|
+          (std::uint64_t((state>>4)&1)<<19)|(std::uint64_t((state>>5)&1)<<1)|
+          std::uint64_t((state>>6)&1);
+        asm volatile("msr fpcr, %0" :: "r"(requested) : "memory");
+        std::uint64_t observed;asm volatile("mrs %0, fpcr" : "=r"(observed) :: "memory");
+        if(observed!=requested) continue;
+        auto expected=hardware<Op,N,M,Lane>(runtime_input);
+        auto permitted=apply<weak|native::polyfill,Op,N,M,Lane>(runtime_input);
+        auto scalar=apply<native::isa<native::arm>(native::polyfill),Op,N,M,Lane>(runtime_input);
+        if(expected!=permitted || expected!=scalar) {
+          std::printf("fp16fml polyfill state %u case %zu mismatch\n",state,i);return false;
+        }
+      }
+      asm volatile("msr fpcr, xzr" ::: "memory");
+#else
       if(!native_test::property_equal("FHM consteval/native",seed,i,c.expected,
         hardware<Op,N,M,Lane>(c.x),c.x.acc,c.x.a,c.x.b,Op,N,M,Lane)) return false;
+#endif
     }
     return true;
   }
@@ -65,7 +93,11 @@ namespace {
 int main() {
   auto cpu=native::observe_arm_capabilities();
   if(!cpu.present.valid() || !cpu.observed.valid()) return 1;
+#if defined(NATIVE_FLOAT_POLYFILL)
+  hardware_admitted=native::classify_isa(cpu,strong).admitted();
+#else
   if(!native::classify_isa(cpu,strong).admitted()) return 77;
+#endif
   floating_fixture::environment env;
   return shapes<0,2>() && shapes<1,2>() && shapes<2,2>() && shapes<3,2>() &&
     shapes<0,4>() && shapes<1,4>() && shapes<2,4>() && shapes<3,4>()?0:1;

@@ -3,38 +3,39 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/bf16.h"
 #include "native/arm/bf16_constexpr.h"
+#include "native/arm/float_control.h"
 import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<int Lane,std::size_t N,std::size_t M,isa<arm> Arch>
-  consteval simd<float,N,Arch> bfdot_value(simd<float,N,Arch> acc,
-      simd<bf16,2*N,Arch> a,simd<bf16,M,Arch> b) noexcept {
+  constexpr simd<float,N,Arch> bfdot_value(simd<float,N,Arch> acc,
+      simd<bf16,2*N,Arch> a,simd<bf16,M,Arch> b,arm_float_control control={}) noexcept {
     std::array<std::uint32_t,N> c{};
     std::array<std::uint16_t,2*N> av{};
     std::array<std::uint16_t,M> bv{};
     acc.store_bits(c.data());a.store_bits(av.data());b.store_bits(bv.data());
     for(std::size_t i=0;i<N;++i) {
       auto j=Lane<0?2*i:2*Lane;
-      c[i]=arm_bfdot_bits(c[i],av[2*i],av[2*i+1],bv[j],bv[j+1]);
+      c[i]=arm_bfdot_bits(c[i],av[2*i],av[2*i+1],bv[j],bv[j+1],control);
     }
     return simd<float,N,Arch>::load_bits(c.data());
   }
   template<isa<arm> Arch>
-  consteval simd<float,4,Arch> bfmmla_value(simd<float,4,Arch> acc,
-      simd<bf16,8,Arch> a,simd<bf16,8,Arch> b) noexcept {
+  constexpr simd<float,4,Arch> bfmmla_value(simd<float,4,Arch> acc,
+      simd<bf16,8,Arch> a,simd<bf16,8,Arch> b,arm_float_control control={}) noexcept {
     std::array<std::uint32_t,4> c{};
     std::array<std::uint16_t,8> av{},bv{};
     acc.store_bits(c.data());a.store_bits(av.data());b.store_bits(bv.data());
     for(unsigned row=0;row<2;++row) for(unsigned column=0;column<2;++column)
       for(unsigned pair=0;pair<2;++pair) {
         auto i=4*row+2*pair,j=4*column+2*pair;
-        c[2*row+column]=arm_bfdot_bits(c[2*row+column],av[i],av[i+1],bv[j],bv[j+1]);
+        c[2*row+column]=arm_bfdot_bits(c[2*row+column],av[i],av[i+1],bv[j],bv[j+1],control);
       }
     return simd<float,4,Arch>::load_bits(c.data());
   }
   template<bool Top,int Lane,std::size_t M,isa<arm> Arch>
-  consteval simd<float,4,Arch> bfmlal_value(simd<float,4,Arch> acc,
-      simd<bf16,8,Arch> a,simd<bf16,M,Arch> b) noexcept {
+  constexpr simd<float,4,Arch> bfmlal_value(simd<float,4,Arch> acc,
+      simd<bf16,8,Arch> a,simd<bf16,M,Arch> b,arm_float_control control={}) noexcept {
     std::array<std::uint32_t,4> c{};
     std::array<std::uint16_t,8> av{};
     std::array<std::uint16_t,M> bv{};
@@ -42,7 +43,11 @@ namespace native::detail {
     for(unsigned i=0;i<4;++i) {
       auto j=2*i+Top;
       c[i]=constexpr_float::fma_bits<constexpr_float::binary32>(
-        std::uint32_t(av[j])<<16,std::uint32_t(bv[Lane<0?j:Lane])<<16,c[i]);
+        std::uint32_t(av[j])<<16,std::uint32_t(bv[Lane<0?j:Lane])<<16,c[i],
+        control.alternative()?constexpr_float::rounding::nearest_even:control.rounding_mode(),
+        [&] {auto p=control.policy<constexpr_float::binary32>();
+          if(control.alternative()) {p.flush_inputs=true;p.flush_outputs_after_rounding=true;}
+          return p;}());
     }
     return simd<float,4,Arch>::load_bits(c.data());
   }
@@ -50,7 +55,7 @@ namespace native::detail {
 namespace native {
   /// \defgroup arm_bf16 BF16
   /// \ingroup cpu_arm
-  /// Runtime calls require arm_feature::neon_bf16 and a compatible bf16 compiler target.
+  /// Hardware calls require arm_feature::neon_bf16 and a compatible bf16 compiler target.
   /// BFDOT/BFMMLA use round-to-odd steps by default, or fused pairs followed by
   /// separate accumulation when FEAT_EBF16 and FPCR.EBF enable enhanced behavior.
   /// They return default NaNs and leave FPSR unchanged in either mode.
@@ -60,7 +65,10 @@ namespace native {
   /// All operations read the caller's FPCR without changing it.
   /// Constant evaluation uses RNE, gradual inputs/results, DN=AH=AHP=FZ=FZ16=FIZ=EBF=0,
   /// with masked exceptions and no status effects; fixed instruction rules still apply.
-  /// Missing-feature overloads are consteval-only and require complete storage types.
+  /// Missing-feature overloads require complete storage and explicit polyfill permission
+  /// for runtime evaluation. Without permission they remain immediate-only.
+  /// Software paths preserve FPCR result controls; exception flags are unspecified,
+  /// and callers keep floating-point traps disabled.
   /// \{
 
   /// Accumulate each adjacent pair of BF16 products into the corresponding FP32 lane.
@@ -77,10 +85,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch>
-    requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
   [[nodiscard]] consteval
   simd<float, 2, Arch> bfdot(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     return detail::bfdot_value<-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> bfdot(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
+    return detail::bfdot_value<-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
@@ -97,10 +113,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 2)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 2)
   [[nodiscard]] consteval
   simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     return detail::bfdot_value<Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 2)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 4, Arch> b) noexcept {
+    return detail::bfdot_value<Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
@@ -117,10 +141,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfdot_value<Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> bfdot_lane(simd<float, 2, Arch> acc, simd<bf16, 4, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfdot_value<Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Accumulate each adjacent pair of BF16 products into the corresponding FP32 lane.
@@ -136,10 +168,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfdot(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfdot_value<-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfdot(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfdot_value<-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
@@ -155,10 +195,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 2)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 2)
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     return detail::bfdot_value<Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 2)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
+    return detail::bfdot_value<Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// BFDOT with the BF16 pair b[2*Lane], b[2*Lane+1] shared by all output lanes.
@@ -174,10 +222,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfdot_value<Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfdot_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfdot_value<Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Accumulate a row-major 2x4 matrix times a column-major 4x2 matrix, two BFDOT steps per result.
@@ -193,10 +249,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmmla(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfmmla_value(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmmla(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfmmla_value(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Fused multiply-add of the even BF16 lanes into the corresponding FP32 lanes.
@@ -212,10 +276,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmlalb(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfmlal_value<false,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmlalb(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfmlal_value<false,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Fused multiply-add of the even lanes of a with b[Lane] shared by all output lanes.
@@ -231,10 +303,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     return detail::bfmlal_value<false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
+    return detail::bfmlal_value<false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Fused multiply-add of the even lanes of a with b[Lane] shared by all output lanes.
@@ -250,10 +330,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 8)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfmlal_value<false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmlalb_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfmlal_value<false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Fused multiply-add of the odd BF16 lanes into the corresponding FP32 lanes.
@@ -269,10 +357,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmlalt(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfmlal_value<true,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmlalt(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfmlal_value<true,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Fused multiply-add of the odd lanes of a with b[Lane] shared by all output lanes.
@@ -288,10 +384,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
     return detail::bfmlal_value<true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && requires { sizeof(simd<bf16, 4, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 4, Arch> b) noexcept {
+    return detail::bfmlal_value<true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Fused multiply-add of the odd lanes of a with b[Lane] shared by all output lanes.
@@ -307,10 +411,18 @@ namespace native {
 
   /// Constant-evaluation-only form when the instruction feature is absent.
   template<isa<arm> Arch, unsigned Lane>
-    requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 8)
+    requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
     return detail::bfmlal_value<true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane>
+    requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<bf16, 8, Arch>); } && !(Arch.has(arm_feature::neon_bf16)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> bfmlalt_lane(simd<float, 4, Arch> acc, simd<bf16, 8, Arch> a, simd<bf16, 8, Arch> b) noexcept {
+    return detail::bfmlal_value<true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   // Exact deduction rejects unrelated vectors and invalid immediates before

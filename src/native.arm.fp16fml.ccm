@@ -3,26 +3,28 @@ module;
 #include "native/isa_import.h"
 #include "native/arm/fp16fml.h"
 #include "native/detail/constexpr_float.h"
+#include "native/arm/float_control.h"
 import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail {
   template<isa<arm> Arch,bool Subtract,bool High,int Lane,std::size_t N,std::size_t M>
-  consteval simd<float,N,Arch> fp16fml_value(simd<float,N,Arch> acc,
-      simd<fp16,2*N,Arch> a,simd<fp16,M,Arch> b) noexcept {
+  constexpr simd<float,N,Arch> fp16fml_value(simd<float,N,Arch> acc,
+      simd<fp16,2*N,Arch> a,simd<fp16,M,Arch> b,arm_float_control control={}) noexcept {
     namespace cf=constexpr_float;
     std::array<std::uint32_t,N> c{};
     std::array<std::uint16_t,2*N> av{};
     std::array<std::uint16_t,M> bv{};
     acc.store_bits(c.data());a.store_bits(av.data());b.store_bits(bv.data());
-    auto widen=[](std::uint16_t x) {
+    auto widen=[&](std::uint16_t x) {
+      if(control.flush_half_inputs() && !(x&0x7c00)) x&=0x8000;
       return cf::is_nan<cf::binary16>(x)?cf::resize_nan<cf::binary32,cf::binary16>(x,false)
         :cf::convert_bits<cf::binary32,cf::binary16>(x);
     };
     for(std::size_t i=0;i<N;++i) {
       auto index=i+(High?N:0);
       auto x=av[index];
-      if constexpr(Subtract) x^=0x8000;
-      c[i]=cf::fma_bits<cf::binary32>(widen(x),widen(bv[Lane<0?index:Lane]),c[i]);
+      if constexpr(Subtract) x=control.negate<cf::binary16>(x);
+      c[i]=cf::fma_bits<cf::binary32>(widen(x),widen(bv[Lane<0?index:Lane]),c[i],control.rounding_mode(),control.policy<cf::binary32>());
     }
     return simd<float,N,Arch>::load_bits(c.data());
   }
@@ -30,13 +32,16 @@ namespace native::detail {
 namespace native {
   /// \defgroup arm_fp16fml FHM
   /// \ingroup cpu_arm
-  /// Runtime calls require arm_feature::fp16fml (FEAT_FHM), independently of FCMA/BF16.
+  /// Hardware calls require arm_feature::fp16fml (FEAT_FHM), independently of FCMA/BF16.
   /// Binary16 inputs accumulate directly into binary32, with one rounding.
-  /// FPCR controls and FPSR effects are those of the instruction; neither is reset.
-  /// Volatile assembly retains status effects even when the result is unused.
+  /// Native FPCR controls and FPSR effects follow the instruction; neither is reset.
+  /// Native volatile assembly retains status effects even when the result is unused.
   /// Constant evaluation uses RNE, gradual inputs/results, DN=AH=AHP=FZ=FZ16=FIZ=EBF=0,
   /// with masked exceptions and no status effects; fixed instruction rules still apply.
-  /// Missing-feature overloads are consteval-only and require complete storage types.
+  /// Missing-feature overloads require complete storage and explicit polyfill permission
+  /// for runtime evaluation. Without permission they remain immediate-only.
+  /// Software paths preserve FPCR result controls; exception flags are unspecified,
+  /// and callers keep floating-point traps disabled.
   /// \{
 
   // All vector operands share Arch; native registers remain implementation details.
@@ -57,13 +62,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlal(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,false,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlal(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,false,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -83,13 +98,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlal_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlal_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -109,13 +134,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlal_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlal_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Add products from the low 4 half lanes of a and b.
@@ -135,13 +170,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlal(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,false,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlal(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,false,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 4 lanes of a.
@@ -161,13 +206,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlal_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlal_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL with b[Lane] broadcast; selects the low 4 lanes of a.
@@ -187,13 +242,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlal_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlal_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Add products from the high 2 half lanes of a and b.
@@ -213,13 +278,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlal2(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,true,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlal2(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,true,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -239,13 +314,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlal2_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlal2_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -265,13 +350,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlal2_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlal2_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Add products from the high 4 half lanes of a and b.
@@ -291,13 +386,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlal2(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,true,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlal2(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,true,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 4 lanes of a.
@@ -317,13 +422,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlal2_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlal2_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLAL2 with b[Lane] broadcast; selects the high 4 lanes of a.
@@ -343,13 +458,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlal2_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlal2_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,false,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Subtract products from the low 2 half lanes of a and b.
@@ -369,13 +494,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlsl(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,false,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlsl(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,false,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -395,13 +530,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlsl_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlsl_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 2 lanes of a.
@@ -421,13 +566,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlsl_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlsl_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Subtract products from the low 4 half lanes of a and b.
@@ -447,13 +602,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlsl(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,false,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlsl(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,false,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 4 lanes of a.
@@ -473,13 +638,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlsl_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlsl_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL with b[Lane] broadcast; selects the low 4 lanes of a.
@@ -499,13 +674,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlsl_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlsl_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,false,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Subtract products from the high 2 half lanes of a and b.
@@ -525,13 +710,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlsl2(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,true,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlsl2(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,true,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -551,13 +746,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlsl2_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlsl2_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 2 lanes of a.
@@ -577,13 +782,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 2, Arch> fmlsl2_lane(
       simd<float, 2, Arch> acc,
       simd<fp16, 4, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 2, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 2, Arch> fmlsl2_lane(
+      simd<float, 2, Arch> acc,
+      simd<fp16, 4, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// Subtract products from the high 4 half lanes of a and b.
@@ -603,13 +818,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlsl2(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,true,-1>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)))
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlsl2(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,true,-1>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 4 lanes of a.
@@ -629,13 +854,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlsl2_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 4, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && requires { sizeof(simd<fp16, 4, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 4)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlsl2_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 4, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// FMLSL2 with b[Lane] broadcast; selects the high 4 lanes of a.
@@ -655,13 +890,23 @@ namespace native {
   }
 
   /// Constant-evaluation-only form when the instruction feature is absent.
-  template<isa<arm> Arch, unsigned Lane> requires(requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  template<isa<arm> Arch, unsigned Lane> requires(!Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
   [[nodiscard]] consteval
   simd<float, 4, Arch> fmlsl2_lane(
       simd<float, 4, Arch> acc,
       simd<fp16, 8, Arch> a,
       simd<fp16, 8, Arch> b) noexcept {
     return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b);
+  }
+
+  /// Evaluate runtime operands with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Lane> requires(Arch.has(polyfill) && requires { sizeof(simd<float, 4, Arch>); } && requires { sizeof(simd<fp16, 8, Arch>); } && !(Arch.has(arm_feature::fp16fml)) && Lane < 8)
+  [[nodiscard]] constexpr
+  simd<float, 4, Arch> fmlsl2_lane(
+      simd<float, 4, Arch> acc,
+      simd<fp16, 8, Arch> a,
+      simd<fp16, 8, Arch> b) noexcept {
+    return detail::fp16fml_value<Arch,true,true,Lane>(acc,a,b, detail::arm_float_control::current());
   }
 
   /// \cond

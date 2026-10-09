@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <array>
+#include <cstdint>
+export module native_test.polyfill_float_relay;
+import native.arm.bf16;
+import native.arm.fcma;
+import native.arm.fp16fml;
+export namespace native_test {
+  std::array<std::uint32_t,2> polyfill_float_relay(std::uint32_t input) noexcept {
+    constexpr native::isa<native::arm> a=native::polyfill;
+    std::array<std::uint32_t,2> words{input,input};
+    std::array<std::uint16_t,4> half{0x3c00,0x3c00,0x3c00,0x3c00};
+    std::array<std::uint16_t,4> bfloat{0x3f80,0x3f80,0x3f80,0x3f80};
+    auto c=native::simd<float,2,a>::load_bits(words.data());
+    auto h=native::simd<native::fp16,4,a>::load_bits(half.data());
+    auto b=native::simd<native::bf16,4,a>::load_bits(bfloat.data());
+    auto f=native::fmlal<a>(c,h,h);
+    auto d=native::bfdot<a>(f,b,b);
+    auto value=native::fcmla<a,0>(d,c,c);
+    std::array<std::uint32_t,2> result;value.store_bits(result.data());return result;
+  }
+}

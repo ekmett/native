@@ -3,7 +3,11 @@
 #include <native/arm/fp16fml.h>
 import native.arm.fp16fml;
 #include "simd_adapter.h"
+#if defined(NATIVE_FLOAT_POLYFILL_FEATURE)
+constexpr native::isa<native::arm> arch=native::isa<native::arm>{native::arm_feature::fp16fml}|native::polyfill;
+#else
 constexpr native::isa<native::arm> arch{native::arm_feature::fp16fml};
+#endif
 extern "C" __attribute__((target("fp16fml"), noinline)) float32x2_t native_fmlal_2(float32x2_t acc, float16x4_t a, float16x4_t b) { return fp16fml_api::fmlal<arch>(acc, a, b); }
 extern "C" __attribute__((target("fp16fml"), noinline)) float32x2_t native_fmlal_2_lane(float32x2_t acc, float16x4_t a, float16x8_t b) { return fp16fml_api::fmlal_lane<arch, 7>(acc, a, b); }
 extern "C" __attribute__((target("fp16fml"), noinline)) float32x4_t native_fmlal_4(float32x4_t acc, float16x8_t a, float16x8_t b) { return fp16fml_api::fmlal<arch>(acc, a, b); }
