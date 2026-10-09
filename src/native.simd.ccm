@@ -79,6 +79,7 @@ export namespace native {
     template<class T> using rebind = simd<T,N,architecture>;
     /// Number of logical BF16 lanes, with no padding lanes.
     static constexpr std::size_t lanes = N;
+#include "native/simd/polyfill_lane_access.h"
   private:
     native_type value_;
   public:
@@ -134,7 +135,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) words[i]=p[i].to_bits();
         return load_bits(words.data());
       }
-      native_type value; std::memcpy(&value, p, sizeof(value)); return from_native(value);
+      native_type value; std::memcpy(&value, reinterpret_cast<unsigned char const *>(p), sizeof(value)); return from_native(value);
     }
     /// Write all lane representations to exactly N accessible BF16 objects.
     /// Alignment is a nonzero power-of-two byte-alignment promise, not a runtime
@@ -148,7 +149,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) p[i]=bf16::from_bits(words[i]);
         return;
       }
-      std::memcpy(p, &value_, sizeof(value_));
+      std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, sizeof(value_));
     }
     /// Load N BF16 objects with the default alignment contract of load_memory().
     [[nodiscard]] static hint_inline constexpr simd load(bf16 const * p) noexcept { return load_memory(p); }
@@ -168,7 +169,7 @@ export namespace native {
       std::array<bf16,lanes> values; values.fill(fill);
       if consteval {
         for (std::size_t i=0;i<n;++i) values[i]=p[i];
-      } else { if (n) std::memcpy(values.data(), p, n * sizeof(bf16)); }
+      } else { if (n) std::memcpy(values.data(), reinterpret_cast<unsigned char const *>(p), n * sizeof(bf16)); }
       return load(values.data());
     }
     /// Write the representations of lanes [0,n) to exactly n accessible BF16
@@ -179,7 +180,7 @@ export namespace native {
       if consteval {
         std::array<std::uint16_t,lanes> words{}; store_bits(words.data());
         for (std::size_t i=0;i<n;++i) p[i]=bf16::from_bits(words[i]);
-      } else { if (n) std::memcpy(p, &value_, n * sizeof(bf16)); }
+      } else { if (n) std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, n * sizeof(bf16)); }
     }
   };
 
@@ -248,6 +249,7 @@ export namespace native {
     template<class T> using rebind = simd<T,32,architecture>;
     /// Number of logical FP16 lanes, with no padding lanes.
     static constexpr std::size_t lanes = 32;
+#include "native/simd/polyfill_lane_access.h"
   private:
     native_type value_;
   public:
@@ -301,7 +303,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) words[i]=p[i].to_bits();
         return load_bits(words.data());
       }
-      native_type value; std::memcpy(&value, p, sizeof(value)); return from_native(value);
+      native_type value; std::memcpy(&value, reinterpret_cast<unsigned char const *>(p), sizeof(value)); return from_native(value);
     }
     /// Write all lane representations to exactly 32 accessible FP16 objects.
     /// Alignment is a nonzero power-of-two byte-alignment promise, not a runtime
@@ -315,7 +317,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) p[i]=fp16::from_bits(words[i]);
         return;
       }
-      std::memcpy(p, &value_, sizeof(value_));
+      std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, sizeof(value_));
     }
     /// Load 32 FP16 objects with the default alignment contract of load_memory().
     [[nodiscard]] static hint_inline constexpr simd load(fp16 const * p) noexcept { return load_memory(p); }
@@ -335,7 +337,7 @@ export namespace native {
       std::array<fp16,lanes> values; values.fill(fill);
       if consteval {
         for (std::size_t i=0;i<n;++i) values[i]=p[i];
-      } else { if (n) std::memcpy(values.data(), p, n * sizeof(fp16)); }
+      } else { if (n) std::memcpy(values.data(), reinterpret_cast<unsigned char const *>(p), n * sizeof(fp16)); }
       return load(values.data());
     }
     /// Write the representations of lanes [0,n) to exactly n accessible FP16
@@ -346,7 +348,7 @@ export namespace native {
       if consteval {
         std::array<std::uint16_t,lanes> words{}; store_bits(words.data());
         for (std::size_t i=0;i<n;++i) p[i]=fp16::from_bits(words[i]);
-      } else { if (n) std::memcpy(p, &value_, n * sizeof(fp16)); }
+      } else { if (n) std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, n * sizeof(fp16)); }
     }
     /// Add corresponding half lanes, rounding directly under the caller's MXCSR rounding control.
     [[nodiscard]] friend hint_inline constexpr simd operator+(simd a,simd b) noexcept {
@@ -469,6 +471,7 @@ export namespace native {
     template<class T> using rebind = simd<T,8,architecture>;
     /// Number of logical BF16 lanes, with no padding lanes.
     static constexpr std::size_t lanes = 8;
+#include "native/simd/polyfill_lane_access.h"
   private:
     native_type value_;
   public:
@@ -524,7 +527,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) words[i]=p[i].to_bits();
         return load_bits(words.data());
       }
-      native_type value; std::memcpy(&value, p, sizeof(value)); return from_native(value);
+      native_type value; std::memcpy(&value, reinterpret_cast<unsigned char const *>(p), sizeof(value)); return from_native(value);
     }
     /// Write all lane representations to exactly 8 accessible BF16 objects.
     /// Alignment is a nonzero power-of-two byte-alignment promise, not a runtime
@@ -538,7 +541,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) p[i]=bf16::from_bits(words[i]);
         return;
       }
-      std::memcpy(p, &value_, sizeof(value_));
+      std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, sizeof(value_));
     }
     /// Load 8 BF16 objects with the default alignment contract of load_memory().
     [[nodiscard]] static hint_inline constexpr simd load(bf16 const * p) noexcept { return load_memory(p); }
@@ -558,7 +561,7 @@ export namespace native {
       std::array<bf16,lanes> values; values.fill(fill);
       if consteval {
         for (std::size_t i=0;i<n;++i) values[i]=p[i];
-      } else { if (n) std::memcpy(values.data(), p, n * sizeof(bf16)); }
+      } else { if (n) std::memcpy(values.data(), reinterpret_cast<unsigned char const *>(p), n * sizeof(bf16)); }
       return load(values.data());
     }
     /// Write the representations of lanes [0,n) to exactly n accessible BF16
@@ -569,7 +572,7 @@ export namespace native {
       if consteval {
         std::array<std::uint16_t,lanes> words{}; store_bits(words.data());
         for (std::size_t i=0;i<n;++i) p[i]=bf16::from_bits(words[i]);
-      } else { if (n) std::memcpy(p, &value_, n * sizeof(bf16)); }
+      } else { if (n) std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, n * sizeof(bf16)); }
     }
   };
 
@@ -643,6 +646,7 @@ export namespace native {
     template<class T> using rebind = simd<T,8,architecture>;
     /// Number of logical FP16 lanes, with no padding lanes.
     static constexpr std::size_t lanes = 8;
+#include "native/simd/polyfill_lane_access.h"
   private:
     native_type value_;
   public:
@@ -696,7 +700,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) words[i]=p[i].to_bits();
         return load_bits(words.data());
       }
-      native_type value; std::memcpy(&value, p, sizeof(value)); return from_native(value);
+      native_type value; std::memcpy(&value, reinterpret_cast<unsigned char const *>(p), sizeof(value)); return from_native(value);
     }
     /// Write all lane representations to exactly 8 accessible FP16 objects.
     /// Alignment is a nonzero power-of-two byte-alignment promise, not a runtime
@@ -710,7 +714,7 @@ export namespace native {
         for (std::size_t i=0;i<lanes;++i) p[i]=fp16::from_bits(words[i]);
         return;
       }
-      std::memcpy(p, &value_, sizeof(value_));
+      std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, sizeof(value_));
     }
     /// Load 8 FP16 objects with the default alignment contract of load_memory().
     [[nodiscard]] static hint_inline constexpr simd load(fp16 const * p) noexcept { return load_memory(p); }
@@ -730,7 +734,7 @@ export namespace native {
       std::array<fp16,lanes> values; values.fill(fill);
       if consteval {
         for (std::size_t i=0;i<n;++i) values[i]=p[i];
-      } else { if (n) std::memcpy(values.data(), p, n * sizeof(fp16)); }
+      } else { if (n) std::memcpy(values.data(), reinterpret_cast<unsigned char const *>(p), n * sizeof(fp16)); }
       return load(values.data());
     }
     /// Write the representations of lanes [0,n) to exactly n accessible FP16
@@ -741,7 +745,7 @@ export namespace native {
       if consteval {
         std::array<std::uint16_t,lanes> words{}; store_bits(words.data());
         for (std::size_t i=0;i<n;++i) p[i]=fp16::from_bits(words[i]);
-      } else { if (n) std::memcpy(p, &value_, n * sizeof(fp16)); }
+      } else { if (n) std::memcpy(reinterpret_cast<unsigned char *>(p), &value_, n * sizeof(fp16)); }
     }
     /// Add corresponding half lanes, rounding directly under the caller's FPCR.
     [[nodiscard]] friend hint_inline constexpr simd operator+(simd a,simd b) noexcept {
@@ -1098,7 +1102,7 @@ export namespace native {
         std::array<T,sizeof(native_type)/sizeof(T)> values{};
         for(std::size_t i=0;i<N;++i) values[i]=p[i];
         result.value_=std::bit_cast<native_type>(values);
-      } else { std::memcpy(&result.value_,p,sizeof(T)*N); }
+      } else { std::memcpy(&result.value_,reinterpret_cast<unsigned char const *>(p),sizeof(T)*N); }
       return result;
     }
     /// Write exactly N objects; Alignment is a caller promise.
@@ -1108,7 +1112,7 @@ export namespace native {
       if consteval {
         auto values=std::bit_cast<std::array<T,sizeof(native_type)/sizeof(T)>>(value_);
         for(std::size_t i=0;i<N;++i) p[i]=values[i];
-      } else { std::memcpy(p,&value_,sizeof(T)*N); }
+      } else { std::memcpy(reinterpret_cast<unsigned char *>(p),&value_,sizeof(T)*N); }
     }
     /// Read exactly N elements with their natural alignment.
     [[nodiscard]] static hint_inline constexpr simd load(T const * p) noexcept { return load_memory(p); }
@@ -1124,7 +1128,7 @@ export namespace native {
       std::array<T,N> values; values.fill(fill);
       if consteval {
         for(std::size_t i=0;i<n;++i) values[i]=p[i];
-      } else { if(n) std::memcpy(values.data(),p,n*sizeof(T)); }
+      } else { if(n) std::memcpy(values.data(),reinterpret_cast<unsigned char const *>(p),n*sizeof(T)); }
       return load(values.data());
     }
     /// Write the first n <= N elements; a null pointer is valid for n == 0.
@@ -1135,7 +1139,7 @@ export namespace native {
           auto values=std::bit_cast<std::array<T,sizeof(native_type)/sizeof(T)>>(value_);
           for(std::size_t i=0;i<n;++i) p[i]=values[i];
         }
-      } else { if(n) std::memcpy(p,&value_,n*sizeof(T)); }
+      } else { if(n) std::memcpy(reinterpret_cast<unsigned char *>(p),&value_,n*sizeof(T)); }
     }
     /// Return each lane as its unchanged unsigned representation.
     [[nodiscard]] hint_inline constexpr bits_type bits() const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
@@ -1150,14 +1154,56 @@ export namespace native {
     /// Read N unsigned lane representations without numerical conversion.
     [[nodiscard]] static hint_inline constexpr simd load_bits(word_type const * p) noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
       if consteval { return from_bits(bits_type::load(p)); }
-      else { simd result{}; std::memcpy(&result.value_,p,sizeof(T)*N); return result; }
+      else { simd result{}; std::memcpy(&result.value_,reinterpret_cast<unsigned char const *>(p),sizeof(T)*N); return result; }
     }
     /// Write N unsigned lane representations without numerical conversion.
     hint_inline constexpr void store_bits(word_type * p) const noexcept requires(std::same_as<T,fp16> || std::same_as<T,bf16> || A.has(polyfill)) {
       if consteval { bits().store(p); }
-      else { std::memcpy(p,&value_,sizeof(T)*N); }
+      else { std::memcpy(reinterpret_cast<unsigned char *>(p),&value_,sizeof(T)*N); }
     }
   };
 }
 
+#endif
+
+#if NATIVE_HOST_NEON || NATIVE_HOST_X86
+export namespace native {
+  /// Accumulate adjacent BF16 products into logical FP32 lanes with explicit
+  /// software permission. ARM follows BFDOT and the caller's FPCR; x86 follows
+  /// VDPBF16PS's fixed high-product-first rounding and flushing contract.
+  /// Constant evaluation uses the family's established default controls.
+  template<std::size_t N,isa<> A> requires(N>0 && N<=64 && N%2==0 && A.has(polyfill) &&
+#if NATIVE_HOST_NEON
+    !A.has(arm_feature::neon_bf16) &&
+#else
+    !A.has(x86_feature::avx512bf16) &&
+#endif
+    requires { sizeof(simd<bf16,N,A>); sizeof(simd<float,N/2,A>); })
+  [[nodiscard]] hint_inline constexpr simd<float,N/2,A> dot2(
+      simd<bf16,N,A> a,simd<bf16,N,A> b,simd<float,N/2,A> accumulator) noexcept {
+    return detail::half_constant::dot2<NATIVE_HOST_NEON!=0>(a,b,accumulator);
+  }
+}
+#if NATIVE_HOST_NEON
+#pragma clang attribute push(__attribute__((target("neon,bf16"))), apply_to=function)
+#else
+#pragma clang attribute push(__attribute__((target("avx512bf16"))), apply_to=function)
+#endif
+export namespace native {
+  /// Accumulate BF16 products through available native register groups. Logical
+  /// tails are padded then trimmed; existing native fixed shapes retain priority.
+  /// The caller must admit the actual BF16 hardware feature before entering.
+  template<std::size_t N,isa<> A> requires(N>0 && N<=64 && N%2==0 && A.has(polyfill) &&
+#if NATIVE_HOST_NEON
+    A.has(arm_feature::neon_bf16) && !(N==8 && neon_bf16<=A) &&
+#else
+    A.has(x86_feature::avx512bf16) && !((N==8 || N==16 || N==32) && avx512_bf16<=A) &&
+#endif
+    requires { sizeof(simd<bf16,N,A>); sizeof(simd<float,N/2,A>); })
+  [[nodiscard]] hint_inline constexpr simd<float,N/2,A> dot2(
+      simd<bf16,N,A> a,simd<bf16,N,A> b,simd<float,N/2,A> accumulator) noexcept {
+    return detail::polyfill_dot2_native(a,b,accumulator);
+  }
+}
+#pragma clang attribute pop
 #endif

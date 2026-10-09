@@ -157,4 +157,6 @@ namespace native::detail {
   template<class T,std::size_t N,isa<> A,bool Native=requires { typename simd<T,N,A>::native_type; }>
   struct polyfill_chunk { using type=polyfill_scalar<T,A>; };
   template<class T,std::size_t N,isa<> A> struct polyfill_chunk<T,N,A,true> { using type=simd<T,N,A>; };
+  template<class T,std::size_t N,isa<> A> requires requires { sizeof(polyfill_feature_chunk<T,N,A>); }
+  struct polyfill_chunk<T,N,A,true> { using type=polyfill_feature_chunk<T,N,A>; };
 }

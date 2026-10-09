@@ -45,6 +45,8 @@ namespace native {
     template<class U> using rebind=simd<U,N,A>;
   private:
     alignas(typename chunk_type::native_type) native_type value_{};
+    static constexpr bool half_representation=detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 ||
+      detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::bfloat16;
 #if NATIVE_HOST_WASM
     static constexpr bool permitted_native_byte=A.has(wasm_feature::simd128) && sizeof(T)==1 && register_lanes==16;
 #else
@@ -88,6 +90,13 @@ namespace native {
     constexpr simd() noexcept=default;
     /// Broadcast an element to all logical lanes.
     constexpr simd(T value) noexcept requires(!simd_integer_element<T>) {
+      if consteval {} else {
+        if constexpr(half_representation) {
+          std::array<word_type,register_count*register_lanes> words{};
+          words.fill(std::bit_cast<word_type>(value));
+          std::memcpy(value_.data(),words.data(),sizeof(words)); return;
+        }
+      }
       for(auto & part:value_) part=chunk_type(value).to_native();
     }
     /// Reduce an integral scalar to the lane width and broadcast it.
@@ -143,6 +152,18 @@ namespace native {
     static constexpr simd load_partial(T const * p,std::size_t count,T fill={}) noexcept
       hint_diagnose_if(count>N,"partial SIMD count exceeds the lane count") {
       simd result;
+      if consteval {} else {
+        if constexpr(half_representation) {
+          // Keep half/BF16 transport in integer representations. Copying a
+          // typed __bf16 temporary can introduce a compiler conversion helper.
+          std::array<word_type,register_count*register_lanes> words{};
+          words.fill(std::bit_cast<word_type>(fill));
+          static_assert(sizeof(words)==sizeof(native_type));
+          if(count) std::memcpy(words.data(),reinterpret_cast<unsigned char const *>(p),count*sizeof(T));
+          std::memcpy(result.value_.data(),words.data(),sizeof(words));
+          return result;
+        }
+      }
       for(std::size_t i=0;i<register_count;++i) {
         std::array<T,register_lanes> part{};
         part.fill(fill);
@@ -160,6 +181,12 @@ namespace native {
     /// Write exactly count lanes. Zero count permits null and touches nothing.
     constexpr void store_partial(T * p,std::size_t count) const noexcept
       hint_diagnose_if(count>N,"partial SIMD count exceeds the lane count") {
+      if consteval {} else {
+        if constexpr(half_representation) {
+          if(count) std::memcpy(reinterpret_cast<unsigned char *>(p),value_.data(),count*sizeof(T));
+          return;
+        }
+      }
       for(std::size_t i=0;i<register_count && i*register_lanes<count;++i) {
         std::array<T,register_lanes> part{};
         chunk_type::from_native(value_[i]).template store_memory<1>(part.data());
@@ -174,6 +201,12 @@ namespace native {
     }
     /// Return exact unsigned lane representations without normalization.
     constexpr bits_type bits() const noexcept requires(!std::same_as<T,bool> && !simd_mask_element<T>) {
+      if consteval {} else {
+        if constexpr(half_representation) {
+          std::array<word_type,N> words{}; std::memcpy(words.data(),value_.data(),sizeof(words));
+          return bits_type::template load_memory<1>(words.data());
+        }
+      }
       std::array<T,N> values{}; store(values.data());
       std::array<word_type,N> words{};
       for(std::size_t i=0;i<N;++i) words[i]=std::bit_cast<word_type>(values[i]);
@@ -188,6 +221,11 @@ namespace native {
     }
     /// Read exact lane representations from unsigned words.
     static constexpr simd load_bits(word_type const * p) noexcept requires(!std::same_as<T,bool> && !simd_mask_element<T>) {
+      if consteval {} else {
+        if constexpr(half_representation) {
+          simd result; std::memcpy(result.value_.data(),reinterpret_cast<unsigned char const *>(p),N*sizeof(T)); return result;
+        }
+      }
       std::array<word_type,N> words{};
       if consteval {
         for(std::size_t i=0;i<N;++i) words[i]=p[i];
@@ -322,6 +360,12 @@ namespace native {
     /// Choose each logical lane from a or b without reading padding as a result.
     template<class M> requires(std::same_as<M,mask_type> || std::same_as<M,predicate<N,A>> || std::same_as<M,vector_mask_type>)
     friend constexpr simd select(M mask,simd a,simd b) noexcept {
+      if constexpr(half_representation) {
+        std::array<word_type,N> first{},second{}; a.store_bits(first.data()); b.store_bits(second.data());
+        auto bits=mask.to_bitset();
+        for(std::size_t i=0;i<N;++i) if(!((bits>>i)&1)) first[i]=second[i];
+        return load_bits(first.data());
+      }
       std::array<T,N> first{},second{}; a.store(first.data()); b.store(second.data());
       auto bits=mask.to_bitset();
       for(std::size_t i=0;i<N;++i) if(!((bits>>i)&1)) first[i]=second[i];
@@ -329,10 +373,17 @@ namespace native {
     }
     /// Read one logical lane selected at compile time.
     template<std::size_t I> requires(I<N)
-    constexpr T get() const noexcept { std::array<T,N> lanes{}; store(lanes.data()); return lanes[I]; }
+    constexpr T get() const noexcept {
+      if constexpr(half_representation) { std::array<word_type,N> words{}; store_bits(words.data()); return T::from_bits(words[I]); }
+      else { std::array<T,N> lanes{}; store(lanes.data()); return lanes[I]; }
+    }
     /// Replace one logical lane, retaining every other lane's representation.
     template<std::size_t I> requires(I<N)
-    constexpr simd set(T value) const noexcept { std::array<T,N> lanes{}; store(lanes.data()); lanes[I]=value; return load(lanes.data()); }
+    constexpr simd set(T value) const noexcept {
+      if constexpr(half_representation) {
+        std::array<word_type,N> words{}; store_bits(words.data()); words[I]=value.to_bits(); return load_bits(words.data());
+      } else { std::array<T,N> lanes{}; store(lanes.data()); lanes[I]=value; return load(lanes.data()); }
+    }
     /// Synonym for replacing one compile-time-selected logical lane.
     template<std::size_t I> requires(I<N)
     constexpr simd replace(T value) const noexcept { return this->template set<I>(value); }

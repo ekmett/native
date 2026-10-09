@@ -232,6 +232,15 @@ namespace native {
        (A.has(polyfill) && !detail::ordinary_simd_element<T> && detail::polyfill_element_traits<T>::supported)))
   constexpr simd<T,N,A> bit_select(simd<U,N,A> mask,simd<T,N,A> a,simd<T,N,A> b) noexcept {
     using W=std::make_unsigned_t<U>;
+    if constexpr(detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::binary16 ||
+      detail::polyfill_element_traits<T>::kind==detail::polyfill_element_kind::bfloat16) {
+      std::array<W,N> first{},second{}; std::array<U,N> masks{};
+      a.store_bits(first.data()); b.store_bits(second.data()); mask.store(masks.data());
+      for(std::size_t i=0;i<N;++i) {
+        auto m=std::bit_cast<W>(masks[i]); first[i]=W((m&first[i])|(~m&second[i]));
+      }
+      return simd<T,N,A>::load_bits(first.data());
+    }
     std::array<T,N> first{},second{}; std::array<U,N> masks{};
     a.store(first.data()); b.store(second.data()); mask.store(masks.data());
     for(std::size_t i=0;i<N;++i) {

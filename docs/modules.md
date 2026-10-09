@@ -122,6 +122,13 @@ is not a portable cross-platform promise.
 BF16 `dot2` is constant-evaluable with the architecture's instruction semantics.
 ARM uses legacy BFDOT behavior with EBF clear; x86 retains VDPBF16PS's
 high-product-first ordering. Their fixed rounding and denormal rules differ.
+With explicit `polyfill` permission, `dot2` accepts every supported even BF16
+lane count through 64 and produces half as many FP32 lanes. For example,
+`simd<bf16,18,polyfill>` accumulates into `simd<float,9,polyfill>`. Missing BF16
+instructions use the family's software semantics; available BF16 instructions
+process native groups and trim a padded logical tail. ARM runtime fallback
+observes FPCR, including enhanced BFDOT when EBF is set; x86 retains the fixed
+instruction contract independently of MXCSR. Permission does not admit hardware.
 
 ## Half-precision values
 

@@ -225,8 +225,9 @@ namespace native::detail::half_constant {
     p.flush_inputs=p.flush_outputs=true;
     p.default_nan_negative=true;
     p.invalid_product_overrides_quiet_addend=false;
+    auto const control=Arm?arm_float_control::current():arm_float_control{};
     for(std::size_t i=0;i<V::lanes;++i) {
-      if constexpr(Arm) result[i]=arm_bfdot_bits(result[i],left[2*i],left[2*i+1],right[2*i],right[2*i+1]);
+      if constexpr(Arm) result[i]=arm_bfdot_bits(result[i],left[2*i],left[2*i+1],right[2*i],right[2*i+1],control);
       else {
         // The instruction evaluates the high product first. The low product's
         // NaNs therefore take precedence over both the high pair and addend.
@@ -346,3 +347,6 @@ namespace native::detail::neon_fp16_backend {
 #include "native/simd/for_each_backend.h"
 #undef NATIVE_BACKEND_BODY
 #endif
+
+// BF16 logical dot products retain family-specific instruction semantics.
+#include "native/simd/polyfill_dot2.h"

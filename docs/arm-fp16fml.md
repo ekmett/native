@@ -51,7 +51,7 @@ Each output is one fused binary32 operation. There is no intermediate binary16
 product or separately rounded binary32 multiplication. These are FEAT_FHM
 operations, with a different contract from ordinary FP16 and BF16 arithmetic.
 
-Runtime calls require `arm_feature::fp16fml` and a `"fp16fml"` caller target.
+Native runtime calls require `arm_feature::fp16fml` and a `"fp16fml"` caller target.
 Admission includes NEON and FP16. The `neon_fp16` preset, BF16 and FCMA do not
 supply FHM. Admit the target requirement and `NATIVE_TARGET_MINIMUM` before
 entering the function; importing the module does not enable instructions or
@@ -68,8 +68,10 @@ orders memory-based environment accesses and adds no CPU memory fence.
 Constant evaluation uses nearest-even rounding, gradual inputs and results,
 payload-preserving NaNs, IEEE half precision and masked exceptions, with
 DN=AH=AHP=FZ=FZ16=FIZ=EBF=0 and no machine status effects. A tag without FHM
-permits only `consteval` calls when the SIMD storage types exist. There is no
-runtime software fallback.
+and without `polyfill` permits only `consteval` calls when the SIMD storage types
+exist. Explicit `polyfill` permission enables runtime software evaluation under
+the same FPCR result policy. Available native FHM instructions retain priority;
+permission does not admit hardware.
 
 See the [Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#fp16-armv84-a)
 and [Arm Architecture Reference Manual](https://developer.arm.com/documentation/ddi0487/latest/).

@@ -62,7 +62,7 @@ rounding. Rotation 0 followed by rotation 90 accumulates the full complex
 product with two successive fused rounding stages. The unselected component
 of `a` does not participate in an individual call.
 
-Runtime calls require `arm_feature::complxnum` and a `"complxnum"` caller
+Native runtime calls require `arm_feature::complxnum` and a `"complxnum"` caller
 target. FP16 calls additionally require `arm_feature::neon_fp16` and
 `"complxnum,fullfp16"`. Admission includes NEON. Check the target requirement
 and `NATIVE_TARGET_MINIMUM` before entering the function. FP16, FHM and BF16
@@ -79,8 +79,10 @@ no CPU memory fence.
 Constant evaluation uses nearest-even rounding, gradual inputs and results,
 payload-preserving NaNs, IEEE half precision and masked exceptions, with
 DN=AH=AHP=FZ=FZ16=FIZ=EBF=0 and no machine status effects. Without FCMA,
-`consteval`-only overloads remain available when the SIMD storage types exist.
-They provide no runtime fallback.
+`consteval`-only overloads remain available when the SIMD storage types exist
+and permission is absent. Explicit `polyfill` permission enables runtime software
+evaluation under the same FPCR result policy. Available native FCMA instructions
+retain priority; permission does not admit hardware.
 
 For indexed FP32 two-element results, the implementation selects a 64-bit pair
 and uses the vector instruction. An indexed 64-bit FP16 result selecting an

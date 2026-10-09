@@ -53,7 +53,7 @@ NATIVE_TARGET_POP()
 
 ## Caveats
 
-Runtime calls require `arm_feature::neon_bf16` and a `"bf16"` caller target.
+Native runtime calls require `arm_feature::neon_bf16` and a `"bf16"` caller target.
 Admission includes NEON. BF16 is independent of FP16, DotProd and I8MM.
 Admit the target requirement and `NATIVE_TARGET_MINIMUM` before entering the
 function. Importing the module does not enable instructions or perform dispatch.
@@ -94,8 +94,10 @@ payload-preserving NaNs, IEEE half precision and masked exceptions, with
 DN=AH=AHP=FZ=FZ16=FIZ=EBF=0 and no machine status effects. The fixed BFDOT/BFMMLA
 rules override this: round-to-odd steps, flushing, infinity on overflow and
 positive default NaNs. BFMLALB/T use the ordinary AH=0 fused result, preserving
-NaN payloads and signs. A tag without BF16 permits only `consteval` calls when
-the SIMD storage types exist; it provides no runtime fallback.
+NaN payloads and signs. A tag without BF16 and without `polyfill` permits only `consteval` calls when
+the SIMD storage types exist. Explicit `polyfill` permission enables runtime
+software evaluation under the same FPCR result policy; available native BF16
+instructions retain priority. Hardware admission remains a separate requirement.
 
 See Arm's [BF16 instruction overview](https://developer.arm.com/community/arm-community-blogs/b/ai-blog/posts/bfloat16-processing-for-neural-networks-on-armv8_2d00_a),
 [SME supplement, B3.1.2 and E2.2](https://documentation-service.arm.com/static/62015c6c965f7d118e3f5f4c),

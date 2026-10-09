@@ -148,7 +148,7 @@ namespace polyfill_test {
   }
   template<class V> bool unaligned_memory(unsigned seed) {
     using T=typename V::value_type;
-    using W=typename V::word_type;
+    using W=std::conditional_t<sizeof(T)==8,std::uint64_t,std::conditional_t<sizeof(T)==4,std::uint32_t,std::conditional_t<sizeof(T)==2,std::uint16_t,std::uint8_t>>>;
     std::array<T,V::lanes> input{},output{};
     for(std::size_t i=0;i<V::lanes;++i) input[i]=T(i+1+seed);
     alignas(T) std::array<std::byte,sizeof(input)+2> source{},destination{};
@@ -564,6 +564,11 @@ int main(int argc,char **) {
 #if !NATIVE_POLYFILL_HEADERS
   extra_ok=extra_ok && extra_storage<fp16,isa<>(polyfill)>() && extra_storage<bf16,isa<>(polyfill)>() &&
     extra_arithmetic<fp16,isa<>(polyfill)>() && storage_only_operations() && half_environment();
+#if NATIVE_HOST_NEON
+  extra_ok=extra_ok && unaligned_memory<simd<fp16,4,neon|polyfill>>(seed) &&
+    unaligned_memory<simd<bf16,4,neon|polyfill>>(seed) && unaligned_memory<simd<double,2,neon|polyfill>>(seed);
+  if(classify_isa(observe_cpu(),neon_fp16).admitted()) extra_ok=extra_ok && extra_arithmetic<fp16,neon_fp16|polyfill>();
+#endif
 #endif
   bool scalar_ok=extra_ok && math_graph<isa<>(polyfill)>(seed) && helper_graph<isa<>(polyfill)>(seed) && custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
     floating<scalar_emulated>(float(seed)) && memory<scalar_emulated>(seed) &&

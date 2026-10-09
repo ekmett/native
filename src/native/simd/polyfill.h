@@ -190,4 +190,5 @@ namespace native {
   };
 }
 
+#include "native/simd/polyfill_feature_chunk.h"
 #include "native/simd/polyfill_scalar.h"
