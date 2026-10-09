@@ -42,8 +42,9 @@ def build(source, api, output, name, pandoc):
     assets.mkdir()
     for file in ('site.css', 'reference.css', 'theme.js', 'site.js'):
         shutil.copyfile(source / 'docs/site' / file, assets / file)
-    if (source / 'assets/images').is_dir():
-        shutil.copytree(source / 'assets/images', assets / 'images')
+    for directory in ('images', 'badges'):
+        if (source / 'assets' / directory).is_dir():
+            shutil.copytree(source / 'assets' / directory, assets / directory)
     icon = '<link rel="icon" href="assets/images/favicon.png" type="image/png">' if (assets / 'images/favicon.png').is_file() else ''
 
     def decorate(text, page, reference=False):
@@ -69,7 +70,7 @@ def build(source, api, output, name, pandoc):
         local = target.relative_to(source)
         if local in routes:
             path = relative(routes[local], page)
-        elif local.parts[:2] == ('assets', 'images') and target.is_file():
+        elif local.parts[:2] in (('assets', 'images'), ('assets', 'badges')) and target.is_file():
             path = relative(local, page)
         else:
             path = f'{repo}/blob/{revision}/{local.as_posix()}'

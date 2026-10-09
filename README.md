@@ -3,11 +3,24 @@
 <!-- SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com> -->
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
-[![CMake](https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat&label=CMake&logo=cmake&logoColor=white)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
-[![docs: doxygen](https://img.shields.io/badge/docs-doxygen-blue?style=flat&logo=doxygen&logoColor=white)](https://ekmett.github.io/native/)
-[![GitHub commit activity](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat)](https://github.com/ekmett/native/activity)
-[![GitHub issues](https://img.shields.io/github/issues/ekmett/native?style=flat)](https://github.com/ekmett/native/issues)
-[![C++26](https://img.shields.io/badge/C%2B%2B-26-00599C?style=flat&logo=c%2B%2B&logoColor=white)](https://en.cppreference.com/cpp/compiler_support/26)
+<!-- badges:start -->
+[![build](https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat&label=build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
+[![docs build](https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat&label=docs+build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)
+[![issues](https://img.shields.io/github/issues/ekmett/native?style=flat&label=issues&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/issues)
+[![commits](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat&label=commits&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/activity)
+
+[![CMake: 4.4+](https://img.shields.io/static/v1?label=CMake&message=4.4%2B&color=064F8C&style=flat&logo=cmake&logoColor=white)](CMakeLists.txt)
+[![C++: 26](https://img.shields.io/static/v1?label=C%2B%2B&message=26&color=00599C&style=flat&logo=cplusplus&logoColor=white)](README.md)
+[![Clang: 23](https://img.shields.io/static/v1?label=Clang&message=23&color=6f42c1&style=flat&logo=llvm&logoColor=white)](README.md)
+
+[![OS: Linux · macOS · Windows](https://img.shields.io/static/v1?label=OS&message=Linux+%C2%B7+macOS+%C2%B7+Windows&color=64748b&style=flat)](README.md)
+[![CPU: x86-64 · ARM64 · Wasm](https://img.shields.io/static/v1?label=CPU&message=x86-64+%C2%B7+ARM64+%C2%B7+Wasm&color=64748b&style=flat)](README.md)
+
+[![license: BSD-2-Clause OR Apache-2.0](assets/badges/license.svg)](LICENSE.md)
+[![Contributor Covenant: 2.0](https://img.shields.io/static/v1?label=Contributor+Covenant&message=2.0&color=007ec6&style=flat&logo=contributorcovenant&logoColor=white)](CODE_OF_CONDUCT.md)
+
+[![docs: read](https://img.shields.io/static/v1?label=docs&message=read&color=007ec6&style=flat)](https://ekmett.github.io/native/)
+<!-- badges:end -->
 
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
 with a shared vocabulary for compiler features and runtime admission.
