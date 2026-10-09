@@ -66,16 +66,16 @@ jobs:
         exceptions: ${{ !inputs.coverage && github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
         platform: >-
           ${{ fromJSON((inputs.coverage || github.event_name == 'workflow_dispatch') &&
-          '[{"name":"Linux x64 · AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Windows x64 · AVX2","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Windows ARM64 · NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"macOS ARM64 · NEON","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'schedule' &&
-          '[{"name":"Linux x64 · AVX2","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'pull_request' &&
-          '[{"name":"Windows ARM64 · NEON","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
-          '[{"name":"Linux ARM64 · NEON","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
+          '[{"name":"Linux x64","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Windows x64","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Windows ARM64","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"macOS ARM64","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'schedule' &&
+          '[{"name":"Linux x64","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
+            {"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'pull_request' &&
+          '[{"name":"Windows ARM64","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
+            {"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
+          '[{"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -278,11 +278,17 @@ jobs:
               profiles: $profiles, suite: $suite, result: $result, compiler: $compiler}' \
             > build/core/coverage/report/configuration.json
           cp build/environment.log build/core/coverage/report/environment.log
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            python .github/scripts/coverage_flags.py
+          else
+            python3 .github/scripts/coverage_flags.py
+          fi
+          cat build/core/coverage/report/execution.json >> "$GITHUB_STEP_SUMMARY"
       - name: Retain coverage report
         if: always() && inputs.coverage && steps.coverage.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-${{ matrix.platform.runner }}-${{ matrix.platform.profile }}
+          name: coverage-${{ matrix.platform.runner }}-${{ steps.coverage.outputs.hardware }}
           retention-days: 7
           if-no-files-found: error
           path: build/core/coverage/report/
@@ -293,8 +299,8 @@ jobs:
           use_oidc: true
           files: build/core/coverage/report/coverage.info
           disable_search: true
-          flags: ${{ runner.os }}_${{ runner.arch }}_${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'extended' || 'smoke' }}
-          name: ${{ matrix.platform.runner }}-${{ matrix.platform.profile }}
+          flags: ${{ steps.coverage.outputs.flags }}
+          name: ${{ matrix.platform.runner }}-${{ steps.coverage.outputs.hardware }}
           fail_ci_if_error: true
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'

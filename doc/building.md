@@ -61,7 +61,11 @@ module build; their instruction checks still run.
 
 Each job retains HTML and LCOV reports with its commit, compiler, configuration
 and runner hardware. Codecov receives the LCOV report through GitHub OIDC, without
-an upload token. Flags distinguish OS, architecture and suite. Missing platforms
+an upload token. Flags distinguish OS, architecture and suite. A run that passes
+`omnibus.avx512` also receives an OS/architecture-specific `avx512_extended` flag.
+That flag identifies a whole run that executed AVX-512, not an AVX-512-only slice
+of its coverage. The artifact records passed/skipped profile tests in
+`execution.json`; compiling an AVX-512 variant alone does not earn the flag. Missing platforms
 are not carried forward from older commits, and coverage percentages are
 informational rather than merge gates. Compare reports by platform: a shared
 line covered on x86 does not establish that its ARM implementation ran.
