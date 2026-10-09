@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2024-2026 Edward Kmett <ekmett@gmail.com>
 // SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-// Module-only counterparts of the former embedded half/numerics checks.
+// Scalar numerics contracts through the public module.
+#include <cstdint>
+#include <utility>
 import native.numerics;
 using namespace native;
 
@@ -38,6 +40,28 @@ template<class T> bool half_api() {
   return a > b && b < a && a >= b && b <= a && a != b && !(a == b);
 }
 
+// Four possible relations: less, equal, greater and unordered. The mask for
+// each immediate is its truth table, independent of the implementation branches.
+template<class T, std::size_t... I>
+bool floating_predicates(T a, T b, unsigned relation, std::index_sequence<I...>) {
+  constexpr unsigned masks[]{2,1,3,8,13,14,12,7,10,9,11,0,5,6,4,15};
+  return ((cmp<static_cast<CMP>(I)>(a,b) == bool(masks[I%16] & relation)) && ...);
+}
+template<class T, std::size_t... I>
+bool integer_predicates(T a, T b, unsigned relation, std::index_sequence<I...>) {
+  constexpr unsigned masks[]{2,1,3,0,5,6,4,7};
+  return ((cmpint<static_cast<CMPINT>(I)>(a,b) == bool(masks[I] & relation)) && ...);
+}
+template<class T> bool floating_truth_tables() {
+  volatile T inputs[]{T(-1),T(1),T(0),-T(0),std::numeric_limits<T>::infinity(),
+    std::numeric_limits<T>::quiet_NaN()};
+  struct pair { unsigned a,b,relation; };
+  for(auto p : {pair{0,1,1},pair{1,0,4},pair{2,3,2},pair{4,4,2},
+      pair{1,4,1},pair{5,1,8},pair{1,5,8},pair{5,5,8}})
+    if(!floating_predicates(T(inputs[p.a]),T(inputs[p.b]),p.relation,std::make_index_sequence<32>{})) return false;
+  return true;
+}
+
 int main() {
   if (!half_api<fp16>() || !half_api<bf16>()) return 1;
   if (!cmp_unord(std::numeric_limits<fp16>::quiet_NaN(), 1.0_fp16)) return 2;
@@ -46,5 +70,13 @@ int main() {
   volatile float runtime = 1.00390625f;
   // Preserve the historical explicit fast helper's runtime truncation.
   if (fast_to_bf16(runtime).to_bits() != 0x3f80) return 5;
+  if (!floating_truth_tables<float>() || !floating_truth_tables<double>()) return 6;
+  volatile std::int32_t low = std::numeric_limits<std::int32_t>::min();
+  volatile std::int32_t high = std::numeric_limits<std::int32_t>::max();
+  if (!integer_predicates(std::int32_t(low),std::int32_t(high),1,std::make_index_sequence<8>{}) ||
+      !integer_predicates(std::int32_t(high),std::int32_t(low),4,std::make_index_sequence<8>{}) ||
+      !integer_predicates(std::int32_t(low),std::int32_t(low),2,std::make_index_sequence<8>{})) return 7;
+  volatile std::uint32_t upper = std::numeric_limits<std::uint32_t>::max();
+  if (!integer_predicates(std::uint32_t(upper),std::uint32_t(0),4,std::make_index_sequence<8>{})) return 8;
   return 0;
 }

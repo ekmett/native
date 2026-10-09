@@ -42,6 +42,7 @@ template<class S> void check(S local, S peer) {
   require(*local.rbegin() == C('d') && local.crend() - local.crbegin() == 8);
   S empty;
   require(empty.data() != nullptr && empty.data()[0] == C());
+  require(bool(local) && !bool(empty) && local != empty && !(local != peer));
   require(empty.empty() && empty.begin() == empty.end() && empty.rbegin() == empty.rend());
   auto moved = std::move(local);
   require(moved == peer && local == peer);
@@ -70,6 +71,12 @@ int main() {
   static_c_string empty;
   require(empty.data() != nullptr && empty.data()[0] == 0 && empty.begin() == empty.end());
   require(empty.rbegin() == empty.rend());
+  char const * borrowed = c;
+  require(borrowed == peer_string().data() && c != empty && !(c != peer_c_string()));
+  require(c.cbegin() == c.begin() && c.cend() == c.end());
+  require(*c.crbegin() == 'd' && c.crend() - c.crbegin() == 8);
+  swap(c, empty);
+  require(c == static_c_string{} && empty == peer_c_string());
   std::ostringstream os; os << "output"_ss;
   require(os.str() == "output");
   std::wostringstream ws; ws << L"output"_ss;
