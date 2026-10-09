@@ -59,8 +59,14 @@ export namespace native {
   }
 
   /// Evaluate constant inputs when the architecture does not permit FJCVTZS.
-  template<isa<arm> Arch = NATIVE_BASELINE> requires(!Arch.has(arm_feature::jsconv))
+  template<isa<arm> Arch = NATIVE_BASELINE> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::jsconv))
   [[nodiscard]] consteval std::int32_t jcvt(double value) noexcept {
+    return detail::jcvt_constant(value);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch = NATIVE_BASELINE> requires(Arch.has(polyfill) && !Arch.has(arm_feature::jsconv))
+  [[nodiscard]] constexpr std::int32_t jcvt(double value) noexcept {
     return detail::jcvt_constant(value);
   }
   /// \}

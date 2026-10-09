@@ -9,14 +9,14 @@ module;
 import native.simd;
 #if NATIVE_HOST_NEON || defined(NATIVE_DOXYGEN)
 namespace native::detail::arm_neon_bits {
-  template<class V, class F> consteval V unary(V input, F operation) noexcept {
+  template<class V, class F> constexpr V unary(V input, F operation) noexcept {
     auto values = arm_constant::lanes(input);
     for (auto &value : values)
       value = operation(value);
     return arm_constant::pack<V>(values);
   }
 
-  template<unsigned Bits, class V> consteval V reverse(V input) noexcept {
+  template<unsigned Bits, class V> constexpr V reverse(V input) noexcept {
     auto source = arm_constant::lanes(input);
     auto result = source;
     constexpr unsigned group = Bits / (8 * sizeof(typename V::value_type));
@@ -33,6 +33,7 @@ namespace native {
   /// Saturation may set sticky FPSR.QC at runtime; constant evaluation computes values only.
   /// Big-endian two-lane 64-bit add/subtract and variable shifts carry a known
   /// zero-overhead exception: Clang adds register permutations for these shapes.
+  /// Software polyfills reproduce values without setting FPSR.QC.
   /// \{
 
   /// Signed saturating lane addition.
@@ -83,10 +84,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch> sqadd(simd<T, N, Arch> a,
+    simd<T, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_signed_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch> sqadd(simd<T, N, Arch> a,
     simd<T, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
@@ -140,10 +152,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch> uqadd(simd<T, N, Arch> a,
+    simd<T, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch> uqadd(simd<T, N, Arch> a,
     simd<T, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::add(x, y); });
@@ -197,10 +220,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch> sqsub(simd<T, N, Arch> a,
+    simd<T, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_signed_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch> sqsub(simd<T, N, Arch> a,
     simd<T, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
@@ -254,10 +288,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch> uqsub(simd<T, N, Arch> a,
+    simd<T, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch> uqsub(simd<T, N, Arch> a,
     simd<T, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::sub(x, y); });
@@ -295,10 +340,21 @@ namespace native {
 
   /// Evaluate constant operands without NEON when the storage shape exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
       (sizeof(T) == 2 || sizeof(T) == 4) && (sizeof(T) * N == 8 || sizeof(T) * N == 16) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch> sqdmulh(simd<T, N, Arch> a,
+    simd<T, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::multiply_high<false>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
+      (sizeof(T) == 2 || sizeof(T) == 4) && (sizeof(T) * N == 8 || sizeof(T) * N == 16) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch> sqdmulh(simd<T, N, Arch> a,
     simd<T, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::multiply_high<false>(x, y); });
@@ -336,10 +392,21 @@ namespace native {
 
   /// Evaluate constant operands without NEON when the storage shape exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
       (sizeof(T) == 2 || sizeof(T) == 4) && (sizeof(T) * N == 8 || sizeof(T) * N == 16) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch> sqrdmulh(simd<T, N, Arch> a,
+    simd<T, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::multiply_high<true>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> &&
+      (sizeof(T) == 2 || sizeof(T) == 4) && (sizeof(T) * N == 8 || sizeof(T) * N == 16) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch> sqrdmulh(simd<T, N, Arch> a,
     simd<T, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::multiply_high<true>(x, y); });
@@ -394,10 +461,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  sshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, false>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_signed_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   sshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, false>(x, y); });
@@ -451,10 +529,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  srshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_signed_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   srshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
@@ -509,10 +598,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  sqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_signed_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   sqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
@@ -567,10 +667,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_signed_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  sqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_signed_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   sqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
@@ -625,10 +736,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  ushl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, false>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   ushl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, false>(x, y); });
@@ -682,10 +804,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  urshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   urshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, false>(x, y); });
@@ -740,10 +873,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  uqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   uqshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<false, true>(x, y); });
@@ -798,10 +942,21 @@ namespace native {
 
   /// Evaluate constant operands when NEON is absent.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
       std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
       (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval simd<T, N, Arch>
+  uqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
+    return detail::arm_neon_constant::binary(
+      a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) &&
+      std::is_unsigned_v<T> && (sizeof(T) <= 8) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16) && requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr simd<T, N, Arch>
   uqrshl(simd<T, N, Arch> a, simd<std::make_signed_t<T>, N, Arch> b) noexcept {
     return detail::arm_neon_constant::binary(
       a, b, [](auto x, auto y) { return detail::arm_neon_constant::shift<true, true>(x, y); });
@@ -834,10 +989,23 @@ namespace native {
 
   /// Evaluate constant operands without NEON when storage exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval auto sqxtn(simd<T, N, Arch> a) noexcept {
+    using element =
+        std::conditional_t<sizeof(T) == 2, std::int8_t,
+                           std::conditional_t<sizeof(T) == 4, std::int16_t, std::int32_t>>;
+    using result = simd<element, N, Arch>;
+    return detail::arm_neon_constant::narrow_low<result>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr auto sqxtn(simd<T, N, Arch> a) noexcept {
     using element =
         std::conditional_t<sizeof(T) == 2, std::int8_t,
                            std::conditional_t<sizeof(T) == 4, std::int16_t, std::int32_t>>;
@@ -879,10 +1047,28 @@ namespace native {
 
   /// Evaluate constant operands without NEON when storage exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval auto sqxtn_high(
+      simd<std::conditional_t<sizeof(T) == 2, std::int8_t,
+                              std::conditional_t<sizeof(T) == 4, std::int16_t, std::int32_t>>,
+           N, Arch>
+          low,
+      simd<T, N, Arch> a) noexcept {
+    using element =
+        std::conditional_t<sizeof(T) == 2, std::int8_t,
+                           std::conditional_t<sizeof(T) == 4, std::int16_t, std::int32_t>>;
+    using result = simd<element, 2 * N, Arch>;
+    return detail::arm_neon_constant::narrow_high<result>(low, a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr auto sqxtn_high(
       simd<std::conditional_t<sizeof(T) == 2, std::int8_t,
                               std::conditional_t<sizeof(T) == 4, std::int16_t, std::int32_t>>,
            N, Arch>
@@ -922,10 +1108,23 @@ namespace native {
 
   /// Evaluate constant operands without NEON when storage exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval auto uqxtn(simd<T, N, Arch> a) noexcept {
+    using element =
+        std::conditional_t<sizeof(T) == 2, std::uint8_t,
+                           std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
+    using result = simd<element, N, Arch>;
+    return detail::arm_neon_constant::narrow_low<result>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
+      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr auto uqxtn(simd<T, N, Arch> a) noexcept {
     using element =
         std::conditional_t<sizeof(T) == 2, std::uint8_t,
                            std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
@@ -967,10 +1166,28 @@ namespace native {
 
   /// Evaluate constant operands without NEON when storage exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval auto uqxtn_high(
+      simd<std::conditional_t<sizeof(T) == 2, std::uint8_t,
+                              std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>,
+           N, Arch>
+          low,
+      simd<T, N, Arch> a) noexcept {
+    using element =
+        std::conditional_t<sizeof(T) == 2, std::uint8_t,
+                           std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
+    using result = simd<element, 2 * N, Arch>;
+    return detail::arm_neon_constant::narrow_high<result>(low, a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_unsigned_v<T> && sizeof(T) * N == 16 &&
+      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr auto uqxtn_high(
       simd<std::conditional_t<sizeof(T) == 2, std::uint8_t,
                               std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>,
            N, Arch>
@@ -1010,10 +1227,23 @@ namespace native {
 
   /// Evaluate constant operands without NEON when storage exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval auto sqxtun(simd<T, N, Arch> a) noexcept {
+    using element =
+        std::conditional_t<sizeof(T) == 2, std::uint8_t,
+                           std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
+    using result = simd<element, N, Arch>;
+    return detail::arm_neon_constant::narrow_low<result>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr auto sqxtun(simd<T, N, Arch> a) noexcept {
     using element =
         std::conditional_t<sizeof(T) == 2, std::uint8_t,
                            std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
@@ -1055,10 +1285,28 @@ namespace native {
 
   /// Evaluate constant operands without NEON when storage exists.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
-    requires(!Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
       (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
       requires { sizeof(simd<T, N, Arch>); })
   [[nodiscard]] consteval auto sqxtun_high(
+      simd<std::conditional_t<sizeof(T) == 2, std::uint8_t,
+                              std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>,
+           N, Arch>
+          low,
+      simd<T, N, Arch> a) noexcept {
+    using element =
+        std::conditional_t<sizeof(T) == 2, std::uint8_t,
+                           std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>;
+    using result = simd<element, 2 * N, Arch>;
+    return detail::arm_neon_constant::narrow_high<result>(low, a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && sizeof(T) * N == 16 &&
+      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8) &&
+      requires { sizeof(simd<T, N, Arch>); })
+  [[nodiscard]] constexpr auto sqxtun_high(
       simd<std::conditional_t<sizeof(T) == 2, std::uint8_t,
                               std::conditional_t<sizeof(T) == 4, std::uint16_t, std::uint32_t>>,
            N, Arch>
@@ -1103,6 +1351,17 @@ namespace native {
     }
   }
 
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && (sizeof(T) <= 4) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  [[nodiscard]] constexpr simd<T, N, Arch>
+  clz(simd<T, N, Arch> a) noexcept {
+    return detail::arm_neon_bits::unary(a, [](T value) {
+      return T(std::countl_zero(std::make_unsigned_t<T>(value)));
+    });
+  }
+
   /// Count leading sign bits in each lane, excluding the sign bit itself.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && std::is_signed_v<T> && (sizeof(T) <= 4) &&
@@ -1139,6 +1398,21 @@ namespace native {
     }
   }
 
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && std::is_signed_v<T> && (sizeof(T) <= 4) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  [[nodiscard]] constexpr simd<T, N, Arch>
+  cls(simd<T, N, Arch> a) noexcept {
+    return detail::arm_neon_bits::unary(a, [](T value) {
+      using U = std::make_unsigned_t<T>;
+      U bits = U(value);
+      if (value < 0)
+        bits = U(~bits);
+      return T(std::countl_zero(bits) - 1);
+    });
+  }
+
   /// Reverse the eight bits within each byte lane.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
@@ -1164,6 +1438,22 @@ namespace native {
     }
   }
 
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  [[nodiscard]] constexpr simd<T, N, Arch>
+  rbit(simd<T, N, Arch> a) noexcept {
+    return detail::arm_neon_bits::unary(a, [](T value) {
+      std::uint8_t bits = std::uint8_t(value), result = 0;
+      for (unsigned bit = 0; bit < 8; ++bit) {
+        result = std::uint8_t((unsigned(result) << 1) | (bits & 1));
+        bits >>= 1;
+      }
+      return std::bit_cast<T>(result);
+    });
+  }
+
   /// Reverse byte lanes within each 16-bit block.
   template<isa<arm> Arch, simd_integer_element T, std::size_t N>
     requires(Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
@@ -1180,6 +1470,15 @@ namespace native {
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
           vrev16q_u8(detail::arm_neon::to_register<uint8x16_t>(a)));
     }
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && (sizeof(T) == 1) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  [[nodiscard]] constexpr simd<T, N, Arch>
+  rev16(simd<T, N, Arch> a) noexcept {
+    return detail::arm_neon_bits::reverse<16>(a);
   }
 
   /// Reverse byte or halfword lanes within each 32-bit block.
@@ -1204,6 +1503,15 @@ namespace native {
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
           vrev32q_u16(detail::arm_neon::to_register<uint16x8_t>(a)));
     }
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && (sizeof(T) <= 2) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  [[nodiscard]] constexpr simd<T, N, Arch>
+  rev32(simd<T, N, Arch> a) noexcept {
+    return detail::arm_neon_bits::reverse<32>(a);
   }
 
   /// Reverse byte, halfword or word lanes within each 64-bit block.
@@ -1234,6 +1542,15 @@ namespace native {
         return detail::arm_neon::from_register<simd<T, N, Arch>>(
           vrev64q_u32(detail::arm_neon::to_register<uint32x4_t>(a)));
     }
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, simd_integer_element T, std::size_t N>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon) && (sizeof(T) <= 4) &&
+      (sizeof(T) * N == 8 || sizeof(T) * N == 16))
+  [[nodiscard]] constexpr simd<T, N, Arch>
+  rev64(simd<T, N, Arch> a) noexcept {
+    return detail::arm_neon_bits::reverse<64>(a);
   }
 
   /// \}

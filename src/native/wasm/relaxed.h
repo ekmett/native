@@ -138,9 +138,9 @@ namespace native::detail::wasm_relaxed {
 namespace native::detail::wasm_relaxed_constant {
   template<class V>
   constexpr auto lanes(V value) noexcept {
-    std::array<typename V::value_type, V::lanes> result{};
-    value.store(result.data());
-    return result;
+    // Every relaxed-SIMD operand occupies exactly 128 logical bits. Copy its
+    // representation without calling a target-attributed load/store adapter.
+    return std::bit_cast<std::array<typename V::value_type, V::lanes>>(value);
   }
 
   template<class T>
@@ -154,7 +154,7 @@ namespace native::detail::wasm_relaxed_constant {
     for (auto & index : result) {
       index = index < 16 ? input[index] : 0;
     }
-    return V::load(result.data());
+    return std::bit_cast<V>(result);
   }
 
   // Select the saturating result. Inspect encodings before conversion so NaNs,
@@ -198,7 +198,7 @@ namespace native::detail::wasm_relaxed_constant {
     for (std::size_t i = 0; i < V::lanes; ++i) {
       result[i] = truncate<typename R::value_type>(input[i]);
     }
-    return R::load(result.data());
+    return std::bit_cast<R>(result);
   }
 
   // The constant policy is fused, round-to-nearest-even with gradual underflow.
@@ -218,7 +218,7 @@ namespace native::detail::wasm_relaxed_constant {
       cv[i] = std::bit_cast<lane_type>(constexpr_float::fma_bits<format_type>(
         x, std::bit_cast<word_type>(bv[i]), std::bit_cast<word_type>(cv[i])));
     }
-    return V::load(cv.data());
+    return std::bit_cast<V>(cv);
   }
 
   template<class V>
@@ -229,7 +229,7 @@ namespace native::detail::wasm_relaxed_constant {
     for (std::size_t i = 0; i < V::lanes; ++i) {
       av[i] = (av[i] & mv[i]) | (bv[i] & ~mv[i]);
     }
-    return V::load(av.data());
+    return std::bit_cast<V>(av);
   }
 
   // Choose strict Wasm min/max: quiet NaN, negative zero for min, positive zero
@@ -254,7 +254,7 @@ namespace native::detail::wasm_relaxed_constant {
       }
       av[i] = std::bit_cast<lane_type>(result);
     }
-    return V::load(av.data());
+    return std::bit_cast<V>(av);
   }
 
   template<class V>
@@ -265,7 +265,7 @@ namespace native::detail::wasm_relaxed_constant {
       auto result = (std::int32_t{av[i]} * bv[i] + 0x4000) >> 15;
       av[i] = static_cast<std::int16_t>(result > 32767 ? 32767 : result);
     }
-    return V::load(av.data());
+    return std::bit_cast<V>(av);
   }
 
   template<class V, class W>
@@ -285,7 +285,7 @@ namespace native::detail::wasm_relaxed_constant {
   template<class R, class V, class W>
   constexpr R dot(V a, W b) noexcept {
     auto result = dot_pairs(a, b);
-    return R::load(result.data());
+    return std::bit_cast<R>(result);
   }
 
   template<class V, class W, class R>
@@ -297,6 +297,6 @@ namespace native::detail::wasm_relaxed_constant {
       result[i] = std::bit_cast<std::int32_t>(
         std::bit_cast<std::uint32_t>(result[i]) + static_cast<std::uint32_t>(sum));
     }
-    return R::load(result.data());
+    return std::bit_cast<R>(result);
   }
 }

@@ -12,7 +12,11 @@ import native;
 
 namespace wasm_relaxed_test {
   using namespace native;
+#ifdef NATIVE_TEST_POLYFILL
+  template<class T> using vector_type = vector<T, weak | polyfill>;
+#else
   template<class T> using vector_type = vector<T, strong>;
+#endif
   unsigned failures = 0;
   std::uint64_t random_state = 0x9e3779b97f4a7c15;
 
@@ -271,6 +275,7 @@ namespace wasm_relaxed_test {
       auto bv = unsigned_bytes::load(b.data());
       auto output = lanes(i16x8_relaxed_dot_i8x16_i7x16(av, bv));
       auto added = lanes(i32x4_relaxed_dot_i8x16_i7x16_add(av, bv, accumulator::load(c.data())));
+#ifndef NATIVE_TEST_POLYFILL
       std::array<std::int16_t, 8> raw_output{};
       std::array<std::int32_t, 4> raw_added{};
       wasm_v128_store(raw_output.data(), wasm_i16x8_relaxed_dot_i8x16_i7x16(av.to_native(), bv.to_native()));
@@ -279,7 +284,14 @@ namespace wasm_relaxed_test {
       check(output == raw_output && added == raw_added, "raw/public dot agreement", trial, 0);
       // The separate raw-engine probe checks full-bit operand conformance and the
       // globally fixed interpretation, including the overflowing signed pair.
+#endif
+#ifdef NATIVE_TEST_POLYFILL
+      // Software chooses signed-byte interpretation and saturates each pair;
+      // an engine may choose a different valid interpretation.
+      {
+#else
       if (trial != 0 && trial < 512) {
+#endif
         std::array<std::int16_t, 8> pairs{};
         for (unsigned i = 0; i < 8; ++i) {
           pairs[i] = dot_pair(a.data() + 2 * i, b.data() + 2 * i, false);

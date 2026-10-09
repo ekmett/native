@@ -37,13 +37,15 @@ Constant evaluation decodes binary64 bits rather than making such a cast.
 Runtime calls execute FJCVTZS with its floating-point environment behavior;
 constant evaluation computes the integer result without changing FP status.
 
-Runtime calls require `arm_feature::jsconv` and a `"jsconv"` caller target.
+Native runtime calls require `arm_feature::jsconv` and a `"jsconv"` caller target.
 The module uses the extension's JSCVT spelling; the feature and target use
 Clang's spelling. Check runtime admission before entering the target function.
 Importing a module does not check the CPU or enable instructions.
 
 Omitting `Arch` uses the baseline captured when the module was compiled. An
 importer's target attribute does not change that default. A tag without JSCVT
-permits only `consteval` calls; it supplies no runtime fallback.
+permits only `consteval` calls unless it includes `polyfill`. For example,
+`jcvt<polyfill>(x)` computes the truncation and modulo result in software,
+including zero for NaNs and infinities.
 
 See the [Arm ACLE conversion contract](https://arm-software.github.io/acle/main/acle.html#floating-point-data-processing-intrinsics).

@@ -76,7 +76,11 @@ namespace reference {
   }
 } // namespace reference
 
+#ifdef NATIVE_TEST_POLYFILL
+constexpr native::isa<native::arm> architecture = native::polyfill;
+#else
 constexpr auto architecture = native::feature_closure(native::arm_feature::neon);
+#endif
 template <class T, std::size_t N> using V = native::simd<T, N, architecture>;
 #pragma clang attribute push(__attribute__((target("neon"))), apply_to = function)
 
@@ -287,10 +291,11 @@ bool check_binary(char const *name, F operation, reference::operation kind, bool
     set_fpsr(fpsr() & ~qc);
     auto result = operation(left, right);
     auto status = fpsr();
-    if (lanes(result) != expected || bool(status & qc) != saturated) {
+    if (lanes(result) != expected || (!architecture.has(native::polyfill) && bool(status & qc) != saturated)) {
       std::printf("%s trial %u: value or QC mismatch\n", name, trial);
       return false;
     }
+#ifndef NATIVE_TEST_POLYFILL
     set_fpsr(status & ~qc);
     (void)operation(left, right);
     if (bool(fpsr() & qc) != saturated) {
@@ -303,6 +308,7 @@ bool check_binary(char const *name, F operation, reference::operation kind, bool
       std::printf("%s cleared sticky QC\n", name);
       return false;
     }
+#endif
   }
   return true;
 }
@@ -329,14 +335,14 @@ bool check_narrow(char const *name, Low low_operation, High high_operation) {
     set_fpsr(fpsr() & ~qc);
     auto small = low_operation(input);
     auto status = fpsr();
-    if (lanes(small) != expected || bool(status & qc) != saturated) {
+    if (lanes(small) != expected || (!architecture.has(native::polyfill) && bool(status & qc) != saturated)) {
       std::printf("%s low trial %u mismatch\n", name, trial);
       return false;
     }
     set_fpsr(status & ~qc);
     auto full = high_operation(low, input);
     status = fpsr();
-    if (lanes(full) != combined || bool(status & qc) != saturated) {
+    if (lanes(full) != combined || (!architecture.has(native::polyfill) && bool(status & qc) != saturated)) {
       std::printf("%s high trial %u mismatch\n", name, trial);
       return false;
     }

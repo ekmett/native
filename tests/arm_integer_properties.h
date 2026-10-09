@@ -106,20 +106,29 @@ namespace arm_integer_properties {
       auto expected = Case::reference(in);
       return sample{in, expected, strong == expected && weak == expected};
     });
+  template<class Case> auto execute(input const & in) {
+#if defined(NATIVE_TEST_POLYFILL_SCALAR)
+    return Case::template evaluate<native::isa<native::arm>{native::polyfill}>(in);
+#elif defined(NATIVE_TEST_POLYFILL)
+    return Case::template evaluate<native::neon | native::polyfill>(in);
+#else
+    return Case::runtime(in);
+#endif
+  }
   template<class Case> bool check() {
     static_assert([] { for (auto const &v : cases<Case>) if (!v.valid) return false; return true; }());
     bool ok = true;
     for (unsigned i = 0; i < cases<Case>.size(); ++i) {
       auto const &v = cases<Case>[i];
       ok = native_test::property_equal(Case::name, native_test::property_seed, i,
-        v.expected, Case::runtime(v.operands), v.operands) && ok;
+        v.expected, execute<Case>(v.operands), v.operands) && ok;
     }
     auto config = native_test::property_config(128);
     native_test::property_rng rng{config.seed};
     for (std::size_t i = 0; i < config.cases; ++i) {
       auto in = operands<typename Case::edge_type>(rng, i);
       ok = native_test::property_equal(Case::name, config.seed, i,
-        Case::reference(in), Case::runtime(in), in) && ok;
+        Case::reference(in), execute<Case>(in), in) && ok;
     }
     return ok;
   }

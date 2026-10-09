@@ -52,13 +52,14 @@ bool available() {
 Accumulation wraps modulo 2³². Signed overflow has the instruction's wrapping
 result; it does not saturate or invoke C++ signed-overflow undefined behavior.
 
-Runtime calls require `arm_feature::dotprod` and a caller compiled for
+Native runtime calls require `arm_feature::dotprod` and a caller compiled for
 `"dotprod"`. Check admission before entering the target function. DotProd adds
 NEON as a prerequisite and can be requested independently of RDM, FP16 or I8MM.
 An import does not enable the target or dispatch to a supported implementation.
 
-All forms support constant evaluation with the same modular arithmetic. A tag
-without DotProd permits only `consteval` calls, provided its SIMD storage shapes
-exist. It supplies no runtime software fallback.
+All forms support constant evaluation with the same modular arithmetic. Without
+DotProd, runtime calls require explicit `polyfill` permission. `neon | polyfill`
+uses NEON storage; `polyfill` alone permits scalar storage. Without permission,
+missing-feature calls remain `consteval`-only.
 
 See the [Arm Advanced SIMD intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#dot-product).

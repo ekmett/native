@@ -16,7 +16,7 @@ export namespace native {
   /// admit the complete target_features<arm>("aes") set before entering that leaf.
   /// These integer operations do not read or modify FPCR, FPSR or NZCV.
   /// Constant evaluation computes the same integer values. Feature-absent calls
-  /// are immediate-only and still require complete SIMD storage for their Arch.
+  /// are immediate-only without polyfill permission and still require complete SIMD storage for their Arch.
   /// \{
 
   /// Apply AddRoundKey, SubBytes and ShiftRows to one AES state.
@@ -31,8 +31,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> aese(simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> round_key) noexcept {
+    return detail::arm_constant::aes_round<false>(state, round_key);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> aese(simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> round_key) noexcept {
     return detail::arm_constant::aes_round<false>(state, round_key);
   }
 
@@ -48,8 +54,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> aesd(simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> round_key) noexcept {
+    return detail::arm_constant::aes_round<true>(state, round_key);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> aesd(simd<std::uint8_t, 16, Arch> state, simd<std::uint8_t, 16, Arch> round_key) noexcept {
     return detail::arm_constant::aes_round<true>(state, round_key);
   }
 
@@ -65,8 +77,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> aesmc(simd<std::uint8_t, 16, Arch> state) noexcept {
+    return detail::arm_constant::aes_mix<false>(state);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> aesmc(simd<std::uint8_t, 16, Arch> state) noexcept {
     return detail::arm_constant::aes_mix<false>(state);
   }
 
@@ -82,8 +100,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> aesimc(simd<std::uint8_t, 16, Arch> state) noexcept {
+    return detail::arm_constant::aes_mix<true>(state);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::aes) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> aesimc(simd<std::uint8_t, 16, Arch> state) noexcept {
     return detail::arm_constant::aes_mix<true>(state);
   }
 

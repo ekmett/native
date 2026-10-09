@@ -87,8 +87,10 @@ set even when a comparison result is discarded.
 
 Constant evaluation computes values or masks without machine status effects.
 Feature-absent `consteval` overloads exist for saturation and shift operations
-when their storage shapes are available; runtime operands are rejected. The six
-bit operations retain their NEON feature requirement at constant evaluation.
+when their storage shapes are available. Adding `polyfill` permits runtime
+software evaluation, including the six bit operations. Software saturation
+reproduces the result without setting `FPSR.QC`. Without permission, the six
+bit operations retain their NEON feature requirement.
 
 Two- and three-lane binary32 values and masks retain zero-padding normalization.
 On little-endian AArch64 a full-register floating comparison needs only the

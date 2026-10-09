@@ -94,3 +94,11 @@ endif()
 include("${CMAKE_CURRENT_LIST_DIR}/engine_tests.cmake")
 native_add_wasm_engine_tests("$<TARGET_FILE:native_test_wasm_relaxed_dot_engine>"
   "$<TARGET_FILE:native_test_wasm_relaxed_laneselect_engine>")
+
+add_executable(native_test_wasm_relaxed_polyfill main.cc)
+target_link_libraries(native_test_wasm_relaxed_polyfill PRIVATE native::native)
+target_compile_definitions(native_test_wasm_relaxed_polyfill PRIVATE NATIVE_TEST_POLYFILL=1)
+target_compile_options(native_test_wasm_relaxed_polyfill PRIVATE -ffp-contract=off)
+add_test(NAME native.wasm.relaxed.polyfill COMMAND "${NATIVE_WASM_NODE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/run.mjs" $<TARGET_FILE:native_test_wasm_relaxed_polyfill>)
+set_tests_properties(native.wasm.relaxed.polyfill PROPERTIES LABELS "wasm;polyfill")

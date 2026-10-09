@@ -81,3 +81,15 @@ foreach(kind RANGE 0 35)
   set_tests_properties(native.arm.crypto.constexpr_reject_${kind} PROPERTIES
     LABELS "host;arm;crypto;constexpr;negative" RUN_SERIAL TRUE)
 endforeach()
+
+add_executable(native_test_arm_crypto_polyfill constexpr.cc)
+target_link_libraries(native_test_arm_crypto_polyfill PRIVATE native::native)
+target_compile_definitions(native_test_arm_crypto_polyfill PRIVATE NATIVE_TEST_POLYFILL=1)
+add_test(NAME native.arm.crypto.polyfill COMMAND native_test_arm_crypto_polyfill)
+set_tests_properties(native.arm.crypto.polyfill PROPERTIES LABELS "host;arm;polyfill" TIMEOUT 30)
+
+add_executable(native_test_arm_crypto_polyfill_scalar constexpr.cc)
+target_link_libraries(native_test_arm_crypto_polyfill_scalar PRIVATE native::native)
+target_compile_definitions(native_test_arm_crypto_polyfill_scalar PRIVATE NATIVE_TEST_POLYFILL=1 NATIVE_TEST_POLYFILL_SCALAR=1)
+add_test(NAME native.arm.crypto.polyfill_scalar COMMAND native_test_arm_crypto_polyfill_scalar)
+set_tests_properties(native.arm.crypto.polyfill_scalar PROPERTIES LABELS "host;arm;polyfill" TIMEOUT 30)

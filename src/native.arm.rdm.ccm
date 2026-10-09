@@ -11,10 +11,11 @@ namespace native {
 /** \defgroup arm_rdm RDM
  * \ingroup cpu_arm
  * Explicit ISA-gated AArch64 instructions. Admit the feature before entering
- * a matching target scope; runtime calls provide no software fallback.
+ * a matching target scope; runtime software fallback requires polyfill permission.
  * Constant operands use exact integer semantics; feature-absent overloads are
- * immediate-only and preserve the available SIMD storage shape.
+ * immediate-only without polyfill permission and preserve the available SIMD storage shape.
  * SQRDMLAH and SQRDMLSH round and saturate once after accumulation.
+ * Software polyfills reproduce values without setting FPSR.QC.
  * Exact inline instructions avoid Clang's broader v8.1a builtin requirement.
  * Scalar calls without an ISA argument use the owning module's baseline.
  * Runtime saturation can set sticky FPSR.QC; no const/pure promise is made.
@@ -36,8 +37,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
   [[nodiscard]] consteval int16_t sqrdmlah(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
+    return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
+  [[nodiscard]] constexpr int16_t sqrdmlah(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
     return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
   }
 
@@ -56,8 +63,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 4, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
   }
 
@@ -76,8 +89,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr int16_t sqrdmlah_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 8, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
   }
 
@@ -99,8 +118,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 4, Arch> sqrdmlah(
+      simd<std::int16_t, 4, Arch> accumulator,
+      simd<std::int16_t, 4, Arch> lhs,
+      simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 4, Arch> sqrdmlah(
       simd<std::int16_t, 4, Arch> accumulator,
       simd<std::int16_t, 4, Arch> lhs,
       simd<std::int16_t, 4, Arch> rhs) noexcept {
@@ -125,8 +153,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 4, Arch> sqrdmlah_lane(
+      simd<std::int16_t, 4, Arch> accumulator,
+      simd<std::int16_t, 4, Arch> lhs,
+      simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 4, Arch> sqrdmlah_lane(
       simd<std::int16_t, 4, Arch> accumulator,
       simd<std::int16_t, 4, Arch> lhs,
       simd<std::int16_t, 4, Arch> rhs) noexcept {
@@ -151,8 +188,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 4, Arch>); sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 4, Arch>); sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 4, Arch> sqrdmlah_lane(
+      simd<std::int16_t, 4, Arch> accumulator,
+      simd<std::int16_t, 4, Arch> lhs,
+      simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 4, Arch>); sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 4, Arch> sqrdmlah_lane(
       simd<std::int16_t, 4, Arch> accumulator,
       simd<std::int16_t, 4, Arch> lhs,
       simd<std::int16_t, 8, Arch> rhs) noexcept {
@@ -177,8 +223,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> sqrdmlah(
+      simd<std::int16_t, 8, Arch> accumulator,
+      simd<std::int16_t, 8, Arch> lhs,
+      simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> sqrdmlah(
       simd<std::int16_t, 8, Arch> accumulator,
       simd<std::int16_t, 8, Arch> lhs,
       simd<std::int16_t, 8, Arch> rhs) noexcept {
@@ -203,8 +258,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 8, Arch>); sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 8, Arch>); sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> sqrdmlah_lane(
+      simd<std::int16_t, 8, Arch> accumulator,
+      simd<std::int16_t, 8, Arch> lhs,
+      simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 8, Arch>); sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> sqrdmlah_lane(
       simd<std::int16_t, 8, Arch> accumulator,
       simd<std::int16_t, 8, Arch> lhs,
       simd<std::int16_t, 4, Arch> rhs) noexcept {
@@ -229,8 +293,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> sqrdmlah_lane(
+      simd<std::int16_t, 8, Arch> accumulator,
+      simd<std::int16_t, 8, Arch> lhs,
+      simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> sqrdmlah_lane(
       simd<std::int16_t, 8, Arch> accumulator,
       simd<std::int16_t, 8, Arch> lhs,
       simd<std::int16_t, 8, Arch> rhs) noexcept {
@@ -252,8 +325,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
   [[nodiscard]] consteval int32_t sqrdmlah(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
+    return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
+  [[nodiscard]] constexpr int32_t sqrdmlah(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
     return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
   }
 
@@ -272,8 +351,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 2, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
   }
 
@@ -292,8 +377,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr int32_t sqrdmlah_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 4, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
   }
 
@@ -315,8 +406,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 2, Arch> sqrdmlah(
+      simd<std::int32_t, 2, Arch> accumulator,
+      simd<std::int32_t, 2, Arch> lhs,
+      simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 2, Arch> sqrdmlah(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int32_t, 2, Arch> lhs,
       simd<std::int32_t, 2, Arch> rhs) noexcept {
@@ -341,8 +441,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 2, Arch> sqrdmlah_lane(
+      simd<std::int32_t, 2, Arch> accumulator,
+      simd<std::int32_t, 2, Arch> lhs,
+      simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 2, Arch> sqrdmlah_lane(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int32_t, 2, Arch> lhs,
       simd<std::int32_t, 2, Arch> rhs) noexcept {
@@ -367,8 +476,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 2, Arch> sqrdmlah_lane(
+      simd<std::int32_t, 2, Arch> accumulator,
+      simd<std::int32_t, 2, Arch> lhs,
+      simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 2, Arch> sqrdmlah_lane(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int32_t, 2, Arch> lhs,
       simd<std::int32_t, 4, Arch> rhs) noexcept {
@@ -393,8 +511,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> sqrdmlah(
+      simd<std::int32_t, 4, Arch> accumulator,
+      simd<std::int32_t, 4, Arch> lhs,
+      simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> sqrdmlah(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int32_t, 4, Arch> lhs,
       simd<std::int32_t, 4, Arch> rhs) noexcept {
@@ -419,8 +546,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> sqrdmlah_lane(
+      simd<std::int32_t, 4, Arch> accumulator,
+      simd<std::int32_t, 4, Arch> lhs,
+      simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> sqrdmlah_lane(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int32_t, 4, Arch> lhs,
       simd<std::int32_t, 2, Arch> rhs) noexcept {
@@ -445,8 +581,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> sqrdmlah_lane(
+      simd<std::int32_t, 4, Arch> accumulator,
+      simd<std::int32_t, 4, Arch> lhs,
+      simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<false, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> sqrdmlah_lane(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int32_t, 4, Arch> lhs,
       simd<std::int32_t, 4, Arch> rhs) noexcept {
@@ -468,8 +613,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
   [[nodiscard]] consteval int16_t sqrdmlsh(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
+    return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
+  [[nodiscard]] constexpr int16_t sqrdmlsh(int16_t accumulator, int16_t lhs, int16_t rhs) noexcept {
     return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
   }
 
@@ -488,8 +639,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 4, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
   }
 
@@ -508,8 +665,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr int16_t sqrdmlsh_lane(int16_t accumulator, int16_t lhs, simd<std::int16_t, 8, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
   }
 
@@ -531,8 +694,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 4, Arch> sqrdmlsh(
+      simd<std::int16_t, 4, Arch> accumulator,
+      simd<std::int16_t, 4, Arch> lhs,
+      simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 4, Arch> sqrdmlsh(
       simd<std::int16_t, 4, Arch> accumulator,
       simd<std::int16_t, 4, Arch> lhs,
       simd<std::int16_t, 4, Arch> rhs) noexcept {
@@ -557,8 +729,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 4, Arch> sqrdmlsh_lane(
+      simd<std::int16_t, 4, Arch> accumulator,
+      simd<std::int16_t, 4, Arch> lhs,
+      simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 4, Arch> accumulator,
       simd<std::int16_t, 4, Arch> lhs,
       simd<std::int16_t, 4, Arch> rhs) noexcept {
@@ -583,8 +764,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 4, Arch>); sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 4, Arch>); sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 4, Arch> sqrdmlsh_lane(
+      simd<std::int16_t, 4, Arch> accumulator,
+      simd<std::int16_t, 4, Arch> lhs,
+      simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 4, Arch>); sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 4, Arch> accumulator,
       simd<std::int16_t, 4, Arch> lhs,
       simd<std::int16_t, 8, Arch> rhs) noexcept {
@@ -609,8 +799,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> sqrdmlsh(
+      simd<std::int16_t, 8, Arch> accumulator,
+      simd<std::int16_t, 8, Arch> lhs,
+      simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> sqrdmlsh(
       simd<std::int16_t, 8, Arch> accumulator,
       simd<std::int16_t, 8, Arch> lhs,
       simd<std::int16_t, 8, Arch> rhs) noexcept {
@@ -635,8 +834,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 8, Arch>); sizeof(simd<std::int16_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 8, Arch>); sizeof(simd<std::int16_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> sqrdmlsh_lane(
+      simd<std::int16_t, 8, Arch> accumulator,
+      simd<std::int16_t, 8, Arch> lhs,
+      simd<std::int16_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int16_t, 8, Arch>); sizeof(simd<std::int16_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 8, Arch> accumulator,
       simd<std::int16_t, 8, Arch> lhs,
       simd<std::int16_t, 4, Arch> rhs) noexcept {
@@ -661,8 +869,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> sqrdmlsh_lane(
+      simd<std::int16_t, 8, Arch> accumulator,
+      simd<std::int16_t, 8, Arch> lhs,
+      simd<std::int16_t, 8, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 8 && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> sqrdmlsh_lane(
       simd<std::int16_t, 8, Arch> accumulator,
       simd<std::int16_t, 8, Arch> lhs,
       simd<std::int16_t, 8, Arch> rhs) noexcept {
@@ -684,8 +901,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::rdm))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
   [[nodiscard]] consteval int32_t sqrdmlsh(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
+    return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm))
+  [[nodiscard]] constexpr int32_t sqrdmlsh(int32_t accumulator, int32_t lhs, int32_t rhs) noexcept {
     return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
   }
 
@@ -704,8 +927,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 2, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
   }
 
@@ -724,8 +953,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr int32_t sqrdmlsh_lane(int32_t accumulator, int32_t lhs, simd<std::int32_t, 4, Arch> rhs) noexcept {
     return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
   }
 
@@ -747,8 +982,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 2, Arch> sqrdmlsh(
+      simd<std::int32_t, 2, Arch> accumulator,
+      simd<std::int32_t, 2, Arch> lhs,
+      simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 2, Arch> sqrdmlsh(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int32_t, 2, Arch> lhs,
       simd<std::int32_t, 2, Arch> rhs) noexcept {
@@ -773,8 +1017,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 2, Arch> sqrdmlsh_lane(
+      simd<std::int32_t, 2, Arch> accumulator,
+      simd<std::int32_t, 2, Arch> lhs,
+      simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 2, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int32_t, 2, Arch> lhs,
       simd<std::int32_t, 2, Arch> rhs) noexcept {
@@ -799,8 +1052,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 2, Arch> sqrdmlsh_lane(
+      simd<std::int32_t, 2, Arch> accumulator,
+      simd<std::int32_t, 2, Arch> lhs,
+      simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 2, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 2, Arch> accumulator,
       simd<std::int32_t, 2, Arch> lhs,
       simd<std::int32_t, 4, Arch> rhs) noexcept {
@@ -825,8 +1087,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> sqrdmlsh(
+      simd<std::int32_t, 4, Arch> accumulator,
+      simd<std::int32_t, 4, Arch> lhs,
+      simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, -1>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> sqrdmlsh(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int32_t, 4, Arch> lhs,
       simd<std::int32_t, 4, Arch> rhs) noexcept {
@@ -851,8 +1122,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int32_t, 2, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int32_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> sqrdmlsh_lane(
+      simd<std::int32_t, 4, Arch> accumulator,
+      simd<std::int32_t, 4, Arch> lhs,
+      simd<std::int32_t, 2, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 2 && requires { sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int32_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int32_t, 4, Arch> lhs,
       simd<std::int32_t, 2, Arch> rhs) noexcept {
@@ -877,8 +1157,17 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, int Lane> requires(!Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch, int Lane> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> sqrdmlsh_lane(
+      simd<std::int32_t, 4, Arch> accumulator,
+      simd<std::int32_t, 4, Arch> lhs,
+      simd<std::int32_t, 4, Arch> rhs) noexcept {
+    return detail::arm_constant::rdm<true, Lane>(accumulator, lhs, rhs);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, int Lane> requires(Arch.has(polyfill) && !Arch.has(arm_feature::rdm) && Lane >= 0 && Lane < 4 && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> sqrdmlsh_lane(
       simd<std::int32_t, 4, Arch> accumulator,
       simd<std::int32_t, 4, Arch> lhs,
       simd<std::int32_t, 4, Arch> rhs) noexcept {

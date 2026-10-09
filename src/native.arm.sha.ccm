@@ -20,7 +20,7 @@ export namespace native {
   /// entering the target leaf; compiler bundles include sibling features.
   /// These integer operations do not read or modify FPCR, FPSR or NZCV.
   /// Constant evaluation computes the same integer values. Feature-absent calls
-  /// are immediate-only and still require complete SIMD storage for their Arch.
+  /// are immediate-only without polyfill permission and still require complete SIMD storage for their Arch.
   /// \{
 
   /// Perform four SHA-1 rounds using choice; wk already includes the round constants.
@@ -35,8 +35,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1c(simd<std::uint32_t, 4, Arch> abcd, std::uint32_t e, simd<std::uint32_t, 4, Arch> wk) noexcept {
+    return detail::arm_constant::sha1_rounds<0>(abcd, e, wk);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha1c(simd<std::uint32_t, 4, Arch> abcd, std::uint32_t e, simd<std::uint32_t, 4, Arch> wk) noexcept {
     return detail::arm_constant::sha1_rounds<0>(abcd, e, wk);
   }
 
@@ -52,8 +58,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1p(simd<std::uint32_t, 4, Arch> abcd, std::uint32_t e, simd<std::uint32_t, 4, Arch> wk) noexcept {
+    return detail::arm_constant::sha1_rounds<1>(abcd, e, wk);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha1p(simd<std::uint32_t, 4, Arch> abcd, std::uint32_t e, simd<std::uint32_t, 4, Arch> wk) noexcept {
     return detail::arm_constant::sha1_rounds<1>(abcd, e, wk);
   }
 
@@ -69,8 +81,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1m(simd<std::uint32_t, 4, Arch> abcd, std::uint32_t e, simd<std::uint32_t, 4, Arch> wk) noexcept {
+    return detail::arm_constant::sha1_rounds<2>(abcd, e, wk);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha1m(simd<std::uint32_t, 4, Arch> abcd, std::uint32_t e, simd<std::uint32_t, 4, Arch> wk) noexcept {
     return detail::arm_constant::sha1_rounds<2>(abcd, e, wk);
   }
 
@@ -83,8 +101,14 @@ export namespace native {
   }
 
   /// Evaluate the SHA-1 rotation at compile time without requiring SHA instructions.
-  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(arm_feature::sha1))
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha1))
   [[nodiscard]] consteval std::uint32_t sha1h(std::uint32_t a) noexcept {
+    return (a>>2)|(a<<30);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch=NATIVE_BASELINE> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha1))
+  [[nodiscard]] constexpr std::uint32_t sha1h(std::uint32_t a) noexcept {
     return (a>>2)|(a<<30);
   }
 
@@ -100,8 +124,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1su0(simd<std::uint32_t, 4, Arch> w0_3, simd<std::uint32_t, 4, Arch> w4_7, simd<std::uint32_t, 4, Arch> w8_11) noexcept {
+    return detail::arm_constant::sha1su0(w0_3, w4_7, w8_11);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha1su0(simd<std::uint32_t, 4, Arch> w0_3, simd<std::uint32_t, 4, Arch> w4_7, simd<std::uint32_t, 4, Arch> w8_11) noexcept {
     return detail::arm_constant::sha1su0(w0_3, w4_7, w8_11);
   }
 
@@ -117,8 +147,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha1su1(simd<std::uint32_t, 4, Arch> partial, simd<std::uint32_t, 4, Arch> w12_15) noexcept {
+    return detail::arm_constant::sha1su1(partial, w12_15);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha1) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha1su1(simd<std::uint32_t, 4, Arch> partial, simd<std::uint32_t, 4, Arch> w12_15) noexcept {
     return detail::arm_constant::sha1su1(partial, w12_15);
   }
 
@@ -134,8 +170,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256h(simd<std::uint32_t, 4, Arch> abcd, simd<std::uint32_t, 4, Arch> efgh, simd<std::uint32_t, 4, Arch> wk) noexcept {
+    return detail::arm_constant::sha256_rounds<false>(abcd, efgh, wk);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha256h(simd<std::uint32_t, 4, Arch> abcd, simd<std::uint32_t, 4, Arch> efgh, simd<std::uint32_t, 4, Arch> wk) noexcept {
     return detail::arm_constant::sha256_rounds<false>(abcd, efgh, wk);
   }
 
@@ -151,8 +193,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256h2(simd<std::uint32_t, 4, Arch> efgh, simd<std::uint32_t, 4, Arch> abcd, simd<std::uint32_t, 4, Arch> wk) noexcept {
+    return detail::arm_constant::sha256_rounds<true>(efgh, abcd, wk);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha256h2(simd<std::uint32_t, 4, Arch> efgh, simd<std::uint32_t, 4, Arch> abcd, simd<std::uint32_t, 4, Arch> wk) noexcept {
     return detail::arm_constant::sha256_rounds<true>(efgh, abcd, wk);
   }
 
@@ -168,8 +216,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256su0(simd<std::uint32_t, 4, Arch> w0_3, simd<std::uint32_t, 4, Arch> w4_7) noexcept {
+    return detail::arm_constant::sha256su0(w0_3, w4_7);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha256su0(simd<std::uint32_t, 4, Arch> w0_3, simd<std::uint32_t, 4, Arch> w4_7) noexcept {
     return detail::arm_constant::sha256su0(w0_3, w4_7);
   }
 
@@ -185,8 +239,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> sha256su1(simd<std::uint32_t, 4, Arch> partial, simd<std::uint32_t, 4, Arch> w8_11, simd<std::uint32_t, 4, Arch> w12_15) noexcept {
+    return detail::arm_constant::sha256su1(partial, w8_11, w12_15);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha2) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> sha256su1(simd<std::uint32_t, 4, Arch> partial, simd<std::uint32_t, 4, Arch> w8_11, simd<std::uint32_t, 4, Arch> w12_15) noexcept {
     return detail::arm_constant::sha256su1(partial, w8_11, w12_15);
   }
 
@@ -202,8 +262,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> sha512h(simd<std::uint64_t, 2, Arch> sum, simd<std::uint64_t, 2, Arch> fg, simd<std::uint64_t, 2, Arch> de) noexcept {
+    return detail::arm_constant::sha512h(sum, fg, de);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> sha512h(simd<std::uint64_t, 2, Arch> sum, simd<std::uint64_t, 2, Arch> fg, simd<std::uint64_t, 2, Arch> de) noexcept {
     return detail::arm_constant::sha512h(sum, fg, de);
   }
 
@@ -219,8 +285,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> sha512h2(simd<std::uint64_t, 2, Arch> sum_ab, simd<std::uint64_t, 2, Arch> c_, simd<std::uint64_t, 2, Arch> ab) noexcept {
+    return detail::arm_constant::sha512h2(sum_ab, c_, ab);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> sha512h2(simd<std::uint64_t, 2, Arch> sum_ab, simd<std::uint64_t, 2, Arch> c_, simd<std::uint64_t, 2, Arch> ab) noexcept {
     return detail::arm_constant::sha512h2(sum_ab, c_, ab);
   }
 
@@ -236,8 +308,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> sha512su0(simd<std::uint64_t, 2, Arch> w0_1, simd<std::uint64_t, 2, Arch> w2_) noexcept {
+    return detail::arm_constant::sha512su0(w0_1, w2_);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> sha512su0(simd<std::uint64_t, 2, Arch> w0_1, simd<std::uint64_t, 2, Arch> w2_) noexcept {
     return detail::arm_constant::sha512su0(w0_1, w2_);
   }
 
@@ -253,8 +331,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> sha512su1(simd<std::uint64_t, 2, Arch> partial, simd<std::uint64_t, 2, Arch> w14_15, simd<std::uint64_t, 2, Arch> w9_10) noexcept {
+    return detail::arm_constant::sha512su1(partial, w14_15, w9_10);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha512) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> sha512su1(simd<std::uint64_t, 2, Arch> partial, simd<std::uint64_t, 2, Arch> w14_15, simd<std::uint64_t, 2, Arch> w9_10) noexcept {
     return detail::arm_constant::sha512su1(partial, w14_15, w9_10);
   }
 
@@ -270,8 +354,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> eor3(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b, simd<std::uint8_t, 16, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> eor3(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b, simd<std::uint8_t, 16, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -287,8 +377,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint16_t, 8, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> eor3(simd<std::uint16_t, 8, Arch> a, simd<std::uint16_t, 8, Arch> b, simd<std::uint16_t, 8, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint16_t, 8, Arch> eor3(simd<std::uint16_t, 8, Arch> a, simd<std::uint16_t, 8, Arch> b, simd<std::uint16_t, 8, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -304,8 +400,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> eor3(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> eor3(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -321,8 +423,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> eor3(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> eor3(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -338,8 +446,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::int8_t, 16, Arch> eor3(simd<std::int8_t, 16, Arch> a, simd<std::int8_t, 16, Arch> b, simd<std::int8_t, 16, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::int8_t, 16, Arch> eor3(simd<std::int8_t, 16, Arch> a, simd<std::int8_t, 16, Arch> b, simd<std::int8_t, 16, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -355,8 +469,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> eor3(simd<std::int16_t, 8, Arch> a, simd<std::int16_t, 8, Arch> b, simd<std::int16_t, 8, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> eor3(simd<std::int16_t, 8, Arch> a, simd<std::int16_t, 8, Arch> b, simd<std::int16_t, 8, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -372,8 +492,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> eor3(simd<std::int32_t, 4, Arch> a, simd<std::int32_t, 4, Arch> b, simd<std::int32_t, 4, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> eor3(simd<std::int32_t, 4, Arch> a, simd<std::int32_t, 4, Arch> b, simd<std::int32_t, 4, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -389,8 +515,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int64_t, 2, Arch> eor3(simd<std::int64_t, 2, Arch> a, simd<std::int64_t, 2, Arch> b, simd<std::int64_t, 2, Arch> c) noexcept {
+    return detail::arm_constant::logical<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int64_t, 2, Arch> eor3(simd<std::int64_t, 2, Arch> a, simd<std::int64_t, 2, Arch> b, simd<std::int64_t, 2, Arch> c) noexcept {
     return detail::arm_constant::logical<false>(a, b, c);
   }
 
@@ -406,8 +538,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> bcax(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b, simd<std::uint8_t, 16, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> bcax(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b, simd<std::uint8_t, 16, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -423,8 +561,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint16_t, 8, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> bcax(simd<std::uint16_t, 8, Arch> a, simd<std::uint16_t, 8, Arch> b, simd<std::uint16_t, 8, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint16_t, 8, Arch> bcax(simd<std::uint16_t, 8, Arch> a, simd<std::uint16_t, 8, Arch> b, simd<std::uint16_t, 8, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -440,8 +584,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> bcax(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> bcax(simd<std::uint32_t, 4, Arch> a, simd<std::uint32_t, 4, Arch> b, simd<std::uint32_t, 4, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -457,8 +607,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> bcax(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> bcax(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b, simd<std::uint64_t, 2, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -474,8 +630,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int8_t, 16, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::int8_t, 16, Arch> bcax(simd<std::int8_t, 16, Arch> a, simd<std::int8_t, 16, Arch> b, simd<std::int8_t, 16, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::int8_t, 16, Arch> bcax(simd<std::int8_t, 16, Arch> a, simd<std::int8_t, 16, Arch> b, simd<std::int8_t, 16, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -491,8 +653,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> bcax(simd<std::int16_t, 8, Arch> a, simd<std::int16_t, 8, Arch> b, simd<std::int16_t, 8, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> bcax(simd<std::int16_t, 8, Arch> a, simd<std::int16_t, 8, Arch> b, simd<std::int16_t, 8, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -508,8 +676,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> bcax(simd<std::int32_t, 4, Arch> a, simd<std::int32_t, 4, Arch> b, simd<std::int32_t, 4, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> bcax(simd<std::int32_t, 4, Arch> a, simd<std::int32_t, 4, Arch> b, simd<std::int32_t, 4, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -525,8 +699,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::int64_t, 2, Arch> bcax(simd<std::int64_t, 2, Arch> a, simd<std::int64_t, 2, Arch> b, simd<std::int64_t, 2, Arch> c) noexcept {
+    return detail::arm_constant::logical<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::int64_t, 2, Arch> bcax(simd<std::int64_t, 2, Arch> a, simd<std::int64_t, 2, Arch> b, simd<std::int64_t, 2, Arch> c) noexcept {
     return detail::arm_constant::logical<true>(a, b, c);
   }
 
@@ -542,8 +722,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> rax1(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::arm_constant::rax1(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> rax1(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::arm_constant::rax1(a, b);
   }
 
@@ -559,8 +745,14 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch, unsigned Rotate> requires(!Arch.has(arm_feature::sha3) && Rotate < 64 && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch, unsigned Rotate> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && Rotate < 64 && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> xar(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::arm_constant::xar<Rotate>(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch, unsigned Rotate> requires(Arch.has(polyfill) && !Arch.has(arm_feature::sha3) && Rotate < 64 && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> xar(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::arm_constant::xar<Rotate>(a, b);
   }
 

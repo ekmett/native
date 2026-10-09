@@ -15,7 +15,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_form0_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah<A>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), scalar<int16_t>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, -1>(in); }
@@ -25,7 +25,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form1_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 0>(in); }
@@ -35,7 +35,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form1_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 1>(in); }
@@ -45,7 +45,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form1_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 2>(in); }
@@ -55,7 +55,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form1_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 3>(in); }
@@ -65,7 +65,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 0>(in); }
@@ -75,7 +75,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 1>(in); }
@@ -85,7 +85,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 2>(in); }
@@ -95,7 +95,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 3>(in); }
@@ -105,7 +105,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane4";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 4>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 4>(in); }
@@ -115,7 +115,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane5";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 5>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 5>(in); }
@@ -125,7 +125,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane6";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 6>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 6>(in); }
@@ -135,7 +135,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form2_lane7";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 7>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, false, 7>(in); }
@@ -145,7 +145,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_form3_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah<A>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, -1>(in); }
@@ -155,7 +155,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form4_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 0>(in); }
@@ -165,7 +165,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form4_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 1>(in); }
@@ -175,7 +175,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form4_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 2>(in); }
@@ -185,7 +185,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form4_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 3>(in); }
@@ -195,7 +195,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 0>(in); }
@@ -205,7 +205,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 1>(in); }
@@ -215,7 +215,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 2>(in); }
@@ -225,7 +225,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 3>(in); }
@@ -235,7 +235,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane4";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 4>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 4>(in); }
@@ -245,7 +245,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane5";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 5>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 5>(in); }
@@ -255,7 +255,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane6";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 6>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 6>(in); }
@@ -265,7 +265,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form5_lane7";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 7>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, false, 7>(in); }
@@ -275,7 +275,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_form6_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah<A>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, -1>(in); }
@@ -285,7 +285,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form7_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 0>(in); }
@@ -295,7 +295,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form7_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 1>(in); }
@@ -305,7 +305,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form7_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 2>(in); }
@@ -315,7 +315,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form7_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 3>(in); }
@@ -325,7 +325,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 0>(in); }
@@ -335,7 +335,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 1>(in); }
@@ -345,7 +345,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 2>(in); }
@@ -355,7 +355,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 3>(in); }
@@ -365,7 +365,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane4";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 4>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 4>(in); }
@@ -375,7 +375,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane5";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 5>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 5>(in); }
@@ -385,7 +385,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane6";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 6>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 6>(in); }
@@ -395,7 +395,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form8_lane7";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 7>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, false, 7>(in); }
@@ -405,7 +405,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_form9_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah<A>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), scalar<int32_t>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, -1>(in); }
@@ -415,7 +415,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form10_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, 0>(in); }
@@ -425,7 +425,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form10_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, 1>(in); }
@@ -435,7 +435,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form11_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, 0>(in); }
@@ -445,7 +445,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form11_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, 1>(in); }
@@ -455,7 +455,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form11_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, 2>(in); }
@@ -465,7 +465,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form11_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, false, 3>(in); }
@@ -475,7 +475,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_form12_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah<A>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, -1>(in); }
@@ -485,7 +485,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form13_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, 0>(in); }
@@ -495,7 +495,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form13_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, 1>(in); }
@@ -505,7 +505,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form14_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, 0>(in); }
@@ -515,7 +515,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form14_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, 1>(in); }
@@ -525,7 +525,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form14_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, 2>(in); }
@@ -535,7 +535,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form14_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, false, 3>(in); }
@@ -545,7 +545,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_form15_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, -1>(in); }
@@ -555,7 +555,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form16_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, 0>(in); }
@@ -565,7 +565,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form16_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, 1>(in); }
@@ -575,7 +575,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form17_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 0>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, 0>(in); }
@@ -585,7 +585,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form17_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 1>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, 1>(in); }
@@ -595,7 +595,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form17_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 2>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, 2>(in); }
@@ -605,7 +605,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlah_lane_form17_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlah_lane<A, 3>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, false, 3>(in); }
@@ -615,7 +615,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_form18_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh<A>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), scalar<int16_t>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, -1>(in); }
@@ -625,7 +625,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form19_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 0>(in); }
@@ -635,7 +635,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form19_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 1>(in); }
@@ -645,7 +645,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form19_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 2>(in); }
@@ -655,7 +655,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form19_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 3>(in); }
@@ -665,7 +665,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 0>(in); }
@@ -675,7 +675,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 1>(in); }
@@ -685,7 +685,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 2>(in); }
@@ -695,7 +695,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 3>(in); }
@@ -705,7 +705,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane4";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 4>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 4>(in); }
@@ -715,7 +715,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane5";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 5>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 5>(in); }
@@ -725,7 +725,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane6";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 6>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 6>(in); }
@@ -735,7 +735,7 @@ namespace {
     using edge_type = int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form20_lane7";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 7>(scalar<int16_t>(in[0]), scalar<int16_t>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int16_t, 1, true, 7>(in); }
@@ -745,7 +745,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_form21_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh<A>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, -1>(in); }
@@ -755,7 +755,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form22_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 0>(in); }
@@ -765,7 +765,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form22_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 1>(in); }
@@ -775,7 +775,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form22_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 2>(in); }
@@ -785,7 +785,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form22_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 3>(in); }
@@ -795,7 +795,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 0>(in); }
@@ -805,7 +805,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 1>(in); }
@@ -815,7 +815,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 2>(in); }
@@ -825,7 +825,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 3>(in); }
@@ -835,7 +835,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane4";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 4>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 4>(in); }
@@ -845,7 +845,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane5";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 5>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 5>(in); }
@@ -855,7 +855,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane6";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 6>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 6>(in); }
@@ -865,7 +865,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form23_lane7";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 7>(vector<std::int16_t, 4, A>(in[0]), vector<std::int16_t, 4, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 4, true, 7>(in); }
@@ -875,7 +875,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_form24_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh<A>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, -1>(in); }
@@ -885,7 +885,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form25_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 0>(in); }
@@ -895,7 +895,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form25_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 1>(in); }
@@ -905,7 +905,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form25_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 2>(in); }
@@ -915,7 +915,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form25_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 3>(in); }
@@ -925,7 +925,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 0>(in); }
@@ -935,7 +935,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 1>(in); }
@@ -945,7 +945,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 2>(in); }
@@ -955,7 +955,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 3>(in); }
@@ -965,7 +965,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane4";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 4>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 4>(in); }
@@ -975,7 +975,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane5";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 5>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 5>(in); }
@@ -985,7 +985,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane6";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 6>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 6>(in); }
@@ -995,7 +995,7 @@ namespace {
     using edge_type = std::int16_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form26_lane7";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 7>(vector<std::int16_t, 8, A>(in[0]), vector<std::int16_t, 8, A>(in[1]), vector<std::int16_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int16_t, 8, true, 7>(in); }
@@ -1005,7 +1005,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_form27_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh<A>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), scalar<int32_t>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, -1>(in); }
@@ -1015,7 +1015,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form28_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, 0>(in); }
@@ -1025,7 +1025,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form28_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, 1>(in); }
@@ -1035,7 +1035,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form29_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, 0>(in); }
@@ -1045,7 +1045,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form29_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, 1>(in); }
@@ -1055,7 +1055,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form29_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, 2>(in); }
@@ -1065,7 +1065,7 @@ namespace {
     using edge_type = int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form29_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(scalar<int32_t>(in[0]), scalar<int32_t>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<int32_t, 1, true, 3>(in); }
@@ -1075,7 +1075,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_form30_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh<A>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, -1>(in); }
@@ -1085,7 +1085,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form31_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, 0>(in); }
@@ -1095,7 +1095,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form31_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, 1>(in); }
@@ -1105,7 +1105,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form32_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, 0>(in); }
@@ -1115,7 +1115,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form32_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, 1>(in); }
@@ -1125,7 +1125,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form32_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, 2>(in); }
@@ -1135,7 +1135,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form32_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(vector<std::int32_t, 2, A>(in[0]), vector<std::int32_t, 2, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 2, true, 3>(in); }
@@ -1145,7 +1145,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_form33_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, -1>(in); }
@@ -1155,7 +1155,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form34_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, 0>(in); }
@@ -1165,7 +1165,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form34_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 2, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, 1>(in); }
@@ -1175,7 +1175,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form35_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 0>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, 0>(in); }
@@ -1185,7 +1185,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form35_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 1>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, 1>(in); }
@@ -1195,7 +1195,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form35_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 2>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, 2>(in); }
@@ -1205,7 +1205,7 @@ namespace {
     using edge_type = std::int32_t;
     static constexpr auto arch = native::feature_closure(native::arm_feature::rdm);
     static constexpr char name[] = "sqrdmlsh_lane_form35_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sqrdmlsh_lane<A, 3>(vector<std::int32_t, 4, A>(in[0]), vector<std::int32_t, 4, A>(in[1]), vector<std::int32_t, 4, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return rdm_reference<std::int32_t, 4, true, 3>(in); }
@@ -1213,10 +1213,12 @@ namespace {
   };
 }
 int main() {
+#ifndef NATIVE_TEST_POLYFILL
   auto cpu = native::observe_arm_capabilities();
   auto admission = native::classify_isa(cpu, native::target_features<native::arm>("rdm"));
   if (admission.invalid_features) return 1;
   if (!admission.admitted()) return 77;
+#endif
   bool ok = true;
   ok = check<case_0>() && ok;
   ok = check<case_1>() && ok;

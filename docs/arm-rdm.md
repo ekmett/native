@@ -42,7 +42,7 @@ clear it. An unused result still executes the instruction. The wrappers leave
 FPCR unchanged and neither save nor restore FPSR. Constant evaluation computes
 only the value, with no access to the calling thread's QC state.
 
-Runtime calls require `arm_feature::rdm` and an `"rdm"` caller target.
+Native runtime calls require `arm_feature::rdm` and an `"rdm"` caller target.
 `feature_closure(arm_feature::rdm)` includes NEON. Admit that requirement and
 `NATIVE_TARGET_MINIMUM` before entering the target function. RDM does not
 require DotProd, FP16 or the rest of Armv8.1-A. The wrappers use exact inline
@@ -54,9 +54,10 @@ Clang 23 defines `__ARM_FEATURE_QRDMX` for Armv8.1-A, but not for
 `armv8-a+rdm` alone; use an explicit ISA for the latter with the current
 macro-based baseline snapshot. Vector calls deduce `Arch` from their operands.
 
-All forms support constant evaluation. A tag without RDM permits only
-`consteval` calls, provided its SIMD storage shapes exist. There is no runtime
-software fallback or dispatch.
+All forms support constant evaluation. A tag without RDM permits runtime
+software evaluation when it includes `polyfill`; otherwise it permits only
+`consteval` calls. Software evaluation reproduces the saturated result without
+setting `FPSR.QC`. Hardware-capable tags keep their native instruction path.
 
 See the [Arm Advanced SIMD intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#sqrdmlah-intrinsics-from-armv81-a)
 and [LLVM's big-endian NEON representation notes](https://llvm.org/docs/BigEndianNEON.html).

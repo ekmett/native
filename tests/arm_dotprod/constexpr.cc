@@ -11,7 +11,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_form0_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot<A>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, -1>(in); }
@@ -21,7 +21,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form1_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 0>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, 0>(in); }
@@ -31,7 +31,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form1_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 1>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, 1>(in); }
@@ -41,7 +41,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form2_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 0>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, 0>(in); }
@@ -51,7 +51,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form2_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 1>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, 1>(in); }
@@ -61,7 +61,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form2_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 2>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, 2>(in); }
@@ -71,7 +71,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form2_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 3>(vector<std::int32_t, 2, A>(in[0]), vector<std::int8_t, 8, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 2, std::int8_t, std::int8_t, false, 3>(in); }
@@ -81,7 +81,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_form3_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot<A>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, -1>(in); }
@@ -91,7 +91,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form4_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 0>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, 0>(in); }
@@ -101,7 +101,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form4_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 1>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, 1>(in); }
@@ -111,7 +111,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form5_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 0>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, 0>(in); }
@@ -121,7 +121,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form5_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 1>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, 1>(in); }
@@ -131,7 +131,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form5_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 2>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, 2>(in); }
@@ -141,7 +141,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "sdot_lane_form5_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::sdot_lane<A, 3>(vector<std::int32_t, 4, A>(in[0]), vector<std::int8_t, 16, A>(in[1]), vector<std::int8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::int32_t, 4, std::int8_t, std::int8_t, false, 3>(in); }
@@ -151,7 +151,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_form6_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot<A>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, -1>(in); }
@@ -161,7 +161,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form7_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 0>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, 0>(in); }
@@ -171,7 +171,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form7_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 1>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, 1>(in); }
@@ -181,7 +181,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form8_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 0>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, 0>(in); }
@@ -191,7 +191,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form8_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 1>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, 1>(in); }
@@ -201,7 +201,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form8_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 2>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, 2>(in); }
@@ -211,7 +211,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form8_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 3>(vector<std::uint32_t, 2, A>(in[0]), vector<std::uint8_t, 8, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 2, std::uint8_t, std::uint8_t, false, 3>(in); }
@@ -221,7 +221,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_form9_lane-1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot<A>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, -1>(in); }
@@ -231,7 +231,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form10_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 0>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, 0>(in); }
@@ -241,7 +241,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form10_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 1>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 8, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, 1>(in); }
@@ -251,7 +251,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form11_lane0";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 0>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, 0>(in); }
@@ -261,7 +261,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form11_lane1";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 1>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, 1>(in); }
@@ -271,7 +271,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form11_lane2";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 2>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, 2>(in); }
@@ -281,7 +281,7 @@ namespace {
     using edge_type = void;
     static constexpr auto arch = native::feature_closure(native::arm_feature::dotprod);
     static constexpr char name[] = "udot_lane_form11_lane3";
-    template<native::isa<native::arm> A> static consteval output evaluate(input const &in) {
+    template<native::isa<native::arm> A> static constexpr output evaluate(input const &in) {
       return result(native::udot_lane<A, 3>(vector<std::uint32_t, 4, A>(in[0]), vector<std::uint8_t, 16, A>(in[1]), vector<std::uint8_t, 16, A>(in[2])));
     }
     static constexpr output reference(input const &in) { return dot_reference<std::uint32_t, 4, std::uint8_t, std::uint8_t, false, 3>(in); }
@@ -289,10 +289,12 @@ namespace {
   };
 }
 int main() {
+#ifndef NATIVE_TEST_POLYFILL
   auto cpu = native::observe_arm_capabilities();
   auto admission = native::classify_isa(cpu, native::target_features<native::arm>("dotprod"));
   if (admission.invalid_features) return 1;
   if (!admission.admitted()) return 77;
+#endif
   bool ok = true;
   ok = check<case_0>() && ok;
   ok = check<case_1>() && ok;

@@ -56,15 +56,16 @@ Every accumulation wraps modulo 2³². Signed results interpret the resulting
 bits as two's complement. There is no saturation or floating-point environment
 dependency.
 
-Runtime calls require `arm_feature::i8mm` and an `"i8mm"` caller target. Before
+Native runtime calls require `arm_feature::i8mm` and an `"i8mm"` caller target. Before
 calling a target function, admit its requirements with
 `classify_isa(observe_arm_capabilities(), matrix_isa, NATIVE_TARGET_MINIMUM)`.
 I8MM requires NEON and is independent of DotProd, FP16 and BF16. Importing the
 module does not enable instructions or perform dispatch.
 
-All forms support constant evaluation. Without I8MM, only `consteval` calls
-are available, and the required SIMD storage shapes must still exist. Runtime
-operands are rejected rather than sent to a software implementation.
+All forms support constant evaluation. Without I8MM, `polyfill` permission
+allows the same matrix or dot-product operation in software. Without that
+permission, missing-feature calls remain `consteval`-only. Hardware-capable
+tags keep the native instruction path even when permission is present.
 
 See the [Arm Advanced SIMD intrinsic reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html#matrix-multiplication-intrinsics-from-armv86-a).
 

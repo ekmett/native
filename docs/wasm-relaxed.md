@@ -65,10 +65,12 @@ selection. Q15 multiplication saturates its overflow case. Dot products interpre
 both byte inputs as signed, saturate each adjacent pair to 16 bits, and accumulate
 the pairs modulo 32 bits for the add form.
 
-A tag containing `simd128` without `relaxed_simd` can use these operations only
-in constant evaluation. Constant results need not agree bit-for-bit with an
-engine's relaxed instructions. They also do not implement the optional Wasm
-*deterministic profile*, which chooses unfused multiply-add.
+A tag without `relaxed_simd` can use these operations at runtime when it includes
+`polyfill`. Software evaluation chooses the constant-evaluation results described
+above. Those results need not agree bit-for-bit with an engine's relaxed
+instructions. They also do not implement the optional Wasm *deterministic
+profile*, which chooses unfused multiply-add. Without permission, missing-feature
+calls remain constant-evaluation-only.
 
 Some engines disagree with the specification for full-bit dot operands and
 partial 16-bit lane-selection masks. The wrappers inherit that behavior.

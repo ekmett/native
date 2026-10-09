@@ -61,6 +61,10 @@ __attribute__((target("jsconv"), noinline))
 std::int32_t hardware(double x) { return native::jcvt<arch>(x); }
 
 int main() {
+  for (std::size_t i = 0; i < inputs.size(); ++i) {
+    volatile double value = inputs[i];
+    if (native::jcvt<weak | native::polyfill>(value) != expected[i]) return 3;
+  }
   if (!native::classify_isa(native::observe_arm_capabilities(), arch).admitted()) return 77;
   for (std::size_t i = 0; i < inputs.size(); ++i)
     if (hardware(inputs[i]) != expected[i]) return 1;

@@ -26,7 +26,7 @@ namespace native {
   /// target_features<arm>("aes") set must be admitted before entering the leaf.
   /// These integer operations do not read or modify FPCR, FPSR or NZCV.
   /// Constant evaluation computes the same integer values. Feature-absent calls
-  /// are immediate-only and still require complete SIMD storage for their Arch.
+  /// are immediate-only without polyfill permission and still require complete SIMD storage for their Arch.
   /// \{
 
   /// Multiply two degree-at-most-63 polynomials over GF(2), returning all 128 coefficients.
@@ -45,8 +45,15 @@ namespace native {
 
   /// Evaluate a 64-bit polynomial product at compile time using an available SIMD storage shape.
   template<isa<arm> Arch=NATIVE_BASELINE>
-    requires(!Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t,2,Arch>); })
+    requires(!Arch.has(polyfill) && !Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t,2,Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t,2,Arch> pmull(std::uint64_t a,std::uint64_t b) noexcept {
+    return detail::pmull_constant<Arch>(a,b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch=NATIVE_BASELINE>
+    requires(Arch.has(polyfill) && !Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t,2,Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t,2,Arch> pmull(std::uint64_t a,std::uint64_t b) noexcept {
     return detail::pmull_constant<Arch>(a,b);
   }
 
@@ -63,8 +70,14 @@ namespace native {
   }
 
   /// Evaluate constant operands without the instruction feature.
-  template<isa<arm> Arch> requires(!Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  template<isa<arm> Arch> requires(!Arch.has(polyfill) && !Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> pmull2(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
+    return detail::pmull_constant<Arch>(detail::arm_constant::lanes(a)[1], detail::arm_constant::lanes(b)[1]);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::pmull) && requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> pmull2(simd<std::uint64_t, 2, Arch> a, simd<std::uint64_t, 2, Arch> b) noexcept {
     return detail::pmull_constant<Arch>(detail::arm_constant::lanes(a)[1], detail::arm_constant::lanes(b)[1]);
   }
 
@@ -79,6 +92,12 @@ namespace native {
     }
   }
 
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon))
+  [[nodiscard]]
+  constexpr simd<std::uint16_t, 8, Arch> pmull(simd<std::uint8_t, 8, Arch> a, simd<std::uint8_t, 8, Arch> b) noexcept { return detail::arm_constant::pmull_bytes<simd<std::uint16_t, 8, Arch>, 0>(a, b);
+  }
+
   /// Multiply the high eight byte polynomials into 16-bit products; requires only NEON.
   template<isa<arm> Arch> requires(Arch.has(arm_feature::neon))
   [[nodiscard]] hint_inline hint_const
@@ -88,6 +107,12 @@ namespace native {
       auto result = detail::arm_pmull::pmull2<Arch>(vreinterpretq_p8_u8(a.to_native()), vreinterpretq_p8_u8(b.to_native()));
       return simd<std::uint16_t, 8, Arch>::from_native(__builtin_bit_cast(typename simd<std::uint16_t, 8, Arch>::native_type, result));
     }
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<arm> Arch> requires(Arch.has(polyfill) && !Arch.has(arm_feature::neon))
+  [[nodiscard]]
+  constexpr simd<std::uint16_t, 8, Arch> pmull2(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept { return detail::arm_constant::pmull_bytes<simd<std::uint16_t, 8, Arch>, 8>(a, b);
   }
 
   // Require exact semantic shapes and a consistent feature tag.

@@ -13,7 +13,8 @@ export namespace native {
   /// \ingroup cpu_wasm
   /// Runtime calls require relaxed_simd in Arch and in the caller target.
   /// Constant evaluation chooses one valid result and does not promise engine
-  /// agreement. Feature-absent tags are consteval-only and require SIMD128 storage.
+  /// agreement. Without the instruction feature, runtime evaluation requires
+  /// polyfill permission and chooses the same permitted result as constant evaluation.
   /// \{
 
   /// Select bytes; out-of-range indices have relaxed semantics.
@@ -29,9 +30,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> i8x16_relaxed_swizzle(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::swizzle(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> i8x16_relaxed_swizzle(simd<std::uint8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::swizzle(a, b);
   }
 
@@ -48,9 +56,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> i32x4_relaxed_trunc_f32x4(simd<float, 4, Arch> a) noexcept {
+    return detail::wasm_relaxed_constant::truncation<simd<std::int32_t, 4, Arch>>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> i32x4_relaxed_trunc_f32x4(simd<float, 4, Arch> a) noexcept {
     return detail::wasm_relaxed_constant::truncation<simd<std::int32_t, 4, Arch>>(a);
   }
 
@@ -67,9 +82,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> u32x4_relaxed_trunc_f32x4(simd<float, 4, Arch> a) noexcept {
+    return detail::wasm_relaxed_constant::truncation<simd<std::uint32_t, 4, Arch>>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> u32x4_relaxed_trunc_f32x4(simd<float, 4, Arch> a) noexcept {
     return detail::wasm_relaxed_constant::truncation<simd<std::uint32_t, 4, Arch>>(a);
   }
 
@@ -86,9 +108,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> i32x4_relaxed_trunc_f64x2_zero(simd<double, 2, Arch> a) noexcept {
+    return detail::wasm_relaxed_constant::truncation<simd<std::int32_t, 4, Arch>>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> i32x4_relaxed_trunc_f64x2_zero(simd<double, 2, Arch> a) noexcept {
     return detail::wasm_relaxed_constant::truncation<simd<std::int32_t, 4, Arch>>(a);
   }
 
@@ -105,9 +134,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> u32x4_relaxed_trunc_f64x2_zero(simd<double, 2, Arch> a) noexcept {
+    return detail::wasm_relaxed_constant::truncation<simd<std::uint32_t, 4, Arch>>(a);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> u32x4_relaxed_trunc_f64x2_zero(simd<double, 2, Arch> a) noexcept {
     return detail::wasm_relaxed_constant::truncation<simd<std::uint32_t, 4, Arch>>(a);
   }
 
@@ -124,9 +160,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<float, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> f32x4_relaxed_madd(simd<float, 4, Arch> a, simd<float, 4, Arch> b, simd<float, 4, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::multiply_add<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<float, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> f32x4_relaxed_madd(simd<float, 4, Arch> a, simd<float, 4, Arch> b, simd<float, 4, Arch> c) noexcept {
     return detail::wasm_relaxed_constant::multiply_add<false>(a, b, c);
   }
 
@@ -143,9 +186,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<float, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> f32x4_relaxed_nmadd(simd<float, 4, Arch> a, simd<float, 4, Arch> b, simd<float, 4, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::multiply_add<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<float, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> f32x4_relaxed_nmadd(simd<float, 4, Arch> a, simd<float, 4, Arch> b, simd<float, 4, Arch> c) noexcept {
     return detail::wasm_relaxed_constant::multiply_add<true>(a, b, c);
   }
 
@@ -162,9 +212,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<double, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> f64x2_relaxed_madd(simd<double, 2, Arch> a, simd<double, 2, Arch> b, simd<double, 2, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::multiply_add<false>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<double, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> f64x2_relaxed_madd(simd<double, 2, Arch> a, simd<double, 2, Arch> b, simd<double, 2, Arch> c) noexcept {
     return detail::wasm_relaxed_constant::multiply_add<false>(a, b, c);
   }
 
@@ -181,9 +238,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<double, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> f64x2_relaxed_nmadd(simd<double, 2, Arch> a, simd<double, 2, Arch> b, simd<double, 2, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::multiply_add<true>(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<double, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> f64x2_relaxed_nmadd(simd<double, 2, Arch> a, simd<double, 2, Arch> b, simd<double, 2, Arch> c) noexcept {
     return detail::wasm_relaxed_constant::multiply_add<true>(a, b, c);
   }
 
@@ -203,9 +267,19 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint8_t, 16, Arch>); })
   [[nodiscard]] consteval simd<std::uint8_t, 16, Arch> i8x16_relaxed_laneselect(
+    simd<std::uint8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b,
+    simd<std::uint8_t, 16, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::lane_select(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint8_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint8_t, 16, Arch> i8x16_relaxed_laneselect(
     simd<std::uint8_t, 16, Arch> a,
     simd<std::uint8_t, 16, Arch> b,
     simd<std::uint8_t, 16, Arch> c) noexcept {
@@ -228,9 +302,19 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::uint16_t, 8, Arch> i16x8_relaxed_laneselect(
+    simd<std::uint16_t, 8, Arch> a,
+    simd<std::uint16_t, 8, Arch> b,
+    simd<std::uint16_t, 8, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::lane_select(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint16_t, 8, Arch> i16x8_relaxed_laneselect(
     simd<std::uint16_t, 8, Arch> a,
     simd<std::uint16_t, 8, Arch> b,
     simd<std::uint16_t, 8, Arch> c) noexcept {
@@ -253,9 +337,19 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::uint32_t, 4, Arch> i32x4_relaxed_laneselect(
+    simd<std::uint32_t, 4, Arch> a,
+    simd<std::uint32_t, 4, Arch> b,
+    simd<std::uint32_t, 4, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::lane_select(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint32_t, 4, Arch> i32x4_relaxed_laneselect(
     simd<std::uint32_t, 4, Arch> a,
     simd<std::uint32_t, 4, Arch> b,
     simd<std::uint32_t, 4, Arch> c) noexcept {
@@ -278,9 +372,19 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::uint64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<std::uint64_t, 2, Arch> i64x2_relaxed_laneselect(
+    simd<std::uint64_t, 2, Arch> a,
+    simd<std::uint64_t, 2, Arch> b,
+    simd<std::uint64_t, 2, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::lane_select(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::uint64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<std::uint64_t, 2, Arch> i64x2_relaxed_laneselect(
     simd<std::uint64_t, 2, Arch> a,
     simd<std::uint64_t, 2, Arch> b,
     simd<std::uint64_t, 2, Arch> c) noexcept {
@@ -300,9 +404,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<float, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> f32x4_relaxed_min(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::minimum_maximum<false>(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<float, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> f32x4_relaxed_min(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::minimum_maximum<false>(a, b);
   }
 
@@ -319,9 +430,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<float, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> f32x4_relaxed_max(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::minimum_maximum<true>(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<float, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> f32x4_relaxed_max(simd<float, 4, Arch> a, simd<float, 4, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::minimum_maximum<true>(a, b);
   }
 
@@ -338,9 +456,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<double, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> f64x2_relaxed_min(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::minimum_maximum<false>(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<double, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> f64x2_relaxed_min(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::minimum_maximum<false>(a, b);
   }
 
@@ -357,9 +482,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<double, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> f64x2_relaxed_max(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::minimum_maximum<true>(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<double, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> f64x2_relaxed_max(simd<double, 2, Arch> a, simd<double, 2, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::minimum_maximum<true>(a, b);
   }
 
@@ -376,9 +508,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> i16x8_relaxed_q15mulr(simd<std::int16_t, 8, Arch> a, simd<std::int16_t, 8, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::q15_multiply(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> i16x8_relaxed_q15mulr(simd<std::int16_t, 8, Arch> a, simd<std::int16_t, 8, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::q15_multiply(a, b);
   }
 
@@ -395,9 +534,16 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::int16_t, 8, Arch>); })
   [[nodiscard]] consteval simd<std::int16_t, 8, Arch> i16x8_relaxed_dot_i8x16_i7x16(simd<std::int8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
+    return detail::wasm_relaxed_constant::dot<simd<std::int16_t, 8, Arch>>(a, b);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::int16_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<std::int16_t, 8, Arch> i16x8_relaxed_dot_i8x16_i7x16(simd<std::int8_t, 16, Arch> a, simd<std::uint8_t, 16, Arch> b) noexcept {
     return detail::wasm_relaxed_constant::dot<simd<std::int16_t, 8, Arch>>(a, b);
   }
 
@@ -417,9 +563,19 @@ export namespace native {
   }
 
   /// Evaluate constant operands without the relaxed SIMD instruction feature.
-  template<isa<wasm> Arch> requires(!Arch.has(wasm_feature::relaxed_simd) &&
+  template<isa<wasm> Arch> requires(!Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
       requires { sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<std::int32_t, 4, Arch> i32x4_relaxed_dot_i8x16_i7x16_add(
+    simd<std::int8_t, 16, Arch> a,
+    simd<std::uint8_t, 16, Arch> b,
+    simd<std::int32_t, 4, Arch> c) noexcept {
+    return detail::wasm_relaxed_constant::dot_add(a, b, c);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<isa<wasm> Arch> requires(Arch.has(polyfill) && !Arch.has(wasm_feature::relaxed_simd) &&
+      requires { sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<std::int32_t, 4, Arch> i32x4_relaxed_dot_i8x16_i7x16_add(
     simd<std::int8_t, 16, Arch> a,
     simd<std::uint8_t, 16, Arch> b,
     simd<std::int32_t, 4, Arch> c) noexcept {

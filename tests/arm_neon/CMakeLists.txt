@@ -203,3 +203,13 @@ foreach(kind IN ITEMS feature target shape)
   set_tests_properties(native.arm.neon.bits.reject_${kind} PROPERTIES
     LABELS "arm;neon;negative" RUN_SERIAL TRUE)
 endforeach()
+
+foreach(kind IN ITEMS main bits)
+  set(target native_test_arm_neon_polyfill_${kind})
+  add_executable(${target} ${kind}.cc)
+  target_link_libraries(${target} PRIVATE native::native)
+  target_compile_definitions(${target} PRIVATE NATIVE_TEST_POLYFILL=1)
+  add_test(NAME native.arm.neon.polyfill.${kind} COMMAND ${target})
+  set_tests_properties(native.arm.neon.polyfill.${kind} PROPERTIES
+    LABELS "host;arm;polyfill" TIMEOUT 30)
+endforeach()

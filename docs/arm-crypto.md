@@ -97,10 +97,11 @@ change it. The polynomial result retains that default tag. Vector calls deduce
 `Arch` from their operands.
 
 All operations support constant evaluation. Without an instruction feature,
-only `consteval` calls are available; vector storage must still exist, which
-requires NEON for these shapes. Byte polynomial multiplication retains its
-NEON-only requirement. There is no runtime software fallback. Explicitly
-convert vector types when a bit reinterpretation is intended.
+`polyfill` permission enables runtime software evaluation, including byte
+polynomial multiplication. Without permission, missing-feature calls remain
+`consteval`-only where storage exists. Native instruction paths retain priority.
+Table-based cipher polyfills make no constant-time guarantee. Explicitly convert
+vector types when a bit reinterpretation is intended.
 
 See the [Arm Neon Intrinsics Reference](https://arm-software.github.io/acle/neon_intrinsics/advsimd.html)
 and [Arm A64 instruction reference](https://documentation-service.arm.com/static/67e40f3398aa3c3b6eea6a85).

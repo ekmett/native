@@ -13,7 +13,9 @@ import native.arm;
 import native.arm.neon;
 #endif
 
-#if defined(NATIVE_BITS_ARM) || defined(NATIVE_BITS_OMNIBUS)
+#if defined(NATIVE_TEST_POLYFILL)
+constexpr native::isa<native::arm> architecture = native::polyfill;
+#elif defined(NATIVE_BITS_ARM) || defined(NATIVE_BITS_OMNIBUS)
 constexpr auto architecture = native::neon & native::arm_feature::rdm;
 #else
 constexpr auto architecture = native::neon;
@@ -216,7 +218,9 @@ bool all_shapes(std::uint32_t &state) {
 }
 
 int main() {
+#ifndef NATIVE_TEST_POLYFILL
   if (!native::classify_isa(native::observe_arm_capabilities(), native::neon).admitted()) return 77;
+#endif
   auto saved = read_status();
   std::uint32_t state = 0x31415927;
   bool ok = true;
