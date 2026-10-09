@@ -89,11 +89,8 @@ target_compile_definitions(native_test_x86_vpopcntdq_minimum PRIVATE
   NATIVE_TEST_EXPECT_VPOPCNTDQ_MINIMUM)
 set_target_properties(native_test_x86_vpopcntdq_minimum PROPERTIES
   CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_vpopcntdq_minimum PRIVATE /clang:-mavx512vpopcntdq)
-else()
-  target_compile_options(native_test_x86_vpopcntdq_minimum PRIVATE -mavx512vpopcntdq)
-endif()
+target_compile_options(native_test_x86_vpopcntdq_minimum PRIVATE
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mavx512vpopcntdq")
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   return()
@@ -105,11 +102,9 @@ function(native_vpopcntdq_baseline_target target)
   set_target_properties(${target} PROPERTIES
     CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
   native_vpopcntdq_disable_optional(${target})
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-ferror-limit=0)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -ferror-limit=0)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-ferror-limit=0")
 endfunction()
 
 add_library(native_test_x86_vpopcntdq_codegen OBJECT codegen.cc)
@@ -174,11 +169,8 @@ add_library(native_test_x86_vpopcntdq_codegen_public OBJECT codegen_public.cc)
 target_link_libraries(native_test_x86_vpopcntdq_codegen_public PRIVATE native::native)
 set_target_properties(native_test_x86_vpopcntdq_codegen_public PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_vpopcntdq_codegen_public PRIVATE /O2)
-else()
-  target_compile_options(native_test_x86_vpopcntdq_codegen_public PRIVATE -O2)
-endif()
+target_compile_options(native_test_x86_vpopcntdq_codegen_public PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 add_test(NAME native.x86.vpopcntdq.codegen_public
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
     --objdump "${NATIVE_VPOPCNTDQ_OBJDUMP}"
@@ -225,11 +217,8 @@ set_target_properties(native_test_x86_vpopcntdq_codegen_broad_public PROPERTIES
 foreach(target IN ITEMS native_test_x86_vpopcntdq_codegen_broad_raw
     native_test_x86_vpopcntdq_codegen_broad_public)
   target_compile_definitions(${target} PRIVATE NATIVE_TEST_BROAD_ARCH)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2)
-  else()
-    target_compile_options(${target} PRIVATE -O2)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 endforeach()
 add_test(NAME native.x86.vpopcntdq.codegen_broad
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"

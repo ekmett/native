@@ -70,11 +70,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 add_library(native_test_arm_neon_codegen OBJECT codegen.cc)
 target_link_libraries(native_test_arm_neon_codegen PRIVATE native::native)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_neon_codegen PRIVATE /O2 /clang:-mcpu=generic /clang:-march=armv8-a)
-else()
-  target_compile_options(native_test_arm_neon_codegen PRIVATE -O2 -mcpu=generic -march=armv8-a)
-endif()
+target_compile_options(native_test_arm_neon_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
 set_target_properties(native_test_arm_neon_codegen PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(neon_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
@@ -128,11 +127,8 @@ add_library(native_test_arm_conversions_codegen OBJECT conversions_codegen.cc)
 target_link_libraries(native_test_arm_conversions_codegen PRIVATE native::native)
 set_target_properties(native_test_arm_conversions_codegen PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_conversions_codegen PRIVATE /O2)
-else()
-  target_compile_options(native_test_arm_conversions_codegen PRIVATE -O2)
-endif()
+target_compile_options(native_test_arm_conversions_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 add_test(NAME native.arm.neon.conversions.codegen COMMAND "${Python3_EXECUTABLE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../arm_dotprod/check_equivalence.py"
   --objdump "${neon_objdump}" --output "${CMAKE_CURRENT_BINARY_DIR}/conversions-$<CONFIG>.json"
@@ -177,11 +173,10 @@ add_library(native_test_arm_neon_bits_codegen OBJECT bits_codegen.cc)
 target_link_libraries(native_test_arm_neon_bits_codegen PRIVATE native::native)
 set_target_properties(native_test_arm_neon_bits_codegen PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_neon_bits_codegen PRIVATE /O2 /clang:-mcpu=generic /clang:-march=armv8-a)
-else()
-  target_compile_options(native_test_arm_neon_bits_codegen PRIVATE -O2 -mcpu=generic -march=armv8-a)
-endif()
+target_compile_options(native_test_arm_neon_bits_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
 add_test(NAME native.arm.neon.bits.codegen COMMAND "${Python3_EXECUTABLE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/check_bits.py" --objdump "${neon_objdump}"
   --output "${CMAKE_CURRENT_BINARY_DIR}/bits-$<CONFIG>.json"

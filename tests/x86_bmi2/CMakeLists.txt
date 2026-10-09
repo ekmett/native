@@ -23,11 +23,8 @@ target_compile_features(native_test_x86_bmi2_codegen PRIVATE cxx_std_26)
 set_target_properties(native_test_x86_bmi2_codegen PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
 
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_bmi2_codegen PRIVATE /O2)
-else()
-  target_compile_options(native_test_x86_bmi2_codegen PRIVATE -O2)
-endif()
+target_compile_options(native_test_x86_bmi2_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(bmi2_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
 find_program(bmi2_objdump NAMES llvm-objdump HINTS "${bmi2_compiler_dir}" REQUIRED)

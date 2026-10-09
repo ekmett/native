@@ -19,11 +19,8 @@ foreach(family IN LISTS families)
   if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")
     # The driver must remain baseline-safe even when the compiler defaults to a
     # newer CPU; each runtime leaf owns its instruction target explicitly.
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE /clang:-march=armv8-a)
-    else()
-      target_compile_options(${target} PRIVATE -march=armv8-a)
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
   endif()
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON
     INTERPROCEDURAL_OPTIMIZATION FALSE)

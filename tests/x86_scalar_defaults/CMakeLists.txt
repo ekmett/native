@@ -31,11 +31,8 @@ function(scalar_defaults_options target)
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON
     INTERPROCEDURAL_OPTIMIZATION FALSE)
   foreach(option IN LISTS ARGN)
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE "/clang:${option}")
-    else()
-      target_compile_options(${target} PRIVATE "${option}")
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>${option}")
   endforeach()
 endfunction()
 

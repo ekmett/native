@@ -77,11 +77,8 @@ foreach(mode IN ITEMS baseline enabled)
   add_library(${target} OBJECT metadata.cc)
   native_gfni_textual_probe(${target})
   if(mode STREQUAL "enabled")
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE /clang:-mgfni)
-    else()
-      target_compile_options(${target} PRIVATE -mgfni)
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mgfni")
   endif()
 endforeach()
 
@@ -117,11 +114,8 @@ add_library(native_test_x86_gfni_codegen_public OBJECT codegen_public.cc)
 target_link_libraries(native_test_x86_gfni_codegen_public PRIVATE native::native)
 set_target_properties(native_test_x86_gfni_codegen_public PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_gfni_codegen_public PRIVATE /O2)
-else()
-  target_compile_options(native_test_x86_gfni_codegen_public PRIVATE -O2)
-endif()
+target_compile_options(native_test_x86_gfni_codegen_public PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 add_test(NAME native.x86.gfni.codegen_public
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
     --objdump "${NATIVE_GFNI_OBJDUMP}"

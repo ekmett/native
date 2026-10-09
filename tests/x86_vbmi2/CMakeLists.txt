@@ -36,11 +36,8 @@ foreach(interface IN ITEMS module hub)
   target_include_directories(${body} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../core_regression")
   target_compile_definitions(${body} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
   # The complete lane/mask banks exceed Clang's default constexpr step budget.
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${body} PRIVATE /clang:-fconstexpr-steps=16000000)
-  else()
-    target_compile_options(${body} PRIVATE -fconstexpr-steps=16000000)
-  endif()
+  target_compile_options(${body} PRIVATE
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")
   set_target_properties(${body} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   add_executable(${target} $<TARGET_OBJECTS:${body}>)
@@ -125,11 +122,8 @@ set_target_properties(native_test_x86_vbmi2_codegen_public_broad PROPERTIES CXX_
 foreach(target IN ITEMS native_test_x86_vbmi2_codegen native_test_x86_vbmi2_codegen_public
     native_test_x86_vbmi2_codegen_broad native_test_x86_vbmi2_codegen_public_broad)
   set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2)
-  else()
-    target_compile_options(${target} PRIVATE -O2)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 endforeach()
 
 add_test(NAME native.x86.vbmi2.codegen_pairs
@@ -179,11 +173,9 @@ function(native_vbmi2_rejection_target target interface)
     native_vbmi2_baseline_options(${target})
   endif()
   set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-ferror-limit=0)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -ferror-limit=0)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-ferror-limit=0")
 endfunction()
 
 # Separate target-mismatch operations so every rejection reaches code generation.

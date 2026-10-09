@@ -18,11 +18,10 @@ function(arm_scalar_baseline target present)
   else()
     set(arch armv8-a+nocrc+noaes+nosha2+nordm)
   endif()
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-mcpu=generic /clang:-march=${arch})
-  else()
-    target_compile_options(${target} PRIVATE -O2 -mcpu=generic -march=${arch})
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=${arch}")
 endfunction()
 foreach(present RANGE 0 1)
   set(target native_test_arm_scalar_defaults_${present})

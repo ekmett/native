@@ -41,11 +41,10 @@ function(crc_baseline target)
   target_link_libraries(${target} PRIVATE native::headers)
   target_compile_features(${target} PRIVATE cxx_std_26)
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION FALSE)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-mcpu=generic /clang:-march=armv8-a+nocrc)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -mcpu=generic -march=armv8-a+nocrc)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a+nocrc")
 endfunction()
 add_library(native_arm_crc_codegen OBJECT codegen.cc)
 crc_baseline(native_arm_crc_codegen)

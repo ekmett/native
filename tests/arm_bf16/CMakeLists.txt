@@ -33,11 +33,10 @@ function(native_arm_bf16_baseline target)
   target_link_libraries(${target} PRIVATE native::native)
   target_compile_features(${target} PRIVATE cxx_std_26)
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-mcpu=generic /clang:-march=armv8-a+nobf16)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -mcpu=generic -march=armv8-a+nobf16)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a+nobf16")
 endfunction()
 add_library(native_test_arm_bf16_codegen OBJECT codegen.cc)
 native_arm_bf16_baseline(native_test_arm_bf16_codegen)

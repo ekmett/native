@@ -64,11 +64,8 @@ set(vnni_disabled_features -mno-popcnt -mno-lzcnt -mno-bmi -mno-bmi2
   -mno-avxvnniint8 -mno-avxvnniint16 -mno-avxifma)
 function(native_vnni_options target)
   foreach(option IN LISTS ARGN)
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE "/clang:${option}")
-    else()
-      target_compile_options(${target} PRIVATE "${option}")
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>${option}")
   endforeach()
 endfunction()
 
@@ -220,11 +217,8 @@ add_library(native_test_x86_vnni_codegen_public OBJECT codegen_public.cc)
 target_link_libraries(native_test_x86_vnni_codegen_public PRIVATE native::native)
 set_target_properties(native_test_x86_vnni_codegen_public PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_vnni_codegen_public PRIVATE /O2)
-else()
-  target_compile_options(native_test_x86_vnni_codegen_public PRIVATE -O2)
-endif()
+target_compile_options(native_test_x86_vnni_codegen_public PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 add_test(NAME native.x86.vnni.codegen_public
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
     --objdump "${NATIVE_VNNI_OBJDUMP}"

@@ -85,11 +85,8 @@ set_tests_properties(native.x86.f16c.codegen PROPERTIES LABELS "host;codegen;bas
 
 add_library(native_test_x86_f16c_codegen_intel OBJECT codegen.cc)
 native_f16c_textual_probe(native_test_x86_f16c_codegen_intel)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_f16c_codegen_intel PRIVATE /clang:-masm=intel)
-else()
-  target_compile_options(native_test_x86_f16c_codegen_intel PRIVATE -masm=intel)
-endif()
+target_compile_options(native_test_x86_f16c_codegen_intel PRIVATE
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-masm=intel")
 add_test(NAME native.x86.f16c.codegen_intel
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
     --objdump "${NATIVE_F16C_OBJDUMP}"
@@ -103,11 +100,8 @@ foreach(mode IN ITEMS baseline enabled)
   add_library(${target} OBJECT metadata.cc)
   native_f16c_textual_probe(${target})
   if(mode STREQUAL "enabled")
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE /clang:-mf16c)
-    else()
-      target_compile_options(${target} PRIVATE -mf16c)
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mf16c")
   endif()
 endforeach()
 
@@ -167,11 +161,8 @@ add_library(native_test_x86_f16c_codegen_public OBJECT codegen_public.cc)
 target_link_libraries(native_test_x86_f16c_codegen_public PRIVATE native::native)
 set_target_properties(native_test_x86_f16c_codegen_public PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_f16c_codegen_public PRIVATE /O2)
-else()
-  target_compile_options(native_test_x86_f16c_codegen_public PRIVATE -O2)
-endif()
+target_compile_options(native_test_x86_f16c_codegen_public PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 add_test(NAME native.x86.f16c.codegen_public
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
     --objdump "${NATIVE_F16C_OBJDUMP}"

@@ -22,11 +22,10 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 endif()
 add_library(native_test_arm_sm_crypto_codegen OBJECT codegen.cc)
 target_link_libraries(native_test_arm_sm_crypto_codegen PRIVATE native::native)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_sm_crypto_codegen PRIVATE /O2 /clang:-mcpu=generic /clang:-march=armv8-a)
-else()
-  target_compile_options(native_test_arm_sm_crypto_codegen PRIVATE -O2 -mcpu=generic -march=armv8-a)
-endif()
+target_compile_options(native_test_arm_sm_crypto_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
 set_target_properties(native_test_arm_sm_crypto_codegen PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 get_filename_component(sm_compiler_dir "${CMAKE_CXX_COMPILER}" DIRECTORY)
@@ -75,11 +74,9 @@ foreach(enabled RANGE 0 1)
   else()
     set(march armv8-a)
   endif()
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /clang:-mcpu=generic /clang:-march=${march})
-  else()
-    target_compile_options(${target} PRIVATE -mcpu=generic -march=${march})
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=${march}")
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON)
   # No optional instructions execute: this TU contains only compile-time metadata checks.
   add_test(NAME native.arm.sm_crypto.minimum_${enabled} COMMAND ${target})

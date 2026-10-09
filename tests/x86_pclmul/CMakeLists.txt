@@ -82,11 +82,8 @@ foreach(mode IN ITEMS baseline pclmul vpclmulqdq unknown)
     else()
       set(feature ${mode})
     endif()
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE /clang:-m${feature})
-    else()
-      target_compile_options(${target} PRIVATE -m${feature})
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-m${feature}")
   endif()
 endforeach()
 
@@ -168,11 +165,8 @@ add_library(native_test_x86_pclmul_codegen_public OBJECT codegen_public.cc)
 target_link_libraries(native_test_x86_pclmul_codegen_public PRIVATE native::native)
 set_target_properties(native_test_x86_pclmul_codegen_public PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_pclmul_codegen_public PRIVATE /O2)
-else()
-  target_compile_options(native_test_x86_pclmul_codegen_public PRIVATE -O2)
-endif()
+target_compile_options(native_test_x86_pclmul_codegen_public PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 add_test(NAME native.x86.pclmul.codegen_public
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py"
     --objdump "${NATIVE_PCLMUL_OBJDUMP}"

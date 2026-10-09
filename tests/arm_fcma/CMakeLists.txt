@@ -31,11 +31,9 @@ endif()
 add_library(native_test_arm_fcma_codegen OBJECT codegen.cc)
 target_link_libraries(native_test_arm_fcma_codegen PRIVATE native::native)
 target_compile_features(native_test_arm_fcma_codegen PRIVATE cxx_std_26)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_arm_fcma_codegen PRIVATE /O2 /clang:-march=armv8-a)
-else()
-  target_compile_options(native_test_arm_fcma_codegen PRIVATE -O2 -march=armv8-a)
-endif()
+target_compile_options(native_test_arm_fcma_codegen PRIVATE
+  "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
 set_target_properties(native_test_arm_fcma_codegen PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
@@ -52,11 +50,9 @@ foreach(kind IN ITEMS no_target half_no_target invalid_lane half_no_feature)
   add_library(${target} OBJECT EXCLUDE_FROM_ALL ${kind}.cc)
   target_link_libraries(${target} PRIVATE native::native)
   target_compile_features(${target} PRIVATE cxx_std_26)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-march=armv8-a)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -march=armv8-a)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
   set_target_properties(${target} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   if(kind MATCHES "target")

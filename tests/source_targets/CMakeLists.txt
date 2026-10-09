@@ -126,11 +126,8 @@ function(native_baseline_case name case)
   target_compile_definitions(native_baseline_${name} PRIVATE NATIVE_BASELINE_CASE=${case})
   set_target_properties(native_baseline_${name} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
   foreach(option IN LISTS ARGN)
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(native_baseline_${name} PRIVATE "/clang:${option}")
-    else()
-      target_compile_options(native_baseline_${name} PRIVATE "${option}")
-    endif()
+    target_compile_options(native_baseline_${name} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>${option}")
   endforeach()
 endfunction()
 

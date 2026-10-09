@@ -54,11 +54,8 @@ foreach(mode IN ITEMS raw public)
   else()
     target_link_libraries(${target} PRIVATE native::minimal)
   endif()
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2)
-  else()
-    target_compile_options(${target} PRIVATE -O2)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
   set_target_properties(${target} PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
 endforeach()
 add_test(NAME native.x86.constexpr.codegen COMMAND "${Python3_EXECUTABLE}"

@@ -11,11 +11,8 @@ endif()
 add_executable(native_test_half_constexpr main.cc)
 target_link_libraries(native_test_half_constexpr PRIVATE native::native)
 set_target_properties(native_test_half_constexpr PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_half_constexpr PRIVATE /clang:-fconstexpr-steps=8000000)
-else()
-  target_compile_options(native_test_half_constexpr PRIVATE -fconstexpr-steps=8000000)
-endif()
+target_compile_options(native_test_half_constexpr PRIVATE
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=8000000")
 foreach(mode IN ITEMS static half bf16)
   add_test(NAME native.half_constexpr.${mode} COMMAND native_test_half_constexpr ${mode})
   set_tests_properties(native.half_constexpr.${mode} PROPERTIES

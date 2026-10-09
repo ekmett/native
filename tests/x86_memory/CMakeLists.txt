@@ -15,11 +15,9 @@ find_program(NATIVE_MEMORY_OBJDUMP NAMES llvm-objdump HINTS "${native_memory_com
 function(native_memory_options target)
   target_link_libraries(${target} PRIVATE native::native)
   set_target_properties(${target} PROPERTIES CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-fconstexpr-steps=8000000)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -fconstexpr-steps=8000000)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=8000000")
 endfunction()
 
 foreach(interface RANGE 1 2)
@@ -57,11 +55,10 @@ foreach(case RANGE 1 18)
   native_memory_options(${target})
   target_compile_definitions(${target} PRIVATE NATIVE_MEMORY_REJECT=${case})
   if(case EQUAL 9)
-    if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-      target_compile_options(${target} PRIVATE /clang:-mno-avx /clang:-mno-avx2 /clang:-mno-avx512f)
-    else()
-      target_compile_options(${target} PRIVATE -mno-avx -mno-avx2 -mno-avx512f)
-    endif()
+    target_compile_options(${target} PRIVATE
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mno-avx"
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mno-avx2"
+      "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mno-avx512f")
   endif()
   add_test(NAME native.x86.memory.reject.${case}
     COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/check_negative.py"

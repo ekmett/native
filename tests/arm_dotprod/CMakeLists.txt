@@ -54,13 +54,10 @@ function(native_arm_dotprod_baseline target)
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   # Each fixture function enables only its own feature. Explicit CPU selection
   # avoids inheriting the platform's default architecture bundle.
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2
-      /clang:-mcpu=generic /clang:-march=armv8-a+nodotprod+nordm)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -mcpu=generic
-      -march=armv8-a+nodotprod+nordm)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-mcpu=generic"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a+nodotprod+nordm")
 endfunction()
 
 add_library(native_test_arm_dotprod_codegen OBJECT codegen.cc)

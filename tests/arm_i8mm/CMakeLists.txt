@@ -72,11 +72,9 @@ foreach(kind IN ITEMS codegen minimum no_feature no_target bad_lane)
   else()
     set(arch_flag -march=armv8-a)
   endif()
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(native_test_arm_i8mm_${kind} PRIVATE /clang:${arch_flag} /O2)
-  else()
-    target_compile_options(native_test_arm_i8mm_${kind} PRIVATE ${arch_flag} -O2)
-  endif()
+  target_compile_options(native_test_arm_i8mm_${kind} PRIVATE
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>${arch_flag}"
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 endforeach()
 add_test(NAME native.arm.i8mm.codegen COMMAND "${Python3_EXECUTABLE}"
   "${CMAKE_CURRENT_SOURCE_DIR}/check_codegen.py" --objdump "${i8mm_objdump}"

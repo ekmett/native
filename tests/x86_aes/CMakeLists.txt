@@ -16,11 +16,8 @@ function(native_aes_module_target target)
 endfunction()
 
 function(native_aes_optimize target)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2)
-  else()
-    target_compile_options(${target} PRIVATE -O2)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
 endfunction()
 
 add_library(native_test_x86_aes_baseline OBJECT baseline.cc)

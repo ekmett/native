@@ -29,11 +29,9 @@ endif()
 function(crypto_baseline target)
   target_link_libraries(${target} PRIVATE native::native)
   target_compile_features(${target} PRIVATE cxx_std_26)
-  if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-    target_compile_options(${target} PRIVATE /O2 /clang:-march=armv8-a)
-  else()
-    target_compile_options(${target} PRIVATE -O2 -march=armv8-a)
-  endif()
+  target_compile_options(${target} PRIVATE
+    "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>"
+    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-march=armv8-a")
   set_target_properties(${target} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
 endfunction()

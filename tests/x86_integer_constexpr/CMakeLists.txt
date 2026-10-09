@@ -35,11 +35,8 @@ add_library(native_test_x86_integer_constexpr_reject_runtime OBJECT EXCLUDE_FROM
 target_link_libraries(native_test_x86_integer_constexpr_reject_runtime PRIVATE native::native)
 set_target_properties(native_test_x86_integer_constexpr_reject_runtime PROPERTIES
   CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-  target_compile_options(native_test_x86_integer_constexpr_reject_runtime PRIVATE /clang:-ferror-limit=0)
-else()
-  target_compile_options(native_test_x86_integer_constexpr_reject_runtime PRIVATE -ferror-limit=0)
-endif()
+target_compile_options(native_test_x86_integer_constexpr_reject_runtime PRIVATE
+  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-ferror-limit=0")
 add_test(NAME native.x86.integer_constexpr.reject_runtime
   COMMAND "${Python3_EXECUTABLE}" -B "${CMAKE_CURRENT_SOURCE_DIR}/check_rejections.py"
     --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "$<CONFIG>"
