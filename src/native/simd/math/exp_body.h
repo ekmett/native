@@ -142,3 +142,62 @@ namespace native {
  * \author Edward Kmett <ekmett@gmail.com>
  * \brief Range-reduced exponential over scalar, SIMD, and register-pack inputs.
  */
+
+namespace native {
+#define NATIVE_POLYFILL_MATH_ENTRY(NAME) \
+  /** Evaluate the staged binary32 graph over every permitted logical lane. */ \
+  template<std::size_t L,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A> \
+  constexpr simd<float,L,A> NAME(simd<float,L,A> input) noexcept { return ::math::NAME(input); } \
+  /** Evaluate the staged graph across independent permitted register groups. */ \
+  template<std::size_t L,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A> \
+  constexpr std::array<simd<float,L,A>,N> NAME(std::array<simd<float,L,A>,N> const & input) noexcept { return ::math::NAME(input); }
+  NATIVE_POLYFILL_MATH_ENTRY(expm1)
+  NATIVE_POLYFILL_MATH_ENTRY(damping_gain)
+  NATIVE_POLYFILL_MATH_ENTRY(log)
+  NATIVE_POLYFILL_MATH_ENTRY(log2)
+  NATIVE_POLYFILL_MATH_ENTRY(log1p)
+  NATIVE_POLYFILL_MATH_ENTRY(tanh)
+  NATIVE_POLYFILL_MATH_ENTRY(sin)
+  NATIVE_POLYFILL_MATH_ENTRY(cos)
+#undef NATIVE_POLYFILL_MATH_ENTRY
+  /// Paired sine/cosine preserving the permitted logical lane shape.
+  template<std::size_t L,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A>
+  constexpr auto sincos(simd<float,L,A> input) noexcept { return ::math::sincos(input); }
+  /// Stage paired trigonometry across permitted independent register groups.
+  template<std::size_t L,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A>
+  constexpr auto sincos(std::array<simd<float,L,A>,N> const & input) noexcept { return ::math::sincos(input); }
+  /// Range-reduced exp preserving native chunk arithmetic and logical lane shape.
+  template<bool Flush=false,unsigned Degree=6,std::size_t L,isa<> A>
+    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A> && (Degree>=1 && Degree<=7)
+  constexpr simd<float,L,A> exp(simd<float,L,A> input) noexcept { return ::math::exp<Flush,Degree>(input); }
+  /// Stage every independent binary32 exponential register group together; N may be zero.
+  template<bool Flush=false,unsigned Degree=6,std::size_t L,std::size_t N,isa<> A>
+    requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A> && (Degree>=1 && Degree<=7)
+  constexpr std::array<simd<float,L,A>,N> exp(std::array<simd<float,L,A>,N> const & input) noexcept { return ::math::exp<Flush,Degree>(input); }
+  /// Select exp's underflow policy and polynomial degree through constant tags.
+  template<bool Flush,unsigned Degree=6,class V>
+    requires NATIVE_ARCH_REQUIRES(V::architecture) && detail::polyfill_operation_shape<float,V::lanes,V::architecture> && (Degree>=1 && Degree<=7)
+  constexpr V exp(V input,std::bool_constant<Flush>,std::integral_constant<unsigned,Degree> = {}) noexcept { return exp<Flush,Degree>(input); }
+  /// Select exp's batch policy through constant tags.
+  template<bool Flush,unsigned Degree=6,class V,std::size_t N>
+    requires NATIVE_ARCH_REQUIRES(V::architecture) && detail::polyfill_operation_shape<float,V::lanes,V::architecture> && (Degree>=1 && Degree<=7)
+  constexpr std::array<V,N> exp(std::array<V,N> const & input,std::bool_constant<Flush>,std::integral_constant<unsigned,Degree> = {}) noexcept { return exp<Flush,Degree>(input); }
+  /// Base-two exponential preserving the permitted lane shape.
+  template<bool Flush=false,std::size_t L,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A>
+  constexpr simd<float,L,A> exp2(simd<float,L,A> input) noexcept { return ::math::exp2<Flush>(input); }
+  /// Base-two exponential across independent register groups; N may be zero.
+  template<bool Flush=false,std::size_t L,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A>
+  constexpr std::array<simd<float,L,A>,N> exp2(std::array<simd<float,L,A>,N> const & input) noexcept { return ::math::exp2<Flush>(input); }
+  /// Select exp2's underflow policy through a constant tag.
+  template<bool Flush,class V> requires NATIVE_ARCH_REQUIRES(V::architecture) && detail::polyfill_operation_shape<float,V::lanes,V::architecture>
+  constexpr V exp2(V input,std::bool_constant<Flush>) noexcept { return exp2<Flush>(input); }
+  /// Select exp2's batch policy through a constant tag.
+  template<bool Flush,class V,std::size_t N> requires NATIVE_ARCH_REQUIRES(V::architecture) && detail::polyfill_operation_shape<float,V::lanes,V::architecture>
+  constexpr std::array<V,N> exp2(std::array<V,N> const & input,std::bool_constant<Flush>) noexcept { return exp2<Flush>(input); }
+  /// Evaluate atan2(y,x) over matching permitted logical lane domains.
+  template<std::size_t L,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A>
+  constexpr simd<float,L,A> atan2(simd<float,L,A> y,simd<float,L,A> x) noexcept { return ::math::atan2(y,x); }
+  /// Evaluate atan2 across independent permitted register groups.
+  template<std::size_t L,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,L,A>
+  constexpr std::array<simd<float,L,A>,N> atan2(std::array<simd<float,L,A>,N> const & y,std::array<simd<float,L,A>,N> const & x) noexcept { return ::math::atan2(y,x); }
+}

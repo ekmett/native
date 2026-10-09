@@ -65,16 +65,16 @@ namespace native::detail::float_constant {
   constexpr std::uint32_t scale(std::uint32_t x,std::uint32_t exponent,
       cf::rounding mode=cf::rounding::nearest_even,cf::policy p={}) noexcept {
     x=cf::flush_input<f32>(x,p); exponent=cf::flush_input<f32>(exponent,p);
-    if(cf::is_signaling_nan<f32>(x)) return cf::quiet_nan<f32>(x);
+    if(cf::is_signaling_nan<f32>(x)) return cf::select_nan<f32>(std::array{x,exponent},p);
     if(cf::is_nan<f32>(exponent)) return cf::select_nan<f32>(std::array{x,exponent},p);
     if(cf::is_infinite<f32>(exponent)) {
       bool down=(exponent&f32::sign_mask)!=0;
       if(cf::is_nan<f32>(x)) return down?0u:f32::exponent_mask;
-      if(cf::is_infinite<f32>(x)) return down?cf::default_nan<f32>({}):x;
-      if(cf::is_zero<f32>(x)) return down?x:cf::default_nan<f32>({});
+      if(cf::is_infinite<f32>(x)) return down?cf::default_nan<f32>(p):x;
+      if(cf::is_zero<f32>(x)) return down?x:cf::default_nan<f32>(p);
       return (x&f32::sign_mask)|(down?0u:f32::exponent_mask);
     }
-    if(cf::is_nan<f32>(x)) return cf::quiet_nan<f32>(x);
+    if(cf::is_nan<f32>(x)) return cf::select_nan<f32>(std::array{x},p);
     if(cf::is_infinite<f32>(x) || cf::is_zero<f32>(x)) return x;
     float n=std::bit_cast<float>(floor(exponent));
     int shift=n < -512.f?-512:n > 512.f?512:static_cast<int>(n);

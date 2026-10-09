@@ -12,8 +12,11 @@
 #include <native/integer.h>
 #include <native/packing.h>
 #include <native/wide.h>
+#include <native/simd/math/exp.h>
+#include <native/simd/math/bits.h>
 #else
 import native;
+import native.math;
 #endif
 
 namespace custom_fixture {
@@ -243,6 +246,55 @@ namespace polyfill_test {
     if(!all(B::from_bitset(0x1ffff))) return false;
     return B::from_bitset(0xffffffffffffffffull).to_bitset()==0x1ffff;
   }
+  template<isa<> A> bool math_graph(unsigned seed=0) {
+    constexpr auto raw=[] { auto result=A; result.allow_polyfill=false; return result; }();
+    using V=simd<float,17,A>; using C=simd<float,1,raw>;
+    std::array<float,17> input{},output{};
+    for(std::size_t i=0;i<17;++i) input[i]=float(i+seed)/16.f-0.5f;
+    auto x=V::load(input.data()); auto positive=x+V(2.f);
+    auto check=[&](V result,auto operation,bool shifted=false) {
+      result.store(output.data());
+      for(std::size_t i=0;i<17;++i) {
+        std::array<float,1> expected{}; operation(C(shifted?input[i]+2.f:input[i])).store(expected.data());
+        if(std::bit_cast<std::uint32_t>(expected[0])!=std::bit_cast<std::uint32_t>(output[i])) return false;
+      }
+      return true;
+    };
+#define POLYFILL_CHECK_MATH(NAME) if(!check(native::NAME(x),[](C v) { return native::NAME(v); })) return false;
+    POLYFILL_CHECK_MATH(exp)
+    POLYFILL_CHECK_MATH(exp2)
+    POLYFILL_CHECK_MATH(expm1)
+    POLYFILL_CHECK_MATH(damping_gain)
+    POLYFILL_CHECK_MATH(log1p)
+    POLYFILL_CHECK_MATH(tanh)
+    if(!check(native::sin(x),[](C v) { return ::math::sin(v); }) ||
+       !check(native::cos(x),[](C v) { return ::math::cos(v); })) return false;
+#undef POLYFILL_CHECK_MATH
+    if(!check(native::log(positive),[](C v) { return native::log(v); },true) ||
+       !check(native::log2(positive),[](C v) { return native::log2(v); },true) ||
+       !check(native::atan2(x,V(2.f)),[](C v) { return native::atan2(v,C(2.f)); })) return false;
+    auto pair=native::sincos(x);
+    if(!check(pair.first,[](C v) { return ::math::sin(v); }) || !check(pair.second,[](C v) { return ::math::cos(v); })) return false;
+    std::array<V,3> batch{x,x,x};
+    auto exponentials=native::exp(batch,std::false_type{},std::integral_constant<unsigned,6>{});
+    for(auto value:exponentials) if(!check(value,[](C v) { return native::exp(v); })) return false;
+    auto paired=native::sincos(batch);
+    for(auto value:paired.first) if(!check(value,[](C v) { return ::math::sin(v); })) return false;
+    native::wide<V,3> wide_input{batch}; auto wide_result=native::log1p(wide_input);
+    for(auto value:wide_result.registers) if(!check(value,[](C v) { return native::log1p(v); })) return false;
+    std::array<V,0> empty{};
+    if(!native::exp(empty).empty() || !native::sincos(empty).first.empty()) return false;
+    constexpr std::array special{0x7f800000u,0xff800000u,0x7fc12345u,0x80000000u,0u,1u,0x80000001u,0xbf800000u};
+    for(std::size_t i=0;i<17;++i) input[i]=std::bit_cast<float>(special[i%special.size()]);
+    auto exceptional=V::load(input.data());
+    if(!check(native::exp(exceptional),[](C v) { return native::exp(v); }) ||
+       !check(native::log(exceptional),[](C v) { return native::log(v); }) ||
+       !check(native::tanh(exceptional),[](C v) { return native::tanh(v); })) return false;
+    std::array<std::uint32_t,17> representations{}; representations.fill(0x80000001u);
+    native::flush_to_zero(V::load_bits(representations.data())).store_bits(representations.data());
+    for(auto word:representations) if(word!=0x80000000u) return false;
+    return true;
+  }
   template<isa<> A> constexpr bool helper_graph(unsigned seed=0) {
     using F=simd<float,17,A>; using U=simd<std::uint32_t,17,A>;
     using M=simd<mask32,17,A>;
@@ -283,6 +335,7 @@ namespace polyfill_test {
     for(auto word:words) if(word!=1) return false;
     std::array<std::uint32_t,17> counts{};
     for(std::size_t i=0;i<17;++i) counts[i]=std::uint32_t(i+23);
+    counts.back()=0xffffffffu;
     (U(1u)<<U::load(counts.data())).store(words.data());
     for(std::size_t i=0;i<17;++i) if(words[i]!=(counts[i]<32?1u<<counts[i]:0)) return false;
     auto packed=compress(F::mask_type::from_bitset(bits),value,-99.f);
@@ -440,6 +493,15 @@ namespace polyfill_test {
     (V::load_bits(one.data())+V::load_bits(small.data())).store_bits(output.data());
     for(auto x:output) if(x!=0) valid=false;
 #endif
+#if NATIVE_HOST_NEON
+    using F=simd<float,17,polyfill>;
+    std::array<std::uint32_t,17> nan_bits{},scaled_bits{};
+    for(auto nan:std::array{0x7f812345u,0xffc12345u}) {
+      nan_bits.fill(nan); write(saved|(1ull<<25));
+      scaleb(F::load_bits(nan_bits.data()),F(0.f)).store_bits(scaled_bits.data());
+      for(auto bits:scaled_bits) if(bits!=0x7fc00000u) valid=false;
+    }
+#endif
     write(saved);
     return valid;
 #endif
@@ -448,6 +510,8 @@ namespace polyfill_test {
   static_assert(custom<permitted>() && custom<isa<>(polyfill)>());
   static_assert(batching<decomposed>() && batching<scalar_emulated>());
   static_assert(normalized());
+  static_assert(native::exp(simd<float,3,polyfill>(0.f)).template get<2>()==1.f);
+  static_assert(native::sincos(simd<float,3,polyfill>(0.f)).first.template get<1>()==0.f);
   static_assert(helper_graph<permitted>() && helper_graph<isa<>(polyfill)>());
   static_assert(floating<decomposed>() && floating<scalar_emulated>());
   static_assert(memory<simd<float,17,permitted>>() && memory<scalar_emulated>());
@@ -467,7 +531,7 @@ int main(int argc,char **) {
   extra_ok=extra_ok && extra_storage<fp16,isa<>(polyfill)>() && extra_storage<bf16,isa<>(polyfill)>() &&
     extra_arithmetic<fp16,isa<>(polyfill)>() && storage_only_operations() && half_environment();
 #endif
-  bool scalar_ok=extra_ok && helper_graph<isa<>(polyfill)>(seed) && custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
+  bool scalar_ok=extra_ok && math_graph<isa<>(polyfill)>(seed) && helper_graph<isa<>(polyfill)>(seed) && custom<isa<>(polyfill)>() && batching<scalar_emulated>() && normalized() &&
     floating<scalar_emulated>(float(seed)) && memory<scalar_emulated>(seed) &&
     unaligned_memory<scalar_emulated>(seed) && unaligned_memory<integer_emulated>(seed) &&
     representations<scalar_emulated>() && integers<isa<>(polyfill)>(seed) && integer_reductions<isa<>(polyfill)>(seed) &&
@@ -475,7 +539,7 @@ int main(int argc,char **) {
 #if NATIVE_POLYFILL_SCALAR_ONLY
   return !scalar_ok;
 #else
-  bool native_ok=helper_graph<permitted>(seed) && custom<permitted>() && batching<decomposed>() &&
+  bool native_ok=math_graph<permitted>(seed) && helper_graph<permitted>(seed) && custom<permitted>() && batching<decomposed>() &&
     floating<decomposed>(float(seed)) && memory<simd<float,17,permitted>>(seed) &&
     unaligned_memory<simd<float,17,permitted>>(seed) && unaligned_memory<simd<std::uint32_t,17,permitted>>(seed) &&
     representations<decomposed>() && integers<permitted>(seed) && integer_reductions<permitted>(seed) &&

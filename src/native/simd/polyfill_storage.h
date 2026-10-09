@@ -125,6 +125,9 @@ namespace native::detail {
     /// Replace one logical lane without changing other representations.
     template<std::size_t I> requires(I<N)
     constexpr Self set(T value) const noexcept { return restore(project(static_cast<Self const &>(*this)).template set<I>(value)); }
+    /// Synonym for replacing one compile-time-selected logical lane.
+    template<std::size_t I> requires(I<N)
+    constexpr Self replace(T value) const noexcept { return this->template set<I>(value); }
     /// Encode normal powers of two for integral exponents in [-126,127].
     friend constexpr Self normal_pow2(Self n) noexcept requires(std::same_as<T,float>) { return restore(normal_pow2(project(n))); }
     /// Shift logical lanes left by the valid immediate count.

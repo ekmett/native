@@ -12,6 +12,7 @@ namespace native {
   template<class T,std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_shape<T,N,A>
   struct simd<T,N,A> : detail::swizzle_access<T,N,A> {
     using value_type=T;
+    using unsigned_register_tag=void;
     static constexpr isa<> architecture=A;
     static constexpr std::size_t lanes=N;
     /// Number of logical lanes in each underlying native register.
@@ -293,6 +294,9 @@ namespace native {
     /// Replace one logical lane, retaining every other lane's representation.
     template<std::size_t I> requires(I<N)
     constexpr simd set(T value) const noexcept { std::array<T,N> lanes{}; store(lanes.data()); lanes[I]=value; return load(lanes.data()); }
+    /// Synonym for replacing one compile-time-selected logical lane.
+    template<std::size_t I> requires(I<N)
+    constexpr simd replace(T value) const noexcept { return this->template set<I>(value); }
     /// Encode normal powers of two for integral exponents in [-126,127].
     friend constexpr simd normal_pow2(simd n) noexcept requires(std::same_as<T,float>) {
       return map([](auto x) { return normal_pow2(x); },n);
@@ -306,7 +310,10 @@ namespace native {
     /// Shift each unsigned 32-bit lane by its corresponding count; counts >=32 yield zero.
     friend constexpr simd operator<<(simd value,simd counts) noexcept requires(std::same_as<T,std::uint32_t>) {
       if constexpr(requires(chunk_type x) { { x<<x } -> std::same_as<chunk_type>; })
-        return map([](auto x,auto n) { return x<<n; },value,counts);
+        return map([](auto x,auto n) {
+          auto valid=n<chunk_type(32u);
+          return select(valid,x<<select(valid,n,chunk_type(0u)),chunk_type(0u));
+        },value,counts);
       else {
         std::array<T,N> lanes{},shifts{}; value.store(lanes.data()); counts.store(shifts.data());
         for(std::size_t i=0;i<N;++i) lanes[i]=shifts[i]<32?lanes[i]<<shifts[i]:0;

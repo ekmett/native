@@ -3,7 +3,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
   namespace detail {
     template<class V> struct fp32_bit_bridge;
     template<std::size_t N, ::native::isa<> Arch>
-      requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::float_shape<N>
+      requires NATIVE_ARCH_REQUIRES(Arch) && (::NATIVE_BACKEND_NAMESPACE::float_shape<N> || ::native::detail::polyfill_operation_shape<float,N,Arch>)
     struct fp32_bit_bridge<::native::simd<float,N,Arch>> {
       using value_type=::native::simd<float,N,Arch>;
       using bits_type=typename value_type::bits_type;
@@ -74,7 +74,7 @@ namespace NATIVE_BACKEND_NAMESPACE::native {
         using U = typename bridge::bits_type;
         auto [...bits] = std::array{bridge::encode(value)...};
         auto const [...exponent] = std::array{(bits & U(0x7f800000u))...};
-        auto const [...zero] = std::array{mask_bits<uint32_t>(exponent == U(0))...};
+        auto const [...zero] = std::array{::native::mask_bits<uint32_t>(exponent == U(0))...};
         auto const [...clear] = std::array{(zero & U(0x007fffffu))...};
         ((bits = detail::flush_clear_bits(bits, clear)), ...);
         return {{bridge::decode(bits)...}};

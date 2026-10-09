@@ -4374,8 +4374,8 @@ namespace native {
   /// Result values follow the caller's rounding and denormal controls. Inactive
   /// lanes retain their exact bits; exception flags are unspecified. Keep traps
   /// disabled: the compiler may share arithmetic before selecting masked results.
-  /// Available only for native AVX512F scaling shapes; packed widths below 16
-  /// require AVX512VL. No scalar, AVX2, NEON or Wasm software fallback exists.
+  /// Native AVX512F scaling shapes use their instruction; packed widths below 16
+  /// require AVX512VL. Explicit polyfill permission admits other supported shapes.
   template <std::size_t N,class M, ::native::isa<> Arch>
     requires NATIVE_ARCH_REQUIRES(Arch) && ::NATIVE_BACKEND_NAMESPACE::native_scaleb_shape<N> &&(std::same_as<M,typename simd<float,N,Arch>::mask_type> ||
              std::same_as<M,typename simd<float,N,Arch>::vector_mask_type>)

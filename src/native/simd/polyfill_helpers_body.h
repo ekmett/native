@@ -148,8 +148,18 @@ namespace native {
       !simd_mask_element<To> && !simd_mask_element<From> &&
       (detail::polyfill_operation_shape<From,N,A> || detail::polyfill_operation_shape<To,N,A> ||
        !detail::ordinary_simd_element<To> || !detail::ordinary_simd_element<From>) &&
-      requires { sizeof(simd<To,N,A>); })
+      requires { sizeof(simd<To,N,A>); }
+#if NATIVE_HOST_WASM
+      && !(sizeof(From)*N==16 && std::floating_point<To> && !std::same_as<To,From> &&
+        (sizeof(From)==4 || std::floating_point<From>))
+#endif
+      )
   constexpr simd<To,N,A> convert(simd<From,N,A> value) noexcept {
+    using R=simd<To,N,A>; using V=simd<From,N,A>;
+    if constexpr(detail::polyfill_chunk_compatible<R,V> &&
+      requires(typename V::chunk_type x) { { convert<To>(x) } -> std::same_as<typename R::chunk_type>; }) {
+      return detail::polyfill_transform_chunks<R>(value,[](auto chunk) { return convert<To>(chunk); });
+    } else {
     std::array<From,N> input{}; std::array<To,N> output{}; value.store(input.data());
     for(std::size_t i=0;i<N;++i) {
       if constexpr(!simd_integer_element<From> && !simd_integer_element<To>) {
@@ -175,21 +185,32 @@ namespace native {
       } else { output[i]=static_cast<To>(input[i]); }
     }
     return simd<To,N,A>::load(output.data());
+    }
   }
 #if NATIVE_HOST_NEON
   /// Truncate binary32 lanes with ARM's defined signed saturation and NaN-to-zero result.
   template<std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,N,A>
   constexpr simd<std::int32_t,N,A> fcvtzs(simd<float,N,A> value) noexcept {
+    using R=simd<std::int32_t,N,A>; using V=simd<float,N,A>;
+    if constexpr(detail::polyfill_chunk_compatible<R,V>) {
+      return detail::polyfill_transform_chunks<R>(value,[](auto chunk) { return fcvtzs(chunk); });
+    } else {
     std::array<float,N> input{}; std::array<std::int32_t,N> output{}; value.store(input.data());
     for(std::size_t i=0;i<N;++i) output[i]=detail::float_constant::fcvtzs(std::bit_cast<std::uint32_t>(input[i]));
     return simd<std::int32_t,N,A>::load(output.data());
+    }
   }
   /// Truncate binary32 lanes with ARM's unsigned saturation and NaN/negative-to-zero result.
   template<std::size_t N,isa<> A> requires NATIVE_ARCH_REQUIRES(A) && detail::polyfill_operation_shape<float,N,A>
   constexpr simd<std::uint32_t,N,A> fcvtzu(simd<float,N,A> value) noexcept {
+    using R=simd<std::uint32_t,N,A>; using V=simd<float,N,A>;
+    if constexpr(detail::polyfill_chunk_compatible<R,V>) {
+      return detail::polyfill_transform_chunks<R>(value,[](auto chunk) { return fcvtzu(chunk); });
+    } else {
     std::array<float,N> input{}; std::array<std::uint32_t,N> output{}; value.store(input.data());
     for(std::size_t i=0;i<N;++i) output[i]=detail::float_constant::fcvtzu(std::bit_cast<std::uint32_t>(input[i]));
     return simd<std::uint32_t,N,A>::load(output.data());
+    }
   }
 #endif
 

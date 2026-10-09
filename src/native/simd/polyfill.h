@@ -62,6 +62,21 @@ namespace native::detail {
   concept polyfill_operation_shape=A.has(polyfill) && polyfill_element_traits<T>::supported &&
     (polyfill_shape<T,N,A> || instruction_only_shape<T,N,A>);
 
+  template<class To,class From> concept polyfill_chunk_compatible=requires {
+    typename To::chunk_type; typename From::chunk_type;
+    requires To::register_lanes==From::register_lanes;
+    requires To::register_count==From::register_count;
+  };
+  // Delegate corresponding logical chunks to their hardware-only architecture.
+  // Padding stays representation-local and is never reported as a logical lane.
+  template<class To,class From,class F> requires polyfill_chunk_compatible<To,From>
+  constexpr To polyfill_transform_chunks(From value,F operation) noexcept {
+    auto input=value.to_native(); typename To::native_type output{};
+    for(std::size_t i=0;i<From::register_count;++i)
+      output[i]=operation(From::chunk_type::from_native(input[i])).to_native();
+    return To::from_native(output);
+  }
+
   template<class T,isa<> A,std::size_t M=64/sizeof(T)>
   consteval std::size_t polyfill_register_lanes() noexcept {
     if constexpr(!instruction_only_shape<T,M,A> &&

@@ -53,6 +53,19 @@ namespace wide::detail {
     // signed indefinite integer for NaN/out-of-range inputs; MAX maps it and
     // negative fields to zero without testing the floating-point input.
     static inline constexpr V exp_factor(V biased) noexcept {
+      if constexpr(::native::detail::polyfill_operation_shape<typename V::value_type,V::lanes,V::architecture>) {
+        if constexpr(::native::detail::polyfill_chunk_compatible<V,V>)
+          return ::native::detail::polyfill_transform_chunks<V>(biased,[](auto chunk) { return native_ops<decltype(chunk)>::exp_factor(chunk); });
+        else {
+        auto words=::native::detail::float_constant::words(biased);
+        for(auto & word:words) {
+          auto magnitude=word&0x7fffffffu;
+          auto integer=magnitude>=0x4f000000u?INT32_MIN : ::native::detail::float_constant::fcvtzs(word);
+          word=std::uint32_t(integer>0?integer:0)<<23;
+        }
+        return V::load_bits(words.data());
+        }
+      } else {
       if consteval {
         auto words=::native::detail::float_constant::words(biased);
         for(auto & word:words) {
@@ -82,6 +95,7 @@ namespace wide::detail {
           return V::from_native(_mm256_castsi256_ps(_mm256_slli_epi32(integer,23)));
         }
 #endif
+      }
       }
     }
 #endif
@@ -181,6 +195,17 @@ namespace wide::detail {
     // for exponent fields and shifts. ARM uses the defined FCVTZS instruction;
     // the other scalar/constant paths require a bounded nonnegative input.
     static inline constexpr auto trig_integer(V a) noexcept {
+      if constexpr(::native::detail::polyfill_operation_shape<typename V::value_type,V::lanes,V::architecture>) {
+        using I=typename V::template rebind<std::uint32_t>;
+        if constexpr(::native::detail::polyfill_chunk_compatible<I,V>)
+          return ::native::detail::polyfill_transform_chunks<I>( a,[](auto chunk) { return native_ops<decltype(chunk)>::trig_integer(chunk); });
+        else {
+        std::array<float,V::lanes> values{}; std::array<std::uint32_t,V::lanes> words{}; a.store(values.data());
+        for(std::size_t i=0;i<V::lanes;++i) words[i]=std::bit_cast<std::uint32_t>(
+          ::native::detail::float_constant::fcvtzs(std::bit_cast<std::uint32_t>(values[i])));
+        return I::load(words.data());
+        }
+      } else {
       using I=typename V::template rebind<std::uint32_t>;
 #if NATIVE_HOST_NEON
       return I::from_native(__builtin_bit_cast(typename I::native_type,
@@ -205,11 +230,22 @@ namespace wide::detail {
       else if constexpr (V::lanes==4) return ::native::trunc_sat<std::uint32_t>(a);
 #endif
 #endif
+      }
     }
     // Eight coefficient words indexed by lanes in [0,7]. Runtime full vectors
     // use register tables; scalar indexing is confined to scalar/constant paths.
     static inline constexpr auto tanh_coefficient(V index,
         std::array<std::uint32_t,8> const & table) noexcept {
+      if constexpr(::native::detail::polyfill_operation_shape<typename V::value_type,V::lanes,V::architecture>) {
+        using F=typename V::template rebind<float>;
+        if constexpr(::native::detail::polyfill_chunk_compatible<F,V>)
+          return ::native::detail::polyfill_transform_chunks<F>( index,[&](auto chunk) { return native_ops<decltype(chunk)>::tanh_coefficient(chunk,table); });
+        else {
+        std::array<std::uint32_t,V::lanes> indices{},words{}; index.store(indices.data());
+        for(std::size_t i=0;i<V::lanes;++i) words[i]=table[indices[i]];
+        return F::load_bits(words.data());
+        }
+      } else {
       using F=typename V::template rebind<float>;
       if consteval {
         std::array<std::uint32_t,V::lanes> indices{},words{};
@@ -260,8 +296,19 @@ namespace wide::detail {
         }
 #endif
       }
+      }
     }
     static inline constexpr auto signed_float(V a) noexcept {
+      if constexpr(::native::detail::polyfill_operation_shape<typename V::value_type,V::lanes,V::architecture>) {
+        using F=typename V::template rebind<float>;
+        if constexpr(::native::detail::polyfill_chunk_compatible<F,V>)
+          return ::native::detail::polyfill_transform_chunks<F>( a,[](auto chunk) { return native_ops<decltype(chunk)>::signed_float(chunk); });
+        else {
+        std::array<std::uint32_t,V::lanes> words{}; std::array<float,V::lanes> values{}; a.store(words.data());
+        for(std::size_t i=0;i<V::lanes;++i) values[i]=static_cast<float>(std::bit_cast<std::int32_t>(words[i]));
+        return F::load(values.data());
+        }
+      } else {
       using F=typename V::template rebind<float>;
       if consteval {
         std::array<std::uint32_t,V::lanes> x{};std::array<float,V::lanes> y{};a.store(x.data());
@@ -288,6 +335,7 @@ namespace wide::detail {
           __builtin_bit_cast(typename I::native_type,a.to_native())));
       }
 #endif
+      }
     }
   };
 }
