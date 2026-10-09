@@ -4,11 +4,8 @@
 <!-- SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0 -->
 
 <!-- badges:start -->
-[![build](https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat&label=build&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)
-[![docs](https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat&label=docs&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)
-[![coverage](https://img.shields.io/github/actions/workflow/status/ekmett/native/coverage.yml?branch=main&style=flat&label=coverage&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/coverage.yml?query=branch%3Amain)
-[![docker](https://img.shields.io/github/actions/workflow/status/ekmett/native/docker.yml?branch=main&style=flat&label=docker&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)
-[![nix](https://img.shields.io/github/actions/workflow/status/ekmett/native/nix.yml?branch=main&style=flat&label=nix&logo=githubactions&logoColor=white)](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)
+[![](assets/badges/left.svg)&#8288;![build][ci-build]](https://github.com/ekmett/native/actions/workflows/build.yml?query=branch%3Amain)&#8288;[![docs][ci-docs]](https://github.com/ekmett/native/actions/workflows/docs.yml?query=branch%3Amain)&#8288;[![coverage][ci-coverage]](https://github.com/ekmett/native/actions/workflows/coverage.yml?query=branch%3Amain)&#8288;[![docker][ci-docker]](https://github.com/ekmett/native/actions/workflows/docker.yml?query=branch%3Amain)&#8288;[![nix][ci-nix]](https://github.com/ekmett/native/actions/workflows/nix.yml?query=branch%3Amain)&#8288;![](assets/badges/right.svg)
+
 [![issues](https://img.shields.io/github/issues/ekmett/native?style=flat&label=issues&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/issues)
 [![commits](https://img.shields.io/github/commit-activity/w/ekmett/native?style=flat&label=commits&color=007ec6&logo=github&logoColor=white)](https://github.com/ekmett/native/activity)
 
@@ -27,6 +24,12 @@
 [![Docker: ghcr.io](https://img.shields.io/static/v1?label=Docker&message=ghcr.io&color=2496ED&style=flat&logo=docker&logoColor=white)](https://github.com/ekmett/native/pkgs/container/native)
 [![Nix: flake](https://img.shields.io/static/v1?label=Nix&message=flake&color=5277C3&style=flat&logo=nixos&logoColor=white)](https://github.com/ekmett/native/blob/main/flake.nix)
 <!-- badges:end -->
+
+[ci-build]: https://img.shields.io/github/actions/workflow/status/ekmett/native/build.yml?branch=main&style=flat-square&label=build&logo=githubactions&logoColor=white
+[ci-docs]: https://img.shields.io/github/actions/workflow/status/ekmett/native/docs.yml?branch=main&style=flat-square&label=docs
+[ci-coverage]: https://img.shields.io/github/actions/workflow/status/ekmett/native/coverage.yml?branch=main&style=flat-square&label=coverage
+[ci-docker]: https://img.shields.io/github/actions/workflow/status/ekmett/native/docker.yml?branch=main&style=flat-square&label=docker
+[ci-nix]: https://img.shields.io/github/actions/workflow/status/ekmett/native/nix.yml?branch=main&style=flat-square&label=nix
 
 C++26 SIMD values and instruction interfaces for x86-64, AArch64 and WebAssembly,
 with a shared vocabulary for compiler features and runtime admission.
