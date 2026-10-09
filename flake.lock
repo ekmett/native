@@ -3,14 +3,19 @@
     "hint": {
       "flake": false,
       "locked": {
-        "lastModified": 1791433425,
-        "narHash": "sha256-mb8yMk38RDEhlrrY06rCCeh0lMF0/yDd4alFVD1toCA=",
-        "type": "tarball",
-        "url": "https://codeload.github.com/ekmett/hint/tar.gz/9685ad404b57075a8e91fa3deef9c3fd759b7237"
+        "lastModified": 1791529930,
+        "narHash": "sha256-dzzbiDMUAc6TJCdM1LSTSYI3vv/GnPZ3DcnD07AcuwY=",
+        "ref": "main",
+        "rev": "b24b9da02325ea949db5b76f5a90302d9b1c5f83",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/ekmett/hint"
       },
       "original": {
-        "type": "tarball",
-        "url": "https://codeload.github.com/ekmett/hint/tar.gz/9685ad404b57075a8e91fa3deef9c3fd759b7237"
+        "ref": "main",
+        "shallow": true,
+        "type": "git",
+        "url": "https://github.com/ekmett/hint"
       }
     },
     "nixpkgs": {

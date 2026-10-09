@@ -5,7 +5,7 @@
   inputs = {
     nixpkgs.url = "tarball+https://codeload.github.com/NixOS/nixpkgs/tar.gz/e7439b6b14ad3cc35d05608ebca9bce01a25f5f8";
     hint = {
-      url = "tarball+https://codeload.github.com/ekmett/hint/tar.gz/9685ad404b57075a8e91fa3deef9c3fd759b7237";
+      url = "git+https://github.com/ekmett/hint?ref=main&shallow=1";
       flake = false;
     };
   };

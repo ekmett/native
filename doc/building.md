@@ -29,19 +29,19 @@ accepts it directly.
 
 ## Docker
 
-`ghcr.io/ekmett/native:llvm23` supplies Clang 23, clangd, clang-tidy,
+`ghcr.io/ekmett/native:latest` supplies Clang 23, clangd, clang-tidy,
 clang-format, the module dependency scanner, LLD, CMake 4.4 and Ninja, with Native
 and Hint installed under `/opt/native`. `CC`, `CXX` and `CMAKE_PREFIX_PATH` are
 already set. The published image runs on Linux x86-64.
 
 ```sh
-docker run --rm -v "$PWD:/workspace" ghcr.io/ekmett/native:llvm23 \
+docker run --rm -v "$PWD:/workspace" ghcr.io/ekmett/native:latest \
   bash -c 'cmake -S . -B build/docker -G Ninja -DCMAKE_BUILD_TYPE=Release &&
            cmake --build build/docker --parallel &&
            ctest --test-dir build/docker --output-on-failure'
 ```
 
-A downstream Dockerfile can start with `FROM ghcr.io/ekmett/native:llvm23` and
+A downstream Dockerfile can start with `FROM ghcr.io/ekmett/native:latest` and
 use `find_package(native CONFIG REQUIRED COMPONENTS native)`. Use a separate
 build directory from host builds: module artifacts belong to their compiler
 and standard library. The image uses Native's default exception-disabled mode.
@@ -50,8 +50,8 @@ The [Docker workflow](https://github.com/ekmett/native/actions/workflows/docker.
 builds separately from normal CI. It runs the API examples against the installed
 package before publishing to GitHub Container Registry. Pull requests build and
 test without publishing. Changes to the image or library on `main` publish
-`latest`, `llvm23` and `sha-<full commit>` tags. Pin an image digest in downstream
-CI when you need a fixed toolchain; the first two tags track subsequent builds.
+`latest`, `llvm23` and `sha-<full commit>` tags. In-house downstream CI follows `latest` and pulls the base on each build.
+The library stage rebuilds each run to fetch Hint main; the toolchain layers stay cached.
 
 Build locally with `docker build -t native .`. To build only the toolchain,
 use `docker build --target toolchain -t native-toolchain .`.
@@ -59,8 +59,8 @@ use `docker build --target toolchain -t native-toolchain .`.
 ## NixOS and Nix
 
 The flake provides `packages.<system>.native` (also the default package) and a
-matching development shell for `x86_64-linux` and `aarch64-linux`. `flake.lock`
-pins nixpkgs and Hint; the package uses nixpkgs' LLVM 23 and CMake 4.4. Enable
+matching development shell for `x86_64-linux` and `aarch64-linux`. The flake pins
+nixpkgs and follows Hint's `main` branch, using nixpkgs' LLVM 23 and CMake 4.4. Enable
 Nix's `nix-command` and `flakes` experimental features, then run:
 
 ```sh
@@ -83,6 +83,10 @@ The [Nix workflow](https://github.com/ekmett/native/actions/workflows/nix.yml)
 checks both Linux architectures on native runners, separately from normal CI
 and Docker. It uses the pinned Nix dependencies on Ubuntu runners; it does not
 boot a NixOS virtual machine.
+
+Nix CI refreshes Hint with `nix flake update hint` before building. The committed
+lockfile remains a snapshot for local builds; use the same command to refresh
+Hint locally without changing nixpkgs.
 
 ## Editor setup
 
@@ -144,7 +148,7 @@ Imports do not export macros. `native::headers` supplies `config.h`, `attributes
 headers are installed privately under `lib/native/include` for BMI regeneration.
 Compiler annotations come from [Hint](https://github.com/ekmett/hint), exposed
 through `native::headers`. CMake reuses `hint::hint` or an installed Hint package,
-and otherwise fetches the pinned revision. Include `<hint.h>` for the `hint_*`
+and otherwise fetches Hint main. Include `<hint.h>` for the `hint_*`
 annotations; see the [attribute reference](https://ekmett.github.io/hint/hint_8h.html).
 
 The ISA metadata header requires C++20 and the Clang property extension; the host

@@ -45,4 +45,6 @@ jobs:
           persist-credentials: false
       - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24 # v31
       - name: Build and test installed package
-        run: nix flake check --print-build-logs
+        run: |
+          nix flake update hint
+          nix flake check --print-build-logs
