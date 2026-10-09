@@ -1,59 +1,62 @@
-# Explicit operation polyfills
+# Explicit polyfills
 
-Issue: https://github.com/ekmett/native/issues/70
+`polyfill` lets an algorithm use operations its target lacks. Add it to an ISA
+with `A | polyfill`, or use `polyfill` alone for scalar storage. The feature bits
+still describe real hardware requirements. Permission to emulate an instruction
+does not grant permission to execute it.
 
-The shared `polyfill` flag permits runtime semantic fallbacks without adding
-hardware features to an ISA value. Native instruction overloads keep priority.
-Feature-absent calls without permission remain immediate-only or rejected.
+```cpp
+import native;
+using namespace native;
 
-## First checkpoint plan
+using emulated = simd<float,16,polyfill>;
+// In an x86 build:
+using split = simd<float,16,avx2 | polyfill>;
+```
 
-- [x] Import the ISA permission checkpoint from the storage worker; use
-  `Arch.has(polyfill)` and retain family-typed instruction interfaces.
-- [x] Exercise ARM SM3/SM4 with `neon | polyfill` and scalar `polyfill` storage
-  through the maintained instruction corpus and full known-answer algorithms.
-  Enable the existing semantic bodies only where the instruction is absent.
-- [x] Add scalar ARM CRC32/CRC32C fallbacks for all four operand widths, preserving
-  exact operand admission, byte order, native priority and immediate-only calls.
-- [x] Run focused CMake/CTest checks, native code equivalence and representative
-  no-permission rejections; commit the operation checkpoint.
+The second type holds two AVX2 registers. Without permission, that shape is
+unavailable on AVX2. Operations use their native implementation when the ISA
+and storage support it, and otherwise use the semantic fallback. The same
+permission works for scalar instruction interfaces such as `pext` and `pdep`.
+Their architecture argument remains explicit when it differs from the build
+baseline.
 
-## Remaining operation inventory
+## Operations
 
-This inventory is deliberately not a blanket permission change. Integer bodies
-are candidates only after their width, lane dependencies and native route are
-checked. Storage decomposition is implemented separately.
-
-| Families | Existing semantics / next review |
+| Family | Permitted fallback |
 | --- | --- |
-| ARM AES, PMULL, SHA-1/256/512, SHA-3 | Integer semantic helpers; fixed instruction shapes and dependent schedules must stay logical-lane correct |
-| ARM DOTPROD, I8MM, RDM and NEON integer operations | Integer helpers; widened groups, saturation and immediate constraints need review |
-| x86 AES/VAES, PCLMUL/VPCLMUL, GFNI, SHA, SHA-512, SM3/SM4 | Integer helpers; 128-bit subblocks and cross-lane algorithms differ by family |
-| x86 BMI1/BMI2, POPCNT, LZCNT, CRC32C, ADX | Scalar semantics; distinguish defined zero and carry behavior from native-only environmental effects |
-| x86 IFMA/VNNI, bit algorithms, VBMI/VBMI2 and conflict operations | Integer helpers; preserve group widths, mask rules and logical compaction across register splits |
-| Floating arithmetic, FP16/BF16, FCMA, FP16FML, F16C/JSCVT | Existing constant evaluation is not automatically a runtime FP contract; rounding, signed zero, NaNs, denormals and fused operations need review |
-| Memory, waits and environmental instructions | No general numerical polyfill promise; fault, ordering, waiting and environment contracts need explicit decisions |
-| WebAssembly relaxed operations | Existing deterministic constant semantics differ from allowed relaxed runtime behavior; review separately |
+| SIMD values | Scalar or register-decomposed storage, arithmetic, comparisons, masks, transfers, shuffles and reductions; each operation retains its element constraints |
+| Math | The existing staged kernels operate on permitted SIMD values, including `wide` batches |
+| ARM integer | CRC32/CRC32C, AES, PMULL, SHA, SM3/SM4, DOTPROD, I8MM, RDM and NEON bit operations |
+| ARM floating point | JSCVT, FP16FML, FCMA and BF16 instruction interfaces, preserving the documented floating-point controls |
+| x86 scalar | BMI1/BMI2, POPCNT, LZCNT, CRC32C and ADX |
+| x86 vector | Integer and cryptographic instruction families, including GFNI, carryless multiplication, VNNI, IFMA, VBMI/VBMI2 and conflict detection |
+| x86 conversions | F16C and AVXNECONVERT |
+| x86 indexed memory | Gather and scatter with byte-scaled signed indices; masked-off lanes do not access memory |
+| WebAssembly | SIMD128 and the documented deterministic choices for relaxed SIMD operations |
 
-Permission does not establish constant-time cipher behavior. Substitution-table
-fallbacks preserve values but do not promise data-independent timing.
+The [SIMD guide](modules.md) describes storage and customization. Instruction
+family pages specify operand shapes, immediate bounds and individual semantics.
+Permission does not relax those constraints or turn BF16 into an elementwise
+arithmetic type.
 
-## Verification checkpoints
+## Caveats
 
-Clang 23.1.1/CMake 4.4, macOS ARM64, Release:
+Emulation can take many instructions. Omit `polyfill` when native instruction
+availability is part of the contract. Runtime dispatch and `target<>` continue
+to test hardware features; this flag neither changes compiler target attributes
+nor makes an unsupported hardware instruction safe to call.
 
-- Baseline runtime SM3/SM4 and CRC polyfill tests fail with immediate-function
-  diagnostics before adding the permission overloads.
-- Final focused run after storage checkpoint `830fad2`: 20 passed, one native
-  SM3/SM4 runtime check skipped for unavailable host admission. Both NEON-storage
-  and scalar-storage SM3/SM4 polyfills execute the complete instruction corpus
-  and known answers, plus runtime-seeded samples with normal inlining. Scalar
-  CRC executes all operand widths, standard check values and byte-order laws.
-- Native SM3/SM4 with permission matches all 21 intrinsic leaves. Existing
-  representative no-permission and target rejections pass. Permission retains
-  exact scalar types, vector shapes and immediate bounds.
+Floating-point emulation follows the operation's result and rounding contract.
+As elsewhere in Native, exception flags are unspecified and traps must be
+disabled. Environment access, waiting and other hardware effects are not
+replaced by numerical approximations.
 
-The focused CTest command selected
-`native.arm.sm_crypto.(main|metadata|participation|constexpr|polyfill|scalar_polyfill|polyfill_codegen|codegen|reject_0_0|reject_1_0|reject_6_0|reject_7_0|reject_8_0)`
-and `native.arm.crc.(polyfill|module|header|codegen|reject_[0-3])` with exact-name
-anchors, serial execution and `--output-on-failure`.
+Cryptographic fallbacks do not promise constant-time execution. In particular,
+substitution tables may use data-dependent memory accesses. Relaxed Wasm
+fallbacks choose permitted results; they need not reproduce every engine's
+choice bit for bit.
+
+Indexed-memory fallbacks retain byte addressing and inactive-lane suppression.
+Scatter fallbacks process lanes in ascending order, so later active lanes win
+where destination bytes overlap. All active accesses still require valid memory.
