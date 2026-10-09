@@ -4,6 +4,8 @@ module;
 #include "native/config.h"
 #include <hint.h>
 #include <array>
+#include <bit>
+#include <cstring>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -43,7 +45,13 @@ namespace native::detail::x86_memory {
   template<class V>
   constexpr auto array(V value) noexcept {
     std::array<typename V::value_type, V::lanes> result{};
-    value.store(result.data());
+    if consteval {
+      value.store(result.data());
+    } else {
+      auto physical = std::bit_cast<std::array<typename V::value_type,
+        sizeof(V) / sizeof(typename V::value_type)>>(value);
+      for (std::size_t i = 0; i < V::lanes; ++i) result[i] = physical[i];
+    }
     return result;
   }
 
@@ -59,10 +67,25 @@ namespace native::detail::x86_memory {
     auto offsets = array(indices);
     constexpr auto count = V::lanes < I::lanes ? V::lanes : I::lanes;
     for (std::size_t lane = 0; lane < count; ++lane) {
-      if (active(mask, lane)) result[lane] = base[element_offset<Scale, typename V::value_type>(offsets[lane])];
+      if (!active(mask, lane)) continue;
+      if consteval {
+        result[lane] = base[element_offset<Scale, typename V::value_type>(offsets[lane])];
+      } else {
+        // Integer address arithmetic matches signed-index byte scaling without
+        // forming a misaligned typed lvalue or touching an inactive address.
+        auto address = reinterpret_cast<std::uintptr_t>(base) +
+          std::uintptr_t(std::intptr_t(offsets[lane])) * Scale;
+        std::memcpy(&result[lane], reinterpret_cast<void const *>(address), sizeof(result[lane]));
+      }
     }
     for (std::size_t lane = count; lane < V::lanes; ++lane) result[lane] = {};
-    return V(result);
+    if consteval {
+      return V(result);
+    } else {
+      std::array<typename V::value_type, sizeof(V) / sizeof(typename V::value_type)> physical{};
+      for (std::size_t i = 0; i < V::lanes; ++i) physical[i] = result[i];
+      return std::bit_cast<V>(physical);
+    }
   }
 
   template<int Scale, class V, class I>
@@ -72,8 +95,14 @@ namespace native::detail::x86_memory {
     constexpr auto count = V::lanes < I::lanes ? V::lanes : I::lanes;
     for (std::size_t lane = 0; lane < count; ++lane) {
       if (!active(mask, lane)) continue;
-      auto offset = element_offset<Scale, typename V::value_type>(offsets[lane]);
-      base[offset] = values[lane];
+      if consteval {
+        auto offset = element_offset<Scale, typename V::value_type>(offsets[lane]);
+        base[offset] = values[lane];
+      } else {
+        auto address = reinterpret_cast<std::uintptr_t>(base) +
+          std::uintptr_t(std::intptr_t(offsets[lane])) * Scale;
+        std::memcpy(reinterpret_cast<void *>(address), &values[lane], sizeof(values[lane]));
+      }
     }
   }
 }
@@ -1175,545 +1204,1169 @@ namespace native {
 
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> vgatherdps(float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> vgatherdps(float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
     float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> mask_vgatherdps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
     float const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   consteval void mask_vscatterdps(float * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  constexpr void mask_vscatterdps(float * base, predicate<4, Arch> mask,
     simd<std::int32_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<float, 8, Arch> vgatherdps(float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 8, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<float, 8, Arch> vgatherdps(float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<float, 8, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
+    float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
     float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
+    float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<float, 8, Arch> mask_vgatherdps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
     float const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   consteval void mask_vscatterdps(float * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  constexpr void mask_vscatterdps(float * base, predicate<8, Arch> mask,
     simd<std::int32_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
   [[nodiscard]] consteval simd<float, 16, Arch> mask_vgatherdps(simd<float, 16, Arch> source, predicate<16, Arch> mask,
+    float const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<float, 16, Arch> mask_vgatherdps(simd<float, 16, Arch> source, predicate<16, Arch> mask,
     float const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
   consteval void mask_vscatterdps(float * base, predicate<16, Arch> mask,
+    simd<std::int32_t, 16, Arch> indices, simd<float, 16, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  constexpr void mask_vscatterdps(float * base, predicate<16, Arch> mask,
     simd<std::int32_t, 16, Arch> indices, simd<float, 16, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> vpgatherdd(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> vpgatherdd(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
     T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherdd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
     T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   consteval void mask_vpscatterdd(T * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  constexpr void mask_vpscatterdd(T * base, predicate<4, Arch> mask,
     simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<T, 8, Arch> vpgatherdd(T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 8, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 8 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<T, 8, Arch> vpgatherdd(T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 8, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, simd<std::int32_t, 8, Arch> mask,
     T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<T, 8, Arch> mask_vpgatherdd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
     T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   consteval void mask_vpscatterdd(T * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  constexpr void mask_vpscatterdd(T * base, predicate<8, Arch> mask,
     simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
   [[nodiscard]] consteval simd<T, 16, Arch> mask_vpgatherdd(simd<T, 16, Arch> source, predicate<16, Arch> mask,
+    T const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  [[nodiscard]] constexpr simd<T, 16, Arch> mask_vpgatherdd(simd<T, 16, Arch> source, predicate<16, Arch> mask,
     T const * base, simd<std::int32_t, 16, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
   consteval void mask_vpscatterdd(T * base, predicate<16, Arch> mask,
+    simd<std::int32_t, 16, Arch> indices, simd<T, 16, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 16, Arch>); sizeof(simd<std::int32_t, 16, Arch>); })
+  constexpr void mask_vpscatterdd(T * base, predicate<16, Arch> mask,
     simd<std::int32_t, 16, Arch> indices, simd<T, 16, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
     double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> mask_vgatherdpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
     double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   consteval void mask_vscatterdpd(double * base, predicate<2, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<double, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  constexpr void mask_vscatterdpd(double * base, predicate<2, Arch> mask,
     simd<std::int32_t, 4, Arch> indices, simd<double, 2, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 4, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 4, Arch> vgatherdpd(double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
     double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
+    double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 4, Arch> mask_vgatherdpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
     double const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   consteval void mask_vscatterdpd(double * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  constexpr void mask_vscatterdpd(double * base, predicate<4, Arch> mask,
     simd<std::int32_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<double, 8, Arch> mask_vgatherdpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
+    double const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<double, 8, Arch> mask_vgatherdpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
     double const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   consteval void mask_vscatterdpd(double * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  constexpr void mask_vscatterdpd(double * base, predicate<8, Arch> mask,
     simd<std::int32_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 2, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 2, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
     T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 2, Arch> mask_vpgatherdq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
     T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   consteval void mask_vpscatterdq(T * base, predicate<2, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  constexpr void mask_vpscatterdq(T * base, predicate<2, Arch> mask,
     simd<std::int32_t, 4, Arch> indices, simd<T, 2, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> vpgatherdq(T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
     T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherdq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
     T const * base, simd<std::int32_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
   consteval void mask_vpscatterdq(T * base, predicate<4, Arch> mask,
+    simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); })
+  constexpr void mask_vpscatterdq(T * base, predicate<4, Arch> mask,
     simd<std::int32_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   [[nodiscard]] consteval simd<T, 8, Arch> mask_vpgatherdq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<T, 8, Arch> mask_vpgatherdq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
     T const * base, simd<std::int32_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
   consteval void mask_vpscatterdq(T * base, predicate<8, Arch> mask,
+    simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int32_t, 8, Arch>); })
+  constexpr void mask_vpscatterdq(T * base, predicate<8, Arch> mask,
     simd<std::int32_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
     float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
     float const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   consteval void mask_vscatterqps(float * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  constexpr void mask_vscatterqps(float * base, predicate<4, Arch> mask,
     simd<std::int64_t, 2, Arch> indices, simd<float, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> vgatherqps(float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<float, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
     float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
+    float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<float, 4, Arch> mask_vgatherqps(simd<float, 4, Arch> source, predicate<4, Arch> mask,
     float const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   consteval void mask_vscatterqps(float * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  constexpr void mask_vscatterqps(float * base, predicate<4, Arch> mask,
     simd<std::int64_t, 4, Arch> indices, simd<float, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   [[nodiscard]] consteval simd<float, 8, Arch> mask_vgatherqps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
+    float const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<float, 8, Arch> mask_vgatherqps(simd<float, 8, Arch> source, predicate<8, Arch> mask,
     float const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   consteval void mask_vscatterqps(float * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<float, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  constexpr void mask_vscatterqps(float * base, predicate<8, Arch> mask,
     simd<std::int64_t, 8, Arch> indices, simd<float, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
     T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
     T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   consteval void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  constexpr void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
     simd<std::int64_t, 2, Arch> indices, simd<T, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> vpgatherqd(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int32_t, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, simd<std::int32_t, 4, Arch> mask,
     T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherqd(simd<T, 4, Arch> source, predicate<4, Arch> mask,
     T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   consteval void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  constexpr void mask_vpscatterqd(T * base, predicate<4, Arch> mask,
     simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   [[nodiscard]] consteval simd<T, 8, Arch> mask_vpgatherqd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<T, 8, Arch> mask_vpgatherqd(simd<T, 8, Arch> source, predicate<8, Arch> mask,
     T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   consteval void mask_vpscatterqd(T * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int32_t> || std::same_as<T, std::uint32_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  constexpr void mask_vpscatterqd(T * base, predicate<8, Arch> mask,
     simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> vgatherqpd(double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> vgatherqpd(double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<double, 2, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
     double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
+    double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<double, 2, Arch> mask_vgatherqpd(simd<double, 2, Arch> source, predicate<2, Arch> mask,
     double const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   consteval void mask_vscatterqpd(double * base, predicate<2, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<double, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  constexpr void mask_vscatterqpd(double * base, predicate<2, Arch> mask,
     simd<std::int64_t, 2, Arch> indices, simd<double, 2, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 4, Arch> vgatherqpd(double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 4, Arch> vgatherqpd(double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<double, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
     double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
+    double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<double, 4, Arch> mask_vgatherqpd(simd<double, 4, Arch> source, predicate<4, Arch> mask,
     double const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   consteval void mask_vscatterqpd(double * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  constexpr void mask_vscatterqpd(double * base, predicate<4, Arch> mask,
     simd<std::int64_t, 4, Arch> indices, simd<double, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   [[nodiscard]] consteval simd<double, 8, Arch> mask_vgatherqpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
+    double const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<double, 8, Arch> mask_vgatherqpd(simd<double, 8, Arch> source, predicate<8, Arch> mask,
     double const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   consteval void mask_vscatterqpd(double * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && requires { sizeof(simd<double, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  constexpr void mask_vscatterqpd(double * base, predicate<8, Arch> mask,
     simd<std::int64_t, 8, Arch> indices, simd<double, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 2, Arch> vpgatherqq(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 2 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 2, Arch> vpgatherqq(T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 2, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, simd<std::int64_t, 2, Arch> mask,
     T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   [[nodiscard]] consteval simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
+    T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  [[nodiscard]] constexpr simd<T, 2, Arch> mask_vpgatherqq(simd<T, 2, Arch> source, predicate<2, Arch> mask,
     T const * base, simd<std::int64_t, 2, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
   consteval void mask_vpscatterqq(T * base, predicate<2, Arch> mask,
+    simd<std::int64_t, 2, Arch> indices, simd<T, 2, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 2, Arch>); sizeof(simd<std::int64_t, 2, Arch>); })
+  constexpr void mask_vpscatterqq(T * base, predicate<2, Arch> mask,
     simd<std::int64_t, 2, Arch> indices, simd<T, 2, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, std::size_t N, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> vpgatherqq(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, std::size_t N, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && N == 4 && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> vpgatherqq(T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, simd<T, 4, Arch>{}, ~std::uint64_t{0});
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, mask);
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx2)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, simd<std::int64_t, 4, Arch> mask,
     T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, mask);
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   [[nodiscard]] consteval simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
+    T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  [[nodiscard]] constexpr simd<T, 4, Arch> mask_vpgatherqq(simd<T, 4, Arch> source, predicate<4, Arch> mask,
     T const * base, simd<std::int64_t, 4, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
   consteval void mask_vpscatterqq(T * base, predicate<4, Arch> mask,
+    simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f) && Arch.has(x86_feature::avx512vl)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 4, Arch>); sizeof(simd<std::int64_t, 4, Arch>); })
+  constexpr void mask_vpscatterqq(T * base, predicate<4, Arch> mask,
     simd<std::int64_t, 4, Arch> indices, simd<T, 4, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   [[nodiscard]] consteval simd<T, 8, Arch> mask_vpgatherqq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
+    T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
+    return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  [[nodiscard]] constexpr simd<T, 8, Arch> mask_vpgatherqq(simd<T, 8, Arch> source, predicate<8, Arch> mask,
     T const * base, simd<std::int64_t, 8, Arch> indices) noexcept {
     return detail::x86_memory::gather<Scale>(base, indices, source, static_cast<std::uint64_t>(mask.to_bitset()));
   }
   /// Evaluate this hardware shape only at compile time when its storage is available.
   template<int Scale, isa<x86> Arch, class T>
-    requires(!(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+    requires(!Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
   consteval void mask_vpscatterqq(T * base, predicate<8, Arch> mask,
+    simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
+    detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
+  }
+
+  /// Evaluate with explicit software-emulation permission.
+  template<int Scale, isa<x86> Arch, class T>
+    requires(Arch.has(polyfill) && !(Arch.has(x86_feature::avx512f)) && (Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8) && (std::same_as<T, std::int64_t> || std::same_as<T, std::uint64_t>) && requires { sizeof(simd<T, 8, Arch>); sizeof(simd<std::int64_t, 8, Arch>); })
+  constexpr void mask_vpscatterqq(T * base, predicate<8, Arch> mask,
     simd<std::int64_t, 8, Arch> indices, simd<T, 8, Arch> value) noexcept {
     detail::x86_memory::scatter<Scale>(base, indices, value, static_cast<std::uint64_t>(mask.to_bitset()));
   }
