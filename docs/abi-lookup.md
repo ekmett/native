@@ -48,11 +48,22 @@ family and accepts only that family's enum. `scalar` is the empty host set;
 use `isa<arm>{}`, for example, when describing an empty ARM requirement on
 another host.
 
-`get`, `set`, `has`, equality and the feature properties operate on exact bits.
-`a <= b` means every bit of `a` occurs in `b`; `<` means strict inclusion. The
-reverse comparisons have the corresponding meanings. Distinct singleton
-features are incomparable. These operations require the same family. There is
-no `|` operator for requirements.
+`get`, `set`, hardware `has` and the feature properties operate on exact bits.
+`a <= b` means every hardware bit of `a` occurs in `b`; `<` means strict hardware
+inclusion. The reverse comparisons have the corresponding meanings. Distinct
+singleton features are incomparable. These operations require the same family.
+Equality also compares emulation permission because it is part of template
+argument identity. Feature requirements still combine through `&`.
+
+`polyfill` is one architecture-independent `polyfill_t` value. `A | polyfill`
+and `polyfill | A` preserve A's family and hardware bits and permit semantic
+fallbacks and storage decomposition. `isa<>(polyfill)` is the empty host
+hardware requirement with that permission; an explicit `isa<arm>(polyfill)`
+chooses ARM metadata. `A.has(polyfill)` reads the permission. Union and feature
+closure preserve it. `polyfill` is not an instruction feature: target selection,
+compiler target strings, observations and runtime admission still use hardware
+requirements. For example, `target<avx2|polyfill,avx512,avx2>` selects AVX2.
+An admitted `avx2|polyfill` requires the same CPU features and XCR0 state as AVX2.
 
 An out-of-range enum reads as absent. Requiring it through construction or
 `set(value, true)` records an invalid requirement; clearing it does nothing.

@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
+// SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+module;
+#include <native/config.h>
+export module native.polyfill_relay;
+export import native;
+export namespace polyfill_relay {
+  inline void scalar_add(float const * a,float const * b,float * c) noexcept {
+    using V=native::simd<float,16,native::polyfill>;
+    (V::load(a)+V::load(b)).store(c);
+  }
+#if NATIVE_HOST_X86
+  inline constexpr auto hardware=native::avx2;
+  __attribute__((target("avx2,fma")))
+#elif NATIVE_HOST_NEON
+  inline constexpr auto hardware=native::neon;
+#elif NATIVE_HOST_WASM
+  inline constexpr auto hardware=native::feature_closure(native::wasm_feature::simd128);
+  __attribute__((target("simd128")))
+#else
+  inline constexpr auto hardware=native::scalar;
+#endif
+  inline void native_add(float const * a,float const * b,float * c) noexcept {
+    using V=native::simd<float,16,hardware|native::polyfill>;
+    (V::load(a)+V::load(b)).store(c);
+  }
+}

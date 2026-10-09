@@ -29,7 +29,26 @@ module's default.
 
 One-lane values retain that tag even when its features select no vector
 arithmetic profile. They use scalar operations; wider values still require
-the features for their storage and operations.
+the features for their storage and operations unless emulation is explicitly
+permitted.
+
+`A | native::polyfill` permits decomposition when a native shape is absent.
+For example, `simd<float,16,avx2|polyfill>` stores two 256-bit registers,
+`simd<float,16,avx512>` stores one 512-bit register, and `simd<float,16,avx2>`
+remains incomplete. `simd<float,16,polyfill>` uses scalar storage in the host
+family. The current raw decomposition covers float, fixed-width integer,
+Boolean and mask elements with 1 through 64 lanes. Custom element storage uses
+the same mechanism through `simd_traits`; `simd_customization` retains all
+value semantics and memory normalization.
+
+Native shapes keep their native representation and operations. Decomposed
+shapes expose `register_lanes`, `register_count`, `chunk_type` and an array of
+native register representations as `native_type`; tail padding is excluded
+from memory and comparison results. Their comparison masks are compact logical
+bitsets. Emulation permission does not enable an instruction or relax runtime
+CPU/OS admission. Keep kernels in the target scope of their actual hardware
+requirements, including when they carry `polyfill`. Fallbacks are provided
+operation by operation; permission does not invent undefined element semantics.
 
 Choose an explicit ISA for kernels with different requirements:
 

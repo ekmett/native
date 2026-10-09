@@ -7,7 +7,9 @@ namespace native {
   /// Both shapes need equal physical storage sizes supported by this backend's target.
   /// Storage-only element views are allowed; lane arithmetic is not required.
   template <simd_integer_element To, simd_integer_element From, std::size_t N, ::native::isa<> Arch>
-    requires NATIVE_ARCH_REQUIRES(Arch) && (sizeof(From) * N % sizeof(To) == 0 && requires {
+    requires NATIVE_ARCH_REQUIRES(Arch) && (!detail::polyfill_shape<From,N,Arch> &&
+      !detail::polyfill_shape<To,sizeof(From)*N/sizeof(To),Arch>) &&
+      (sizeof(From) * N % sizeof(To) == 0 && requires {
       typename simd<From,N,Arch>::native_type;
       typename simd<To,sizeof(From)*N/sizeof(To),Arch>::native_type;
     } && sizeof(typename simd<From,N,Arch>::native_type) ==
