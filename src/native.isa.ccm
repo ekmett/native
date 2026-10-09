@@ -17,6 +17,8 @@ export namespace native {
   using ::native::wasm_feature_count;
   using ::native::feature_closure;
   using ::native::isa;
+  using ::native::polyfill_t;
+  using ::native::polyfill;
   using ::native::scalar;
   using ::native::avx2;
   using ::native::avx512;
@@ -32,6 +34,7 @@ export namespace native {
   using ::native::isa_list;
   using ::native::with_isa;
   using ::native::operator&;
+  using ::native::operator|;
   using ::native::operator<;
   using ::native::operator>;
   using ::native::operator<=;

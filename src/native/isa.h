@@ -35,6 +35,13 @@ namespace native {
   /// Number of named ARM feature values.
   inline constexpr std::size_t arm_feature_count=std::size_t(arm_feature::sm4)+1;
 
+  /// \brief Permission to emulate operations or decompose unsupported SIMD shapes.
+  /// This is policy, not an instruction feature or a hardware capability.
+  struct polyfill_t {};
+  /// \brief Compose this permission with an ISA using `A | polyfill`.
+  /// Used alone, it selects scalar emulation in the compiler's target family.
+  inline constexpr polyfill_t polyfill{};
+
   /// A structural set of one family's features, without prerequisite closure.
   template<architecture Family=target_arch> struct isa;
 
@@ -64,6 +71,12 @@ namespace native {
     static constexpr auto feature_count=detail::feature_traits<Family>::count;
     /// Public structural bits; invalid enum values and padding fail validation.
     std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Structural emulation permission; hardware feature tests do not read it.
+    bool allow_polyfill=false;
+    /// Construct an empty hardware requirement with emulation permitted.
+    constexpr isa(polyfill_t) noexcept : allow_polyfill(true) {}
+    /// True when semantic emulation or storage decomposition is permitted.
+    constexpr bool has(polyfill_t) const noexcept { return allow_polyfill; }
     /// Construct the empty requirement set.
     constexpr isa() noexcept=default;
     /// Require exactly one feature of this family, without prerequisite closure.
@@ -87,7 +100,8 @@ namespace native {
     }
     /// True when the feature is present.
     constexpr bool has(feature_type f) const noexcept { return get(f); }
-    /// True when every bit in a same-family requirement is present.
+    /// True when every hardware bit in a same-family requirement is present.
+    /// Emulation permission is not an instruction requirement.
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
@@ -99,7 +113,7 @@ namespace native {
       constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
       return (flags.back()&~mask)==0;
     }
-    /// Compare every stored bit, including invalid requirements.
+    /// Compare hardware bits and emulation permission, retaining NTTP identity.
     constexpr bool operator==(isa const &) const=default;
   };
 
@@ -113,6 +127,12 @@ namespace native {
     static constexpr auto feature_count=detail::feature_traits<x86>::count;
     /// Public structural bits; invalid enum values and padding fail validation.
     std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Structural emulation permission; hardware feature tests do not read it.
+    bool allow_polyfill=false;
+    /// Construct an empty hardware requirement with emulation permitted.
+    constexpr isa(polyfill_t) noexcept : allow_polyfill(true) {}
+    /// True when semantic emulation or storage decomposition is permitted.
+    constexpr bool has(polyfill_t) const noexcept { return allow_polyfill; }
     /// Construct the empty requirement set.
     constexpr isa() noexcept=default;
     /// Require exactly one feature of this family, without prerequisite closure.
@@ -136,7 +156,8 @@ namespace native {
     }
     /// True when the feature is present.
     constexpr bool has(feature_type f) const noexcept { return get(f); }
-    /// True when every bit in a same-family requirement is present.
+    /// True when every hardware bit in a same-family requirement is present.
+    /// Emulation permission is not an instruction requirement.
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
@@ -148,7 +169,7 @@ namespace native {
       constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
       return (flags.back()&~mask)==0;
     }
-    /// Compare every stored bit, including invalid requirements.
+    /// Compare hardware bits and emulation permission, retaining NTTP identity.
     constexpr bool operator==(isa const &) const=default;
     constexpr bool get_mmx() const noexcept { return get(x86_feature::mmx); }
     constexpr void set_mmx(bool value) noexcept { set(x86_feature::mmx,value); }
@@ -309,6 +330,12 @@ namespace native {
     static constexpr auto feature_count=detail::feature_traits<arm>::count;
     /// Public structural bits; invalid enum values and padding fail validation.
     std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Structural emulation permission; hardware feature tests do not read it.
+    bool allow_polyfill=false;
+    /// Construct an empty hardware requirement with emulation permitted.
+    constexpr isa(polyfill_t) noexcept : allow_polyfill(true) {}
+    /// True when semantic emulation or storage decomposition is permitted.
+    constexpr bool has(polyfill_t) const noexcept { return allow_polyfill; }
     /// Construct the empty requirement set.
     constexpr isa() noexcept=default;
     /// Require exactly one feature of this family, without prerequisite closure.
@@ -332,7 +359,8 @@ namespace native {
     }
     /// True when the feature is present.
     constexpr bool has(feature_type f) const noexcept { return get(f); }
-    /// True when every bit in a same-family requirement is present.
+    /// True when every hardware bit in a same-family requirement is present.
+    /// Emulation permission is not an instruction requirement.
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
@@ -344,7 +372,7 @@ namespace native {
       constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
       return (flags.back()&~mask)==0;
     }
-    /// Compare every stored bit, including invalid requirements.
+    /// Compare hardware bits and emulation permission, retaining NTTP identity.
     constexpr bool operator==(isa const &) const=default;
     constexpr bool get_neon() const noexcept { return get(arm_feature::neon); }
     constexpr void set_neon(bool value) noexcept { set(arm_feature::neon,value); }
@@ -428,6 +456,12 @@ namespace native {
     static constexpr auto feature_count=detail::feature_traits<wasm>::count;
     /// Public structural bits; invalid enum values and padding fail validation.
     std::array<std::uint64_t,(feature_count+1+63)/64> flags{};
+    /// Structural emulation permission; hardware feature tests do not read it.
+    bool allow_polyfill=false;
+    /// Construct an empty hardware requirement with emulation permitted.
+    constexpr isa(polyfill_t) noexcept : allow_polyfill(true) {}
+    /// True when semantic emulation or storage decomposition is permitted.
+    constexpr bool has(polyfill_t) const noexcept { return allow_polyfill; }
     /// Construct the empty requirement set.
     constexpr isa() noexcept=default;
     /// Require exactly one feature of this family, without prerequisite closure.
@@ -451,7 +485,8 @@ namespace native {
     }
     /// True when the feature is present.
     constexpr bool has(feature_type f) const noexcept { return get(f); }
-    /// True when every bit in a same-family requirement is present.
+    /// True when every hardware bit in a same-family requirement is present.
+    /// Emulation permission is not an instruction requirement.
     constexpr bool has(isa other) const noexcept {
       for(std::size_t i=0;i<flags.size();++i)
         if((flags[i]&other.flags[i])!=other.flags[i]) return false;
@@ -463,7 +498,7 @@ namespace native {
       constexpr auto mask=used ? (std::uint64_t{1}<<used)-1 : 0;
       return (flags.back()&~mask)==0;
     }
-    /// Compare every stored bit, including invalid requirements.
+    /// Compare hardware bits and emulation permission, retaining NTTP identity.
     constexpr bool operator==(isa const &) const=default;
     constexpr bool get_simd128() const noexcept { return get(wasm_feature::simd128); }
     constexpr void set_simd128(bool value) noexcept { set(wasm_feature::simd128,value); }
@@ -495,8 +530,22 @@ namespace native {
   constexpr auto operator&(A left,B right) noexcept {
     isa<detail::arch_family_v<A>> result=left, other=right;
     for(std::size_t i=0;i<result.flags.size();++i) result.flags[i]|=other.flags[i];
+    result.allow_polyfill=result.allow_polyfill || other.allow_polyfill;
     return result;
   }
+  /// Enable emulation without changing a feature or ISA value's family or features.
+  template<arch A>
+  constexpr auto operator|(A requirements,polyfill_t) noexcept {
+    isa<detail::arch_family_v<A>> result=requirements;
+    result.allow_polyfill=true;
+    return result;
+  }
+  /// Enable emulation with permission written before the hardware requirements.
+  template<arch A>
+  constexpr auto operator|(polyfill_t,A requirements) noexcept { return requirements|polyfill; }
+  /// Composing permission with itself leaves it enabled.
+  constexpr polyfill_t operator|(polyfill_t,polyfill_t) noexcept { return {}; }
+
   // Concrete enum overloads prevent built-in ordinal comparisons from winning.
   /// A singleton feature is never a strict subset of another singleton.
   constexpr bool operator<(x86_feature,x86_feature) noexcept { return false; }
@@ -530,7 +579,7 @@ namespace native {
   constexpr bool operator>=(A a,B b) noexcept { return b<=a; }
   /// True when a is a proper subset of b within the same family.
   template<arch A,arch B> requires detail::same_arch<A,B>
-  constexpr bool operator<(A a,B b) noexcept { return isa<detail::arch_family_v<A>>(a)!=isa<detail::arch_family_v<A>>(b) && a<=b; }
+  constexpr bool operator<(A a,B b) noexcept { return a<=b && !(b<=a); }
   /// True when a strictly contains b within the same family.
   template<arch A,arch B> requires detail::same_arch<A,B>
   constexpr bool operator>(A a,B b) noexcept { return b<a; }
@@ -557,6 +606,7 @@ namespace native {
     template<architecture Family>
     constexpr isa<Family> intersection(isa<Family> a,isa<Family> b) noexcept {
       for(std::size_t i=0;i<a.flags.size();++i) a.flags[i]&=b.flags[i];
+      a.allow_polyfill=a.allow_polyfill && b.allow_polyfill;
       return a;
     }
     enum class feature_register { leaf1_ecx, leaf1_edx, leaf7_ebx, leaf7_ecx, leaf7_edx, leaf7_1_eax, leaf7_1_edx, extended1_ecx, arm, wasm };

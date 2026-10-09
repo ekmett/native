@@ -308,3 +308,42 @@ namespace abi_lookup_test {
   template<class T> concept alternatives=requires(T a) { a|a; };
   static_assert(!alternatives<isa<>> && !alternatives<x86_feature> && !alternatives<arm_feature>);
 }
+
+namespace polyfill_isa_test {
+  using namespace native;
+  constexpr isa<> portable=polyfill;
+  static_assert(portable.has(polyfill) && portable.valid());
+  static_assert(portable<=scalar && scalar<=portable && portable!=scalar);
+  template<isa<> A> struct tagged {};
+  static_assert(std::same_as<tagged<polyfill>,tagged<portable>>);
+  static_assert(!std::same_as<tagged<scalar>,tagged<portable>>);
+  static_assert(std::same_as<decltype(avx2|polyfill),isa<x86>>);
+  static_assert(std::same_as<decltype(neon|polyfill),isa<arm>>);
+  static_assert(std::same_as<decltype(wasm_feature::simd128|polyfill),isa<wasm>>);
+  static_assert((polyfill|avx2)==(avx2|polyfill));
+  static_assert(((avx2|polyfill)|polyfill)==(avx2|polyfill));
+  static_assert((avx2|polyfill)<=avx2 && avx2<=(avx2|polyfill));
+  static_assert((avx2|polyfill)!=avx2);
+  static_assert((avx2|polyfill).has(polyfill));
+  static_assert(((avx2|polyfill)&x86_feature::aes).has(polyfill));
+  static_assert(feature_closure(x86_feature::avx2|polyfill)==(feature_closure(x86_feature::avx2)|polyfill));
+  static_assert(target<avx2|polyfill,avx512,avx2> == 1);
+  static_assert(target<isa<x86>(polyfill),avx512,avx2> == -1);
+  static_assert(abi_lookup<avx2|polyfill,isa_list<avx512,avx2>>::index==1);
+  static_assert(!target_features<x86>("avx2,polyfill").valid());
+  static_assert(!(avx512<=(avx2|polyfill)));
+  static_assert(!(avx2<(avx2|polyfill)) && !((avx2|polyfill)<avx2));
+  struct cpu {
+    isa<x86> present;
+    isa<x86> observed;
+    std::uint64_t xcr0;
+    bool xcr0_observed;
+  };
+  constexpr cpu avx2_cpu{avx2,avx2,0x6,true};
+  static_assert(classify_isa(avx2_cpu,avx2|polyfill).admitted());
+  static_assert(!classify_isa(avx2_cpu,avx512|polyfill).admitted());
+  static_assert(classify_isa(avx2_cpu,avx512|polyfill).missing_features==classify_isa(avx2_cpu,avx512).missing_features);
+  static_assert(!classify_isa(cpu{avx512,avx512,0x6,true},avx512|polyfill).admitted());
+  static_assert(!classify_isa(cpu{avx2,avx2,0,false},avx2|polyfill).admitted());
+  static_assert(classify_isa(cpu{},isa<x86>(polyfill)).admitted());
+}
