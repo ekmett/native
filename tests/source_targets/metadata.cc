@@ -232,8 +232,121 @@ namespace {
   static_assert(synthetic_x86_state());
   static_assert(synthetic_arm());
   static_assert(synthetic_selection());
+  template<native::architecture Family>
+  constexpr bool isa_edges(bool enabled) {
+    using I = native::isa<Family>;
+    using E = typename I::feature_type;
+    auto first = static_cast<E>(0), last = static_cast<E>(I::feature_count - 1);
+    I value(native::polyfill);
+    if (!value.valid() || !value.has(native::polyfill)) return false;
+    value.set(first, enabled);
+    if (value.has(first) != enabled) return false;
+    auto invalid = static_cast<E>(I::feature_count);
+    value.set(invalid, false);
+    if (!value.valid() || value.get(invalid)) return false;
+    value.set(invalid, true);
+    if (value.valid() || value.get(invalid)) return false;
+    if (first < last || first > last || first <= last || first >= last) return false;
+    if (!(first <= first) || !(last >= last)) return false;
+    I one(first), both(first & last);
+    return one < both && both > one && both >= first && !(both <= first);
+  }
+
+  // Each named property must address exactly its enum bit, in both directions.
+  // A runtime input keeps this a coverage probe as well as a constexpr check.
+  constexpr bool property_accessors(bool enabled) {
+#define CHECK_PROPERTY(Family, Name) { \
+    native::isa<native::Family> value(native::polyfill); \
+    value.Name = enabled; \
+    native::isa<native::Family> expected(native::polyfill); \
+    expected.set(native::Family##_feature::Name, enabled); \
+    if (value.Name != enabled || value != expected) return false; \
+    value.Name = !enabled; \
+    expected.set(native::Family##_feature::Name, !enabled); \
+    if (value.Name != !enabled || value != expected) return false; \
+  }
+    CHECK_PROPERTY(x86, mmx);
+    CHECK_PROPERTY(x86, sse);
+    CHECK_PROPERTY(x86, sse2);
+    CHECK_PROPERTY(x86, sse3);
+    CHECK_PROPERTY(x86, ssse3);
+    CHECK_PROPERTY(x86, sse41);
+    CHECK_PROPERTY(x86, sse42);
+    CHECK_PROPERTY(x86, popcnt);
+    CHECK_PROPERTY(x86, avx);
+    CHECK_PROPERTY(x86, avx2);
+    CHECK_PROPERTY(x86, fma);
+    CHECK_PROPERTY(x86, f16c);
+    CHECK_PROPERTY(x86, bmi1);
+    CHECK_PROPERTY(x86, bmi2);
+    CHECK_PROPERTY(x86, avx512f);
+    CHECK_PROPERTY(x86, avx512dq);
+    CHECK_PROPERTY(x86, avx512bw);
+    CHECK_PROPERTY(x86, avx512vl);
+    CHECK_PROPERTY(x86, avx512bf16);
+    CHECK_PROPERTY(x86, avx512fp16);
+    CHECK_PROPERTY(x86, aes);
+    CHECK_PROPERTY(x86, pclmul);
+    CHECK_PROPERTY(x86, cx16);
+    CHECK_PROPERTY(x86, avx512cd);
+    CHECK_PROPERTY(x86, avx512ifma);
+    CHECK_PROPERTY(x86, lzcnt);
+    CHECK_PROPERTY(x86, movbe);
+    CHECK_PROPERTY(x86, sahf);
+    CHECK_PROPERTY(x86, mwaitx);
+    CHECK_PROPERTY(x86, waitpkg);
+    CHECK_PROPERTY(x86, crc32);
+    CHECK_PROPERTY(x86, gfni);
+    CHECK_PROPERTY(x86, vpclmulqdq);
+    CHECK_PROPERTY(x86, avx512vpopcntdq);
+    CHECK_PROPERTY(x86, avxvnni);
+    CHECK_PROPERTY(x86, avx512vnni);
+    CHECK_PROPERTY(x86, avxvnniint8);
+    CHECK_PROPERTY(x86, avxvnniint16);
+    CHECK_PROPERTY(x86, avx512bitalg);
+    CHECK_PROPERTY(x86, avx512vbmi);
+    CHECK_PROPERTY(x86, avx512vbmi2);
+    CHECK_PROPERTY(x86, sha);
+    CHECK_PROPERTY(x86, vaes);
+    CHECK_PROPERTY(x86, avxifma);
+    CHECK_PROPERTY(x86, adx);
+    CHECK_PROPERTY(x86, sha512);
+    CHECK_PROPERTY(x86, sm3);
+    CHECK_PROPERTY(x86, sm4);
+    CHECK_PROPERTY(x86, avxneconvert);
+    CHECK_PROPERTY(arm, neon);
+    CHECK_PROPERTY(arm, neon_fp16);
+    CHECK_PROPERTY(arm, neon_bf16);
+    CHECK_PROPERTY(arm, pmull);
+    CHECK_PROPERTY(arm, sha1);
+    CHECK_PROPERTY(arm, sha512);
+    CHECK_PROPERTY(arm, ebf16);
+    CHECK_PROPERTY(arm, sm3);
+    CHECK_PROPERTY(arm, sm4);
+    CHECK_PROPERTY(arm, aes);
+    CHECK_PROPERTY(arm, sha2);
+    CHECK_PROPERTY(arm, sha3);
+    CHECK_PROPERTY(arm, crc);
+    CHECK_PROPERTY(arm, lse);
+    CHECK_PROPERTY(arm, rdm);
+    CHECK_PROPERTY(arm, fp16fml);
+    CHECK_PROPERTY(arm, dotprod);
+    CHECK_PROPERTY(arm, complxnum);
+    CHECK_PROPERTY(arm, jsconv);
+    CHECK_PROPERTY(arm, rcpc);
+    CHECK_PROPERTY(arm, pauth);
+    CHECK_PROPERTY(arm, i8mm);
+    CHECK_PROPERTY(wasm, simd128);
+    CHECK_PROPERTY(wasm, relaxed_simd);
+#undef CHECK_PROPERTY
+    return isa_edges<native::x86>(enabled) && isa_edges<native::arm>(enabled) &&
+      isa_edges<native::wasm>(enabled);
+  }
+  static_assert(property_accessors(true) && property_accessors(false));
+
 }
-int main() {
+int main(int argc, char **) {
+  if (!property_accessors(argc != 0)) return 1;
   if(!synthetic_x86_features() || !synthetic_x86_state() ||
       !synthetic_arm() || !synthetic_selection()) return 1;
   std::puts("ISA values, CPU/OS admission, inherited minima, ordered selection and no-match passed.");
