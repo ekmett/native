@@ -238,15 +238,11 @@ conventions. Review global initializers as well as explicit native calls.
 
 ## Compiler caching
 
-To cache ordinary compilations, put sccache on `PATH` and configure with
-`-DCMAKE_CXX_COMPILER_LAUNCHER="python3;/path/to/native/.github/scripts/sccache_launcher.py"`.
-On POSIX, module cache keys include the raw sources and headers listed by
-CMake's dependency scan, as well as imported BMIs and explicit PCH inputs.
-Identical preprocessed tokens are insufficient: BMIs retain source locations,
-so even an equivalent macro rename must invalidate the affected module.
-Unchanged inputs can still reuse the cache. Missing or unsupported scan files
-bypass caching. Windows module, PCH and response-file invocations currently
-bypass the cache.
+Install [modcache](https://github.com/ekmett/modcache) and sccache on `PATH`,
+then configure with `-DCMAKE_CXX_COMPILER_LAUNCHER=modcache`.
+The launcher includes raw module dependencies, imported BMIs and supported PCH
+inputs in the cache key. Unsupported inputs bypass caching. Windows module
+producers remain uncached; recognized importers can reuse the cache.
 
 This is a build-tree setting; the installed package does not choose the
 consumer's launcher. Set `-DCMAKE_CXX_COMPILER_LAUNCHER=` to clear it.
