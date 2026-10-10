@@ -1,3 +1,5 @@
+SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
+
 # Licensing Terms
 
 This project is dual-licensed. You may choose to use this work under the terms

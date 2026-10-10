@@ -31,7 +31,7 @@
             src = pkgs.lib.fileset.toSource {
               root = ./.;
               fileset = pkgs.lib.fileset.unions [
-                ./CMakeLists.txt ./LICENSE.spdx ./LICENSE.md
+                ./CMakeLists.txt ./LICENSE.md
                 ./THIRD-PARTY-NOTICES.md ./src ./etc/cmake ./tests/api
               ];
             };
