@@ -40,6 +40,21 @@ template<class T> bool half_api() {
   return a > b && b < a && a >= b && b <= a && a != b && !(a == b);
 }
 
+// Call through pointers so these constexpr constants also get runtime coverage.
+// Check stored NaN encodings without quieting them through float conversion.
+template<class T>
+bool half_limits(std::uint16_t const (&expected)[9]) noexcept {
+  using limits = std::numeric_limits<T>;
+  T (*volatile values[])() noexcept = {
+    limits::min, limits::max, limits::lowest, limits::epsilon,
+    limits::round_error, limits::infinity, limits::quiet_NaN,
+    limits::signaling_NaN, limits::denorm_min
+  };
+  for (unsigned i = 0; i != 9; ++i)
+    if (values[i]().to_bits() != expected[i]) return false;
+  return true;
+}
+
 // Four possible relations: less, equal, greater and unordered. The mask for
 // each immediate is its truth table, independent of the implementation branches.
 template<class T, std::size_t... I>
@@ -78,5 +93,13 @@ int main() {
       !integer_predicates(std::int32_t(low),std::int32_t(low),2,std::make_index_sequence<8>{})) return 7;
   volatile std::uint32_t upper = std::numeric_limits<std::uint32_t>::max();
   if (!integer_predicates(std::uint32_t(upper),std::uint32_t(0),4,std::make_index_sequence<8>{})) return 8;
+  if (!half_limits<fp16>({0x0400, 0x7bff, 0xfbff, 0x1400, 0x3800,
+      0x7c00, 0x7fff, 0x7dff, 0x0001})) return 9;
+  if (!half_limits<bf16>({0x0080, 0x7f7f, 0xff7f, 0x3c00, 0x3f00,
+      0x7f80, 0x7fc0, 0x7f81, 0x0001})) return 10;
+  // Explicit literal-operator calls prevent constant evaluation hiding the body.
+  volatile long double literal = 0.25L;
+  if (operator""_fp16(literal).to_bits() != 0x3400 ||
+      operator""_bf16(literal).to_bits() != 0x3e80) return 11;
   return 0;
 }
