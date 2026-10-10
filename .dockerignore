@@ -2,6 +2,7 @@
 **
 !CMakeLists.txt
 !LICENSE*.md
+!LICENSE.spdx
 !THIRD-PARTY-NOTICES.md
 !src/
 !src/**

@@ -212,7 +212,7 @@ install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/etc/cmake/nativeProfile.cmake"
   "${CMAKE_CURRENT_BINARY_DIR}/nativeConfigVersion.cmake"
   DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/native")
 
-install(FILES LICENSE.md LICENSE-BSD-2-Clause.md LICENSE-APACHE.md THIRD-PARTY-NOTICES.md
+install(FILES LICENSE.spdx LICENSE.md LICENSE-BSD-2-Clause.md LICENSE-APACHE.md THIRD-PARTY-NOTICES.md
   DESTINATION "${CMAKE_INSTALL_DATADIR}/native")
 
 install(FILES src/native/wasm/features.mjs
