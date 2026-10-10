@@ -39,6 +39,8 @@ endforeach()
 foreach(mode IN ITEMS native polyfill)
   set(target native_polyfill_float_storage_${mode})
   add_library(${target} OBJECT instruction_storage.cc)
+  # Profile counters change inlining decisions; this target inspects assembly.
+  set_target_properties(${target} PROPERTIES NATIVE_COVERAGE OFF)
   target_link_libraries(${target} PRIVATE native::native)
   target_compile_options(${target} PRIVATE "$<IF:$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>,/O2,-O2>")
   if(mode STREQUAL "polyfill")

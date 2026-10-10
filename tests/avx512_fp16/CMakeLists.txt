@@ -47,8 +47,10 @@ set_tests_properties(native.avx512_fp16.admission PROPERTIES LABELS "host;module
 if(COMMAND native_link_clang_cl_asan)
   native_link_clang_cl_asan(native_avx512_fp16_admission)
 endif()
-add_test(NAME native.avx512_fp16.feature_boundaries COMMAND "${CMAKE_COMMAND}"
-  "-DBUILD_DIR=${CMAKE_BINARY_DIR}" "-DNINJA=${CMAKE_MAKE_PROGRAM}" -P "${CMAKE_CURRENT_SOURCE_DIR}/feature_boundaries.cmake")
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_test(NAME native.avx512_fp16.feature_boundaries COMMAND "${Python3_EXECUTABLE}"
+  "${CMAKE_CURRENT_SOURCE_DIR}/feature_boundaries.py"
+  --build-dir "${CMAKE_BINARY_DIR}" --ninja "${CMAKE_MAKE_PROGRAM}")
 set_tests_properties(native.avx512_fp16.feature_boundaries PROPERTIES LABELS "host;modules;avx512_fp16;profiles")
 foreach(mode IN ITEMS none native)
   add_test(NAME native.avx512_fp16.${mode} COMMAND native_test_avx512_fp16 ${mode})
