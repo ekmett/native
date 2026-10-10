@@ -160,7 +160,9 @@ template<native::isa<native::x86> A, std::size_t Q>
 consteval bool shuffle_constants() {
   std::array<std::uint64_t, Q> words{};
   std::array<std::uint8_t, Q * 8> control{};
-  for (unsigned pattern = 0; pattern < 256; ++pattern) {
+  // Only the low six selector bits choose a bit within each qword.
+  // High-bit invariance has separate literal and one-hot checks below.
+  for (unsigned pattern = 0; pattern < 64; ++pattern) {
     for (std::size_t qword = 0; qword < Q; ++qword) {
       words[qword] = 0x8000000102040810ull ^ (0x0123456789abcdefull * qword);
     }
