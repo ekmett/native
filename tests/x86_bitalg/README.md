@@ -5,20 +5,23 @@ and word population counts in plain, merging and zeroing forms, and bitshuffle
 in plain and masked forms, at 128, 256 and 512 bits. Public operands are `simd`
 values; writemasks and bitshuffle results are `predicate` values.
 
-Constant-evaluation banks use storage-only tags, minimal BITALG tags, and a
-broader AVX512DQ/BW/VL tag. Independent scalar references count individual bits
-and select within source qwords. The banks cover every byte value and control
-byte, zero and full masks, alternating masks, high output bits, and single-bit
-source words. Literal anchors verify qword routing, bit positions 0/63 and
-ignored control bits 6/7. Tests use a local Clang constexpr step budget.
+The family module checks constant evaluation with storage-only tags, minimal
+BITALG tags, and a broader AVX512DQ/BW/VL tag. Independent scalar references
+count individual bits and select within source qwords. Population-count inputs
+are zero, all ones, and mixed lanes containing low/high bits, byte boundaries
+and alternating bits. Bitshuffle inputs add distinct qwords and selectors at
+0/63, byte boundaries and ignored high control bits. Masks cover empty/full,
+alternating lanes, first/last lanes and both sides of qword boundaries across
+all three vector widths. Literal anchors independently check qword routing and
+ignored selector bits. These checks fit Clang's default constexpr step budget.
 
-Native runtime banks additionally exhaust every byte and word value at each
-vector width. They check walking and complemented output masks, distinct source
-qwords, all 64 source-bit positions, and deterministic random data and masks.
-Every runtime entry has a literal target attribute. Baseline callers admit CPU
-features and OS vector state before entering it. CTest reports a skip (77) when
-BITALG cannot execute; VL and broader tags are admitted separately. A skip
-establishes compilation of the static banks, not native execution correctness.
+Native and polyfill runtime checks use the same boundary cases. The hub has a
+small constexpr/runtime export check for both population-count types and
+bitshuffle; it does not repeat the family module's full fixture. Native runtime
+entries have literal target attributes. Baseline callers admit CPU features and
+OS vector state before entering them. CTest reports a skip (77) when BITALG
+cannot execute; VL and broader tags are admitted separately. A skip establishes
+compilation of the static checks, not native execution correctness.
 
 From a configured x86 source build with `NATIVE_BUILD_TESTS=ON`:
 
