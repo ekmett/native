@@ -21,6 +21,12 @@ selects the primary regression implementation. Neither changes the hub API.
 The default host tests are a small smoke suite. Set `NATIVE_TEST_EXTENDED=ON`
 for exhaustive numerical checks, compiler-rejection tests and assembly comparisons.
 
+CI splits the expensive extended builds at configuration time. To reproduce one
+shard, set `NATIVE_TEST_SHARD` to its number and `NATIVE_TEST_SHARD_COUNT` to 6
+(x64) or 2 (Windows ARM64). The default, `NATIVE_TEST_SHARD=0`, builds the full
+selected suite. Assignments live in `etc/cmake/test-shards.json`; new fixture
+groups must be assigned explicitly. Package relocation runs once per platform.
+
 `NATIVE_ENABLE_EXCEPTIONS` defaults to ON. Set it to OFF for an exception-free
 build. Compiler, standard-library and exception modes must agree throughout
 the dependency graph. `NATIVE_ENABLE_ASAN` enables
@@ -59,11 +65,15 @@ build/test workflow with instrumentation enabled and exceptions on. Ordinary CI
 remains uninstrumented. Assembly probes disable counters while sharing the same
 module build; their instruction checks still run.
 
-Each job retains HTML and LCOV reports with its commit, compiler, configuration
+Each shard retains HTML and LCOV reports with its commit, compiler, configuration
 and runner hardware. Codecov receives the LCOV report through GitHub OIDC, without
-an upload token. Flags distinguish OS, architecture and suite. A run that passes
+an upload token. Shards upload under the same platform flags, so Codecov merges
+their partial reports for that commit. The required aggregate job checks that
+every expected shard completed successfully. Flags distinguish OS, architecture
+and suite. Hardware flags describe the runner that produced each report. A shard
+that passes
 `omnibus.avx512` also receives an OS/architecture-specific `avx512_extended` flag.
-That flag identifies a whole run that executed AVX-512, not an AVX-512-only slice
+That flag identifies a whole shard that executed AVX-512, not an AVX-512-only slice
 of its coverage. The artifact records passed/skipped profile tests in
 `execution.json`. `host.json` records every feature in Native's detector registry,
 including failed/unavailable observations and x86 OS vector state. Codecov's

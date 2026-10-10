@@ -45,12 +45,29 @@ concurrency:
   cancel-in-progress: ${{ !inputs.coverage }}
 
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - id: matrix
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COVERAGE: ${{ inputs.coverage || false }}
+        run: |
+          python3 -B .github/scripts/test_ci_matrix.py
+          python3 -B .github/scripts/ci_matrix.py
+
   build:
+    needs: plan
     permissions:
       contents: read
       id-token: write
-    name: ${{ matrix.platform.name }}${{ matrix.exceptions == 'OFF' && ' (no exceptions)' || '' }}
-    runs-on: ${{ matrix.platform.runner }}
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ (inputs.coverage || github.event_name == 'workflow_dispatch') && 90 || github.event_name == 'schedule' && 45 || 20 }}
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -60,23 +77,7 @@ jobs:
         shell: bash
     strategy:
       fail-fast: false
-      matrix:
-        # Main: one smoke runner. PRs add Windows ARM; nightly adds x86.
-        # Manual dispatch retains all platforms and both exception modes.
-        # The coverage caller uses all platforms with exceptions enabled.
-        exceptions: ${{ !inputs.coverage && github.event_name == 'workflow_dispatch' && fromJSON('["ON", "OFF"]') || fromJSON('["ON"]') }}
-        platform: >-
-          ${{ fromJSON((inputs.coverage || github.event_name == 'workflow_dispatch') &&
-          '[{"name":"Linux x64","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Windows x64","runner":"windows-2025","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Windows ARM64","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"macOS ARM64","runner":"macos-15","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'schedule' &&
-          '[{"name":"Linux x64","runner":"ubuntu-24.04","profile":"AVX2","profiles":"AVX2;AVX512;AVX512_BF16;AVX512_FP16"},
-            {"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' || github.event_name == 'pull_request' &&
-          '[{"name":"Windows ARM64","runner":"windows-11-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"},
-            {"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]' ||
-          '[{"name":"Linux ARM64","runner":"ubuntu-24.04-arm","profile":"NEON","profiles":"NEON;NEON_FP16;NEON_BF16"}]') }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -112,7 +113,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          TEST_PROFILE: ${{ matrix.platform.profile }}
+          TEST_PROFILE: ${{ matrix.profile }}
         run: |
           New-Item -ItemType Directory -Force build | Out-Null
           & {
@@ -143,7 +144,7 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         env:
-          TEST_PROFILE: ${{ matrix.platform.profile }}
+          TEST_PROFILE: ${{ matrix.profile }}
         run: |
           mkdir -p build
           {
@@ -231,9 +232,10 @@ jobs:
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER="$launcher" \
             -DNATIVE_BUILD_TESTS=ON -DNATIVE_TEST_EXTENDED=${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ON' || 'OFF' }} \
+            -DNATIVE_TEST_SHARD=${{ matrix.shard }} -DNATIVE_TEST_SHARD_COUNT=${{ matrix.count == 1 && 6 || matrix.count }} \
             -DNATIVE_ENABLE_EXCEPTIONS=${{ matrix.exceptions }} -DNATIVE_ENABLE_PCH=ON -DNATIVE_ENABLE_IPO=ON \
-            -DNATIVE_TEST_ISA="${{ matrix.platform.profile }}" \
-            '-DNATIVE_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
+            -DNATIVE_TEST_ISA="${{ matrix.profile }}" \
+            '-DNATIVE_PROFILES=${{ matrix.profiles }}' "${extra[@]}"
       - name: Build
         id: build
         run: |
@@ -255,8 +257,10 @@ jobs:
           ctest --test-dir build/core "${selection[@]}" --parallel 4 --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
       - name: Install
+        if: matrix.package
         run: cmake --install build/core --prefix build/install
       - name: Test relocated package boundaries and modules
+        if: matrix.package
         shell: bash
         run: |
           cmake -E rename build/install 'build/relocated package'
@@ -303,20 +307,21 @@ jobs:
           files: ${{ steps.test_reports.outputs.files }}
           disable_search: true
           flags: ${{ runner.os }}_${{ runner.arch }},${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'extended' || 'smoke' }},exceptions_${{ matrix.exceptions }},${{ inputs.coverage && 'instrumented' || 'regular' }}
-          name: ${{ matrix.platform.runner }}-exceptions-${{ matrix.exceptions }}-${{ inputs.coverage && 'coverage' || 'build' }}
+          name: ${{ matrix.key }}-${{ inputs.coverage && 'coverage' || 'build' }}
           fail_ci_if_error: true
       - name: Generate coverage report
         id: coverage
         if: always() && inputs.coverage && steps.build.outcome == 'success'
         run: |
           cmake --build build/core --target native_coverage
-          jq -n --arg commit "$GITHUB_SHA" --arg runner '${{ matrix.platform.runner }}' \
-            --arg arch "$RUNNER_ARCH" --arg isa '${{ matrix.platform.profile }}' \
-            --arg profiles '${{ matrix.platform.profiles }}' \
+          jq -n --arg commit "$GITHUB_SHA" --arg runner '${{ matrix.runner }}' \
+            --arg arch "$RUNNER_ARCH" --arg isa '${{ matrix.profile }}' \
+            --arg profiles '${{ matrix.profiles }}' \
             --arg suite '${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'extended' || 'smoke' }}' \
+            --arg shard "${{ matrix.shard }}" --arg shard_count "${{ matrix.count }}" \
             --arg result '${{ steps.test.outcome }}' --arg compiler "$(clang++ --version)" \
             '{commit: $commit, runner: $runner, architecture: $arch, test_isa: $isa,
-              profiles: $profiles, suite: $suite, result: $result, compiler: $compiler}' \
+              profiles: $profiles, shard: $shard, shard_count: $shard_count, suite: $suite, result: $result, compiler: $compiler}' \
             > build/core/coverage/report/configuration.json
           cp build/environment.log build/core/coverage/report/environment.log
           if [[ "$RUNNER_OS" == Windows ]]; then
@@ -329,7 +334,7 @@ jobs:
         if: always() && inputs.coverage && steps.coverage.outcome == 'success'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: coverage-${{ matrix.platform.runner }}-${{ steps.coverage.outputs.hardware }}
+          name: coverage-${{ matrix.key }}-${{ steps.coverage.outputs.hardware }}
           retention-days: 7
           if-no-files-found: error
           path: build/core/coverage/report/
@@ -341,7 +346,7 @@ jobs:
           files: build/core/coverage/report/coverage.info
           disable_search: true
           flags: ${{ steps.coverage.outputs.flags }}
-          name: ${{ matrix.platform.runner }}-${{ steps.coverage.outputs.hardware }}
+          name: ${{ matrix.key }}-${{ steps.coverage.outputs.hardware }}
           fail_ci_if_error: true
       - name: Record compiler cache statistics
         if: always() && steps.sccache.outcome == 'success'
@@ -361,7 +366,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: logs-${{ matrix.platform.runner }}-${{ matrix.platform.profile }}-exceptions-${{ matrix.exceptions }}
+          name: logs-${{ matrix.key }}
           include-hidden-files: true
           retention-days: 3
           if-no-files-found: ignore
@@ -379,6 +384,7 @@ jobs:
             build/package/primary-build.ninja.log
             build/package/CMakeFiles/rules.ninja
             build/package/build.ninja
+            build/core/test-groups.txt
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/
@@ -389,3 +395,48 @@ jobs:
             build/core/tests/**/codegen.txt
             build/core/tests/**/paired-*.json
             build/core/tests/**/*-paired-*.txt
+      - name: Record successful shard
+        env:
+          SHARD_KEY: ${{ matrix.key }}
+        run: |
+          mkdir -p build/receipts
+          jq -n --arg key "$SHARD_KEY" --arg commit "$GITHUB_SHA" \
+            '{key: $key, commit: $commit}' > "build/receipts/$SHARD_KEY.json"
+      - name: Retain successful shard receipt
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: shard-receipt-${{ matrix.key }}
+          path: build/receipts/
+          retention-days: 1
+          if-no-files-found: error
+
+  complete:
+    name: Required platform shards
+    if: always()
+    needs: [plan, build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every build and upload
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: test "$PLAN_RESULT" = success && test "$BUILD_RESULT" = success
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: shard-receipt-*
+          path: receipts
+          merge-multiple: true
+      - name: Check complete platform inventory
+        env:
+          MATRIX: ${{ needs.plan.outputs.matrix }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          expected = {p['key'] for p in json.loads(os.environ['MATRIX'])['include']}
+          receipts = [json.loads(p.read_text()) for p in Path('receipts').glob('*.json')]
+          actual = {r['key'] for r in receipts}
+          assert actual == expected and len(receipts) == len(expected), (expected - actual, actual - expected)
+          assert all(r['commit'] == os.environ['GITHUB_SHA'] for r in receipts)
+          print(f"All {len(expected)} required shards built, tested and uploaded their reports.")
+          PY
