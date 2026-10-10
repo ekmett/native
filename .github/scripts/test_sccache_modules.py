@@ -39,12 +39,15 @@ add_executable(consumer main.cc)
 target_link_libraries(consumer PRIVATE owner)
 add_executable(ordinary ordinary.cc)
 set_target_properties(ordinary PROPERTIES CXX_SCAN_FOR_MODULES OFF)
-set_target_properties(consumer ordinary PROPERTIES CXX_COMPILER_LAUNCHER "${TEST_LAUNCHER}")
+set_target_properties(owner consumer ordinary PROPERTIES CXX_COMPILER_LAUNCHER "${TEST_LAUNCHER}")
 ''')
     (source / 'main.cc').write_text('import cache_regression;\nint main() { return answer; }\n')
     (source / 'ordinary.cc').write_text('int main() { return 7; }\n')
     provider = source / 'owner.ccm'
-    provider.write_text('export module cache_regression;\nexport constexpr int answer=1;\n')
+    header = source / 'value.h'
+    header.write_text('#define VALUE 1\n')
+    provider.write_text('module;\n#include "value.h"\nexport module cache_regression;\n'
+                        'export constexpr int answer=VALUE;\n')
     # Neither the workflow's cache nor its daemon is stopped, cleared or reused.
     environment = {key: value for key, value in os.environ.items()
                    if not key.upper().startswith('SCCACHE_')}
@@ -55,6 +58,7 @@ set_target_properties(consumer ordinary PROPERTIES CXX_COMPILER_LAUNCHER "${TEST
     config.write_text('')
     environment.update(SCCACHE_CONF=str(config), SCCACHE_CACHED_CONF=str(root / 'cached-config'),
                        SCCACHE_DIR=str(root / 'cache'),
+                       SCCACHE_DIRECT='false',
                        SCCACHE_SERVER_PORT=str(port), SCCACHE_IDLE_TIMEOUT='0',
                        SCCACHE_ERROR_LOG=str(root / 'sccache.log'))
     compiler = shutil.which(args.compiler) or args.compiler
@@ -99,7 +103,22 @@ set_target_properties(consumer ordinary PROPERTIES CXX_COMPILER_LAUNCHER "${TEST
              '-DCMAKE_BUILD_TYPE=Release', '-DCMAKE_CXX_COMPILER=' + compiler,
              '-DTEST_LAUNCHER=' + launcher, *args.cmake_arg])
         initial = record('initial')
-        provider.write_text('export module cache_regression;\nexport constexpr int answer=2;\n')
+        if os.name != 'nt':
+            before = statistics()
+            object_file('owner', 'owner.ccm').unlink()
+            object_file('consumer', 'main.cc').unlink()
+            warm = record('warm')
+            after = statistics()
+            if warm != 1 or hit_count(after) - hit_count(before) != 2:
+                raise RuntimeError('Unchanged module and importer did not both reuse the cache')
+            header.write_text('// Changed source locations, identical expanded tokens.\n#define VALUE 1\n')
+            before = statistics()
+            moved = record('source_locations')
+            after = statistics()
+            misses = lambda s: sum(s['stats']['cache_misses']['counts'].values())
+            if moved != 1 or misses(after) <= misses(before):
+                raise RuntimeError('A source-only header change reused a stale BMI')
+        header.write_text('#define VALUE 2\n')
         changed = record('changed_module')
         before = statistics()
         object_file('ordinary', 'ordinary.cc').unlink()

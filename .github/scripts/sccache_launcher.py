@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2026 Edward Kmett <ekmett@gmail.com>
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
-"""Cache ordinary Clang compilations while keeping named modules uncached.
+"""Cache Clang compilations with explicit serialized-input dependencies.
 
 This is deliberately not a general response-file parser. Unknown response or
 PCH syntax runs the original compiler invocation without caching. Explicit PCH
 binary inputs are hashed through SCCACHE_EXTRAFILES. CMake's files are never
-rewritten. Named-module providers and importers use the original compiler argv
-on every platform: restored BMIs can crash Clang while fresh builds succeed.
+rewritten. POSIX named modules additionally hash CMake's scan dependency file
+and every source/header it names: expanded tokens do not identify a BMI's source
+locations. Missing or unsupported dependency information bypasses caching.
 Windows clang-cl PCH and response-file invocations also bypass caching;
 ordinary compilations remain cacheable.
 Unsupported compiler names bypass caching directly.
@@ -16,6 +17,7 @@ import errno
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 
@@ -180,6 +182,46 @@ def windows_cacheable(arguments):
     return True
 
 
+def module_inputs(arguments):
+    """Hash raw inputs from the CMake/Ninja scan that precedes compilation.
+
+    Clang's serialized source locations survive preprocessing-equivalent edits.
+    Hash the scan depfile too, retaining path identities as well as file bytes.
+    This is deliberately limited to POSIX CMake make-style dependency output.
+    """
+    if any(arg.startswith('@') for arg in arguments[1:]):
+        return None
+    try:
+        output = arguments[arguments.index('-o') + 1]
+        depfile = Path(output + '.ddi.d')
+        data = depfile.read_text()
+        if len(data) > 1024 * 1024:
+            return None
+        data = data.replace('\\\n', '').rstrip('\n')
+        if any(c in data for c in '\n\r$#\"\''):
+            return None
+        target, dependencies = data.split(': ', 1)
+        if shlex.split(target) != [output + '.ddi']:
+            return None
+        inputs = shlex.split(dependencies)
+        # CMake's scan must include the actual translation unit, not just a
+        # plausible collection of existing headers from another compilation.
+        sources = [arg for arg in arguments[1:] if arg.endswith(
+            ('.cc', '.cpp', '.cxx', '.c++', '.ccm', '.cppm', '.cxxm', '.ixx'))]
+        paths = {Path(p).resolve() for p in inputs}
+        if not inputs or not any(Path(src).resolve() in paths for src in sources):
+            return None
+        inputs.insert(0, str(depfile))
+        for arg in arguments[1:]:
+            if arg.startswith('-fmodule-file='):
+                inputs.append(arg.split('=', 2)[-1])
+        if any(os.pathsep in p or not Path(p).is_file() for p in inputs):
+            return None
+        return [str(Path(p).absolute()) for p in dict.fromkeys(inputs)]
+    except (ValueError, IndexError, OSError, UnicodeError):
+        return None
+
+
 def main(arguments):
     if not arguments:
         print('usage: sccache_launcher.py COMPILER [ARGUMENT ...]', file=sys.stderr)
@@ -196,14 +238,14 @@ def main(arguments):
         return 0
     original = ['sccache', *arguments]
     normalized = normalize(arguments)
-    # Restored ARM BMIs crash Clang23 in imported inline assembly (nightly
-    # 37745349032); an identical fresh build passes. Keep this pipeline uncached.
-    if any(arg.startswith(('-fmodule', '-fprebuilt-module', '-fimplicit-module',
+    modules = any(arg.startswith(('-fmodule', '-fprebuilt-module', '-fimplicit-module',
                            '-fno-implicit-module', '-emit-module', '--precompile',
                            '-Xclang=-fmodule', '-Xclang=-emit-module')) or
            arg in ('c++-module', '-xc++-module') or
            arg.endswith(('.ccm', '.cppm', '.cxxm', '.c++m', '.ixx', '.mpp', '.mxx', '.pcm', '.bmi'))
-           for arg in normalized[1:]):
+           for arg in normalized[1:])
+    raw_inputs = module_inputs(normalized) if modules else []
+    if raw_inputs is None:
         os.execvp(arguments[0], arguments)
         return 0
     if os.name != 'nt':
@@ -211,6 +253,7 @@ def main(arguments):
         if inputs is None:
             os.execvp(arguments[0], arguments)
             return 0
+        inputs = raw_inputs + inputs
         if inputs:
             previous = os.environ.get('SCCACHE_EXTRAFILES')
             os.environ['SCCACHE_EXTRAFILES'] = os.pathsep.join(

@@ -196,11 +196,16 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && runner.os != 'Windows'
         run: |
           python3 -B .github/scripts/test_sccache_pch.py "$(command -v clang++)" "$GITHUB_WORKSPACE/build/sccache-pch-probe"
-      - name: Check Windows module cache invalidation
-        if: github.event_name == 'workflow_dispatch' && runner.os == 'Windows'
+      - name: Check module cache invalidation
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          python -B .github/scripts/test_sccache_modules.py --compiler clang-cl \
-            --output build/sccache-modules --cmake-arg=-DCMAKE_LINKER_TYPE=LLD
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            python -B .github/scripts/test_sccache_modules.py --compiler clang-cl \
+              --output build/sccache-modules --cmake-arg=-DCMAKE_LINKER_TYPE=LLD
+          else
+            python3 -B .github/scripts/test_sccache_modules.py --compiler clang++ \
+              --output build/sccache-modules
+          fi
       - name: Install grcov
         if: inputs.coverage
         run: |

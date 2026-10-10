@@ -17,6 +17,22 @@ import sccache_launcher as launcher
 
 
 class ParserTests(unittest.TestCase):
+    def test_module_scan_inputs_and_missing_dependency(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, header, bmi = [root / name for name in ('owner.ccm', 'with space.h', 'base.pcm')]
+            for path in (source, header, bmi):
+                path.write_text('input')
+            output = str(root / 'owner.o')
+            depfile = Path(output + '.ddi.d')
+            escape = lambda p: str(p).replace(' ', '\\ ')
+            depfile.write_text(escape(output + '.ddi') + ': ' + escape(source) + ' \\\n  ' + escape(header) + '\n')
+            args = ['clang++', '-c', str(source), '-o', output, '-fmodule-file=base=' + str(bmi)]
+            self.assertEqual(launcher.module_inputs(args), list(map(str, (depfile, source, header, bmi))))
+            self.assertIsNone(launcher.module_inputs([*args, '@unknown.rsp']))
+            header.unlink()
+            self.assertIsNone(launcher.module_inputs(args))
+
     def test_generated_producer_and_import_map(self):
         source = ('-x c++-module\n-fmodule-output="src/foo.pcm"\n'
                   '-fmodule-file="native.wide=src/common@synth_0/a.bmi"\n'
