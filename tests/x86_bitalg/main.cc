@@ -7,7 +7,7 @@
 #include <initializer_list>
 #include <hint.h>
 #ifdef NATIVE_TEST_POLYFILL
-#define NATIVE_FIXTURE_RUNTIME(Target)
+#define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline
 #define NATIVE_FIXTURE_CONSTANTS(...)
 #else
 #define NATIVE_FIXTURE_RUNTIME(Target) hint_noinline hint_target(Target)
@@ -121,76 +121,77 @@ consteval auto shuffle_constant(
     native::mask_vpshufbitqmb<A>(active, value, selectors).to_bitset()};
 }
 
+// Three population rows: zero, all bits, and mixed lanes. The mixed row
+// distinguishes byte/word interpretation and includes both ends of each byte.
+template<class T, std::size_t N>
+constexpr auto population_input(unsigned row) {
+  std::array<T, N> input{};
+  constexpr std::uint16_t edges[]{0, 0xffff, 1, 0x8000, 0x80, 0x100, 0xaaaa, 0x5555, 0x0181};
+  for (std::size_t lane = 0; lane < N; ++lane)
+    input[lane] = row == 0 ? T{0} : row == 1 ? static_cast<T>(~T{0}) :
+      static_cast<T>(edges[lane % std::size(edges)]);
+  return input;
+}
+
+template<class T, std::size_t N>
+constexpr auto population_source() {
+  std::array<T, N> source{};
+  for (std::size_t lane = 0; lane < N; ++lane) source[lane] = static_cast<T>(0x81 + lane * 17);
+  return source;
+}
+
+// Empty/full, alternating lanes, then first/last and both sides of qword
+// boundaries. One sparse mask also crosses 128/256-bit storage boundaries.
+template<std::size_t N, std::size_t LaneBytes = 1>
+constexpr auto edge_masks() {
+  std::uint64_t boundary = 1 | (std::uint64_t{1} << (N - 1));
+  for (std::size_t lane = 8 / LaneBytes; lane < N; lane += 8 / LaneBytes)
+    boundary |= (std::uint64_t{1} << (lane - 1)) | (std::uint64_t{1} << lane);
+  return std::array<std::uint64_t, 4>{0, ~std::uint64_t{0}, 0xaaaaaaaaaaaaaaaaull, boundary};
+}
+
+template<std::size_t Q>
+constexpr auto shuffle_input(unsigned row) {
+  std::array<std::uint64_t, Q> words{};
+  for (std::size_t qword = 0; qword < Q; ++qword) {
+    if (row == 0) words[qword] = 0;
+    else if (row == 1) words[qword] = ~std::uint64_t{0};
+    else if (row == 2) words[qword] = std::uint64_t{1} << (qword % 2 ? 63 : 0);
+    else words[qword] = 0x8000000102040810ull ^ (0x0123456789abcdefull * qword);
+  }
+  return words;
+}
+
+template<std::size_t Q>
+constexpr auto shuffle_controls() {
+  std::array<std::uint8_t, Q * 8> control{};
+  // Endpoints, byte boundary, and each ignored high selector bit.
+  constexpr std::uint8_t edges[]{0, 63, 7, 8, 64, 127, 128, 255};
+  for (std::size_t lane = 0; lane < control.size(); ++lane)
+    control[lane] = edges[lane % 8];
+  return control;
+}
+
 template<native::isa<native::x86> A, class T, std::size_t N>
 consteval bool population_constants() {
-  std::array<T, N> input{};
-  std::array<T, N> source{};
-  for (unsigned pattern = 0; pattern < 256; ++pattern) {
-    for (std::size_t lane = 0; lane < N; ++lane) {
-      input[lane] = static_cast<T>((pattern + lane) * (sizeof(T) == 1 ? 1 : 257));
-      source[lane] = static_cast<T>(0x81 + lane * 17);
-    }
-    for (auto mask : {std::uint64_t{0}, ~std::uint64_t{0},
-                      std::uint64_t{0xaaaaaaaaaaaaaaaa}, std::uint64_t{1} << (N - 1)}) {
-      if (population_constant<A>(input, source, mask) != population_reference(input, source, mask)) {
+  auto source = population_source<T, N>();
+  for (unsigned row = 0; row < 3; ++row) {
+    auto input = population_input<T, N>(row);
+    for (auto mask : edge_masks<N, sizeof(T)>())
+      if (population_constant<A>(input, source, mask) != population_reference(input, source, mask))
         return false;
-      }
-    }
-  }
-  for (T value : {T{0}, static_cast<T>(~T{0})}) {
-    input.fill(value);
-    if (population_constant<A>(input, source, ~std::uint64_t{0}) !=
-        population_reference(input, source, ~std::uint64_t{0})) {
-      return false;
-    }
-  }
-  for (unsigned bit = 0; bit < sizeof(T) * 8; ++bit) {
-    for (std::size_t lane = 0; lane < N; ++lane) {
-      input[lane] = static_cast<T>(T{1} << ((bit + lane) % (sizeof(T) * 8)));
-    }
-    if (population_constant<A>(input, source, ~std::uint64_t{0}) !=
-        population_reference(input, source, ~std::uint64_t{0})) {
-      return false;
-    }
   }
   return true;
 }
 
 template<native::isa<native::x86> A, std::size_t Q>
 consteval bool shuffle_constants() {
-  std::array<std::uint64_t, Q> words{};
-  std::array<std::uint8_t, Q * 8> control{};
-  // Only the low six selector bits choose a bit within each qword.
-  // High-bit invariance has separate literal and one-hot checks below.
-  for (unsigned pattern = 0; pattern < 64; ++pattern) {
-    for (std::size_t qword = 0; qword < Q; ++qword) {
-      words[qword] = 0x8000000102040810ull ^ (0x0123456789abcdefull * qword);
-    }
-    for (std::size_t lane = 0; lane < Q * 8; ++lane) {
-      control[lane] = static_cast<std::uint8_t>(pattern + lane * 7);
-    }
-    for (auto mask : {std::uint64_t{0}, ~std::uint64_t{0},
-                      std::uint64_t{0xaaaaaaaaaaaaaaaa}, std::uint64_t{1} << (Q * 8 - 1)}) {
-      if (shuffle_constant<A>(words, control, mask) != shuffle_reference(words, control, mask)) {
+  auto control = shuffle_controls<Q>();
+  for (unsigned row = 0; row < 4; ++row) {
+    auto words = shuffle_input<Q>(row);
+    for (auto mask : edge_masks<Q * 8>())
+      if (shuffle_constant<A>(words, control, mask) != shuffle_reference(words, control, mask))
         return false;
-      }
-    }
-  }
-  for (auto word : {std::uint64_t{0}, ~std::uint64_t{0}}) {
-    words.fill(word);
-    if (shuffle_constant<A>(words, control, ~std::uint64_t{0}) !=
-        shuffle_reference(words, control, ~std::uint64_t{0})) {
-      return false;
-    }
-  }
-  // Each one-hot input bit is selectable in every qword; high control bits do not matter.
-  for (unsigned bit = 0; bit < 64; ++bit) {
-    words.fill(std::uint64_t{1} << bit);
-    control.fill(static_cast<std::uint8_t>(bit | 0xc0));
-    if (shuffle_constant<A>(words, control, ~std::uint64_t{0}) !=
-        shuffle_reference(words, control, ~std::uint64_t{0})) {
-      return false;
-    }
   }
   return true;
 }
@@ -330,13 +331,6 @@ void shuffle_broad(std::uint64_t * result, std::uint64_t const * input,
   result[1] = native::mask_vpshufbitqmb<broad>(active, value, selectors).to_bitset();
 }
 
-inline std::uint64_t random_word(std::uint64_t & state) noexcept {
-  state ^= state << 13;
-  state ^= state >> 7;
-  state ^= state << 17;
-  return state;
-}
-
 template<class T, std::size_t N, bool Broad = false>
 bool check_population_case(std::array<T, N> const & input, std::array<T, N> const & source,
   std::uint64_t mask) {
@@ -362,39 +356,12 @@ bool check_population_case(std::array<T, N> const & input, std::array<T, N> cons
 }
 
 template<class T, std::size_t N, bool Broad = false>
-bool check_population(std::uint64_t & state) {
-  std::array<T, N> input{};
-  std::array<T, N> source{};
-  // Exhaust every byte/word input value at each width. Lane rotation and masks
-  // exercise the byte/word association independently of the source pattern.
-  for (unsigned base = 0; base < (1u << (sizeof(T) * 8)); base += N) {
-    for (std::size_t lane = 0; lane < N; ++lane) {
-      input[lane] = static_cast<T>(base + lane);
-      source[lane] = static_cast<T>(0x81 + lane * 17);
-    }
-    for (auto mask : {std::uint64_t{0}, ~std::uint64_t{0},
-                      std::uint64_t{0xaaaaaaaaaaaaaaaa}, std::uint64_t{0x5555555555555555}}) {
-      if (!check_population_case<T, N, Broad>(input, source, mask)) {
-        return false;
-      }
-    }
-  }
-  input.fill(static_cast<T>(~T{0}));
-  for (std::size_t lane = 0; lane < N; ++lane) {
-    auto mask = std::uint64_t{1} << lane;
-    if (!check_population_case<T, N, Broad>(input, source, mask) ||
-        !check_population_case<T, N, Broad>(input, source, ~mask)) {
-      return false;
-    }
-  }
-  for (unsigned trial = 0; trial < 2048; ++trial) {
-    for (std::size_t lane = 0; lane < N; ++lane) {
-      input[lane] = static_cast<T>(random_word(state));
-      source[lane] = static_cast<T>(random_word(state));
-    }
-    if (!check_population_case<T, N, Broad>(input, source, random_word(state))) {
-      return false;
-    }
+bool check_population() {
+  auto source = population_source<T, N>();
+  for (unsigned row = 0; row < 3; ++row) {
+    auto input = population_input<T, N>(row);
+    for (auto mask : edge_masks<N, sizeof(T)>())
+      if (!check_population_case<T, N, Broad>(input, source, mask)) return false;
   }
   return true;
 }
@@ -420,49 +387,12 @@ bool check_shuffle_case(std::array<std::uint64_t, Q> const & input,
 }
 
 template<std::size_t Q, bool Broad = false>
-bool check_shuffle(std::uint64_t & state) {
-  std::array<std::uint64_t, Q> input{};
-  std::array<std::uint8_t, Q * 8> control{};
-  for (unsigned pattern = 0; pattern < 256; ++pattern) {
-    for (std::size_t qword = 0; qword < Q; ++qword) {
-      input[qword] = 0x8000000102040810ull ^ (0x0123456789abcdefull * qword);
-    }
-    for (std::size_t lane = 0; lane < Q * 8; ++lane) {
-      control[lane] = static_cast<std::uint8_t>(pattern + lane * 7);
-    }
-    for (auto mask : {std::uint64_t{0}, ~std::uint64_t{0},
-                      std::uint64_t{0xaaaaaaaaaaaaaaaa}, std::uint64_t{0x5555555555555555}}) {
-      if (!check_shuffle_case<Q, Broad>(input, control, mask)) {
-        return false;
-      }
-    }
-  }
-  // Distinct qwords and walking output masks expose 64/128/256-bit routing errors.
-  for (unsigned bit = 0; bit < 64; ++bit) {
-    for (std::size_t qword = 0; qword < Q; ++qword) {
-      input[qword] = std::uint64_t{1} << ((bit + qword) % 64);
-      for (unsigned byte = 0; byte < 8; ++byte) {
-        control[qword * 8 + byte] = static_cast<std::uint8_t>(((bit + qword) % 64) | 0xc0);
-      }
-    }
-    for (std::size_t lane = 0; lane < Q * 8; ++lane) {
-      auto mask = std::uint64_t{1} << lane;
-      if (!check_shuffle_case<Q, Broad>(input, control, mask) ||
-          !check_shuffle_case<Q, Broad>(input, control, ~mask)) {
-        return false;
-      }
-    }
-  }
-  for (unsigned trial = 0; trial < 2048; ++trial) {
-    for (auto & word : input) {
-      word = random_word(state);
-    }
-    for (auto & selector : control) {
-      selector = static_cast<std::uint8_t>(random_word(state));
-    }
-    if (!check_shuffle_case<Q, Broad>(input, control, random_word(state))) {
-      return false;
-    }
+bool check_shuffle() {
+  auto control = shuffle_controls<Q>();
+  for (unsigned row = 0; row < 4; ++row) {
+    auto input = shuffle_input<Q>(row);
+    for (auto mask : edge_masks<Q * 8>())
+      if (!check_shuffle_case<Q, Broad>(input, control, mask)) return false;
   }
   return true;
 }
@@ -482,31 +412,30 @@ int main(int argc, char **) {
     std::puts("SKIP BITALG: CPU features or OS ZMM state unavailable; constexpr checks passed.");
     return 77;
   }
-  std::uint64_t state = 0x9e3779b97f4a7c15ull;
-  if (!check_population<std::uint8_t, 64>(state) ||
-      !check_population<std::uint16_t, 32>(state) || !check_shuffle<8>(state)) {
+  if (!check_population<std::uint8_t, 64>() ||
+      !check_population<std::uint16_t, 32>() || !check_shuffle<8>()) {
     return 2;
   }
   if (native::classify_isa(cpu, short_width).admitted()) {
-    if (!check_population<std::uint8_t, 16>(state) ||
-        !check_population<std::uint8_t, 32>(state) ||
-        !check_population<std::uint16_t, 8>(state) ||
-        !check_population<std::uint16_t, 16>(state) ||
-        !check_shuffle<2>(state) || !check_shuffle<4>(state)) {
+    if (!check_population<std::uint8_t, 16>() ||
+        !check_population<std::uint8_t, 32>() ||
+        !check_population<std::uint16_t, 8>() ||
+        !check_population<std::uint16_t, 16>() ||
+        !check_shuffle<2>() || !check_shuffle<4>()) {
       return 3;
     }
   } else {
     std::puts("SKIP BITALG narrow forms: AVX512VL unavailable.");
   }
   if (native::classify_isa(cpu, broad).admitted()) {
-    if (!check_population<std::uint8_t, 16, true>(state) ||
-        !check_population<std::uint8_t, 32, true>(state) ||
-        !check_population<std::uint8_t, 64, true>(state) ||
-        !check_population<std::uint16_t, 8, true>(state) ||
-        !check_population<std::uint16_t, 16, true>(state) ||
-        !check_population<std::uint16_t, 32, true>(state) ||
-        !check_shuffle<2, true>(state) || !check_shuffle<4, true>(state) ||
-        !check_shuffle<8, true>(state)) {
+    if (!check_population<std::uint8_t, 16, true>() ||
+        !check_population<std::uint8_t, 32, true>() ||
+        !check_population<std::uint8_t, 64, true>() ||
+        !check_population<std::uint16_t, 8, true>() ||
+        !check_population<std::uint16_t, 16, true>() ||
+        !check_population<std::uint16_t, 32, true>() ||
+        !check_shuffle<2, true>() || !check_shuffle<4, true>() ||
+        !check_shuffle<8, true>()) {
       return 4;
     }
   } else {

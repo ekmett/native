@@ -31,12 +31,13 @@ set(interface_number 1)
 foreach(interface IN ITEMS module hub)
   set(target native_test_x86_bitalg_${interface})
   set(body ${target}_body)
-  add_library(${body} OBJECT main.cc)
+  if(interface STREQUAL "hub")
+    add_library(${body} OBJECT hub.cc)
+  else()
+    add_library(${body} OBJECT main.cc)
+  endif()
   target_link_libraries(${body} PRIVATE native::native)
   target_compile_definitions(${body} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
-  # The complete lane/mask banks exceed Clang's default constexpr step budget.
-  target_compile_options(${body} PRIVATE
-    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")
   set_target_properties(${body} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   add_executable(${target} $<TARGET_OBJECTS:${body}>)
@@ -241,6 +242,3 @@ target_compile_definitions(native_test_x86_bitalg_polyfill PRIVATE
   NATIVE_TEST_INTERFACE=1 NATIVE_TEST_POLYFILL=1)
 add_test(NAME native.polyfill.x86.bitalg COMMAND native_test_x86_bitalg_polyfill)
 set_tests_properties(native.polyfill.x86.bitalg PROPERTIES LABELS "host;polyfill;x86;bitalg")
-
-target_compile_options(native_test_x86_bitalg_polyfill PRIVATE
-  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")
