@@ -10,9 +10,9 @@ def matrix(event, coverage):
     platforms = [
         ('Linux x64', 'ubuntu-24.04', 'AVX2', 6),
         ('Windows x64', 'windows-2025', 'AVX2', 6),
-        ('Windows ARM64', 'windows-11-arm', 'NEON', 2),
+        ('Windows ARM64', 'windows-11-arm', 'NEON', 6),
         ('Linux ARM64', 'ubuntu-24.04-arm', 'NEON', 1),
-        ('macOS ARM64', 'macos-15', 'NEON', 1),
+        ('macOS ARM64', 'macos-15', 'NEON', 2),
     ]
     extended = coverage or event in ('schedule', 'workflow_dispatch')
     if not coverage and event != 'workflow_dispatch':

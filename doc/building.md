@@ -23,7 +23,7 @@ for exhaustive numerical checks, compiler-rejection tests and assembly compariso
 
 CI splits the expensive extended builds at configuration time. To reproduce one
 shard, set `NATIVE_TEST_SHARD` to its number and `NATIVE_TEST_SHARD_COUNT` to 6
-(x64) or 2 (Windows ARM64). The default, `NATIVE_TEST_SHARD=0`, builds the full
+(x64 and Windows ARM64) or 2 (macOS ARM64). The default, `NATIVE_TEST_SHARD=0`, builds the full
 selected suite. Assignments live in `etc/cmake/test-shards.json`; new fixture
 groups must be assigned explicitly. Package relocation runs once per platform.
 

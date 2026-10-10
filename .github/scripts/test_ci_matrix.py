@@ -12,8 +12,8 @@ from ci_matrix import matrix
 class MatrixTests(unittest.TestCase):
     def test_platforms_and_package_owner(self):
         cases = [('push', False, 1), ('pull_request', False, 2),
-                 ('schedule', False, 7), ('push', True, 16),
-                 ('workflow_dispatch', False, 32)]
+                 ('schedule', False, 7), ('push', True, 21),
+                 ('workflow_dispatch', False, 42)]
         for event, coverage, count in cases:
             jobs = matrix(event, coverage)['include']
             self.assertEqual(len(jobs), count)
