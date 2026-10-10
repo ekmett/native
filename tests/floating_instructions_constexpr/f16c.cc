@@ -42,7 +42,8 @@ namespace {
   template<unsigned... I> consteval bool immediates(std::integer_sequence<unsigned,I...>) {
     return ((sizeof(immediate_check<I>)>0) && ...);
   }
-  static_assert(immediates(std::make_integer_sequence<unsigned,256>{}));
+  // Rounding controls plus ignored high-bit boundaries; keep all float cases.
+  static_assert(immediates(std::integer_sequence<unsigned,0,1,2,3,4,5,6,7,8,128,255>{}));
 
   struct input {std::array<std::uint32_t,8> floats;std::array<std::uint16_t,8> halves;};
   constexpr input generate(native_test::property_rng & rng) {

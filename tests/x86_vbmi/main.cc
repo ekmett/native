@@ -124,10 +124,13 @@ consteval auto calculate(inputs<N> input, std::uint64_t bits) {
   return result;
 }
 
-// Separate constant banks retain all 256 control values within a bounded step budget.
-template<native::isa<native::x86> A, std::size_t N, unsigned Start>
+// Runtime tests sweep all controls. Constant evaluation checks routing and
+// bit-window edges, including high controls retained by inactive lanes.
+template<native::isa<native::x86> A, std::size_t N>
 consteval bool constants() {
-  for (unsigned selector = Start; selector < Start + 64; ++selector) {
+  for (unsigned selector : {0u, 1u, unsigned(N - 1), unsigned(N),
+                            unsigned(2 * N - 1), unsigned(2 * N),
+                            63u, 64u, 127u, 128u, 255u}) {
     auto input = pattern<N>(selector);
     for (auto mask : {std::uint64_t{0}, ~std::uint64_t{0},
                       std::uint64_t{0xaaaaaaaaaaaaaaaa}, std::uint64_t{1} << (N - 1)}) {
@@ -139,47 +142,20 @@ consteval bool constants() {
   return true;
 }
 
-NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, 16, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, 16, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, 16, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, 16, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<sse2_storage, 16>());
 
-NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, 32, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, 32, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, 32, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx_storage, 32>());
 
-NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, 64, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, 64, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, 64, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, 64, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<avx512_storage, 64>());
 
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 16, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 16, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 16, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 16, 192>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 32, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 32, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 32, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<short_width, 32, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, 16>());
+NATIVE_FIXTURE_CONSTANTS(constants<short_width, 32>());
 
-NATIVE_FIXTURE_CONSTANTS(constants<full_width, 64, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<full_width, 64, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<full_width, 64, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<full_width, 64, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<full_width, 64>());
 
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 16, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 16, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 16, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 16, 192>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 32, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 32, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 32, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 32, 192>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 64, 0>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 64, 64>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 64, 128>());
-NATIVE_FIXTURE_CONSTANTS(constants<broad, 64, 192>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, 16>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, 32>());
+NATIVE_FIXTURE_CONSTANTS(constants<broad, 64>());
 
 // Explicit anchors cross both 128-bit and 256-bit boundaries and select table b.
 constexpr auto anchor = [] {
