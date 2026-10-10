@@ -40,7 +40,7 @@ template<class T> constexpr bool traits() {
   static_assert(std::is_trivially_copyable_v<T> && std::is_standard_layout_v<T>);
   static_assert(!integer_projection<T>);
   // Integer construction retains the existing conversion through float, never raw bits.
-  if constexpr (std::integral<typename T::underlying_type>)
+  if constexpr (std::constructible_from<T, std::uint16_t>)
     static_assert(T(std::uint16_t(1)).to_bits() == T(1.0f).to_bits());
   return true;
 }
@@ -51,12 +51,11 @@ static_assert(native::bf16(0x1.01p0f).to_bits() == 0x3f80);
 static_assert(native::bf16(0x1.03p0f).to_bits() == 0x3f82);
 static_assert(std::numeric_limits<native::fp16>::min().to_bits() == 0x0400);
 static_assert(std::numeric_limits<native::bf16>::min().to_bits() == 0x0080);
+static_assert(std::same_as<native::bf16::underlying_type, std::uint16_t>);
 #if defined(__wasm__)
 static_assert(std::same_as<native::fp16::underlying_type, std::uint16_t>);
-static_assert(std::same_as<native::bf16::underlying_type, std::uint16_t>);
 #elif defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
 static_assert(std::same_as<native::fp16::underlying_type, _Float16>);
-static_assert(std::same_as<native::bf16::underlying_type, __bf16>);
 #endif
 
 template<class T, unsigned Fraction, int Bias> bool check() {
@@ -65,6 +64,12 @@ template<class T, unsigned Fraction, int Bias> bool check() {
     volatile std::uint16_t input = std::uint16_t(word);
     auto value = T::from_bits(input);
     if (value.to_bits() != word) return false;
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
+    if constexpr (std::same_as<T, native::bf16>) {
+      auto storage = static_cast<__bf16>(value);
+      if (T(storage).to_bits() != word) return false;
+    }
+#endif
     if constexpr (!std::integral<typename T::underlying_type>) {
       auto native = static_cast<typename T::underlying_type>(value);
       if (T(native).to_bits() != word) return false;

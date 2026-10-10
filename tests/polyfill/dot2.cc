@@ -23,23 +23,23 @@ namespace {
       a[2*i]=0x4000; a[2*i+1]=0x4040; b[2*i]=0x4040; b[2*i+1]=0x4080; c[i]=float(i+seed);
     }
     dot2(H::load_bits(a.data()),H::load_bits(b.data()),V::load(c.data())).store(out.data());
-    for(std::size_t i=0;i<N/2;++i) if(out[i]!=18.f+float(i+seed)) return false;
+    for(std::size_t i=0;i<N/2;++i) if(out[i]!=18.f+float(i+seed)) { std::printf("dot2 shape N=%zu lane=%zu got=%g expected=%g\n",N,i,double(out[i]),double(18.f+float(i+seed))); return false; }
     return true;
   }
   template<isa<> A> constexpr bool raw_storage(std::uint16_t word) {
     using H=simd<bf16,64,A>; std::array<std::uint16_t,64> out{};
     H(bf16::from_bits(word)).store_bits(out.data());
-    for(auto bits:out) if(bits!=word) return false;
+    for(auto bits:out) if(bits!=word) { std::printf("broadcast bits=%04x expected=%04x\n",unsigned(bits),unsigned(word)); return false; }
     std::array<bf16,64> elements{}; H::load_bits(out.data()).store(elements.data());
     H::load_partial(elements.data(),63,bf16::from_bits(std::uint16_t(word^1))).store_bits(out.data());
-    for(std::size_t i=0;i<63;++i) if(out[i]!=word) return false;
-    if(out[63]!=std::uint16_t(word^1)) return false;
+    for(std::size_t i=0;i<63;++i) if(out[i]!=word) { std::printf("partial lane=%zu bits=%04x expected=%04x\n",i,unsigned(out[i]),unsigned(word)); return false; }
+    if(out[63]!=std::uint16_t(word^1)) { std::puts("partial fill mismatch"); return false; }
     auto first=H::load_bits(out.data()).template set<31>(bf16::from_bits(std::uint16_t(word^2)));
-    if(first.template get<31>().to_bits()!=std::uint16_t(word^2)) return false;
+    if(first.template get<31>().to_bits()!=std::uint16_t(word^2)) { std::puts("get/set mismatch"); return false; }
     auto second=H(bf16::from_bits(std::uint16_t(word^4)));
     auto chosen=select(H::mask_type::from_bitset(0x5555555555555555ull),first,second);
     chosen.store_bits(out.data());
-    for(std::size_t i=0;i<64;++i) if(out[i]!=((i&1)?std::uint16_t(word^4):word)) return false;
+    for(std::size_t i=0;i<64;++i) if(out[i]!=((i&1)?std::uint16_t(word^4):word)) { std::printf("select lane=%zu bits=%04x word=%04x\n",i,unsigned(out[i]),unsigned(word)); return false; }
     return true;
   }
   static_assert(raw_storage<isa<>(polyfill)>(0x7f81));
@@ -88,11 +88,11 @@ namespace {
       a[2*i]=0x4000; a[2*i+1]=0x4040; b[2*i]=0x4040; b[2*i+1]=0x4080; c[i]=float(i+seed);
     }
     dot2(H::load_bits(a.data()),H::load_bits(b.data()),V::load(c.data())).store(out.data());
-    for(std::size_t i=0;i<N/2;++i) if(out[i]!=18.f+float(i+seed)) return false;
+    for(std::size_t i=0;i<N/2;++i) if(out[i]!=18.f+float(i+seed)) { std::printf("dot2 shape N=%zu lane=%zu got=%g expected=%g\n",N,i,double(out[i]),double(18.f+float(i+seed))); return false; }
     return true;
   }
   __attribute__((noinline,target(DOT_PROFILE_TARGET))) bool hardware_shapes(unsigned seed) noexcept {
-    for(unsigned word=0;word<65536;++word) if(!raw_storage<profile>(std::uint16_t(word))) return false;
+    for(unsigned word=0;word<65536;++word) if(!raw_storage<profile>(std::uint16_t(word))) { std::printf("native BF16 storage word=%04x\n",word); return false; }
     return native_simple<2,feature>(seed) && native_simple<18,feature>(seed) && native_simple<64,feature>(seed) &&
       native_simple<8,profile>(seed) && native_simple<18,profile>(seed) && native_simple<64,profile>(seed);
   }

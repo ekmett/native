@@ -312,14 +312,12 @@ private:
     return std::bit_cast<float>(result);
   }
 public:
-  /// Native half storage when supported by the target; otherwise sixteen raw bits.
-#if NATIVE_HAS_NATIVE_BF16
-  using underlying_type = __bf16;
-#else
+  /// Sixteen representation bits, including subnormals and signaling NaNs.
+  // A native __bf16 field lets optimized aggregate copies widen and narrow
+  // through FP32 on Clang x86, changing encodings during storage operations.
   using underlying_type = uint16_t;
-#endif
 
-  /// Target-dependent storage. Use to_bits()/from_bits() for portable representation access.
+  /// Exact storage bits. Use to_bits()/from_bits() for representation access.
   underlying_type content;
 
   /// Default-initialize storage without setting its bits; value-initialization zeroes it.
@@ -328,12 +326,12 @@ public:
 
   /// Round a binary32 value to this format, ties to even.
   hint_inline hint_artificial constexpr
-  bf16(float f) noexcept : content(std::bit_cast<underlying_type>(encode(f))) {}
+  bf16(float f) noexcept : content(encode(f)) {}
 
 #if NATIVE_HAS_NATIVE_BF16
   /// Copy native storage without a numerical conversion.
   hint_inline hint_artificial constexpr
-  bf16(__bf16 f) noexcept : content(f) {}
+  bf16(__bf16 f) noexcept : content(std::bit_cast<uint16_t>(f)) {}
 #endif
 
   /// Copy the native sixteen-bit representation.
@@ -347,7 +345,7 @@ public:
 #if NATIVE_HAS_NATIVE_BF16
   /// Return native storage without rounding or normalizing NaN payloads.
   [[nodiscard]] hint_inline hint_artificial hint_const constexpr
-  operator __bf16 (this bf16 self) noexcept { return self.content; }
+  operator __bf16 (this bf16 self) noexcept { return std::bit_cast<__bf16>(self.content); }
 #endif
 
   /// Decode to binary32; finite values are exact and signaling NaNs are quieted.

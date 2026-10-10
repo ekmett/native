@@ -117,10 +117,10 @@ int check_bf16() noexcept {
     auto value = bf16::from_bits(input);
     CHECK(std::bit_cast<std::uint32_t>(static_cast<float>(value)) == c.expected);
     // Native-half projections transport bits, including signaling NaNs.
-    if constexpr (!std::is_integral_v<bf16::underlying_type>) {
-      auto storage = static_cast<bf16::underlying_type>(value);
-      CHECK(bf16(storage).to_bits() == c.input);
-    }
+#if defined(__x86_64__) || defined(_M_X64) || defined(__aarch64__)
+    auto storage = static_cast<__bf16>(value);
+    CHECK(bf16(storage).to_bits() == c.input);
+#endif
   }
 
   volatile std::uint16_t words[]{0x3f80, 0x4000, 0x8000, 0x7f81};
