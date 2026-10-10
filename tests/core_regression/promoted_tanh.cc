@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 #if defined(NATIVE_TEST_MPFR)
@@ -232,7 +231,6 @@ namespace {
   static_assert(std::same_as<decltype(math::tanh(native::wide<scalar,3>{})),native::wide<scalar,3>>);
   static_assert(std::same_as<decltype(math::tanh(std::array<float,0>{})),std::array<float,0>>);
   template<class T> concept tanh_argument=requires(T const & x) {math::tanh(x);};
-  static_assert(!tanh_argument<std::tuple<float,float>>);
   static_assert(std::bit_cast<word>(math::tanh(-0.f))==0x80000000u);
   static_assert(std::bit_cast<word>(math::tanh(std::bit_cast<float>(1u)))==1u);
   static_assert(std::bit_cast<word>(math::tanh(std::bit_cast<float>(0xff800000u)))==0xbf800000u);

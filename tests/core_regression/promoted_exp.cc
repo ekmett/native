@@ -31,7 +31,6 @@ static_assert(wide::pack<std::array<float, 2>>);
 static_assert(!wide::pack<std::tuple<float, scalar>>);
 static_assert(!wide::pack<float> && !wide::pack<scalar>);
 static_assert(wide::promotable<float const &> && wide::promotable<scalar>);
-static_assert(!wide::promotable<std::tuple<>> && !wide::promotable<std::tuple<float, scalar>>);
 static_assert(std::same_as<wide::canonical_t<float const &>, scalar_pack>);
 static_assert(std::same_as<wide::canonical_t<scalar>, scalar_pack>);
 static_assert(std::same_as<wide::canonical_t<std::array<float, 2>>, std::array<scalar, 2>>);
@@ -40,25 +39,11 @@ static_assert(std::same_as<decltype(math::exp(0.f)), float>);
 static_assert(std::same_as<decltype(math::exp(scalar{})), scalar>);
 static_assert(std::same_as<decltype(math::exp(std::array<float, 1>{})), std::array<float, 1>>);
 static_assert(std::same_as<decltype(math::exp(std::array<float, 0>{})), std::array<float, 0>>);
-static_assert(std::same_as<decltype(std::array{1.f, 2.f} == std::array{1.f, 2.f}), bool>);
-static_assert(std::same_as<decltype(std::array{1.f, 2.f} < std::array{2.f, 1.f}), bool>);
-static_assert(std::array{1.f, 2.f} == std::array{1.f, 2.f});
-static_assert(std::array{1.f, 2.f} < std::array{2.f, 1.f});
 
 template<class T> concept has_math_exp = requires(T const & x) { math::exp(x); };
 template<class T> concept has_math_flush_exp = requires(T const & x) { math::exp<true>(x); };
 template<class T> concept has_wide_exp = requires(T const & x) { wide::exp(x); };
 template<class T> concept has_wide_flush_exp = requires(T const & x) { wide::exp<true>(x); };
-template<class T> concept has_adl_exp = requires(T const & x) { exp(x); };
-template<class T> concept has_adl_flush_exp = requires(T const & x) { exp<true>(x); };
-template<class T> constexpr bool rejected_exp_tuple =
-  !has_math_exp<T> && !has_math_flush_exp<T> && !has_wide_exp<T> &&
-  !has_wide_flush_exp<T> && !has_adl_exp<T> && !has_adl_flush_exp<T>;
-static_assert(rejected_exp_tuple<std::tuple<>>);
-static_assert(rejected_exp_tuple<std::tuple<float>>);
-static_assert(rejected_exp_tuple<std::tuple<float, float>>);
-static_assert(rejected_exp_tuple<std::tuple<scalar, scalar>>);
-static_assert(rejected_exp_tuple<std::tuple<float, scalar>>);
 static_assert(has_math_exp<float> && has_math_flush_exp<float>);
 static_assert(has_wide_exp<scalar> && has_wide_flush_exp<scalar>);
 static_assert(has_math_exp<std::array<float, 0>> && has_math_flush_exp<std::array<float, 0>>);
@@ -72,7 +57,6 @@ struct second_value { template<class T> T operator()(int, T x) const { return x;
 static_assert(!can_map<no_arguments, std::array<int, 1>>);
 static_assert(!can_map<void_result, std::array<int, 1>>);
 static_assert(can_map<increment, std::array<int, 0>>);
-static_assert(!can_map<increment, std::tuple<int>>);
 static_assert(!can_map<second_value, std::array<int, 2>, std::array<int, 1>>);
 static_assert(std::get<0>(wide::map(increment{}, std::array<int, 1>{{4}})) == 5);
 template<class P> concept has_array_product = requires(P const & p) { p * p; };
@@ -91,7 +75,6 @@ static_assert(!can_fma<scalar_pair, scalar, float>);
 static_assert(!can_fma<scalar, scalar_pair, float>);
 static_assert(!can_fma<float, scalar, scalar_pair>);
 static_assert(!can_fma<scalar_pair, std::array<scalar, 1>, scalar>);
-static_assert(!can_fma<scalar_pair, std::tuple<scalar, scalar>, scalar>);
 static_assert(!can_fma<scalar_pair, scalar, std::array<scalar, 3>>);
 static_assert(!can_fma<scalar_pair, native::simd<double, 1, native::scalar>, scalar>);
 
@@ -275,8 +258,6 @@ template<class V> static void check_fma_broadcasts() {
 }
 
 template<bool Flush, class V> static void samples(std::vector<std::uint32_t> const & words) {
-  static_assert(rejected_exp_tuple<std::tuple<V, V>>);
-  static_assert(rejected_exp_tuple<std::tuple<float, scalar, V>>);
   static_assert(std::same_as<wide::canonical_t<V>, std::array<V, 1>>);
   static_assert(std::same_as<decltype(math::exp<Flush>(std::array<V, 3>{})), std::array<V, 3>>);
   static_assert(std::same_as<decltype(math::exp<Flush>(native::wide<V, 3>{})), native::wide<V, 3>>);

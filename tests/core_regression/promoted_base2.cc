@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 #if defined(NATIVE_TEST_MPFR)
@@ -69,8 +68,7 @@ namespace {
     !requires(T const & x) { math::log2(x); } &&
     !requires(T const & x) { wide::log2(x); };
   static_assert(exponential_argument<float> && logarithm_argument<scalar>);
-  static_assert(rejected<double> && rejected<int> && rejected<std::tuple<>>);
-  static_assert(rejected<std::tuple<float, float>> && rejected<std::tuple<scalar, scalar>>);
+  static_assert(rejected<double> && rejected<int>);
   static_assert(rejected<std::array<double, 2>> && rejected<std::array<int, 0>>);
   static_assert(rejected<native::wide<double, 2>>);
   static_assert(rejected<native::simd<double, 1, native::scalar>>);

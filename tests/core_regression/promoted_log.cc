@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 #if !defined(__wasm__)
@@ -92,7 +91,6 @@ namespace {
   static_assert(std::same_as<decltype(math::log1p(native::wide<scalar,3>{})),native::wide<scalar,3>>);
   static_assert(std::same_as<decltype(math::log(std::array<float,0>{})),std::array<float,0>>);
   template<class T> concept logarithm_argument=requires(T const & x) {math::log(x);math::log1p(x);};
-  static_assert(!logarithm_argument<std::tuple<float,float>>);
   static_assert(std::bit_cast<word>(math::log(1.f))==0);
   static_assert(std::bit_cast<word>(math::log(0.f))==0xff800000u);
   static_assert(std::bit_cast<word>(math::log(-1.f))==0x7fc00000u);

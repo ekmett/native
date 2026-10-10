@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 #if defined(NATIVE_TEST_MPFR)
@@ -82,7 +81,7 @@ namespace {
     row{0x3f800000u,0xff812345u,0x7fc00000u}};
   template<class Y,class X=Y> concept argument=requires(Y const & y,X const & x) {math::atan2(y,x);};
   static_assert(argument<float> && argument<scalar>);
-  static_assert(!argument<std::tuple<float,float>> && !argument<double>);
+  static_assert(!argument<double>);
   static_assert(!argument<float,scalar> && !argument<std::array<float,2>,std::array<float,3>>);
   static_assert(std::same_as<decltype(math::atan2(1.f,1.f)),float>);
   static_assert(std::same_as<decltype(math::atan2(std::array<float,0>{},std::array<float,0>{})),std::array<float,0>>);

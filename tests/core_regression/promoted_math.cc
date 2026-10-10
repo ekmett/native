@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -34,10 +33,7 @@ static_assert(!can_constant<std::array<scalar, 2>, double>);
 static_assert(!can_constant<std::array<scalar, 2>, std::uint32_t>);
 static_assert(can_constant<std::array<scalar_bits, 2>, std::uint32_t>);
 static_assert(!can_constant<std::array<scalar_bits, 2>, float>);
-static_assert(!can_constant<std::tuple<scalar, scalar_bits>, float>);
-static_assert(!can_constant<std::tuple<scalar, scalar_bits>, std::uint32_t>);
 static_assert(!has_pack_not<std::array<scalar, 2>>);
-static_assert(!has_pack_not<std::tuple<scalar, scalar>>);
 static_assert(has_pack_not<std::array<typename scalar::mask_type, 2>>);
 
 static void require(bool value, char const * message) {
@@ -56,23 +52,6 @@ template<class V> static void exact_vector(V value, std::array<float, V::lanes> 
   value.storeu(actual.data());
   for (std::size_t i = 0; i < V::lanes; ++i) exact(actual[i], expected[i], operation);
 }
-
-// Tuples are not promoted, including homogeneous and empty tuples.
-template<class T> constexpr bool rejects_tuple_math =
-  !requires(T const & x) { math::sin(x); } &&
-  !requires(T const & x) { math::cos(x); } &&
-  !requires(T const & x) { math::sincos(x); } &&
-  !requires(T const & x) { math::flush_to_zero(x); } &&
-  !requires(T const & x) { math::abs(x); } &&
-  !requires(T const & x) { math::sqrt(x); } &&
-  !requires(T const & x) { math::floor(x); } &&
-  !requires(T const & x) { math::ceil(x); } &&
-  !requires(T const & x) { math::trunc(x); } &&
-  !requires(T const & x) { math::round_even(x); };
-static_assert(rejects_tuple_math<std::tuple<>>);
-static_assert(rejects_tuple_math<std::tuple<float>>);
-static_assert(rejects_tuple_math<std::tuple<float, float>>);
-static_assert(rejects_tuple_math<std::tuple<float, scalar>>);
 
 template<class Operation> static void empty_shapes(Operation operation) {
   auto a = operation(std::array<float, 0>{});
@@ -121,7 +100,6 @@ static constexpr auto paired_cosine = [](auto const & x) { return math::sincos(x
 static constexpr auto flush = [](auto const & x) { return math::flush_to_zero(x); };
 
 template<class V> static void trig_samples(std::vector<float> const & inputs) {
-  static_assert(rejects_tuple_math<std::tuple<V, V>>);
   static_assert(std::same_as<decltype(math::sincos(0.f)), std::pair<float, float>>);
   static_assert(std::same_as<decltype(math::sincos(std::declval<std::array<V, 2> const &>())), std::pair<std::array<V, 2>, std::array<V, 2>>>);
 

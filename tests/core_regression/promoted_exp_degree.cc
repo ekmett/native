@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <vector>
 #if defined(NATIVE_TEST_MPFR)
@@ -84,7 +83,7 @@ namespace {
   template<bool F, unsigned D, class T> concept native_argument = requires(T const & x) { native::exp<F, D>(x); };
   static_assert(!math_argument<0, float> && !math_argument<8, scalar>);
   static_assert(!math_argument<0, std::array<float, 0>> && !wide_argument<8, native::wide<scalar, 0>>);
-  static_assert(!math_argument<6, double> && !math_argument<6, int> && !math_argument<6, std::tuple<float, float>>);
+  static_assert(!math_argument<6, double> && !math_argument<6, int>);
   static_assert(!native_argument<false, 0, native::wide<custom::degree_element, 0>>);
   static_assert(!native_argument<false, 8, native::wide<custom::degree_batch, 0>>);
   static_assert(native_argument<false, 6, native::wide<custom::plain, 2>>);

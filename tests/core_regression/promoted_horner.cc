@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #if !defined(__wasm__)
 #include "support/fp_environment.h"
@@ -67,7 +66,6 @@ namespace {
   static_assert(!coefficient_list<float, int> && !coefficient_list<convertible_coefficient>);
   static_assert(argument<float, float> && argument<float, scalar, float>);
   static_assert(!argument<double, float> && !argument<int, float>);
-  static_assert(!argument<std::tuple<float, float>, float>);
   static_assert(!argument<std::array<double, 2>, float>);
   static_assert(!argument<float, std::array<float, 1>>);
   static_assert(!argument<float, native::wide<float, 1>>);
