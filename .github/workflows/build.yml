@@ -54,6 +54,7 @@ jobs:
     timeout-minutes: ${{ (inputs.coverage || github.event_name == 'workflow_dispatch') && 90 || github.event_name == 'schedule' && 45 || 20 }}
     env:
       SCCACHE_GHA_ENABLED: "true"
+      NINJA_STATUS: "[%f/%t running=%r elapsed=%e] "
     defaults:
       run:
         shell: bash
@@ -235,7 +236,14 @@ jobs:
             '-DNATIVE_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
       - name: Build
         id: build
-        run: cmake --build build/core --parallel 4
+        run: |
+          build_status=0
+          cmake --build build/core --parallel 4 || build_status=$?
+          # Save this invocation before tests or coverage append another clock.
+          if [[ -f build/core/.ninja_log ]]; then
+            cp build/core/.ninja_log build/core/primary-build.ninja.log
+          fi
+          test "$build_status" -eq 0
       - name: Test
         id: test
         shell: bash
@@ -266,7 +274,13 @@ jobs:
             -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/native" \
             -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
             "${extra[@]}"
-          cmake --build build/package --parallel 4
+          build_status=0
+          cmake --build build/package --parallel 4 || build_status=$?
+          # Save this invocation before tests or coverage append another clock.
+          if [[ -f build/package/.ninja_log ]]; then
+            cp build/package/.ninja_log build/package/primary-build.ninja.log
+          fi
+          test "$build_status" -eq 0
           selection=()
           if [[ '${{ inputs.coverage }}' == true ]]; then selection+=(-LE negative); fi
           ctest --test-dir build/package "${selection[@]}" --parallel 4 --no-tests=error --output-on-failure \
@@ -358,10 +372,12 @@ jobs:
             build/tests.xml
             build/package-tests.xml
             build/*-configure-trace.json
-            build/core/.ninja_log
+            build/core/primary-build.ninja.log
+            build/core/CMakeFiles/rules.ninja
             build/core/build.ninja
             build/core/compile_commands.json
-            build/package/.ninja_log
+            build/package/primary-build.ninja.log
+            build/package/CMakeFiles/rules.ninja
             build/package/build.ninja
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
