@@ -275,7 +275,7 @@ namespace {
       equal(e[reg], math::exp2(runtime_ex[reg])); equal(l[reg], math::log2(runtime_lx[reg]));
     }
   }
-  template<bool Flush, class T, std::size_t N> void check_shapes(std::vector<row> const & rows) {
+  template<bool Flush, class T, std::size_t N> void check_shapes(std::vector<row> const & rows, bool aliases = false) {
     using pack = std::array<T, N>;
     using wide_pack = native::wide<T, N>;
     static_assert(std::same_as<decltype(math::exp2<Flush>(pack{})), pack>);
@@ -292,24 +292,28 @@ namespace {
         input[reg] = from_words<T>(value);
       }
       auto e = math::exp2<Flush>(input), l = math::log2(input);
-      auto we = math::exp2<Flush>(wide_pack{input}), wl = math::log2(wide_pack{input});
-      auto ae = wide::exp2<Flush>(input), al = wide::log2(input);
-      if constexpr (!std::same_as<T, float>) {
-        static_assert(std::same_as<decltype(native::exp2<Flush>(pack{})), pack>);
-        static_assert(std::same_as<decltype(native::log2(wide_pack{})), wide_pack>);
-        static_assert(noexcept(native::exp2<Flush>(pack{})) && noexcept(native::log2(wide_pack{})));
-        auto ne = native::exp2<Flush>(input), nl = native::log2(input);
-        auto nwe = native::exp2<Flush>(wide_pack{input}), nwl = native::log2(wide_pack{input});
+      if (aliases) {
+        auto we = math::exp2<Flush>(wide_pack{input}), wl = math::log2(wide_pack{input});
+        auto ae = wide::exp2<Flush>(input), al = wide::log2(input);
+        if constexpr (!std::same_as<T, float>) {
+          static_assert(std::same_as<decltype(native::exp2<Flush>(pack{})), pack>);
+          static_assert(std::same_as<decltype(native::log2(wide_pack{})), wide_pack>);
+          static_assert(noexcept(native::exp2<Flush>(pack{})) && noexcept(native::log2(wide_pack{})));
+          auto ne = native::exp2<Flush>(input), nl = native::log2(input);
+          auto nwe = native::exp2<Flush>(wide_pack{input}), nwl = native::log2(wide_pack{input});
+          for (std::size_t reg = 0; reg < N; ++reg) {
+            equal(e[reg], ne[reg]); equal(l[reg], nl[reg]);
+            equal(e[reg], nwe.registers[reg]); equal(l[reg], nwl.registers[reg]);
+            equal(e[reg], native::exp2<Flush>(input[reg])); equal(l[reg], native::log2(input[reg]));
+          }
+        }
         for (std::size_t reg = 0; reg < N; ++reg) {
-          equal(e[reg], ne[reg]); equal(l[reg], nl[reg]);
-          equal(e[reg], nwe.registers[reg]); equal(l[reg], nwl.registers[reg]);
-          equal(e[reg], native::exp2<Flush>(input[reg])); equal(l[reg], native::log2(input[reg]));
+          equal(e[reg], we.registers[reg]); equal(l[reg], wl.registers[reg]);
+          equal(e[reg], ae[reg]); equal(l[reg], al[reg]);
+          equal(e[reg], math::exp2<Flush>(input[reg])); equal(l[reg], math::log2(input[reg]));
         }
       }
       for (std::size_t reg = 0; reg < N; ++reg) {
-        equal(e[reg], we.registers[reg]); equal(l[reg], wl.registers[reg]);
-        equal(e[reg], ae[reg]); equal(l[reg], al[reg]);
-        equal(e[reg], math::exp2<Flush>(input[reg])); equal(l[reg], math::log2(input[reg]));
         auto ew = words(e[reg]), lw = words(l[reg]);
         for (std::size_t lane = 0; lane < lanes<T>; ++lane) {
           auto const & r = rows[(base + reg * lanes<T> + lane) % rows.size()];
@@ -318,7 +322,16 @@ namespace {
       }
     }
   }
-  template<class T> void check_type(std::vector<row> const & rows) {
+  std::vector<row> alias_bank() {
+    // Alias forwarding and pack shape are independent of the numerical bank.
+    // Exercise them on special values and neighbors of the reduction cutoffs.
+    auto samples = std::vector<row>(fixed.begin(), fixed.end());
+    for (float x : {-150.f, -126.5f, -126.f, -0.5f, 0.5f, 1.f, 127.f, 127.5f})
+      for (int delta : {-1, 0, 1}) samples.push_back(reference(bits(x) + word(delta)));
+    for (word x : {0x3fb504f2u, 0x3fb504f3u, 0x3fb504f4u}) samples.push_back(reference(x));
+    return samples;
+  }
+  template<class T> void check_type(std::vector<row> const & rows, std::vector<row> const & samples) {
     using empty = std::array<T, 0>;
     using empty_wide = native::wide<T, 0>;
     static_assert(math::exp2(empty{}).empty() && math::exp2<true>(empty{}).empty() && math::log2(empty{}).empty());
@@ -332,34 +345,37 @@ namespace {
     check_shapes<false, T, 1>(rows); check_shapes<true, T, 1>(rows);
     check_shapes<false, T, 2>(rows); check_shapes<true, T, 2>(rows);
     check_shapes<false, T, 6>(rows); check_shapes<true, T, 6>(rows);
+    check_shapes<false, T, 1>(samples, true); check_shapes<true, T, 1>(samples, true);
+    check_shapes<false, T, 2>(samples, true); check_shapes<true, T, 2>(samples, true);
+    check_shapes<false, T, 6>(samples, true); check_shapes<true, T, 6>(samples, true);
   }
-  void run(std::vector<row> const & rows) {
-    check_type<float>(rows); check_type<scalar>(rows);
+  void run(std::vector<row> const & rows, std::vector<row> const & samples) {
+    check_type<float>(rows, samples); check_type<scalar>(rows, samples);
 #if defined(__wasm__)
-    check_type<vector<4>>(rows);
+    check_type<vector<4>>(rows, samples);
 #elif NATIVE_TEST_PROFILE != 0
-    check_type<vector<1>>(rows); check_type<vector<2>>(rows);
-    check_type<vector<3>>(rows); check_type<vector<4>>(rows);
+    check_type<vector<1>>(rows, samples); check_type<vector<2>>(rows, samples);
+    check_type<vector<3>>(rows, samples); check_type<vector<4>>(rows, samples);
 #if NATIVE_TEST_PROFILE == 256 || NATIVE_TEST_PROFILE == 512
-    check_type<vector<8>>(rows);
+    check_type<vector<8>>(rows, samples);
 #endif
 #if NATIVE_TEST_PROFILE == 512
-    check_type<vector<16>>(rows);
+    check_type<vector<16>>(rows, samples);
 #endif
 #endif
   }
 }
 int main() {
 #if defined(__wasm__)
-  auto rows = make_bank(); run(rows);
+  auto rows = make_bank(), samples = alias_bank(); run(rows, samples);
 #else
   auto saved = native::test::read_fp_state();
-  std::vector<row> rows;
-  { native::test::fp_scope scope(native::test::fp_mode::gradual); rows = make_bank(); }
+  std::vector<row> rows, samples;
+  { native::test::fp_scope scope(native::test::fp_mode::gradual); rows = make_bank(); samples = alias_bank(); }
   for (auto mode : {native::test::fp_mode::gradual, native::test::fp_mode::flush}) {
     native::test::fp_scope scope(mode);
     flush_environment = mode == native::test::fp_mode::flush;
-    run(rows);
+    run(rows, samples);
     require(scope.controls_match(), "exp2/log2 changed FP controls");
   }
   require(native::test::read_fp_state() == saved, "fixture failed to restore FP state");
