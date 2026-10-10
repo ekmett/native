@@ -239,8 +239,11 @@ jobs:
         id: test
         shell: bash
         run: |
-          ctest --test-dir build/core --show-only=json-v1 > build/tests.json
-          ctest --test-dir build/core --parallel --no-tests=error --output-on-failure \
+          # Compile-failure checks belong to uninstrumented qualification.
+          selection=()
+          if [[ '${{ inputs.coverage }}' == true ]]; then selection+=(-LE negative); fi
+          ctest --test-dir build/core "${selection[@]}" --show-only=json-v1 > build/tests.json
+          ctest --test-dir build/core "${selection[@]}" --parallel --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
       - name: Install
         run: cmake --install build/core --prefix build/install
@@ -262,7 +265,9 @@ jobs:
             -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
             "${extra[@]}"
           cmake --build build/package --parallel
-          ctest --test-dir build/package --parallel --no-tests=error --output-on-failure \
+          selection=()
+          if [[ '${{ inputs.coverage }}' == true ]]; then selection+=(-LE negative); fi
+          ctest --test-dir build/package "${selection[@]}" --parallel --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/package-tests.xml"
       - name: Collect test reports
         id: test_reports

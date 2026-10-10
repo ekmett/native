@@ -183,3 +183,5 @@ endforeach()
 
 get_directory_property(fixture_tests TESTS)
 set_tests_properties(${fixture_tests} PROPERTIES LABELS "host;modules;x86;adx")
+list(FILTER fixture_tests INCLUDE REGEX "[.]reject_")
+set_property(TEST ${fixture_tests} APPEND PROPERTY LABELS negative)

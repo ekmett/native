@@ -159,7 +159,7 @@ foreach(width IN ITEMS 128 256 512)
           --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-${width}-${omission}-$<CONFIG>.log")
       set_tests_properties(native.x86.vpopcntdq.reject_${kind}_${width}_${omission}
         PROPERTIES RUN_SERIAL TRUE TIMEOUT 180
-        LABELS "host;compile;baseline;x86;vpopcntdq")
+        LABELS "host;compile;baseline;x86;vpopcntdq;negative")
     endforeach()
   endforeach()
 endforeach()

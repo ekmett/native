@@ -241,6 +241,8 @@ endforeach()
 
 get_directory_property(fixture_tests TESTS)
 set_tests_properties(${fixture_tests} PROPERTIES LABELS "host;modules;x86;ifma")
+list(FILTER fixture_tests INCLUDE REGEX "[.]reject_")
+set_property(TEST ${fixture_tests} APPEND PROPERTY LABELS negative)
 
 # Reuse the independent native corpus on scalar and split permitted storage.
 add_executable(native_test_x86_ifma_polyfill main.cc)

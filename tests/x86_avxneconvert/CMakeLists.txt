@@ -74,7 +74,7 @@ foreach(variant RANGE 0 13)
         --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
         --config "$<CONFIG>" --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${variant}-${kind}.log"
         --diagnostic "${diagnostic}")
-      set_tests_properties(native.x86.avxneconvert.reject_${variant}_${kind} PROPERTIES RUN_SERIAL TRUE)
+      set_tests_properties(native.x86.avxneconvert.reject_${variant}_${kind} PROPERTIES RUN_SERIAL TRUE LABELS negative)
     endif()
   endforeach()
 endforeach()
@@ -95,5 +95,5 @@ foreach(kind RANGE 4 7)
     --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target "${target}"
     --config "$<CONFIG>" --log "${CMAKE_CURRENT_BINARY_DIR}/reject-extra-${kind}.log"
     --diagnostic "${diagnostic}")
-  set_tests_properties(native.x86.avxneconvert.reject_extra_${kind} PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties(native.x86.avxneconvert.reject_extra_${kind} PROPERTIES RUN_SERIAL TRUE LABELS negative)
 endforeach()

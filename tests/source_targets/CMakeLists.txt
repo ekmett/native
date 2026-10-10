@@ -84,6 +84,9 @@ set_tests_properties(native.source_targets.metadata native.source_targets.native
   native.source_targets.codegen native.source_targets.reject_invalid native.source_targets.reject_foreign native.source_targets.reject_no_target
   native.source_targets.reject_duplicate native.source_targets.reject_shadowed
   PROPERTIES LABELS "host;modules;source_targets" TIMEOUT 180)
+set_property(TEST native.source_targets.reject_invalid native.source_targets.reject_foreign
+  native.source_targets.reject_no_target native.source_targets.reject_duplicate
+  native.source_targets.reject_shadowed APPEND PROPERTY LABELS negative)
 
 # Import only the capability module; admission must not require the SIMD hub.
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)$")

@@ -103,7 +103,7 @@ foreach(kind RANGE 0 12)
       --config "$<CONFIG>" --diagnostic "call to consteval function.*is not a constant expression"
       --log "${CMAKE_CURRENT_BINARY_DIR}/constexpr-reject-${kind}.log")
   set_tests_properties(native.arm.i8mm.constexpr_reject_${kind} PROPERTIES
-    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;i8mm;constexpr")
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;i8mm;constexpr;negative")
 endforeach()
 
 add_executable(native_test_arm_i8mm_polyfill constexpr.cc)

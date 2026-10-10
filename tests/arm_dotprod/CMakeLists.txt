@@ -85,7 +85,7 @@ add_test(NAME native.arm.dotprod.negative_target
     --diagnostic "requires target feature.*dotprod|target specific option mismatch"
     --log "${CMAKE_CURRENT_BINARY_DIR}/negative-target.txt")
 set_tests_properties(native.arm.dotprod.negative_target PROPERTIES
-  RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;baseline;arm;dotprod")
+  RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;baseline;arm;dotprod;negative")
 
 # The public abstraction must add no instructions relative to the native helper.
 add_test(NAME native.arm.dotprod.zero_overhead
@@ -109,7 +109,7 @@ foreach(kind RANGE 0 11)
       --config "$<CONFIG>" --diagnostic "call to consteval function.*is not a constant expression"
       --log "${CMAKE_CURRENT_BINARY_DIR}/constexpr-reject-${kind}.log")
   set_tests_properties(native.arm.dotprod.constexpr_reject_${kind} PROPERTIES
-    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;dotprod;constexpr")
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;dotprod;constexpr;negative")
 endforeach()
 
 add_executable(native_test_arm_dotprod_polyfill constexpr.cc)

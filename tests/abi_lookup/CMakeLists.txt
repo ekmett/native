@@ -33,7 +33,7 @@ add_test(NAME native.abi_lookup.reject_minimum COMMAND "${Python3_EXECUTABLE}"
   --log "${CMAKE_CURRENT_BINARY_DIR}/reject-minimum-$<CONFIG>.log"
   --diagnostic "ABI policy minimum contains an unregistered ISA feature")
 set_tests_properties(native.abi_lookup.reject_minimum PROPERTIES
-  LABELS "host;abi_lookup" RUN_SERIAL TRUE TIMEOUT 180)
+  LABELS "host;abi_lookup;negative" RUN_SERIAL TRUE TIMEOUT 180)
 
 foreach(case RANGE 0 4)
   add_library(native_target_reject_order_${case} OBJECT EXCLUDE_FROM_ALL invalid_order.cc)
@@ -47,7 +47,7 @@ foreach(case RANGE 0 4)
     --log "${CMAKE_CURRENT_BINARY_DIR}/reject-order-${case}-$<CONFIG>.log"
     --diagnostic "a later target is shadowed by an earlier one")
   set_tests_properties(native.abi_lookup.reject_order_${case} PROPERTIES
-    LABELS "host;abi_lookup" RUN_SERIAL TRUE TIMEOUT 180)
+    LABELS "host;abi_lookup;negative" RUN_SERIAL TRUE TIMEOUT 180)
 endforeach()
 
 # A foreign family is ill-formed even when its feature set is empty.

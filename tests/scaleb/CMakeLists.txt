@@ -70,5 +70,5 @@ foreach(kind RANGE 1 4)
     --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --target ${target}
     --config "$<CONFIG>" --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}.log"
     --diagnostic "${diagnostic}")
-  set_tests_properties(native.scaleb.reject_${kind} PROPERTIES RUN_SERIAL TRUE)
+  set_tests_properties(native.scaleb.reject_${kind} PROPERTIES RUN_SERIAL TRUE LABELS negative)
 endforeach()

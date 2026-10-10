@@ -93,7 +93,7 @@ foreach(kind IN ITEMS target lane)
       --config "$<CONFIG>" --diagnostic "${diagnostic}"
       --log "${CMAKE_CURRENT_BINARY_DIR}/negative-${kind}.txt")
   set_tests_properties(native.arm.rdm.negative_${kind} PROPERTIES
-    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;baseline;arm;rdm")
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;baseline;arm;rdm;negative")
 endforeach()
 
 add_test(NAME native.arm.rdm.big_endian_codegen
@@ -128,7 +128,7 @@ foreach(kind RANGE 0 35)
       --config "$<CONFIG>" --diagnostic "call to consteval function.*is not a constant expression"
       --log "${CMAKE_CURRENT_BINARY_DIR}/constexpr-reject-${kind}.log")
   set_tests_properties(native.arm.rdm.constexpr_reject_${kind} PROPERTIES
-    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;rdm;constexpr")
+    RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;compile;arm;rdm;constexpr;negative")
 endforeach()
 
 add_executable(native_test_arm_rdm_polyfill constexpr.cc)

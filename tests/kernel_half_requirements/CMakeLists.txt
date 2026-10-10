@@ -26,5 +26,5 @@ foreach(kind IN ITEMS fp16 bf16)
     --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-$<CONFIG>.log"
     --diagnostic "requires target feature|target specific option mismatch")
   set_tests_properties(native.kernel_policy.reject_${kind} PROPERTIES
-    LABELS "host;kernel_policy;modules" RUN_SERIAL TRUE SKIP_RETURN_CODE 77)
+    LABELS "host;kernel_policy;modules;negative" RUN_SERIAL TRUE SKIP_RETURN_CODE 77)
 endforeach()
