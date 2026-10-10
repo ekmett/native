@@ -136,8 +136,19 @@ namespace {
         std::array<std::uint16_t,18> a{},b{}; std::array<std::uint32_t,9> c{},out{},native_out{};
         for(auto & x:a) x=std::uint16_t(next()); for(auto & x:b) x=std::uint16_t(next()); for(auto & x:c) x=next();
         polyfill_dot2_scalar(a.data(),b.data(),c.data(),out.data());
-        if(hardware) { polyfill_dot2_hardware(a.data(),b.data(),c.data(),native_out.data()); if(out!=native_out) valid=false; }
-        if(_mm_getcsr()!=control) valid=false;
+        if(hardware) {
+          polyfill_dot2_hardware(a.data(),b.data(),c.data(),native_out.data());
+          for(std::size_t i=0;i<out.size();++i) if(out[i]!=native_out[i]) {
+            std::printf("dot2 mode=%u flush=%u packet=%u lane=%zu: a=%04x,%04x b=%04x,%04x c=%08x software=%08x hardware=%08x\n",
+              mode,flush,packet,i,unsigned(a[2*i]),unsigned(a[2*i+1]),
+              unsigned(b[2*i]),unsigned(b[2*i+1]),c[i],out[i],native_out[i]);
+            _mm_setcsr(saved); return false;
+          }
+        }
+        if(_mm_getcsr()!=control) {
+          std::printf("dot2 changed MXCSR: expected=%08x actual=%08x\n",control,_mm_getcsr());
+          _mm_setcsr(saved); return false;
+        }
       }
     }
     _mm_setcsr(saved); return valid;
@@ -154,15 +165,15 @@ int main(int argc,char **) {
   bool enhanced=false;
 #endif
   for(unsigned word=0;word<65536;++word) {
-    if(!raw_storage<native::isa<>(native::polyfill)>(std::uint16_t(word))) return 4;
+    if(!raw_storage<native::isa<>(native::polyfill)>(std::uint16_t(word))) { std::printf("BF16 software storage failed: %04x\n",word); return 4; }
     std::array<std::uint16_t,4> input{std::uint16_t(word),0x8000,0x8001,0x7f81},output{};
     polyfill_bf16_transport(input.data()).store_bits(output.data());
-    if(input!=output) return 5;
+    if(input!=output) { std::printf("BF16 transport failed: %04x\n",word); return 5; }
   }
   if(!simple<2,native::isa<>(native::polyfill)>(unsigned(argc-1)) ||
      !simple<18,native::isa<>(native::polyfill)>(unsigned(argc-1)) ||
      !simple<64,native::isa<>(native::polyfill)>(unsigned(argc-1))) return 1;
-  if(hardware && !hardware_shapes(unsigned(argc-1))) return 2;
+  if(hardware && !hardware_shapes(unsigned(argc-1))) { std::puts("BF16 hardware storage or shape failed"); return 2; }
   if(!corpus(hardware,enhanced)) return 3;
   std::puts(hardware?"BF16 logical dot2: software, native groups and caller controls passed":"BF16 logical dot2: software and caller controls passed; native feature unavailable");
 }
