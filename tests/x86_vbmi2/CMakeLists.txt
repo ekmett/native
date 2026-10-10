@@ -31,13 +31,14 @@ set(interface_number 1)
 foreach(interface IN ITEMS module hub)
   set(target native_test_x86_vbmi2_${interface})
   set(body ${target}_body)
-  add_library(${body} OBJECT main.cc)
+  set(source main.cc)
+  if(interface STREQUAL "hub")
+    set(source hub.cc)
+  endif()
+  add_library(${body} OBJECT ${source})
   target_link_libraries(${body} PRIVATE native::native)
   target_include_directories(${body} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../core_regression")
   target_compile_definitions(${body} PRIVATE NATIVE_TEST_INTERFACE=${interface_number})
-  # The complete lane/mask banks exceed Clang's default constexpr step budget.
-  target_compile_options(${body} PRIVATE
-    "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")
   set_target_properties(${body} PROPERTIES
     CXX_SCAN_FOR_MODULES ON INTERPROCEDURAL_OPTIMIZATION FALSE)
   add_executable(${target} $<TARGET_OBJECTS:${body}>)
@@ -246,6 +247,4 @@ target_compile_definitions(native_test_x86_vbmi2_polyfill PRIVATE
 add_test(NAME native.polyfill.x86.vbmi2 COMMAND native_test_x86_vbmi2_polyfill)
 set_tests_properties(native.polyfill.x86.vbmi2 PROPERTIES LABELS "host;polyfill;x86;vbmi2")
 
-target_compile_options(native_test_x86_vbmi2_polyfill PRIVATE
-  "$<$<CXX_COMPILER_FRONTEND_VARIANT:MSVC>:/clang:>-fconstexpr-steps=16000000")
 target_include_directories(native_test_x86_vbmi2_polyfill PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../core_regression")

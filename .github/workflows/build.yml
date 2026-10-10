@@ -226,6 +226,7 @@ jobs:
             extra+=(-DNATIVE_ENABLE_COVERAGE=ON)
           fi
           cmake -S . -B build/core -G Ninja \
+            --profiling-format=google-trace --profiling-output=build/core-configure-trace.json \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER_LAUNCHER="$launcher" \
             -DNATIVE_BUILD_TESTS=ON -DNATIVE_TEST_EXTENDED=${{ (inputs.coverage || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 'ON' || 'OFF' }} \
@@ -234,7 +235,7 @@ jobs:
             '-DNATIVE_PROFILES=${{ matrix.platform.profiles }}' "${extra[@]}"
       - name: Build
         id: build
-        run: cmake --build build/core --parallel
+        run: cmake --build build/core --parallel 4
       - name: Test
         id: test
         shell: bash
@@ -243,7 +244,7 @@ jobs:
           selection=()
           if [[ '${{ inputs.coverage }}' == true ]]; then selection+=(-LE negative); fi
           ctest --test-dir build/core "${selection[@]}" --show-only=json-v1 > build/tests.json
-          ctest --test-dir build/core "${selection[@]}" --parallel --no-tests=error --output-on-failure \
+          ctest --test-dir build/core "${selection[@]}" --parallel 4 --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/tests.xml"
       - name: Install
         run: cmake --install build/core --prefix build/install
@@ -260,14 +261,15 @@ jobs:
             extra+=(-DCMAKE_EXE_LINKER_FLAGS=-fprofile-instr-generate)
           fi
           cmake -S tests/package -B build/package -G Ninja \
+            --profiling-format=google-trace --profiling-output=build/package-configure-trace.json \
             -DCMAKE_CXX_COMPILER="$compiler" -DCMAKE_BUILD_TYPE=Release \
             -Dnative_DIR="$GITHUB_WORKSPACE/build/relocated package/lib/cmake/native" \
             -DCMAKE_FIND_USE_PACKAGE_REGISTRY=OFF -DCMAKE_FIND_USE_SYSTEM_PACKAGE_REGISTRY=OFF \
             "${extra[@]}"
-          cmake --build build/package --parallel
+          cmake --build build/package --parallel 4
           selection=()
           if [[ '${{ inputs.coverage }}' == true ]]; then selection+=(-LE negative); fi
-          ctest --test-dir build/package "${selection[@]}" --parallel --no-tests=error --output-on-failure \
+          ctest --test-dir build/package "${selection[@]}" --parallel 4 --no-tests=error --output-on-failure \
             --output-junit "$GITHUB_WORKSPACE/build/package-tests.xml"
       - name: Collect test reports
         id: test_reports
@@ -346,6 +348,7 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: logs-${{ matrix.platform.runner }}-${{ matrix.platform.profile }}-exceptions-${{ matrix.exceptions }}
+          include-hidden-files: true
           retention-days: 3
           if-no-files-found: ignore
           path: |
@@ -354,6 +357,12 @@ jobs:
             build/tests.json
             build/tests.xml
             build/package-tests.xml
+            build/*-configure-trace.json
+            build/core/.ninja_log
+            build/core/build.ninja
+            build/core/compile_commands.json
+            build/package/.ninja_log
+            build/package/build.ninja
             build/core/CMakeCache.txt
             build/core/CMakeFiles/CMakeConfigureLog.yaml
             build/core/Testing/Temporary/
