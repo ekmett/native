@@ -122,11 +122,10 @@ set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
   "UMONITOR=@c UMONITOR" "UMWAIT=@c UMWAIT")
 # Keep relative Markdown links intact in a build-tree rendering copy. The
 # original pages, including the license, remain byte-for-byte untouched.
-# Paired backticks in the historical license denote quotation marks; escape
-# them for Doxygen without a shell filter (whose quoting differs on Windows).
 set(docs_markdown_root "${CMAKE_CURRENT_BINARY_DIR}/markdown")
 # Publish library guides, not the READMEs of standalone test projects.
-set(docs_pages README.md LICENSE.md CODE_OF_CONDUCT.md doc/building.md)
+set(docs_pages README.md LICENSE.md LICENSE-BSD-2-Clause.md LICENSE-APACHE.md
+  THIRD-PARTY-NOTICES.md CODE_OF_CONDUCT.md doc/building.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")
 list(APPEND docs_pages ${docs_guides})
@@ -136,7 +135,8 @@ foreach(page IN LISTS docs_pages)
     "${PROJECT_SOURCE_DIR}/${page}")
   file(READ "${PROJECT_SOURCE_DIR}/${page}" docs_markdown)
   if(page STREQUAL "LICENSE.md")
-    string(REPLACE "``" "\\`\\`" docs_markdown "${docs_markdown}")
+    string(REPLACE "# Licensing Terms" "# Licensing Terms {#license_page}"
+      docs_markdown "${docs_markdown}")
   endif()
   # Index lists define the page tree. Keep ordinary Markdown links in GitHub;
   # give Doxygen the corresponding parent/child links in the rendering copy.

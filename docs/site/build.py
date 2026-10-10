@@ -29,6 +29,9 @@ def build(source, api, output, name, pandoc):
     revision = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
     repo = f'https://github.com/ekmett/{name}'
     guides = [Path('README.md'), Path('LICENSE.md')]
+    guides += sorted(p.relative_to(source) for p in source.glob('LICENSE-*.md'))
+    if (source / 'THIRD-PARTY-NOTICES.md').is_file():
+        guides.append(Path('THIRD-PARTY-NOTICES.md'))
     guides += [p for p in (Path('doc/building.md'), Path('CODE_OF_CONDUCT.md')) if (source / p).is_file()]
     guides += sorted(p.relative_to(source) for p in (source / 'docs').rglob('*.md'))
     guides += [p for p in (Path('vm/README.md'), Path('vm/NOTICE.md')) if (source / p).is_file()]
