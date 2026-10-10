@@ -124,7 +124,7 @@ set(DOXYGEN_ALIASES "license=@code{.spdx}" "endlicense=@endcode"
 # original pages, including the license, remain byte-for-byte untouched.
 set(docs_markdown_root "${CMAKE_CURRENT_BINARY_DIR}/markdown")
 # Publish library guides, not the READMEs of standalone test projects.
-set(docs_pages README.md LICENSE.md LICENSE-BSD-2-Clause.md LICENSE-APACHE.md
+set(docs_pages README.md LICENSE.md
   THIRD-PARTY-NOTICES.md CODE_OF_CONDUCT.md doc/building.md)
 file(GLOB_RECURSE docs_guides CONFIGURE_DEPENDS RELATIVE "${PROJECT_SOURCE_DIR}"
   "${PROJECT_SOURCE_DIR}/docs/*.md")

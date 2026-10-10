@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: BSD-2-Clause OR Apache-2.0
 **
 !CMakeLists.txt
-!LICENSE*.md
+!LICENSE.md
 !LICENSE.spdx
 !THIRD-PARTY-NOTICES.md
 !src/

@@ -9,7 +9,7 @@ on:
       - '.dockerignore'
       - '.github/workflows/docker.yml'
       - 'CMakeLists.txt'
-      - 'LICENSE*.md'
+      - 'LICENSE.md'
       - 'LICENSE.spdx'
       - 'THIRD-PARTY-NOTICES.md'
       - 'etc/cmake/**'
