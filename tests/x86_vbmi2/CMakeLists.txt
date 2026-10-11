@@ -223,7 +223,20 @@ foreach(width IN ITEMS 128 256 512)
     string(TOUPPER "${kind}" definition)
     foreach(omission IN LISTS omissions)
       set(negative native_test_x86_vbmi2_reject_${kind}_${width}_${omission})
-      add_library(${negative} OBJECT EXCLUDE_FROM_ALL ${negative_sources})
+      set(selected_sources ${negative_sources})
+      set(operation_options)
+      if(kind STREQUAL "target" AND NOT omission EQUAL 3)
+        # Every operation/width rejects a caller missing VBMI2. Sample the other
+        # feature edges with register, store, load and immediate forms instead
+        # of recompiling all 50 operations for every omitted feature.
+        set(selected_sources)
+        set(operation_options --operations 0 2 5 14)
+        foreach(operation IN ITEMS 0 2 5 14)
+          list(GET target_negative_sources ${operation} source)
+          list(APPEND selected_sources "${source}")
+        endforeach()
+      endif()
+      add_library(${negative} OBJECT EXCLUDE_FROM_ALL ${selected_sources})
       native_vbmi2_rejection_target(${negative} ${interface})
       target_compile_definitions(${negative} PRIVATE
         NATIVE_TEST_WIDTH=${width} NATIVE_TEST_${definition}=${omission})
@@ -232,6 +245,7 @@ foreach(width IN ITEMS 128 256 512)
           --cmake "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
           --positive native_test_x86_vbmi2_positive_${interface}_${width}
           --negative "${negative}" --kind "${kind}" --config "$<CONFIG>"
+          ${operation_options}
           --log "${CMAKE_CURRENT_BINARY_DIR}/reject-${kind}-${width}-${omission}-$<CONFIG>.log")
       set_tests_properties(native.x86.vbmi2.reject_${kind}_${width}_${omission} PROPERTIES
         RUN_SERIAL TRUE TIMEOUT 180 LABELS "host;modules;compile;negative;x86;vbmi2")

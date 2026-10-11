@@ -17,7 +17,7 @@ parser.add_argument("--log", required=True, type=Path)
 args = parser.parse_args()
 
 def build(target):
-    command = [args.cmake, "--build", args.build, "--target", target, "--parallel"]
+    command = [args.cmake, "--build", args.build, "--target", target, "--parallel", "4"]
     if args.config:
         command += ["--config", args.config]
     # Native module fixtures use Ninja. Collect every deliberately failing

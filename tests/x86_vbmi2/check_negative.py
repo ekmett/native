@@ -14,11 +14,12 @@ parser.add_argument("--negative", required=True)
 parser.add_argument("--config", default="")
 parser.add_argument("--kind",
                     choices=("feature", "target", "weak", "shape", "mask", "pointer", "immediate"), required=True)
+parser.add_argument("--operations", nargs="+", type=int)
 parser.add_argument("--log", required=True, type=Path)
 args = parser.parse_args()
 
 def build(target):
-    command = [args.cmake, "--build", args.build, "--target", target, "--parallel"]
+    command = [args.cmake, "--build", args.build, "--target", target, "--parallel", "4"]
     if args.config:
         command += ["--config", args.config]
     # Native module fixtures use Ninja. Collect every deliberately failing
@@ -91,7 +92,9 @@ operations = [
     ('mask_vpshrdvq', 'merge', False),
     ('maskz_vpshrdvq', 'zero', False),
 ]
-for name, form, immediate in operations:
+for index, (name, form, immediate) in enumerate(operations):
+    if args.operations is not None and index not in args.operations:
+        continue
     if args.kind == "mask" and not name.startswith("mask"):
         continue
     if args.kind == "pointer" and form not in ("store", "load_merge", "load_zero"):
