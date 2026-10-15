@@ -13,6 +13,7 @@ parser.add_argument("--positive", required=True)
 parser.add_argument("--negative", required=True)
 parser.add_argument("--config", default="")
 parser.add_argument("--kind", choices=("feature", "target", "weak", "shape", "mask"), required=True)
+parser.add_argument("--operations", nargs="+", type=int, choices=range(12))
 parser.add_argument("--log", required=True, type=Path)
 args = parser.parse_args()
 
@@ -38,10 +39,15 @@ if negative_status == 0:
     raise SystemExit("Negative control unexpectedly compiled.")
 
 count = 0
+index = -1
 for lane in ("d", "q"):
     for operation in ("vpconflict", "vplzcnt"):
-        prefixes = ("mask_", "maskz_") if args.kind == "mask" else ("", "mask_", "maskz_")
-        for prefix in prefixes:
+        for prefix in ("", "mask_", "maskz_"):
+            index += 1
+            if args.operations is not None and index not in args.operations:
+                continue
+            if args.kind == "mask" and not prefix:
+                continue
             name = prefix + operation + lane
             if args.kind == "feature":
                 diagnostic = rf"error: no matching function for call to '{name}'"
